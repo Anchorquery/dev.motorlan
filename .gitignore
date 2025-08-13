@@ -1,0 +1,21 @@
+# WordPress core (no versionamos)
+wp-admin/
+wp-includes/
+index.php
+license.txt
+readme.html
+
+# Uploads y cachés
+wp-content/uploads/
+wp-content/cache/
+wp-content/upgrade/
+wp-content/debug.log
+
+# Node / build
+**/node_modules/
+**/dist/
+**/.vite/
+
+# Varios
+.DS_Store
+.env
