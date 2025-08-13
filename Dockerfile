@@ -14,4 +14,4 @@ COPY wp-content /var/www/html/wp-content
 RUN chown -R www-data:www-data /var/www/html/wp-content
 
 # Expose port 80 for the Apache web server
-EXPOSE 80
+EXPOSE 8030
