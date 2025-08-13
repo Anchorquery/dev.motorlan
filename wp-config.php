@@ -20,16 +20,16 @@
 
 // ** Database settings - You can get this info from your web host ** //
 /** The name of the database for WordPress */
-define( 'DB_NAME', 'motorlandev' );
+define( 'DB_NAME', getenv('WORDPRESS_DB_NAME') ?: 'motorlandev' );
 
 /** Database username */
-define( 'DB_USER', 'root' );
+define( 'DB_USER', getenv('WORDPRESS_DB_USER') ?: 'root' );
 
 /** Database password */
-define( 'DB_PASSWORD', '' );
+define( 'DB_PASSWORD', getenv('WORDPRESS_DB_PASSWORD') ?: '' );
 
 /** Database hostname */
-define( 'DB_HOST', 'localhost' );
+define( 'DB_HOST', getenv('WORDPRESS_DB_HOST') ?: 'localhost' );
 
 /** Database charset to use in creating database tables. */
 define( 'DB_CHARSET', 'utf8mb4' );
@@ -89,7 +89,9 @@ define( 'WP_DEBUG', false );
 
 /* Add any custom values between this line and the "stop editing" line. */
 
-
+if (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') {
+    $_SERVER['HTTPS'] = 'on';
+}
 
 /* That's all, stop editing! Happy publishing. */
 
