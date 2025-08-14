@@ -344,7 +344,101 @@ function motorlan_get_motors( $request ) {
         'paged'          => $page,
     );
 
-    // Only add meta_query if there are filters.
+
+    // Initialize meta query
+    $meta_query = array('relation' => 'AND');
+
+    // Get filter parameters from the request
+    $marca = $request->get_param('marca');
+    $potencia_min = $request->get_param('potencia_min');
+    $potencia_max = $request->get_param('potencia_max');
+    $velocidad_min = $request->get_param('velocidad_min');
+    $velocidad_max = $request->get_param('velocidad_max');
+    $pais = $request->get_param('pais');
+    $tipo_de_alimentacion = $request->get_param('tipo_de_alimentacion');
+    $servomotores = $request->get_param('servomotores');
+
+    // Add filters to meta query
+    if (!empty($marca)) {
+        $meta_query[] = array(
+            'key'     => 'marca',
+            'value'   => sanitize_text_field($marca),
+            'compare' => 'LIKE',
+        );
+    }
+
+    if (!empty($potencia_min) && !empty($potencia_max)) {
+        $meta_query[] = array(
+            'key'     => 'potencia',
+            'value'   => array(floatval($potencia_min), floatval($potencia_max)),
+            'type'    => 'NUMERIC',
+            'compare' => 'BETWEEN',
+        );
+    } elseif (!empty($potencia_min)) {
+        $meta_query[] = array(
+            'key'     => 'potencia',
+            'value'   => floatval($potencia_min),
+            'type'    => 'NUMERIC',
+            'compare' => '>=',
+        );
+    } elseif (!empty($potencia_max)) {
+        $meta_query[] = array(
+            'key'     => 'potencia',
+            'value'   => floatval($potencia_max),
+            'type'    => 'NUMERIC',
+            'compare' => '<=',
+        );
+    }
+
+    if (!empty($velocidad_min) && !empty($velocidad_max)) {
+        $meta_query[] = array(
+            'key'     => 'velocidad',
+            'value'   => array(intval($velocidad_min), intval($velocidad_max)),
+            'type'    => 'NUMERIC',
+            'compare' => 'BETWEEN',
+        );
+    } elseif (!empty($velocidad_min)) {
+        $meta_query[] = array(
+            'key'     => 'velocidad',
+            'value'   => intval($velocidad_min),
+            'type'    => 'NUMERIC',
+            'compare' => '>=',
+        );
+    } elseif (!empty($velocidad_max)) {
+        $meta_query[] = array(
+            'key'     => 'velocidad',
+            'value'   => intval($velocidad_max),
+            'type'    => 'NUMERIC',
+            'compare' => '<=',
+        );
+    }
+
+    if (!empty($pais)) {
+        $meta_query[] = array(
+            'key'     => 'pais',
+            'value'   => sanitize_text_field($pais),
+            'compare' => '=',
+        );
+    }
+
+    if (!empty($tipo_de_alimentacion)) {
+        $meta_query[] = array(
+            'key'     => 'tipo_de_alimentacion',
+            'value'   => sanitize_text_field($tipo_de_alimentacion),
+            'compare' => '=',
+        );
+    }
+
+    if (!empty($servomotores)) {
+        $meta_query[] = array(
+            'key'     => 'servomotores',
+            'value'   => '"' . sanitize_text_field($servomotores) . '"',
+            'compare' => 'LIKE',
+        );
+    }
+
+    // If we have meta queries, add them to the main query args
+
     if (count($meta_query) > 1) {
         $args['meta_query'] = $meta_query;
     }
