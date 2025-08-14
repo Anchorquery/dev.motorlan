@@ -1,21 +1,17 @@
-# WordPress + PHP 8.2 + Apache
+# Use the official WordPress image with PHP 8.2 and Apache
 FROM wordpress:6.6.1-php8.2-apache
 
-# Permalinks
+# Enable Apache rewrite module for permalinks
 RUN a2enmod rewrite
 
-# (Opcional) copia .htaccess si de verdad necesitas reglas propias
-# OJO: si no lo necesitas, comenta la siguiente línea para no pisar el que genera WP
+# Copy the .htaccess file
 COPY .htaccess /var/www/html/.htaccess
 
-# Copia SOLO lo que controlas (temas/plugins/mu-plugins). Evita subir uploads si no es necesario.
+# Copy the wp-content directory
 COPY wp-content /var/www/html/wp-content
 
-# Permisos
+# Set the correct permissions for wp-content
 RUN chown -R www-data:www-data /var/www/html/wp-content
 
-# Exponer el puerto REAL de Apache
+# Expose port 80 for the Apache web server
 EXPOSE 80
-
-# (Opcional) healthcheck básico
-#HEALTHCHECK --interval=30s --timeout=5s --retries=10 CMD curl -fsS http://localhost/ || exit 1
