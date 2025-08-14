@@ -18,4 +18,4 @@ RUN chown -R www-data:www-data /var/www/html/wp-content
 EXPOSE 80
 
 # (Opcional) healthcheck básico
-HEALTHCHECK --interval=30s --timeout=5s --retries=10 CMD curl -fsS http://localhost/ || exit 1
+#HEALTHCHECK --interval=30s --timeout=5s --retries=10 CMD curl -fsS http://localhost/ || exit 1
