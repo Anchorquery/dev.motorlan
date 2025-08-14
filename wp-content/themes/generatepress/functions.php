@@ -10,7 +10,6 @@
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
-add_filter('use_block_editor_for_post', '__return_false', 10);
 
 // Set our theme version.
 define( 'GENERATE_VERSION', '3.6.0' );
