@@ -35,6 +35,7 @@ acf_add_local_field_group(array(
 			'type' => 'text',
 		),
 		array(
+
 			'key' => 'field_motor_gallery',
 			'label' => 'Galería de Imágenes',
 			'name' => 'motor_gallery',
@@ -42,6 +43,7 @@ acf_add_local_field_group(array(
 			'instructions' => 'Añada hasta 5 imágenes del motor. La "Imagen Destacada" principal de WordPress se gestiona por separado.',
 			'max' => 5,
 			'insert' => 'append',
+
 			'library' => 'all',
 		),
 		array(
