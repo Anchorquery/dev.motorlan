@@ -305,7 +305,7 @@ function motorlan_register_rest_routes() {
 add_action( 'rest_api_init', 'motorlan_register_rest_routes' );
 
 /**
- * Callback function to get a list of motors with pagination and filtering, using ACF.
+ * Callback function to get a list of motors with pagination, using ACF.
  *
  * @param WP_REST_Request $request The request object.
  * @return WP_REST_Response The response object.
@@ -315,35 +315,12 @@ function motorlan_get_motors( $request ) {
     $page = $request->get_param( 'page' ) ? absint( $request->get_param( 'page' ) ) : 1;
     $per_page = $request->get_param( 'per_page' ) ? absint( $request->get_param( 'per_page' ) ) : 10;
 
-    // --- FILTERING LOGIC ---
-    $params = $request->get_params();
-    $meta_query = array('relation' => 'AND');
-
-    // Define the list of fields that can be used for filtering.
-    $filterable_fields = [
-        'titulo_entrada', 'marca', 'tipo_o_referencia', 'potencia', 'velocidad', 'par_nominal', 'voltaje', 'intensidad',
-        'pais', 'provincia', 'estado_del_articulo', 'posibilidad_de_alquiler', 'tipo_de_alimentacion',
-        'servomotores', 'regulacion_electronica_drivers', 'precio_de_venta', 'precio_negociable'
-    ];
-
-    // Build the meta_query dynamically based on request parameters.
-    foreach ($filterable_fields as $field_name) {
-        if ( !empty($params[$field_name]) ) {
-            $meta_query[] = array(
-                'key'     => $field_name,
-                'value'   => sanitize_text_field($params[$field_name]),
-                'compare' => '=',
-            );
-        }
-    }
-
     $args = array(
         'post_type'      => 'motor',
         'post_status'    => 'publish',
         'posts_per_page' => $per_page,
         'paged'          => $page,
     );
-
 
     // Initialize meta query
     $meta_query = array('relation' => 'AND');
@@ -438,7 +415,6 @@ function motorlan_get_motors( $request ) {
     }
 
     // If we have meta queries, add them to the main query args
-
     if (count($meta_query) > 1) {
         $args['meta_query'] = $meta_query;
     }
@@ -495,3 +471,108 @@ function motorlan_get_motors( $request ) {
 
     return $response;
 }
+
+/**
+ * Add admin menu page
+ */
+function motorlan_admin_menu() {
+    add_menu_page(
+        'Motorlan Filters',
+        'Motorlan',
+        'manage_options',
+        'motorlan-filters',
+        'motorlan_filters_page_html',
+        'dashicons-admin-generic',
+        20
+    );
+}
+add_action( 'admin_menu', 'motorlan_admin_menu' );
+
+/**
+ * Admin page HTML callback
+ */
+function motorlan_filters_page_html() {
+    ?>
+    <div class="wrap">
+        <h1><?php echo esc_html( get_admin_page_title() ); ?></h1>
+        <div id="motorlan-filters-app">
+            <form id="motorlan-filters-form">
+                <table class="form-table">
+                    <tbody>
+                        <tr>
+                            <th scope="row"><label for="marca">Marca</label></th>
+                            <td><input type="text" id="marca" name="marca" class="regular-text"></td>
+                        </tr>
+                        <tr>
+                            <th scope="row">Potencia (kW)</th>
+                            <td>
+                                <input type="number" id="potencia_min" name="potencia_min" placeholder="Min" class="small-text">
+                                -
+                                <input type="number" id="potencia_max" name="potencia_max" placeholder="Max" class="small-text">
+                            </td>
+                        </tr>
+                        <tr>
+                            <th scope="row">Velocidad (rpm)</th>
+                            <td>
+                                <input type="number" id="velocidad_min" name="velocidad_min" placeholder="Min" class="small-text">
+                                -
+                                <input type="number" id="velocidad_max" name="velocidad_max" placeholder="Max" class="small-text">
+                            </td>
+                        </tr>
+                        <tr>
+                            <th scope="row"><label for="pais">País</label></th>
+                            <td>
+                                <select id="pais" name="pais">
+                                    <option value="">Todos</option>
+                                    <option value="España">España</option>
+                                    <option value="Portugal">Portugal</option>
+                                    <option value="Francia">Francia</option>
+                                </select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th scope="row"><label for="tipo_de_alimentacion">Tipo de Alimentación</label></th>
+                            <td>
+                                <select id="tipo_de_alimentacion" name="tipo_de_alimentacion">
+                                    <option value="">Ambos</option>
+                                    <option value="Continua (C.C.)">Continua (C.C.)</option>
+                                    <option value="Alterna (C.A.)">Alterna (C.A.)</option>
+                                </select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th scope="row">Servomotores</th>
+                            <td>
+                                <fieldset>
+                                    <label><input type="checkbox" id="servomotores" name="servomotores" value="Sí"> Sí</label>
+                                </fieldset>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <p class="submit">
+                    <input type="submit" name="submit" id="submit" class="button button-primary" value="Filtrar">
+                </p>
+            </form>
+            <div id="motorlan-results"></div>
+        </div>
+    </div>
+    <?php
+}
+
+/**
+ * Enqueue admin assets
+ */
+function motorlan_enqueue_admin_assets( $hook ) {
+    // Load only on our plugin page
+    if ( 'toplevel_page_motorlan-filters' !== $hook ) {
+        return;
+    }
+    wp_enqueue_style( 'motorlan-admin-styles', plugins_url( 'assets/css/admin-styles.css', __FILE__ ) );
+    wp_enqueue_script( 'motorlan-admin-filters', plugins_url( 'assets/js/admin-filters.js', __FILE__ ), array(), '1.0', true );
+
+    wp_localize_script( 'motorlan-admin-filters', 'motorlan_filters_vars', array(
+        'api_url' => esc_url_raw( rest_url( 'motorlan/v1/motors' ) ),
+    ) );
+}
+add_action( 'admin_enqueue_scripts', 'motorlan_enqueue_admin_assets' );
