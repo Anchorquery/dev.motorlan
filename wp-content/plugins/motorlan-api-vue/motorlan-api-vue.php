@@ -56,108 +56,242 @@ function motorlan_register_motor_cpt() {
 }
 add_action( 'init', 'motorlan_register_motor_cpt' );
 
-/**
- * Adds a meta box to the motor post type editor.
- */
-function motorlan_add_motor_meta_box() {
-    add_meta_box(
-        'motorlan_motor_details',
-        __( 'Detalles del Motor', 'motorlan-api-vue' ),
-        'motorlan_render_motor_meta_box',
-        'motor',
-        'normal',
-        'high'
-    );
-}
-add_action( 'add_meta_boxes', 'motorlan_add_motor_meta_box' );
+if( function_exists('acf_add_local_field_group') ):
 
-/**
- * Renders the meta box for motor details.
- *
- * @param WP_Post $post The post object.
- */
-function motorlan_render_motor_meta_box( $post ) {
-    // Add a nonce field so we can check for it later.
-    wp_nonce_field( 'motorlan_save_motor_meta_data', 'motorlan_motor_meta_box_nonce' );
+acf_add_local_field_group(array(
+	'key' => 'group_6643d3c3a9a58',
+	'title' => 'Detalles del Motor',
+	'fields' => array(
+		array(
+			'key' => 'field_6643d3c3b0340',
+			'label' => 'Título entrada',
+			'name' => 'titulo_entrada',
+			'type' => 'text',
+		),
+		array(
+			'key' => 'field_6643d3c3b0341',
+			'label' => 'Marca',
+			'name' => 'marca',
+			'type' => 'text',
+		),
+		array(
+			'key' => 'field_6643d3c3b0342',
+			'label' => 'Tipo o referencia',
+			'name' => 'tipo_o_referencia',
+			'type' => 'text',
+		),
+		array(
+			'key' => 'field_6643d3c3b0343',
+			'label' => 'Imagen destacada (motor_image)',
+			'name' => 'motor_image',
+			'type' => 'image',
+			'return_format' => 'array',
+			'preview_size' => 'medium',
+			'library' => 'all',
+		),
+		array(
+			'key' => 'field_6643d3c3b0344',
+			'label' => 'Imagen 1',
+			'name' => 'imagen_1',
+			'type' => 'image',
+			'return_format' => 'array',
+			'preview_size' => 'medium',
+			'library' => 'all',
+		),
+		array(
+			'key' => 'field_6643d3c3b0345',
+			'label' => 'Imagen 2',
+			'name' => 'imagen_2',
+			'type' => 'image',
+			'return_format' => 'array',
+			'preview_size' => 'medium',
+			'library' => 'all',
+		),
+		array(
+			'key' => 'field_6643d3c3b0346',
+			'label' => 'Imagen 3',
+			'name' => 'imagen_3',
+			'type' => 'image',
+			'return_format' => 'array',
+			'preview_size' => 'medium',
+			'library' => 'all',
+		),
+		array(
+			'key' => 'field_6643d3c3b0347',
+			'label' => 'Potencia',
+			'name' => 'potencia',
+			'type' => 'number',
+			'append' => 'kW',
+		),
+		array(
+			'key' => 'field_6643d3c3b0348',
+			'label' => 'Velocidad',
+			'name' => 'velocidad',
+			'type' => 'number',
+			'append' => 'rpm',
+		),
+		array(
+			'key' => 'field_6643d3c3b0349',
+			'label' => 'PAR Nominal',
+			'name' => 'par_nominal',
+			'type' => 'number',
+			'append' => 'Nm',
+		),
+		array(
+			'key' => 'field_6643d3c3b034a',
+			'label' => 'Voltaje',
+			'name' => 'voltaje',
+			'type' => 'number',
+			'append' => 'V',
+		),
+		array(
+			'key' => 'field_6643d3c3b034b',
+			'label' => 'Intensidad',
+			'name' => 'intensidad',
+			'type' => 'number',
+			'append' => 'A',
+		),
+		array(
+			'key' => 'field_6643d3c3b034c',
+			'label' => 'País (localización)',
+			'name' => 'pais',
+			'type' => 'select',
+			'choices' => array(
+				'España' => 'España',
+				'Portugal' => 'Portugal',
+				'Francia' => 'Francia',
+			),
+			'allow_null' => 1,
+		),
+		array(
+			'key' => 'field_6643d3c3b034d',
+			'label' => 'Provincia',
+			'name' => 'provincia',
+			'type' => 'text',
+		),
+		array(
+			'key' => 'field_6643d3c3b034e',
+			'label' => 'Estado del artículo',
+			'name' => 'estado_del_articulo',
+			'type' => 'select',
+			'choices' => array(
+				'Nuevo' => 'Nuevo',
+				'Usado' => 'Usado',
+				'Restaurado' => 'Restaurado',
+			),
+		),
+		array(
+			'key' => 'field_6643d3c3b034f',
+			'label' => 'Informe de reparación',
+			'name' => 'informe_de_reparacion',
+			'type' => 'file',
+			'return_format' => 'array',
+		),
+		array(
+			'key' => 'field_6643d3c3b0350',
+			'label' => 'Descripción',
+			'name' => 'descripcion',
+			'type' => 'textarea',
+		),
+		array(
+			'key' => 'field_6643d3c3b0351',
+			'label' => 'Posibilidad de alquiler',
+			'name' => 'posibilidad_de_alquiler',
+			'type' => 'radio',
+			'choices' => array(
+				'Sí' => 'Sí',
+				'No' => 'No',
+			),
+			'layout' => 'horizontal',
+		),
+		array(
+			'key' => 'field_6643d3c3b0352',
+			'label' => 'Tipo de alimentación',
+			'name' => 'tipo_de_alimentacion',
+			'type' => 'radio',
+			'choices' => array(
+				'Continua (C.C.)' => 'Continua (C.C.)',
+				'Alterna (C.A.)' => 'Alterna (C.A.)',
+			),
+			'layout' => 'horizontal',
+		),
+		array(
+			'key' => 'field_6643d3c3b0353',
+			'label' => 'Servomotores',
+			'name' => 'servomotores',
+			'type' => 'checkbox',
+			'choices' => array(
+				'Sí' => 'Sí',
+			),
+		),
+		array(
+			'key' => 'field_6643d3c3b0354',
+			'label' => 'Regulación electrónica/Drivers',
+			'name' => 'regulacion_electronica_drivers',
+			'type' => 'checkbox',
+			'choices' => array(
+				'Sí' => 'Sí',
+			),
+		),
+		array(
+			'key' => 'field_6643d3c3b0355',
+			'label' => 'Precio de venta',
+			'name' => 'precio_de_venta',
+			'type' => 'number',
+			'prepend' => '€',
+		),
+		array(
+			'key' => 'field_6643d3c3b0356',
+			'label' => 'Precio negociable',
+			'name' => 'precio_negociable',
+			'type' => 'radio',
+			'choices' => array(
+				'Sí' => 'Sí',
+				'No' => 'No',
+			),
+			'layout' => 'horizontal',
+		),
+		array(
+			'key' => 'field_6643d3c3b0357',
+			'label' => 'Documentación adjunta',
+			'name' => 'documentacion_adjunta',
+			'type' => 'file',
+			'return_format' => 'array',
+		),
+		array(
+			'key' => 'field_6643d3c3b0358',
+			'label' => 'Publicar (ACF)',
+			'name' => 'publicar_acf',
+			'type' => 'radio',
+			'choices' => array(
+				'publish' => 'Publicar',
+				'draft' => 'Borrador',
+			),
+			'default_value' => 'publish',
+			'layout' => 'horizontal',
+		),
+	),
+	'location' => array(
+		array(
+			array(
+				'param' => 'post_type',
+				'operator' => '==',
+				'value' => 'motor',
+			),
+		),
+	),
+	'menu_order' => 0,
+	'position' => 'normal',
+	'style' => 'default',
+	'label_placement' => 'top',
+	'instruction_placement' => 'label',
+	'hide_on_screen' => '',
+	'active' => true,
+	'description' => '',
+));
 
-    // Get existing meta data.
-    $fields_data = [
-        'tipo_o_referencia' => get_post_meta( $post->ID, '_motor_tipo_o_referencia', true ),
-        'potencia' => get_post_meta( $post->ID, '_motor_potencia', true ),
-        'velocidad' => get_post_meta( $post->ID, '_motor_velocidad', true ),
-        'par_nominal' => get_post_meta( $post->ID, '_motor_par_nominal', true ),
-        'voltaje' => get_post_meta( $post->ID, '_motor_voltaje', true ),
-        'estado_del_articulo' => get_post_meta( $post->ID, '_motor_estado_del_articulo', true ),
-    ];
-    ?>
-    <style>
-        .motor-meta-box-table { width: 100%; border-collapse: collapse; }
-        .motor-meta-box-table td { padding: 8px 5px; }
-        .motor-meta-box-table tr { border-bottom: 1px solid #eee; }
-        .motor-meta-box-table label { font-weight: bold; padding-right: 10px; }
-        .motor-meta-box-table input[type="text"] { width: 100%; }
-    </style>
-    <table class="motor-meta-box-table">
-        <tr>
-            <td><label for="motor_tipo_o_referencia"><?php _e( 'Tipo o Referencia', 'motorlan-api-vue' ); ?></label></td>
-            <td><input type="text" id="motor_tipo_o_referencia" name="motor_tipo_o_referencia" value="<?php echo esc_attr( $fields_data['tipo_o_referencia'] ); ?>" /></td>
-        </tr>
-        <tr>
-            <td><label for="motor_potencia"><?php _e( 'Potencia (kW)', 'motorlan-api-vue' ); ?></label></td>
-            <td><input type="text" id="motor_potencia" name="motor_potencia" value="<?php echo esc_attr( $fields_data['potencia'] ); ?>" /></td>
-        </tr>
-        <tr>
-            <td><label for="motor_velocidad"><?php _e( 'Velocidad (rpm)', 'motorlan-api-vue' ); ?></label></td>
-            <td><input type="text" id="motor_velocidad" name="motor_velocidad" value="<?php echo esc_attr( $fields_data['velocidad'] ); ?>" /></td>
-        </tr>
-        <tr>
-            <td><label for="motor_par_nominal"><?php _e( 'Par Nominal (Nm)', 'motorlan-api-vue' ); ?></label></td>
-            <td><input type="text" id="motor_par_nominal" name="motor_par_nominal" value="<?php echo esc_attr( $fields_data['par_nominal'] ); ?>" /></td>
-        </tr>
-        <tr>
-            <td><label for="motor_voltaje"><?php _e( 'Voltaje (V)', 'motorlan-api-vue' ); ?></label></td>
-            <td><input type="text" id="motor_voltaje" name="motor_voltaje" value="<?php echo esc_attr( $fields_data['voltaje'] ); ?>" /></td>
-        </tr>
-        <tr>
-            <td><label for="motor_estado_del_articulo"><?php _e( 'Estado del Artículo', 'motorlan-api-vue' ); ?></label></td>
-            <td><input type="text" id="motor_estado_del_articulo" name="motor_estado_del_articulo" value="<?php echo esc_attr( $fields_data['estado_del_articulo'] ); ?>" /></td>
-        </tr>
-    </table>
-    <?php
-}
+endif;
 
-/**
- * Saves the custom meta data when the post is saved.
- *
- * @param int $post_id The ID of the post being saved.
- */
-function motorlan_save_motor_meta_data( $post_id ) {
-    if ( ! isset( $_POST['motorlan_motor_meta_box_nonce'] ) || ! wp_verify_nonce( $_POST['motorlan_motor_meta_box_nonce'], 'motorlan_save_motor_meta_data' ) ) {
-        return;
-    }
-    if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
-        return;
-    }
-    if ( ! current_user_can( 'edit_post', $post_id ) ) {
-        return;
-    }
-
-    $fields = [
-        'motor_tipo_o_referencia',
-        'motor_potencia',
-        'motor_velocidad',
-        'motor_par_nominal',
-        'motor_voltaje',
-        'motor_estado_del_articulo',
-    ];
-
-    foreach ( $fields as $field ) {
-        if ( array_key_exists( $field, $_POST ) ) {
-            update_post_meta( $post_id, '_' . $field, sanitize_text_field( $_POST[ $field ] ) );
-        }
-    }
-}
-add_action( 'save_post', 'motorlan_save_motor_meta_data' );
 
 /**
  * Register custom REST API routes.
@@ -171,7 +305,7 @@ function motorlan_register_rest_routes() {
 add_action( 'rest_api_init', 'motorlan_register_rest_routes' );
 
 /**
- * Callback function to get a list of motors with pagination.
+ * Callback function to get a list of motors with pagination, using ACF.
  *
  * @param WP_REST_Request $request The request object.
  * @return WP_REST_Response The response object.
@@ -196,27 +330,37 @@ function motorlan_get_motors( $request ) {
             $query->the_post();
             $post_id = get_the_ID();
 
-            $meta_keys = [
-                'tipo_o_referencia',
-                'potencia',
-                'velocidad',
-                'par_nominal',
-                'voltaje',
-                'estado_del_articulo',
-            ];
-            $motor_meta = [];
-            foreach($meta_keys as $key) {
-                $motor_meta[$key] = get_post_meta( $post_id, '_motor_' . $key, true );
+            $motor_item = array(
+                'id'           => $post_id,
+                'title'        => get_the_title(),
+                'slug'         => get_post_field( 'post_name', $post_id ),
+                'content'      => get_the_content(),
+                'excerpt'      => get_the_excerpt(),
+                'status'       => get_post_status( $post_id ),
+                'author_id'    => get_post_field( 'post_author', $post_id ),
+                'categories'   => wp_get_post_categories( $post_id ),
+                'featured_image_id' => get_post_thumbnail_id( $post_id ),
+                'acf'          => array(),
+            );
+
+            // Populate ACF fields if ACF is active
+            if ( function_exists('get_field') ) {
+                $acf_fields = [
+                    'titulo_entrada', 'marca', 'tipo_o_referencia', 'motor_image', 'imagen_1', 'imagen_2', 'imagen_3',
+                    'potencia', 'velocidad', 'par_nominal', 'voltaje', 'intensidad', 'pais', 'provincia', 'estado_del_articulo',
+                    'informe_de_reparacion', 'descripcion', 'posibilidad_de_alquiler', 'tipo_de_alimentacion',
+                    'servomotores', 'regulacion_electronica_drivers', 'precio_de_venta', 'precio_negociable',
+                    'documentacion_adjunta', 'publicar_acf'
+                ];
+
+                foreach($acf_fields as $field_name) {
+                    $motor_item['acf'][$field_name] = get_field($field_name, $post_id);
+                }
+            } else {
+                 $motor_item['acf_error'] = 'Advanced Custom Fields plugin is not active.';
             }
 
-            $motors_data[] = array(
-                'id'                 => $post_id,
-                'title'              => get_the_title(),
-                'content'            => get_the_content(),
-                'excerpt'            => get_the_excerpt(),
-                'featured_image_url' => get_the_post_thumbnail_url( $post_id, 'full' ),
-                'meta'               => $motor_meta,
-            );
+            $motors_data[] = $motor_item;
         }
         wp_reset_postdata();
     }
