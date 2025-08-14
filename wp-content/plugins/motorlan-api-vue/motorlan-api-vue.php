@@ -305,7 +305,7 @@ function motorlan_register_rest_routes() {
 add_action( 'rest_api_init', 'motorlan_register_rest_routes' );
 
 /**
- * Callback function to get a list of motors with pagination, using ACF.
+ * Callback function to get a list of motors with pagination and filtering, using ACF.
  *
  * @param WP_REST_Request $request The request object.
  * @return WP_REST_Response The response object.
@@ -315,12 +315,39 @@ function motorlan_get_motors( $request ) {
     $page = $request->get_param( 'page' ) ? absint( $request->get_param( 'page' ) ) : 1;
     $per_page = $request->get_param( 'per_page' ) ? absint( $request->get_param( 'per_page' ) ) : 10;
 
+    // --- FILTERING LOGIC ---
+    $params = $request->get_params();
+    $meta_query = array('relation' => 'AND');
+
+    // Define the list of fields that can be used for filtering.
+    $filterable_fields = [
+        'titulo_entrada', 'marca', 'tipo_o_referencia', 'potencia', 'velocidad', 'par_nominal', 'voltaje', 'intensidad',
+        'pais', 'provincia', 'estado_del_articulo', 'posibilidad_de_alquiler', 'tipo_de_alimentacion',
+        'servomotores', 'regulacion_electronica_drivers', 'precio_de_venta', 'precio_negociable'
+    ];
+
+    // Build the meta_query dynamically based on request parameters.
+    foreach ($filterable_fields as $field_name) {
+        if ( !empty($params[$field_name]) ) {
+            $meta_query[] = array(
+                'key'     => $field_name,
+                'value'   => sanitize_text_field($params[$field_name]),
+                'compare' => '=',
+            );
+        }
+    }
+
     $args = array(
         'post_type'      => 'motor',
         'post_status'    => 'publish',
         'posts_per_page' => $per_page,
         'paged'          => $page,
     );
+
+    // Only add meta_query if there are filters.
+    if (count($meta_query) > 1) {
+        $args['meta_query'] = $meta_query;
+    }
 
     $query = new WP_Query( $args );
     $motors_data = array();
