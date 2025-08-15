@@ -90,6 +90,7 @@ function motorlan_get_motors_callback( $request ) {
             // Populate ACF fields if ACF is active
             if ( function_exists('get_field') ) {
                 $acf_fields = [
+
                     'titulo_entrada', 'marca', 'tipo_o_referencia', 'motor_gallery',
                     'potencia', 'velocidad', 'par_nominal', 'voltaje', 'intensidad', 'pais', 'provincia', 'estado_del_articulo',
                     'informe_de_reparacion', 'descripcion', 'posibilidad_de_alquiler', 'tipo_de_alimentacion',
