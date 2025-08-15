@@ -25,4 +25,5 @@ require_once MOTORLAN_API_VUE_PATH . 'includes/acf-setup.php';
 require_once MOTORLAN_API_VUE_PATH . 'includes/api/motor-routes.php';
 
 require_once MOTORLAN_API_VUE_PATH . 'includes/admin-mods.php';
+require_once MOTORLAN_API_VUE_PATH . 'includes/vue-app-setup.php';
 
