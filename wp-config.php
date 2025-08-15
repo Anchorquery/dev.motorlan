@@ -39,7 +39,7 @@ define( 'DB_COLLATE', '' );
 
 define('WP_ENVIRONMENT_TYPE', getenv('WP_ENVIRONMENT_TYPE') ?: 'production');
 
-$home = getenv('WP_HOME');
+$home = getenv('WP_HOME') ?: 'https://dev.motorlan.test';
 if ($home) {
     define('WP_HOME', rtrim($home, '/'));
     define('WP_SITEURL', rtrim(getenv('WP_SITEURL') ?: $home, '/'));
