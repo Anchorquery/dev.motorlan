@@ -19,4 +19,3 @@ wp-content/debug.log
 # Varios
 .DS_Store
 .env
-wp-config.php
