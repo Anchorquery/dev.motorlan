@@ -13,7 +13,7 @@ if ( ! defined( 'WPINC' ) ) {
 if( function_exists('acf_add_local_field_group') ):
 
 acf_add_local_field_group(array(
-	'key' => 'group_6643d3c3a9a58',
+	'key' => 'group_motor_details_v2',
 	'title' => 'Detalles del Motor',
 	'fields' => array(
 		array(
@@ -35,7 +35,6 @@ acf_add_local_field_group(array(
 			'type' => 'text',
 		),
 		array(
-
 			'key' => 'field_motor_gallery',
 			'label' => 'Galería de Imágenes',
 			'name' => 'motor_gallery',
@@ -43,7 +42,6 @@ acf_add_local_field_group(array(
 			'instructions' => 'Añada hasta 5 imágenes del motor. La "Imagen Destacada" principal de WordPress se gestiona por separado.',
 			'max' => 5,
 			'insert' => 'append',
-
 			'library' => 'all',
 		),
 		array(
