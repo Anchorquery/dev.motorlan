@@ -4,7 +4,7 @@ function motorlan_enqueue_vue_app() {
     // Enqueue the CSS file
     wp_enqueue_style(
         'motorlan-vue-app-css',
-        plugin_dir_url( __FILE__ ) . '../app/dist/assets/index-BDdWQf78.css',
+        plugin_dir_url( __FILE__ ) . '../app/dist/css/style.css',
         array(),
         '1.0.0',
         'all'
@@ -22,7 +22,7 @@ function motorlan_enqueue_vue_app() {
     // Enqueue the JS file
     wp_enqueue_script(
         'motorlan-vue-app-js',
-        plugin_dir_url( __FILE__ ) . '../app/dist/assets/index-8q2sCTLg.js',
+        plugin_dir_url( __FILE__ ) . '../app/dist/js/app.js',
         array(),
         '1.0.0',
         true
