@@ -52,3 +52,63 @@ function motorlan_register_motor_cpt() {
     register_post_type( 'motor', $args );
 }
 add_action( 'init', 'motorlan_register_motor_cpt' );
+
+/**
+ * Create two taxonomies, 'categoria' and 'marca' for the post type 'motor'.
+ */
+function motorlan_register_taxonomies() {
+    // Taxonomy: Categoria
+    $labels_categoria = array(
+        'name'              => _x( 'Categorías', 'taxonomy general name', 'motorlan-api-vue' ),
+        'singular_name'     => _x( 'Categoría', 'taxonomy singular name', 'motorlan-api-vue' ),
+        'search_items'      => __( 'Buscar Categorías', 'motorlan-api-vue' ),
+        'all_items'         => __( 'Todas las Categorías', 'motorlan-api-vue' ),
+        'parent_item'       => __( 'Categoría Padre', 'motorlan-api-vue' ),
+        'parent_item_colon' => __( 'Categoría Padre:', 'motorlan-api-vue' ),
+        'edit_item'         => __( 'Editar Categoría', 'motorlan-api-vue' ),
+        'update_item'       => __( 'Actualizar Categoría', 'motorlan-api-vue' ),
+        'add_new_item'      => __( 'Añadir Nueva Categoría', 'motorlan-api-vue' ),
+        'new_item_name'     => __( 'Nuevo Nombre de Categoría', 'motorlan-api-vue' ),
+        'menu_name'         => __( 'Categorías', 'motorlan-api-vue' ),
+    );
+
+    $args_categoria = array(
+        'hierarchical'      => true,
+        'labels'            => $labels_categoria,
+        'show_ui'           => true,
+        'show_admin_column' => true,
+        'query_var'         => true,
+        'rewrite'           => array( 'slug' => 'categoria-motor' ),
+        'show_in_rest'      => true,
+    );
+
+    register_taxonomy( 'categoria', array( 'motor' ), $args_categoria );
+
+    // Taxonomy: Marca
+    $labels_marca = array(
+        'name'              => _x( 'Marcas', 'taxonomy general name', 'motorlan-api-vue' ),
+        'singular_name'     => _x( 'Marca', 'taxonomy singular name', 'motorlan-api-vue' ),
+        'search_items'      => __( 'Buscar Marcas', 'motorlan-api-vue' ),
+        'all_items'         => __( 'Todas las Marcas', 'motorlan-api-vue' ),
+        'parent_item'       => null,
+        'parent_item_colon' => null,
+        'edit_item'         => __( 'Editar Marca', 'motorlan-api-vue' ),
+        'update_item'       => __( 'Actualizar Marca', 'motorlan-api-vue' ),
+        'add_new_item'      => __( 'Añadir Nueva Marca', 'motorlan-api-vue' ),
+        'new_item_name'     => __( 'Nuevo Nombre de Marca', 'motorlan-api-vue' ),
+        'menu_name'         => __( 'Marcas', 'motorlan-api-vue' ),
+    );
+
+    $args_marca = array(
+        'hierarchical'      => false,
+        'labels'            => $labels_marca,
+        'show_ui'           => true,
+        'show_admin_column' => true,
+        'query_var'         => true,
+        'rewrite'           => array( 'slug' => 'marca-motor' ),
+        'show_in_rest'      => true,
+    );
+
+    register_taxonomy( 'marca', array( 'motor' ), $args_marca );
+}
+add_action( 'init', 'motorlan_register_taxonomies', 0 );
