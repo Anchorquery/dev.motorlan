@@ -35,6 +35,16 @@ acf_add_local_field_group(array(
 			'type' => 'text',
 		),
 		array(
+			'key' => 'field_motor_image',
+			'label' => 'Imagen del Motor',
+			'name' => 'motor_image',
+			'type' => 'image',
+			'instructions' => 'Añada la imagen principal del motor.',
+			'return_format' => 'array',
+			'preview_size' => 'thumbnail',
+			'library' => 'all',
+		),
+		array(
 
 			'key' => 'field_motor_gallery',
 			'label' => 'Galería de Imágenes',
