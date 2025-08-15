@@ -110,5 +110,38 @@ function motorlan_register_taxonomies() {
     );
 
     register_taxonomy( 'marca', array( 'motor' ), $args_marca );
+
+    // Taxonomy: Etiquetas (Tags)
+    $labels_etiquetas = array(
+        'name'                       => _x( 'Etiquetas', 'taxonomy general name', 'motorlan-api-vue' ),
+        'singular_name'              => _x( 'Etiqueta', 'taxonomy singular name', 'motorlan-api-vue' ),
+        'search_items'               => __( 'Buscar Etiquetas', 'motorlan-api-vue' ),
+        'popular_items'              => __( 'Etiquetas Populares', 'motorlan-api-vue' ),
+        'all_items'                  => __( 'Todas las Etiquetas', 'motorlan-api-vue' ),
+        'parent_item'                => null,
+        'parent_item_colon'          => null,
+        'edit_item'                  => __( 'Editar Etiqueta', 'motorlan-api-vue' ),
+        'update_item'                => __( 'Actualizar Etiqueta', 'motorlan-api-vue' ),
+        'add_new_item'               => __( 'Añadir Nueva Etiqueta', 'motorlan-api-vue' ),
+        'new_item_name'              => __( 'Nuevo Nombre de Etiqueta', 'motorlan-api-vue' ),
+        'separate_items_with_commas' => __( 'Separar etiquetas con comas', 'motorlan-api-vue' ),
+        'add_or_remove_items'        => __( 'Añadir o eliminar etiquetas', 'motorlan-api-vue' ),
+        'choose_from_most_used'      => __( 'Elegir de las más utilizadas', 'motorlan-api-vue' ),
+        'not_found'                  => __( 'No se encontraron etiquetas.', 'motorlan-api-vue' ),
+        'menu_name'                  => __( 'Etiquetas', 'motorlan-api-vue' ),
+    );
+
+    $args_etiquetas = array(
+        'hierarchical'          => false,
+        'labels'                => $labels_etiquetas,
+        'show_ui'               => true,
+        'show_admin_column'     => true,
+        'update_count_callback' => '_update_post_term_count',
+        'query_var'             => true,
+        'rewrite'               => array( 'slug' => 'etiqueta-motor' ),
+        'show_in_rest'          => true,
+    );
+
+    register_taxonomy( 'etiqueta', array( 'motor' ), $args_etiquetas );
 }
 add_action( 'init', 'motorlan_register_taxonomies', 0 );
