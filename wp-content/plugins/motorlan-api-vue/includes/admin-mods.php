@@ -182,14 +182,3 @@ function motorlan_apply_motor_filters( $query ) {
 }
 add_action( 'pre_get_posts', 'motorlan_apply_motor_filters' );
 
-/**
- * Enqueue custom admin styles for the motor CPT list.
- */
-function motorlan_enqueue_admin_styles( $hook ) {
-    global $typenow;
-    if ( ( 'edit.php' === $hook || 'post.php' === $hook || 'post-new.php' === $hook ) && 'motor' === $typenow ) {
-        $plugin_url = plugin_dir_url( dirname( __FILE__ ) );
-        wp_enqueue_style( 'motorlan-admin-styles', $plugin_url . 'assets/css/admin-styles.css', array(), MOTORLAN_API_VUE_VERSION );
-    }
-}
-add_action( 'admin_enqueue_scripts', 'motorlan_enqueue_admin_styles' );
