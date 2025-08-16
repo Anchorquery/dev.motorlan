@@ -1,5 +1,4 @@
 import { fileURLToPath } from 'node:url'
-import VueI18nPlugin from '@intlify/unplugin-vue-i18n/vite'
 import vue from '@vitejs/plugin-vue'
 import vueJsx from '@vitejs/plugin-vue-jsx'
 import AutoImport from 'unplugin-auto-import/vite'
@@ -14,48 +13,6 @@ import svgLoader from 'vite-svg-loader'
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  // --- INICIO DE CAMBIOS PARA WORDPRESS ---
-
-  // 1. Define la ruta base para que coincida con la estructura de tu tema de WordPress.
-  // Esto asegura que las rutas a los assets (imágenes, fuentes) sean correctas.
-  base: '/wp-content/plugins/motorlan-api-vue/app/dist/',
-  
-
-  build: {
-    // 2. Directorio de salida, que en tu caso es 'dist'.
-    outDir: 'dist',
-
-    // 3. Desactiva los sourcemaps en producción para reducir el tamaño de los archivos.
-    sourcemap: false,
-
-    // 4. Límite de advertencia para el tamaño de los chunks (ya lo tenías).
-    chunkSizeWarningLimit: 5000,
-
-    // 5. Configuración de Rollup para controlar los archivos de salida.
-    rollupOptions: {
-      // 6. Define el punto de entrada principal de tu aplicación.
-      // Asegúrate de que la ruta sea correcta (ej. 'src/main.js' o 'src/main.ts').
-      input: {
-        app: 'src/main.ts',
-      },
-      output: {
-        // 7. Elimina los hashes de los nombres de archivo para tener nombres estáticos.
-        // Esto es CRUCIAL para poder encolar los scripts en WordPress.
-        entryFileNames: 'js/app.js', // Archivo JS principal
-        chunkFileNames: 'js/[name].js', // Otros chunks de JS (si los hay)
-        assetFileNames: assetInfo => { // Archivos de assets (CSS, imágenes, etc.)
-          if (assetInfo.name.endsWith('.css'))
-            return 'css/style.css' // Nombre estático para el archivo CSS
-
-          return 'assets/[name].[ext]' // Otros assets
-        },
-        inlineDynamicImports: true,
-      },
-    },
-  },
-
-  // --- FIN DE CAMBIOS PARA WORDPRESS ---
-
   plugins: [
     // Docs: https://github.com/posva/unplugin-vue-router
     // ℹ️ This plugin should be placed before vue plugin
@@ -66,10 +23,7 @@ export default defineConfig({
           .replace(/([a-z\d])([A-Z])/g, '$1-$2')
           .toLowerCase()
       },
-      beforeWriteFiles: root => {
-        root.insert('/apps/email/:filter', '/src/pages/apps/email/index.vue')
-        root.insert('/apps/email/:label', '/src/pages/apps/email/index.vue')
-      },
+
     }),
     vue({
       template: {
@@ -123,14 +77,6 @@ export default defineConfig({
       ignore: ['useCookies', 'useStorage'],
     }),
 
-    // Docs: https://github.com/intlify/bundle-tools/tree/main/packages/unplugin-vue-i18n#intlifyunplugin-vue-i18n
-    VueI18nPlugin({
-      runtimeOnly: true,
-      compositionOnly: true,
-      include: [
-        fileURLToPath(new URL('./src/plugins/i18n/locales/**', import.meta.url)),
-      ],
-    }),
     svgLoader(),
 
   ],
@@ -148,6 +94,58 @@ export default defineConfig({
       '@api-utils': fileURLToPath(new URL('./src/plugins/fake-api/utils/', import.meta.url)),
     },
   },
+    base: '/',
+  
+  // 2. Configuración del servidor de desarrollo para solucionar CORS y HMR.
+  server: {
+    // (EDITADO) Escucha en todas las interfaces de red, no solo localhost.
+    // Esto es crucial para que tu sitio en dev.motorlan.test pueda acceder a él.
+    host: '0.0.0.0',
+    
+    // Escucha en el puerto 5173
+    port: 5173,
+    
+    // Habilita CORS para permitir conexiones desde tu sitio de WordPress.
+    cors: true,
+    
+    // Configuración para que el HMR (Hot Module Replacement) se conecte correctamente.
+    hmr: {
+      host: 'localhost',
+    },
+  },
+  build: {
+    // 2. Directorio de salida, que en tu caso es 'dist'.
+    outDir: 'dist',
+
+    // 3. Desactiva los sourcemaps en producción para reducir el tamaño de los archivos.
+    sourcemap: false,
+
+    // 4. Límite de advertencia para el tamaño de los chunks (ya lo tenías).
+    chunkSizeWarningLimit: 5000,
+
+    // 5. Configuración de Rollup para controlar los archivos de salida.
+    rollupOptions: {
+      // 6. Define el punto de entrada principal de tu aplicación.
+      // Asegúrate de que la ruta sea correcta (ej. 'src/main.js' o 'src/main.ts').
+      input: {
+        app: 'src/main.ts',
+      },
+      output: {
+        // 7. Elimina los hashes de los nombres de archivo para tener nombres estáticos.
+        // Esto es CRUCIAL para poder encolar los scripts en WordPress.
+        entryFileNames: 'js/app.js', // Archivo JS principal
+        chunkFileNames: 'js/[name].js', // Otros chunks de JS (si los hay)
+        assetFileNames: assetInfo => { // Archivos de assets (CSS, imágenes, etc.)
+          if (assetInfo.name.endsWith('.css'))
+            return 'css/style.css' // Nombre estático para el archivo CSS
+
+          return 'assets/[name].[ext]' // Otros assets
+        },
+        inlineDynamicImports: true,
+      },
+    },
+  },
+
   optimizeDeps: {
     exclude: ['vuetify'],
     entries: [

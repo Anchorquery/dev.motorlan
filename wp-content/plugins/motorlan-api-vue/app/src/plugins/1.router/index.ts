@@ -1,10 +1,9 @@
-/* eslint-disable valid-appcardcode-demo-sfc */
 import { setupLayouts } from 'virtual:meta-layouts'
 import type { App } from 'vue'
 
 import type { RouteRecordRaw } from 'vue-router/auto'
 
-import { createMemoryHistory, createRouter } from 'vue-router/auto'
+import { createRouter, createWebHashHistory} from 'vue-router/auto'
 
 import { redirects, routes } from './additional-routes'
 import { setupGuards } from './guards'
@@ -21,8 +20,7 @@ function recursiveLayouts(route: RouteRecordRaw): RouteRecordRaw {
 }
 
 const router = createRouter({
-  
-  history: createMemoryHistory(),
+  history: createWebHashHistory(import.meta.env.BASE_URL),
   scrollBehavior(to) {
     if (to.hash)
       return { el: to.hash, behavior: 'smooth', top: 60 }
