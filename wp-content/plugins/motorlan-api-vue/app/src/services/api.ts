@@ -10,8 +10,9 @@ const getToken = () => {
   if (typeof document === 'undefined')
     return null
 
+
   const cookies = parse(document.cookie)
-  
+
   return cookies.accessToken || null
 }
 
@@ -22,12 +23,14 @@ const api = ofetch.create({
   },
   onRequest: ({ options }) => {
     const token = getToken()
-    if (token) {
-      options.headers = {
-        ...options.headers,
-        Authorization: `Bearer ${token}`,
-      }
-    }
+
+    // Create a new Headers object from the existing headers
+    const headers = new Headers(options.headers)
+
+    if (token)
+      headers.set('Authorization', `Bearer ${token}`)
+
+    options.headers = headers
   },
 })
 
