@@ -1,14 +1,18 @@
 import { ofetch } from 'ofetch'
-
-import { useCookie } from '#app'
+import { parse } from 'cookie-es'
 
 const baseURL = import.meta.env.VITE_API_BASE_URL
 
 // Function to get the token from storage
 const getToken = () => {
-  const token = useCookie('accessToken')
+  // As this isn't a composable, we can't use `useCookie` here.
+  // Instead, we'll parse the cookie directly from the document.
+  if (typeof document === 'undefined')
+    return null
 
-  return token.value
+  const cookies = parse(document.cookie)
+
+  return cookies.accessToken || null
 }
 
 const api = ofetch.create({
@@ -18,12 +22,14 @@ const api = ofetch.create({
   },
   onRequest: ({ options }) => {
     const token = getToken()
-    if (token) {
-      options.headers = {
-        ...options.headers,
-        Authorization: `Bearer ${token}`,
-      }
-    }
+
+    // Create a new Headers object from the existing headers
+    const headers = new Headers(options.headers)
+
+    if (token)
+      headers.set('Authorization', `Bearer ${token}`)
+
+    options.headers = headers
   },
 })
 
