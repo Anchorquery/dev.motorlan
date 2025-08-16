@@ -1,8 +1,8 @@
 import { ofetch } from 'ofetch'
 
-const baseURL = import.meta.env.VITE_API_BASE_URL
-
 import { useCookie } from '#app'
+
+const baseURL = import.meta.env.VITE_API_BASE_URL
 
 // Function to get the token from storage
 const getToken = () => {
@@ -14,7 +14,7 @@ const getToken = () => {
 const api = ofetch.create({
   baseURL,
   headers: {
-    'Content-Type': 'application/json',
+    'Content-Type': 'application/json', 
   },
   onRequest: ({ options }) => {
     const token = getToken()
