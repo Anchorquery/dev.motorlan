@@ -11,6 +11,7 @@ import authV2MaskDark from '@images/pages/misc-mask-dark.png'
 import authV2MaskLight from '@images/pages/misc-mask-light.png'
 import { VNodeRenderer } from '@layouts/components/VNodeRenderer'
 import { themeConfig } from '@themeConfig'
+import api from '@/services/api'
 
 const authThemeImg = useGenerateImageVariant(authV2LoginIllustrationLight, authV2LoginIllustrationDark, authV2LoginIllustrationBorderedLight, authV2LoginIllustrationBorderedDark, true)
 
@@ -28,28 +29,24 @@ const isPasswordVisible = ref(false)
 const route = useRoute()
 const router = useRouter()
 
-const ability = useAbility()
-
 const errors = ref<Record<string, string | undefined>>({
-  email: undefined,
+  username: undefined,
   password: undefined,
 })
 
 const refVForm = ref<VForm>()
 
 const credentials = ref({
-  email: 'admin@demo.com',
-  password: 'admin',
+  username: 'admin',
+  password: 'password',
 })
-
-const rememberMe = ref(false)
 
 const login = async () => {
   try {
-    const res = await $api('/auth/login', {
+    const res = await api('/jwt-auth/v1/token', {
       method: 'POST',
       body: {
-        email: credentials.value.email,
+        username: credentials.value.username,
         password: credentials.value.password,
       },
       onResponseError({ response }) {
@@ -57,13 +54,21 @@ const login = async () => {
       },
     })
 
-    const { accessToken, userData, userAbilityRules } = res
+    const { token, user_display_name, user_email, user_nicename } = res
 
-    useCookie('userAbilityRules').value = userAbilityRules
-    ability.update(userAbilityRules)
+    // Store the token in a cookie
+    useCookie('accessToken').value = token
 
-    useCookie('userData').value = userData
-    useCookie('accessToken').value = accessToken
+    // Store user data in a cookie
+    useCookie('userData').value = {
+      displayName: user_display_name,
+      email: user_email,
+      nicename: user_nicename,
+    }
+
+    // NOTE: The original template had logic for user roles and abilities.
+    // This has been removed for simplicity, but can be re-added here
+    // by fetching user roles from WordPress and updating the ability instance.
 
     // Redirect to `to` query if exist or redirect to index route
     // ❗ nextTick is required to wait for DOM updates and later redirect
@@ -144,34 +149,21 @@ const onSubmit = () => {
           </p>
         </VCardText>
         <VCardText>
-          <VAlert
-            color="primary"
-            variant="tonal"
-          >
-            <p class="text-sm mb-2">
-              Admin Email: <strong>admin@demo.com</strong> / Pass: <strong>admin</strong>
-            </p>
-            <p class="text-sm mb-0">
-              Client Email: <strong>client@demo.com</strong> / Pass: <strong>client</strong>
-            </p>
-          </VAlert>
-        </VCardText>
-        <VCardText>
           <VForm
             ref="refVForm"
             @submit.prevent="onSubmit"
           >
             <VRow>
-              <!-- email -->
+              <!-- username -->
               <VCol cols="12">
                 <AppTextField
-                  v-model="credentials.email"
-                  label="Email"
-                  placeholder="johndoe@email.com"
-                  type="email"
+                  v-model="credentials.username"
+                  label="Username"
+                  placeholder="johndoe"
+                  type="text"
                   autofocus
-                  :rules="[requiredValidator, emailValidator]"
-                  :error-messages="errors.email"
+                  :rules="[requiredValidator]"
+                  :error-messages="errors.username"
                 />
               </VCol>
 
@@ -189,18 +181,7 @@ const onSubmit = () => {
                   @click:append-inner="isPasswordVisible = !isPasswordVisible"
                 />
 
-                <div class="d-flex align-center flex-wrap justify-space-between my-6">
-                  <VCheckbox
-                    v-model="rememberMe"
-                    label="Remember me"
-                  />
-                  <RouterLink
-                    class="text-primary ms-2 mb-1"
-                    :to="{ name: 'forgot-password' }"
-                  >
-                    Forgot Password?
-                  </RouterLink>
-                </div>
+                <div class="d-flex align-center flex-wrap justify-space-between my-6" />
 
                 <VBtn
                   block
