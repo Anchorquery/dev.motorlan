@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { FaqCategory } from '@db/pages/faq/types'
-
+import api from '@/services/api'
 import sittingGirlWithLaptop from '@images/illustrations/sitting-girl-with-laptop.png'
 
 const faqSearchQuery = ref('')
@@ -8,16 +8,29 @@ const faqSearchQuery = ref('')
 const faqs = ref<FaqCategory[]>([])
 
 const fetchFaqs = async () => {
-  const data = await $api('/pages/faq', {
+  const data = await api('/wp/v2/posts', {
     query: {
-      q: faqSearchQuery.value,
+      search: faqSearchQuery.value,
     },
   }).catch(err => console.log(err))
 
-  faqs.value = data
+  // Map the WordPress posts to the FaqCategory format
+  if (data) {
+    faqs.value = [
+      {
+        faqTitle: 'Posts',
+        faqIcon: 'tabler-news',
+        faqSubtitle: 'Latest posts from the blog',
+        faqs: data.map((post: any) => ({
+          question: post.title.rendered,
+          answer: post.content.rendered,
+        })),
+      },
+    ]
+  }
 }
 
-const activeTab = ref('Payment')
+const activeTab = ref('Posts')
 const activeQuestion = ref(0)
 
 watch(activeTab, () => activeQuestion.value = 0)
