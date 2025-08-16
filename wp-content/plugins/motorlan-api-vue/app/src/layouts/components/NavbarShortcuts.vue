@@ -1,12 +1,6 @@
 <script setup lang="ts">
 const shortcuts = [
   {
-    icon: 'tabler-calendar',
-    title: 'Calendar',
-    subtitle: 'Appointments',
-    to: { name: 'apps-calendar' },
-  },
-  {
     icon: 'tabler-file-dollar',
     title: 'Invoice App',
     subtitle: 'Manage Accounts',

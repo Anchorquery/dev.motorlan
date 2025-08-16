@@ -71,16 +71,7 @@ export default [
     icon: { icon: 'tabler-message-circle-2' },
     to: 'apps-chat',
   },
-  {
-    title: 'Calendar',
-    icon: { icon: 'tabler-calendar' },
-    to: 'apps-calendar',
-  },
-  {
-    title: 'Kanban',
-    icon: { icon: 'tabler-layout-kanban' },
-    to: 'apps-kanban',
-  },
+
   {
     title: 'Invoice',
     icon: { icon: 'tabler-file-invoice' },
