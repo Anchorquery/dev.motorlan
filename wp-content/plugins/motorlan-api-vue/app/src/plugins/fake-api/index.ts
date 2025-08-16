@@ -22,7 +22,7 @@ const worker = setupWorker(
   ...handlerAppsAcademy,
   ...handlerAppsInvoice,
   ...handlerAppsUsers,
-  ...handlerAppsEmail,
+  ...handlerAppsEmail, 
   ...handlerAppsChat,
   ...handlerAppsPermission,
   ...handlerPagesHelpCenter,
