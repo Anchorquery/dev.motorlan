@@ -23,7 +23,6 @@ const worker = setupWorker(
   ...handlerAppsInvoice,
   ...handlerAppsUsers,
   ...handlerAppsEmail,
-  ...handlerAppsCalendar,
   ...handlerAppsChat,
   ...handlerAppsPermission,
   ...handlerPagesHelpCenter,
@@ -33,7 +32,6 @@ const worker = setupWorker(
   ...handlerAppBarSearch,
   ...handlerAppLogistics,
   ...handlerAuth,
-  ...handlerAppsKanban,
   ...handlerDashboard,
 )
 
