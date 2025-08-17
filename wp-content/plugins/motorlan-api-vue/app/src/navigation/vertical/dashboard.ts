@@ -6,11 +6,7 @@ export default [
       {
         title: 'Ecommerce',
         to: 'dashboards-ecommerce',
-      },
-      {
-        title: 'Logistics',
-        to: 'dashboards-logistics',
-      },
+      }
     ],
     badgeContent: '5',
     badgeClass: 'bg-error',
