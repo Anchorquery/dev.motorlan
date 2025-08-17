@@ -43,7 +43,7 @@ const credentials = ref({
 
 const login = async () => {
   try {
-    const res = await api('/jwt-auth/v1/token', {
+    const res = await api('/wp-json/jwt-auth/v1/token', {
       method: 'POST',
       body: {
         username: credentials.value.username,
