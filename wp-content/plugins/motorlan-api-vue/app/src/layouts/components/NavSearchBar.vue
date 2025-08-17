@@ -32,8 +32,6 @@ const suggestionGroups: SuggestionGroup[] = [
   {
     title: 'Popular Searches',
     content: [
-      { icon: 'tabler-chart-bar', title: 'Analytics', url: { name: 'dashboards-analytics' } },
-      { icon: 'tabler-chart-donut-3', title: 'CRM', url: { name: 'dashboards-crm' } },
       { icon: 'tabler-shopping-cart', title: 'eCommerce', url: { name: 'dashboards-ecommerce' } },
       { icon: 'tabler-truck', title: 'Logistics', url: { name: 'dashboards-logistics' } },
     ],
@@ -61,16 +59,7 @@ const suggestionGroups: SuggestionGroup[] = [
 
 // 👉 No Data suggestion
 const noDataSuggestions: Suggestion[] = [
-  {
-    title: 'Analytics',
-    icon: 'tabler-chart-bar',
-    url: { name: 'dashboards-analytics' },
-  },
-  {
-    title: 'CRM',
-    icon: 'tabler-chart-donut-3',
-    url: { name: 'dashboards-crm' },
-  },
+
   {
     title: 'eCommerce',
     icon: 'tabler-shopping-cart',

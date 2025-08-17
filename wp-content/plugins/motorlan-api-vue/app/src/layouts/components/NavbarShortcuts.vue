@@ -19,12 +19,6 @@ const shortcuts = [
     to: { name: 'apps-roles' },
   },
   {
-    icon: 'tabler-device-desktop-analytics',
-    title: 'Dashboard',
-    subtitle: 'Dashboard Analytics',
-    to: { name: 'dashboards-analytics' },
-  },
-  {
     icon: 'tabler-settings',
     title: 'Settings',
     subtitle: 'Account Settings',
