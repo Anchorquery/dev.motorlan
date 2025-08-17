@@ -29,7 +29,7 @@ const isPaymentProvidersDialogVisible = ref(false)
     <!-- 👉 Supported Payment Methods -->
     <VCard
       title="Supported payment methods"
-      subtitle="Payment methods that are available with one of Vuexy's approved payment providers."
+      subtitle="Payment methods that are available with one of Motorlan's approved payment providers."
       class="mb-6"
     >
       <VCardText>

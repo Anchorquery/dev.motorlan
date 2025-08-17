@@ -39,18 +39,6 @@ export default [
         icon: { icon: 'tabler-eye-off' },
         disable: true,
       },
-      {
-        title: 'Raise Support',
-        href: 'https://pixinvent.ticksy.com/',
-        icon: { icon: 'tabler-headphones' },
-        target: '_blank',
-      },
-      {
-        title: 'Documentation',
-        href: 'https://demos.pixinvent.com/vuexy-vuejs-admin-template/documentation/',
-        icon: { icon: 'tabler-file-text' },
-        target: '_blank',
-      },
     ],
   },
 ]

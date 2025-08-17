@@ -24,13 +24,7 @@ const pagesList: Menu[] = [
   { name: 'Login/Register', to: { name: 'pages-authentication-login-v2' } },
 ]
 
-const demoList = [
-  { title: 'Vertical Layout', to: 'https://demos.pixinvent.com/vuexy-vuejs-admin-template/demo-1/dashboards/analytics' },
-  { title: 'Horizontal Layout', to: 'https://demos.pixinvent.com/vuexy-vuejs-admin-template/demo-5/dashboards/analytics' },
-  { title: 'Bordered Layout', to: 'https://demos.pixinvent.com/vuexy-vuejs-admin-template/demo-2/dashboards/analytics' },
-  { title: 'Semi Dark Layout', to: 'https://demos.pixinvent.com/vuexy-vuejs-admin-template/demo-3/dashboards/analytics' },
-  { title: 'Dark Layout', to: 'https://demos.pixinvent.com/vuexy-vuejs-admin-template/demo-4/dashboards/analytics' },
-]
+const demoList = []
 </script>
 
 <template>
@@ -72,35 +66,6 @@ const demoList = [
                   Subscribe
                 </VBtn>
               </VForm>
-            </div>
-          </VCol>
-
-          <!-- 👉 Demos -->
-          <VCol
-            md="2"
-            sm="4"
-            xs="6"
-          >
-            <div class="footer-links">
-              <h6 class="footer-title text-h6 mb-6">
-                Demos
-              </h6>
-              <ul style="list-style: none;">
-                <li
-                  v-for="(item, index) in demoList"
-                  :key="index"
-                  class="mb-4"
-                >
-                  <a
-                    :href="item.to"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    :class="$vuetify.theme.current.dark ? 'text-body-1' : 'text-white-variant'"
-                  >
-                    {{ item.title }}
-                  </a>
-                </li>
-              </ul>
             </div>
           </VCol>
 
@@ -200,23 +165,13 @@ const demoList = [
             &copy;
 
             {{ new Date().getFullYear() }}
-            <a
-              href="https://pixinvent.com/"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="font-weight-bold ms-1 text-white"
-            >Pixinvent</a>,
+            Motorlan,
             Made With ❤️ for a better web.
           </div>
 
           <div class="d-flex gap-x-6">
             <template
-              v-for="(item, index) in [
-                { title: 'github', icon: 'tabler-brand-github-filled', href: 'https://github.com/pixinvent' },
-                { title: 'facebook', icon: 'tabler-brand-facebook-filled', href: 'https://www.facebook.com/pixinvents/' },
-                { title: 'twitter', icon: 'tabler-brand-twitter-filled', href: 'https://twitter.com/pixinvents' },
-                { title: 'google', icon: 'tabler-brand-youtube-filled', href: 'https://www.youtube.com/channel/UClOcB3o1goJ293ri_Hxpklg' },
-              ]"
+              v-for="(item, index) in []"
               :key="index"
             >
               <a

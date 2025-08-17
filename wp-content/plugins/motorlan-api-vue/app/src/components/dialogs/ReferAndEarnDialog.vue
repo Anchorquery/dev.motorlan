@@ -95,7 +95,7 @@ const referAndEarnSteps = [
         >
           <AppTextField
             placeholder="johnDoe@gmail.com"
-            label="Enter your friend's email address and invite them to join Vuexy 😍"
+            label="Enter your friend's email address and invite them to join 😍"
           />
 
           <VBtn
