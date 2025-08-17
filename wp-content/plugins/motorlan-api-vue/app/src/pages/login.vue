@@ -34,6 +34,8 @@ const errors = ref<Record<string, string | undefined>>({
   password: undefined,
 })
 
+const genericError = ref<string | null>(null)
+
 const refVForm = ref<VForm>()
 
 const credentials = ref({
@@ -43,6 +45,10 @@ const credentials = ref({
 
 const login = async () => {
   try {
+    // Reset errors
+    errors.value = { username: undefined, password: undefined }
+    genericError.value = null
+
     const res = await api('/wp-json/jwt-auth/v1/token', {
       method: 'POST',
       body: {
@@ -50,7 +56,14 @@ const login = async () => {
         password: credentials.value.password,
       },
       onResponseError({ response }) {
-        errors.value = response._data.errors
+        if (response._data && response._data.errors) {
+          errors.value = response._data.errors
+        }
+        else {
+          genericError.value = response._data?.message
+            || response.statusText
+            || 'An unknown error occurred. Please try again.'
+        }
       },
     })
 
@@ -76,8 +89,9 @@ const login = async () => {
       router.replace(route.query.to ? String(route.query.to) : '/')
     })
   }
-  catch (err) {
+  catch (err: any) {
     console.error(err)
+    genericError.value = err.data?.message || 'Failed to connect to the server. Please check your connection or contact support.'
   }
 }
 
@@ -148,7 +162,17 @@ const onSubmit = () => {
             Please sign-in to your account and start the adventure
           </p>
         </VCardText>
+
         <VCardText>
+          <VAlert
+            v-if="genericError"
+            color="error"
+            variant="tonal"
+            class="mb-4"
+          >
+            {{ genericError }}
+          </VAlert>
+
           <VForm
             ref="refVForm"
             @submit.prevent="onSubmit"
