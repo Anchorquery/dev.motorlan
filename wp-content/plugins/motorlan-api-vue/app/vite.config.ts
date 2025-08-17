@@ -37,7 +37,9 @@ export default defineConfig({
 
     // Docs: https://github.com/vuetifyjs/vuetify-loader/tree/master/packages/vite-plugin
     vuetify({
-      styles: false,
+      styles: {
+        configFile: 'src/assets/styles/variables/_vuetify.scss',
+      },
     }),
 
     // Docs: https://github.com/dishait/vite-plugin-vue-meta-layouts?tab=readme-ov-file
@@ -133,7 +135,12 @@ export default defineConfig({
         // Esto es CRUCIAL para poder encolar los scripts en WordPress.
         entryFileNames: 'js/app.js', // Archivo JS principal
         chunkFileNames: 'js/[name].js', // Otros chunks de JS (si los hay)
-        assetFileNames: 'assets/[name].[ext]', // Otros assets
+        assetFileNames: assetInfo => { // Archivos de assets (CSS, imágenes, etc.)
+          if (assetInfo.name.endsWith('.css'))
+            return 'css/style.css' // Nombre estático para el archivo CSS
+
+          return 'assets/[name].[ext]' // Otros assets
+        },
         inlineDynamicImports: true,
       },
     },
