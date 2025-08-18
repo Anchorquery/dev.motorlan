@@ -170,7 +170,7 @@ const onSubmit = () => {
             variant="tonal"
             class="mb-4"
           >
-            {{ genericError }}
+            <div v-html="genericError" />
           </VAlert>
 
           <VForm
