@@ -178,7 +178,7 @@ watch(() => props.currentStep, updateCartData)
         <a
           href="#"
           class="font-weight-medium"
-        >Add more products from wishlist</a>
+        >Add more motors from wishlist</a>
         <VIcon
           icon="tabler-arrow-right"
           size="16"

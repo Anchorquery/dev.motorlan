@@ -11,7 +11,7 @@ const checkboxContent: CustomInputContent[] = [
   {
     title: 'Updates',
     subtitle: 'Free',
-    desc: 'Get Updates regarding related products.',
+    desc: 'Get Updates regarding related motors.',
     value: 'updates',
   },
 ]

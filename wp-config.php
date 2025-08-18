@@ -96,6 +96,7 @@ $table_prefix = 'wp_';
  *
  * @link https://developer.wordpress.org/advanced-administration/debug/debug-wordpress/
  */
+define('JWT_AUTH_SECRET_KEY', '|)yLz~k;4ba)#vu^f79K4cc0_+{2`vK4T@?%Pw$/3LyT>m=2SrXf!C+^N,K6opi]');
 define( 'WP_DEBUG', false );
 
 /* Add any custom values between this line and the "stop editing" line. */

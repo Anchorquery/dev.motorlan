@@ -35,7 +35,7 @@ watch(formData, () => {
         <AppTextField
           v-model="formData.title"
           label="Deal Title"
-          placeholder="Black Friday Sale, 50% off on all products"
+          placeholder="Black Friday Sale, 50% off on all motors"
         />
       </VCol>
 
