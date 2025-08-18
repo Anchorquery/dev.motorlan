@@ -87,3 +87,53 @@ function motorlan_vue_app_shortcode() {
 }
 
 add_shortcode( 'motorlan_vue_app', 'motorlan_vue_app_shortcode' );
+
+function motorlan_dequeue_theme_styles() {
+    // Solo se ejecuta en páginas y entradas, no en el admin, etc.
+    if ( ! is_singular() ) {
+        return;
+    }
+
+    // Coge el post actual de forma segura
+    $post = get_post();
+    if ( ! $post ) {
+        return;
+    }
+
+    // Comprueba si el contenido del post contiene el shortcode de la app de Vue
+    if ( has_shortcode( $post->post_content, 'motorlan_vue_app' ) ) {
+        global $wp_styles;
+        $styles_to_dequeue = array();
+
+        // Lista de identificadores de estilos a excluir de la purga
+        $excluded_handles = array(
+            'motorlan-vue-app-css',
+            'motorlan-vue-app-loader-css',
+            'admin-bar', // Mantiene la barra de admin de WP
+            'dashicons' // Iconos para la barra de admin
+        );
+
+        foreach ( $wp_styles->registered as $handle => $style ) {
+            // Si el handle está en la lista de exclusión, sáltatelo
+            if ( in_array( $handle, $excluded_handles ) ) {
+                continue;
+            }
+
+            // Comprueba si la URL del estilo proviene del tema o de GP Premium
+            $is_theme_style = strpos( $style->src, '/themes/generatepress/' ) !== false;
+            $is_premium_style = strpos( $style->src, '/plugins/gp-premium/' ) !== false;
+            $is_child_theme_style = strpos( $style->src, '/themes/generatepress-child/' ) !== false;
+
+            if ( $is_theme_style || $is_premium_style || $is_child_theme_style ) {
+                $styles_to_dequeue[] = $handle;
+            }
+        }
+
+        // Ahora que tenemos la lista, los quitamos de la cola
+        foreach ( $styles_to_dequeue as $handle ) {
+            wp_dequeue_style( $handle );
+            wp_deregister_style( $handle );
+        }
+    }
+}
+add_action( 'wp_enqueue_scripts', 'motorlan_dequeue_theme_styles', 999 );
