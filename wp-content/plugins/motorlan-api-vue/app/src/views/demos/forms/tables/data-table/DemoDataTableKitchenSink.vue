@@ -1,15 +1,15 @@
 <script setup lang="ts">
 import type { SalesDetails } from '@db/pages/datatable/types'
 
-const { data: productList, error } = await useApi<SalesDetails[]>('pages/datatable')
+const { data: motorList, error } = await useApi<SalesDetails[]>('pages/datatable')
 
 const search = ref('')
 
 // headers
 const headers = [
-  { title: 'PRODUCT', key: 'product.name' },
+  { title: 'MOTOR', key: 'motor.name' },
   { title: 'DATE', key: 'date' },
-  { title: 'CATEGORY', key: 'product.category' },
+  { title: 'CATEGORY', key: 'motor.category' },
   { title: 'BUYERS', key: 'buyer.name' },
   { title: 'PAYMENT', key: 'payment', sortable: false },
   { title: 'STATUS', key: 'status', sortable: false },
@@ -18,12 +18,12 @@ const headers = [
 
 // 👉 methods
 const deleteItem = (itemId: number) => {
-  if (!productList.value)
+  if (!motorList.value)
     return
 
-  const index = productList.value.findIndex(item => item.product.id === itemId)
+  const index = motorList.value.findIndex(item => item.motor.id === itemId)
 
-  productList.value.splice(index, 1)
+  motorList.value.splice(index, 1)
 }
 
 const categoryIcons = [

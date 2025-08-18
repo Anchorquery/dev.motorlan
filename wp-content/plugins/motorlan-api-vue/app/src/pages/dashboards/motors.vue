@@ -1,15 +1,15 @@
 <script lang="ts" setup>
-import EcommerceCongratulationsJohn from '@/views/dashboards/ecommerce/EcommerceCongratulationsJohn.vue'
-import EcommerceEarningReports from '@/views/dashboards/ecommerce/EcommerceEarningReports.vue'
-import EcommerceExpensesRadialBarCharts from '@/views/dashboards/ecommerce/EcommerceExpensesRadialBarCharts.vue'
-import EcommerceGeneratedLeads from '@/views/dashboards/ecommerce/EcommerceGeneratedLeads.vue'
-import EcommerceInvoiceTable from '@/views/dashboards/ecommerce/EcommerceInvoiceTable.vue'
-import EcommerceOrder from '@/views/dashboards/ecommerce/EcommerceOrder.vue'
-import EcommercePopularProducts from '@/views/dashboards/ecommerce/EcommercePopularProducts.vue'
-import EcommerceRevenueReport from '@/views/dashboards/ecommerce/EcommerceRevenueReport.vue'
-import EcommerceStatistics from '@/views/dashboards/ecommerce/EcommerceStatistics.vue'
-import EcommerceTotalProfitLineCharts from '@/views/dashboards/ecommerce/EcommerceTotalProfitLineCharts.vue'
-import EcommerceTransactions from '@/views/dashboards/ecommerce/EcommerceTransactions.vue'
+import MotorCongratulationsJohn from '@/views/dashboards/motors/MotorCongratulationsJohn.vue'
+import MotorEarningReports from '@/views/dashboards/motors/MotorEarningReports.vue'
+import MotorExpensesRadialBarCharts from '@/views/dashboards/motors/MotorExpensesRadialBarCharts.vue'
+import MotorGeneratedLeads from '@/views/dashboards/motors/MotorGeneratedLeads.vue'
+import MotorInvoiceTable from '@/views/dashboards/motors/MotorInvoiceTable.vue'
+import MotorOrder from '@/views/dashboards/motors/MotorOrder.vue'
+import MotorPopularProducts from '@/views/dashboards/motors/MotorPopularProducts.vue'
+import MotorRevenueReport from '@/views/dashboards/motors/MotorRevenueReport.vue'
+import MotorStatistics from '@/views/dashboards/motors/MotorStatistics.vue'
+import MotorTotalProfitLineCharts from '@/views/dashboards/motors/MotorTotalProfitLineCharts.vue'
+import MotorTransactions from '@/views/dashboards/motors/MotorTransactions.vue'
 </script>
 
 <template>
@@ -20,16 +20,16 @@ import EcommerceTransactions from '@/views/dashboards/ecommerce/EcommerceTransac
       md="5"
       lg="4"
     >
-      <EcommerceCongratulationsJohn />
+      <MotorCongratulationsJohn />
     </VCol>
 
-    <!-- 👉 Ecommerce Transition -->
+    <!-- 👉 Motor Transition -->
     <VCol
       cols="12"
       md="7"
       lg="8"
     >
-      <EcommerceStatistics class="h-100" />
+      <MotorStatistics class="h-100" />
     </VCol>
 
     <VCol
@@ -44,7 +44,7 @@ import EcommerceTransactions from '@/views/dashboards/ecommerce/EcommerceTransac
           md="3"
           sm="6"
         >
-          <EcommerceTotalProfitLineCharts />
+          <MotorTotalProfitLineCharts />
         </VCol>
 
         <!-- 👉 Expenses Radial Bar Charts -->
@@ -54,7 +54,7 @@ import EcommerceTransactions from '@/views/dashboards/ecommerce/EcommerceTransac
           md="3"
           sm="6"
         >
-          <EcommerceExpensesRadialBarCharts />
+          <MotorExpensesRadialBarCharts />
         </VCol>
 
         <!-- 👉 Generated Leads -->
@@ -63,7 +63,7 @@ import EcommerceTransactions from '@/views/dashboards/ecommerce/EcommerceTransac
           md="6"
           lg="12"
         >
-          <EcommerceGeneratedLeads />
+          <MotorGeneratedLeads />
         </VCol>
       </VRow>
     </VCol>
@@ -73,7 +73,7 @@ import EcommerceTransactions from '@/views/dashboards/ecommerce/EcommerceTransac
       cols="12"
       lg="8"
     >
-      <EcommerceRevenueReport />
+      <MotorRevenueReport />
     </VCol>
 
     <!-- 👉 Earning Reports -->
@@ -82,7 +82,7 @@ import EcommerceTransactions from '@/views/dashboards/ecommerce/EcommerceTransac
       sm="6"
       lg="4"
     >
-      <EcommerceEarningReports />
+      <MotorEarningReports />
     </VCol>
 
     <!-- 👉 Popular Products -->
@@ -91,7 +91,7 @@ import EcommerceTransactions from '@/views/dashboards/ecommerce/EcommerceTransac
       sm="6"
       lg="4"
     >
-      <EcommercePopularProducts />
+      <MotorPopularProducts />
     </VCol>
 
     <!-- 👉 Order -->
@@ -100,7 +100,7 @@ import EcommerceTransactions from '@/views/dashboards/ecommerce/EcommerceTransac
       sm="6"
       lg="4"
     >
-      <EcommerceOrder />
+      <MotorOrder />
     </VCol>
 
     <!-- 👉 Transaction -->
@@ -109,7 +109,7 @@ import EcommerceTransactions from '@/views/dashboards/ecommerce/EcommerceTransac
       sm="6"
       lg="4"
     >
-      <EcommerceTransactions />
+      <MotorTransactions />
     </VCol>
 
     <!-- 👉 Invoice Table -->
@@ -117,7 +117,7 @@ import EcommerceTransactions from '@/views/dashboards/ecommerce/EcommerceTransac
       cols="12"
       lg="8"
     >
-      <EcommerceInvoiceTable />
+      <MotorInvoiceTable />
     </VCol>
   </VRow>
 </template>
