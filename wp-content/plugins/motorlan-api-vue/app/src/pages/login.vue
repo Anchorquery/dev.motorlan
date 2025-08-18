@@ -242,7 +242,6 @@ const onSubmit = () => {
                 cols="12"
                 class="text-center"
               >
-                <AuthProvider />
               </VCol>
             </VRow>
           </VForm>
