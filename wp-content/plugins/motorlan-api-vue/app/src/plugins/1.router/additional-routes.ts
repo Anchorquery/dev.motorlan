@@ -14,7 +14,7 @@ export const redirects: RouteRecordRaw[] = [
       const userRole = userData.value?.role
 
       if (userRole === 'admin')
-        return { name: 'dashboards-ecommerce' }
+        return { name: 'dashboards-motors' }
       if (userRole === 'client')
         return { name: 'access-control' }
 
