@@ -49,12 +49,16 @@ const login = async () => {
     errors.value = { username: undefined, password: undefined }
     genericError.value = null
 
+    const body = new URLSearchParams()
+    body.append('username', credentials.value.username)
+    body.append('password', credentials.value.password)
+
     const res = await api('/wp-json/jwt-auth/v1/token', {
       method: 'POST',
-      body: {
-        username: credentials.value.username,
-        password: credentials.value.password,
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
       },
+      body,
       onResponseError({ response }) {
         if (response._data && response._data.errors) {
           errors.value = response._data.errors
