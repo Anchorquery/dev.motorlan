@@ -1,15 +1,26 @@
 <script setup lang="ts">
-import type { ECommerceProduct } from '@db/apps/ecommerce/types'
+interface Motor {
+  id: number
+  name: string
+  brand: string
+  image?: string
+  category: string
+  stock: boolean
+  sku: string
+  price: number
+  qty: number
+  status: string
+}
 
 const widgetData = ref([
-  { title: 'In-Store Sales', value: '$5,345', icon: 'tabler-smart-home', desc: '5k orders', change: 5.7 },
+  { title: 'Sales', value: '$5,345', icon: 'tabler-smart-home', desc: '5k orders', change: 5.7 },
   { title: 'Website Sales', value: '$674,347', icon: 'tabler-device-laptop', desc: '21k orders', change: 12.4 },
   { title: 'Discount', value: '$14,235', icon: 'tabler-gift', desc: '6k orders' },
   { title: 'Affiliate', value: '$8,345', icon: 'tabler-wallet', desc: '150 orders', change: -3.5 },
 ])
 
 const headers = [
-  { title: 'Product', key: 'product' },
+  { title: 'Motor', key: 'motor' },
   { title: 'Category', key: 'category' },
   { title: 'Stock', key: 'stock', sortable: false },
   { title: 'SKU', key: 'sku' },
@@ -25,20 +36,8 @@ const selectedStock = ref<boolean | undefined>()
 const searchQuery = ref('')
 const selectedRows = ref([])
 
-const status = ref([
-  { title: 'Scheduled', value: 'Scheduled' },
-  { title: 'Publish', value: 'Published' },
-  { title: 'Inactive', value: 'Inactive' },
-])
-
-const categories = ref([
-  { title: 'Accessories', value: 'Accessories' },
-  { title: 'Home Decor', value: 'Home Decor' },
-  { title: 'Electronics', value: 'Electronics' },
-  { title: 'Shoes', value: 'Shoes' },
-  { title: 'Office', value: 'Office' },
-  { title: 'Games', value: 'Games' },
-])
+const status = ref([])
+const categories = ref([])
 
 const stockStatus = ref([
   { title: 'In Stock', value: true },
@@ -58,18 +57,8 @@ const updateOptions = (options: any) => {
 }
 
 const resolveCategory = (category: string) => {
-  if (category === 'Accessories')
-    return { color: 'error', icon: 'tabler-device-watch' }
-  if (category === 'Home Decor')
-    return { color: 'info', icon: 'tabler-home' }
-  if (category === 'Electronics')
-    return { color: 'primary', icon: 'tabler-device-imac' }
-  if (category === 'Shoes')
-    return { color: 'success', icon: 'tabler-shoe' }
-  if (category === 'Office')
-    return { color: 'warning', icon: 'tabler-briefcase' }
-  if (category === 'Games')
-    return { color: 'primary', icon: 'tabler-device-gamepad-2' }
+  // This needs to be adapted for motor categories
+  return { color: 'primary', icon: 'tabler-settings' }
 }
 
 const resolveStatus = (statusMsg: string) => {
@@ -81,26 +70,31 @@ const resolveStatus = (statusMsg: string) => {
     return { text: 'Inactive', color: 'error' }
 }
 
-const { data: productsData, execute: fetchProducts } = await useApi<any>(createUrl('/apps/ecommerce/products',
+const { data: motorsData, execute: fetchMotors } = await useApi<any>(createUrl('/wp-json/wp/v2/motors',
   {
     query: {
-      q: searchQuery,
-      stock: selectedStock,
-      category: selectedCategory,
-      status: selectedStatus,
+      search: searchQuery,
+      stock_status: selectedStock,
+      // category: selectedCategory, // This will need to be adapted for WordPress taxonomies
+      // status: selectedStatus,
       page,
-      itemsPerPage,
-      sortBy,
-      orderBy,
+      per_page: itemsPerPage,
+      orderby: sortBy,
+      order: orderBy,
     },
   },
 ))
 
-const products = computed((): ECommerceProduct[] => productsData.value.products)
-const totalProduct = computed(() => productsData.value.total)
+const motors = computed((): Motor[] => motorsData.value || [])
+const totalMotors = computed(() => {
+  if (motorsData.value && motorsData.value.headers) {
+    return parseInt(motorsData.value.headers['x-wp-total'], 10)
+  }
+  return 0
+})
 
-const deleteProduct = async (id: number) => {
-  await $api(`apps/ecommerce/products/${id}`, {
+const deleteMotor = async (id: number) => {
+  await $api(`/wp-json/wp/v2/motors/${id}`, {
     method: 'DELETE',
   })
 
@@ -109,8 +103,8 @@ const deleteProduct = async (id: number) => {
   if (index !== -1)
     selectedRows.value.splice(index, 1)
 
-  // Refetch products
-  fetchProducts()
+  // Refetch motors
+  fetchMotors()
 }
 </script>
 
@@ -189,7 +183,7 @@ const deleteProduct = async (id: number) => {
       </VCardText>
     </VCard>
 
-    <!-- 👉 products -->
+    <!-- 👉 motors -->
     <VCard
       title="Filters"
       class="mb-6"
@@ -247,7 +241,7 @@ const deleteProduct = async (id: number) => {
           <!-- 👉 Search  -->
           <AppTextField
             v-model="searchQuery"
-            placeholder="Search Product"
+            placeholder="Search Motor"
             style="inline-size: 200px;"
             class="me-3"
           />
@@ -271,9 +265,9 @@ const deleteProduct = async (id: number) => {
           <VBtn
             color="primary"
             prepend-icon="tabler-plus"
-            @click="$router.push('/apps/ecommerce/product/add')"
+            @click="$router.push('/apps/motors/motor/add')"
           >
-            Add Product
+            Add Motor
           </VBtn>
         </div>
       </div>
@@ -287,13 +281,13 @@ const deleteProduct = async (id: number) => {
         v-model:page="page"
         :headers="headers"
         show-select
-        :items="products"
-        :items-length="totalProduct"
+        :items="motors"
+        :items-length="totalMotors"
         class="text-no-wrap"
         @update:options="updateOptions"
       >
-        <!-- product  -->
-        <template #item.product="{ item }">
+        <!-- motor  -->
+        <template #item.motor="{ item }">
           <div class="d-flex align-center gap-x-4">
             <VAvatar
               v-if="item.image"
@@ -303,8 +297,8 @@ const deleteProduct = async (id: number) => {
               :image="item.image"
             />
             <div class="d-flex flex-column">
-              <span class="text-body-1 font-weight-medium text-high-emphasis">{{ item.productName }}</span>
-              <span class="text-body-2">{{ item.productBrand }}</span>
+              <span class="text-body-1 font-weight-medium text-high-emphasis">{{ item.name }}</span>
+              <span class="text-body-2">{{ item.brand }}</span>
             </div>
           </div>
         </template>
@@ -360,7 +354,7 @@ const deleteProduct = async (id: number) => {
                 <VListItem
                   value="delete"
                   prepend-icon="tabler-trash"
-                  @click="deleteProduct(item.id)"
+                  @click="deleteMotor(item.id)"
                 >
                   Delete
                 </VListItem>
@@ -381,7 +375,7 @@ const deleteProduct = async (id: number) => {
           <TablePagination
             v-model:page="page"
             :items-per-page="itemsPerPage"
-            :total-items="totalProduct"
+            :total-items="totalMotors"
           />
         </template>
       </VDataTableServer>
