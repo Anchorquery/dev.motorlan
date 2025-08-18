@@ -4,10 +4,10 @@ export default [
     title: 'Ecommerce',
     icon: { icon: 'tabler-shopping-cart' },
     children: [
-      {
-        title: 'Dashboard',
-        to: 'apps-ecommerce-dashboard',
-      },
+      // {
+      //   title: 'Dashboard',
+      //   to: 'apps-ecommerce-dashboard',
+      // },
       {
         title: 'Product',
         children: [

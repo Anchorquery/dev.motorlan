@@ -32,7 +32,7 @@ const suggestionGroups: SuggestionGroup[] = [
   {
     title: 'Popular Searches',
     content: [
-      { icon: 'tabler-shopping-cart', title: 'eCommerce', url: { name: 'dashboards-ecommerce' } }
+      // { icon: 'tabler-shopping-cart', title: 'eCommerce', url: { name: 'dashboards-ecommerce' } }
     ],
   },
 
