@@ -7,23 +7,53 @@ const router = useRouter()
 const motorId = Number(route.params.id)
 
 const motorData = ref({
-  name: '',
-  sku: '',
-  barcode: '',
-  description: '',
-  price: null,
-  discountedPrice: null,
-  taxable: true,
-  inStock: true,
-  category: '',
-  status: 'Published',
-  tags: '',
+  title: '',
+  status: 'publish',
+  acf: {
+    titulo_entrada: '',
+    marca: null,
+    tipo_o_referencia: '',
+    motor_image: null,
+    motor_gallery: [],
+    potencia: null,
+    velocidad: null,
+    par_nominal: null,
+    voltaje: null,
+    intensidad: null,
+    pais: null,
+    provincia: '',
+    estado_del_articulo: 'Nuevo',
+    informe_de_reparacion: null,
+    descripcion: '',
+    posibilidad_de_alquiler: 'No',
+    tipo_de_alimentacion: 'Alterna (C.A.)',
+    servomotores: false,
+    regulacion_electronica_drivers: false,
+    precio_de_venta: null,
+    precio_negociable: 'No',
+    documentacion_adjunta: null,
+    publicar_acf: 'publish',
+  },
+})
+
+const marcas = ref([])
+
+useApi('/wp-json/wp/v2/marca').then(response => {
+  marcas.value = response.data.value.map(marca => ({
+    title: marca.name,
+    value: marca.id,
+  }))
 })
 
 if (motorId) {
   // Fetch motor data for editing
-  useApi(`/wp-json/wp/v2/motors/${motorId}`).then(response => {
-    motorData.value = response.data.value
+  useApi(`/wp-json/wp/v2/motors/${motorId}?_embed`).then(response => {
+    const post = response.data.value
+    motorData.value = {
+      title: post.title.rendered,
+      status: post.status,
+      acf: post.acf,
+    }
   })
 }
 
@@ -57,11 +87,7 @@ const content = ref(
         <h4 class="text-h4 font-weight-medium">
           {{ motorId ? 'Edit' : 'Add' }} a new motor
         </h4>
-        <div class="text-body-1">
-          Orders placed across your store
-        </div>
       </div>
-
       <div class="d-flex gap-4 align-center flex-wrap">
         <VBtn
           variant="tonal"
@@ -70,12 +96,6 @@ const content = ref(
         >
           Discard
         </VBtn>
-        <VBtn
-          variant="tonal"
-          color="primary"
-        >
-          Save Draft
-        </VBtn>
         <VBtn @click="publishMotor">
           {{ motorId ? 'Update' : 'Publish' }} Motor
         </VBtn>
@@ -83,19 +103,191 @@ const content = ref(
     </div>
 
     <VRow>
-      <VCol md="8">
-        <!-- 👉 Motor Information -->
+      <VCol>
         <VCard
           class="mb-6"
-          title="Motor Information"
+          title="Detalles del Motor"
         >
           <VCardText>
             <VRow>
+              <VCol
+                cols="12"
+                md="6"
+              >
+                <AppTextField
+                  v-model="motorData.title"
+                  label="Título entrada"
+                  placeholder="Título"
+                />
+              </VCol>
+              <VCol
+                cols="12"
+                md="6"
+              >
+                <AppTextField
+                  v-model="motorData.acf.tipo_o_referencia"
+                  label="Tipo o referencia"
+                  placeholder="Referencia"
+                />
+              </VCol>
+              <VCol
+                cols="12"
+                md="6"
+              >
+                <AppSelect
+                  v-model="motorData.acf.marca"
+                  label="Marca"
+                  :items="marcas"
+                />
+              </VCol>
+
+              <VCol
+                cols="12"
+                md="6"
+              >
+                <AppTextField
+                  v-model="motorData.acf.potencia"
+                  label="Potencia (kW)"
+                  type="number"
+                  placeholder="100"
+                />
+              </VCol>
+              <VCol
+                cols="12"
+                md="6"
+              >
+                <AppTextField
+                  v-model="motorData.acf.velocidad"
+                  label="Velocidad (rpm)"
+                  type="number"
+                  placeholder="3000"
+                />
+              </VCol>
+              <VCol
+                cols="12"
+                md="6"
+              >
+                <AppTextField
+                  v-model="motorData.acf.par_nominal"
+                  label="PAR Nominal (Nm)"
+                  type="number"
+                  placeholder="50"
+                />
+              </VCol>
+              <VCol
+                cols="12"
+                md="6"
+              >
+                <AppTextField
+                  v-model="motorData.acf.voltaje"
+                  label="Voltaje (V)"
+                  type="number"
+                  placeholder="220"
+                />
+              </VCol>
+              <VCol
+                cols="12"
+                md="6"
+              >
+                <AppTextField
+                  v-model="motorData.acf.intensidad"
+                  label="Intensidad (A)"
+                  type="number"
+                  placeholder="10"
+                />
+              </VCol>
+              <VCol
+                cols="12"
+                md="6"
+              >
+                <AppSelect
+                  v-model="motorData.acf.pais"
+                  label="País (localización)"
+                  :items="['España', 'Portugal', 'Francia']"
+                />
+              </VCol>
+              <VCol
+                cols="12"
+                md="6"
+              >
+                <AppTextField
+                  v-model="motorData.acf.provincia"
+                  label="Provincia"
+                  placeholder="Madrid"
+                />
+              </VCol>
+              <VCol
+                cols="12"
+                md="6"
+              >
+                <AppSelect
+                  v-model="motorData.acf.estado_del_articulo"
+                  label="Estado del artículo"
+                  :items="['Nuevo', 'Usado', 'Restaurado']"
+                />
+              </VCol>
               <VCol cols="12">
-                <AppTextField
-                  v-model="motorData.name"
-                  label="Name"
-                  placeholder="Motor Name"
+                <VTextarea
+                  v-model="motorData.acf.descripcion"
+                  label="Descripción"
+                  placeholder="Descripción del motor"
+                />
+              </VCol>
+
+              <VCol
+                cols="12"
+                md="6"
+              >
+                <VRadioGroup
+                  v-model="motorData.acf.posibilidad_de_alquiler"
+                  inline
+                  label="Posibilidad de alquiler"
+                >
+                  <VRadio
+                    label="Sí"
+                    value="Sí"
+                  />
+                  <VRadio
+                    label="No"
+                    value="No"
+                  />
+                </VRadioGroup>
+              </VCol>
+              <VCol
+                cols="12"
+                md="6"
+              >
+                <VRadioGroup
+                  v-model="motorData.acf.tipo_de_alimentacion"
+                  inline
+                  label="Tipo de alimentación"
+                >
+                  <VRadio
+                    label="Continua (C.C.)"
+                    value="Continua (C.C.)"
+                  />
+                  <VRadio
+                    label="Alterna (C.A.)"
+                    value="Alterna (C.A.)"
+                  />
+                </VRadioGroup>
+              </VCol>
+              <VCol
+                cols="12"
+                md="6"
+              >
+                <VCheckbox
+                  v-model="motorData.acf.servomotores"
+                  label="Servomotores"
+                />
+              </VCol>
+              <VCol
+                cols="12"
+                md="6"
+              >
+                <VCheckbox
+                  v-model="motorData.acf.regulacion_electronica_drivers"
+                  label="Regulación electrónica/Drivers"
                 />
               </VCol>
               <VCol
@@ -103,112 +295,48 @@ const content = ref(
                 md="6"
               >
                 <AppTextField
-                  v-model="motorData.sku"
-                  label="SKU"
-                  placeholder="FXSK123U"
+                  v-model="motorData.acf.precio_de_venta"
+                  label="Precio de venta (€)"
+                  type="number"
+                  placeholder="1000"
                 />
               </VCol>
               <VCol
                 cols="12"
                 md="6"
               >
-                <AppTextField
-                  v-model="motorData.barcode"
-                  label="Barcode"
-                  placeholder="0123-4567"
-                />
+                <VRadioGroup
+                  v-model="motorData.acf.precio_negociable"
+                  inline
+                  label="Precio negociable"
+                >
+                  <VRadio
+                    label="Sí"
+                    value="Sí"
+                  />
+                  <VRadio
+                    label="No"
+                    value="No"
+                  />
+                </VRadioGroup>
               </VCol>
-              <VCol>
-                <span class="mb-1">Description (optional)</span>
-                <MotorDescriptionEditor
-                  v-model="motorData.description"
-                  placeholder="Motor Description"
-                  class="border rounded"
-                />
+              <VCol cols="12">
+                <VRadioGroup
+                  v-model="motorData.status"
+                  inline
+                  label="Publicar (ACF)"
+                >
+                  <VRadio
+                    label="Publicar"
+                    value="publish"
+                  />
+                  <VRadio
+                    label="Borrador"
+                    value="draft"
+                  />
+                </VRadioGroup>
               </VCol>
             </VRow>
-          </VCardText>
-        </VCard>
-
-        <!-- 👉 Media -->
-        <VCard class="mb-6">
-          <VCardItem>
-            <template #title>
-              Motor Image
-            </template>
-            <template #append>
-              <span class="text-primary font-weight-medium text-sm cursor-pointer">Add Media from URL</span>
-            </template>
-          </VCardItem>
-
-          <VCardText>
-            <DropZone />
-          </VCardText>
-        </VCard>
-      </VCol>
-
-      <VCol
-        md="4"
-        cols="12"
-      >
-        <!-- 👉 Pricing -->
-        <VCard
-          title="Pricing"
-          class="mb-6"
-        >
-          <VCardText>
-            <AppTextField
-              v-model="motorData.price"
-              label="Best Price"
-              placeholder="Price"
-              class="mb-6"
-            />
-            <AppTextField
-              v-model="motorData.discountedPrice"
-              label="Discounted Price"
-              placeholder="$499"
-              class="mb-6"
-            />
-
-            <VCheckbox
-              v-model="motorData.taxable"
-              label="Charge Tax on this motor"
-            />
-
-            <VDivider class="my-2" />
-
-            <div class="d-flex flex-raw align-center justify-space-between ">
-              <span>In stock</span>
-              <VSwitch
-                v-model="motorData.inStock"
-                density="compact"
-              />
-            </div>
-          </VCardText>
-        </VCard>
-
-        <!-- 👉 Organize -->
-        <VCard title="Organize">
-          <VCardText>
-            <div class="d-flex flex-column gap-y-4">
-              <AppSelect
-                v-model="motorData.category"
-                placeholder="Select Category"
-                label="Category"
-                :items="['Category 1', 'Category 2', 'Category 3']"
-              />
-              <AppSelect
-                v-model="motorData.status"
-                placeholder="Select Status"
-                label="Status"
-                :items="['Published', 'Inactive', 'Scheduled']"
-              />
-              <AppTextField
-                v-model="motorData.tags"
-                label="Tags"
-                placeholder="Electric, Powerful, etc"
-              />
-            </div>
           </VCardText>
         </VCard>
       </VCol>
