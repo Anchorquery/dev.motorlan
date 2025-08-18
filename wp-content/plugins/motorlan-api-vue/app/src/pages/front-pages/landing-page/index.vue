@@ -9,7 +9,7 @@ import Features from '@/views/front-pages/landing-page/features.vue'
 import HeroSection from '@/views/front-pages/landing-page/hero-section.vue'
 import OurTeam from '@/views/front-pages/landing-page/our-team.vue'
 import PricingPlans from '@/views/front-pages/landing-page/pricing-plans.vue'
-import ProductStats from '@/views/front-pages/landing-page/product-stats.vue'
+import MotorStats from '@/views/front-pages/landing-page/motor-stats.vue'
 import { useConfigStore } from '@core/stores/config'
 
 const store = useConfigStore()
@@ -69,8 +69,8 @@ useIntersectionObserver(
       <PricingPlans />
     </div>
 
-    <!-- 👉 Product stats -->
-    <ProductStats />
+    <!-- 👉 Motor stats -->
+    <MotorStats />
 
     <!-- 👉 FAQ Section -->
     <div :style="{ 'background-color': 'rgb(var(--v-theme-surface))' }">

@@ -1,6 +1,7 @@
 <!-- ❗Errors in the form are set on line 60 -->
 <script setup lang="ts">
 import { VForm } from 'vuetify/components/VForm'
+import AuthProvider from '@/views/pages/authentication/AuthProvider.vue'
 import { useGenerateImageVariant } from '@core/composable/useGenerateImageVariant'
 import authV2LoginIllustrationBorderedDark from '@images/pages/auth-v2-login-illustration-bordered-dark.png'
 import authV2LoginIllustrationBorderedLight from '@images/pages/auth-v2-login-illustration-bordered-light.png'
@@ -10,7 +11,6 @@ import authV2MaskDark from '@images/pages/misc-mask-dark.png'
 import authV2MaskLight from '@images/pages/misc-mask-light.png'
 import { VNodeRenderer } from '@layouts/components/VNodeRenderer'
 import { themeConfig } from '@themeConfig'
-import AuthProvider from '@/views/pages/authentication/AuthProvider.vue'
 import api from '@/services/api'
 
 const authThemeImg = useGenerateImageVariant(authV2LoginIllustrationLight, authV2LoginIllustrationDark, authV2LoginIllustrationBorderedLight, authV2LoginIllustrationBorderedDark, true)
@@ -39,8 +39,8 @@ const genericError = ref<string | null>(null)
 const refVForm = ref<VForm>()
 
 const credentials = ref({
-  username: '',
-  password: '',
+  username: 'admin',
+  password: 'password',
 })
 
 const login = async () => {
@@ -48,7 +48,6 @@ const login = async () => {
     // Reset errors
     errors.value = { username: undefined, password: undefined }
     genericError.value = null
-
 
     const res = await api('/wp-json/jwt-auth/v1/token', {
       method: 'POST',
@@ -242,7 +241,8 @@ const onSubmit = () => {
               <VCol
                 cols="12"
                 class="text-center"
-              />
+              >
+              </VCol>
             </VRow>
           </VForm>
         </VCardText>
