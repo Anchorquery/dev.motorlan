@@ -91,7 +91,7 @@ const pricingPlans = [
           </h4>
           <div class="text-center text-body-1">
             <p class="mb-0">
-              All plans include 40+ advanced tools and features to boost your product.
+              All plans include 40+ advanced tools and features to boost your motor.
             </p>
             <p class="mb-0">
               Choose the best plan to fit your needs.

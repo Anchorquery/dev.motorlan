@@ -75,7 +75,7 @@ const pricingPlans = [
       {{ props.title ? props.title : 'Pricing Plans' }}
     </h3>
     <p class="mb-0">
-      All plans include 40+ advanced tools and features to boost your product.
+      All plans include 40+ advanced tools and features to boost your motor.
     </p>
     <p class="mb-2">
       Choose the best plan to fit your needs.
