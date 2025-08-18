@@ -113,7 +113,3 @@ declare module 'vue-router/auto-routes' {
     'wizard-examples-property-listing': RouteRecordInfo<'wizard-examples-property-listing', '/wizard-examples/property-listing', Record<never, never>, Record<never, never>>,
   }
 }
-xamples-create-deal', '/wizard-examples/create-deal', Record<never, never>, Record<never, never>>,
-    'wizard-examples-property-listing': RouteRecordInfo<'wizard-examples-property-listing', '/wizard-examples/property-listing', Record<never, never>, Record<never, never>>,
-  }
-}

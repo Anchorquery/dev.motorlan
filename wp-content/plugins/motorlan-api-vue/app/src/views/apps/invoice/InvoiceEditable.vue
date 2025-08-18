@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import InvoiceProductEdit from './InvoiceProductEdit.vue'
+import InvoiceMotorEdit from './InvoiceMotorEdit.vue'
 import type { InvoiceData, PurchasedProduct } from './types'
 import type { Client } from '@db/apps/invoice/types'
 import { VNodeRenderer } from '@layouts/components/VNodeRenderer'
@@ -226,7 +226,7 @@ const removeProduct = (id: number) => {
         :key="product.title"
         class="mb-4"
       >
-        <InvoiceProductEdit
+        <InvoiceMotorEdit
           :id="index"
           :data="product"
           @remove-product="removeProduct"
