@@ -24,19 +24,19 @@ const deliveryOptions = [
   {
     icon: { icon: 'tabler-user' },
     title: 'Standard',
-    desc: 'Get your product in 1 Week.',
+    desc: 'Get your motor in 1 Week.',
     value: 'free',
   },
   {
     icon: { icon: 'tabler-star' },
     title: 'Express',
-    desc: 'Get your product in 4 days.',
+    desc: 'Get your motor in 4 days.',
     value: 'express',
   },
   {
     icon: { icon: 'tabler-crown' },
     title: 'Overnight',
-    desc: 'Get your product in 1 day.',
+    desc: 'Get your motor in 1 day.',
     value: 'overnight',
   },
 ]
@@ -189,23 +189,23 @@ watch(() => props.currentStep, updateAddressData)
 
           <VList class="card-list">
             <VListItem
-              v-for="product in checkoutAddressDataLocal.cartItems"
-              :key="product.name"
+              v-for="motor in checkoutAddressDataLocal.cartItems"
+              :key="motor.name"
             >
               <template #prepend>
                 <img
                   height="70"
                   width="60"
-                  :src="product.image"
+                  :src="motor.image"
                   class="me-4"
                 >
               </template>
 
               <div class="text-body-1">
-                {{ product.name }}
+                {{ motor.name }}
               </div>
               <h6 class="text-h6 text-medium-emphasis">
-                {{ product.estimatedDelivery }}
+                {{ motor.estimatedDelivery }}
               </h6>
             </VListItem>
           </VList>

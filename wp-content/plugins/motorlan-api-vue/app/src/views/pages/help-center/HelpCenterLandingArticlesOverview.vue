@@ -41,7 +41,7 @@ const props = defineProps<Props>()
             :to="{
               name: 'front-pages-help-center-article-title',
               params: {
-                title: 'how-to-add-product-in-cart',
+                title: 'how-to-add-motor-in-cart',
               },
             }"
           >
