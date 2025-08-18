@@ -10,7 +10,7 @@ import authV2MaskDark from '@images/pages/misc-mask-dark.png'
 import authV2MaskLight from '@images/pages/misc-mask-light.png'
 import { VNodeRenderer } from '@layouts/components/VNodeRenderer'
 import { themeConfig } from '@themeConfig'
-import AuthProvider from '@/views/pages/authentication/AuthProvider.vue'
+import { useAbility } from '@casl/vue'
 import api from '@/services/api'
 
 const authThemeImg = useGenerateImageVariant(authV2LoginIllustrationLight, authV2LoginIllustrationDark, authV2LoginIllustrationBorderedLight, authV2LoginIllustrationBorderedDark, true)
@@ -28,6 +28,7 @@ const isPasswordVisible = ref(false)
 
 const route = useRoute()
 const router = useRouter()
+const ability = useAbility()
 
 const errors = ref<Record<string, string | undefined>>({
   username: undefined,
@@ -37,6 +38,7 @@ const errors = ref<Record<string, string | undefined>>({
 const genericError = ref<string | null>(null)
 
 const refVForm = ref<VForm>()
+const isSubmitting = ref(false)
 
 const credentials = ref({
   username: '',
@@ -44,6 +46,7 @@ const credentials = ref({
 })
 
 const login = async () => {
+  isSubmitting.value = true
   try {
     // Reset errors
     errors.value = { username: undefined, password: undefined }
@@ -84,9 +87,10 @@ const login = async () => {
       nicename: user_nicename,
     }
 
-    // NOTE: The original template had logic for user roles and abilities.
-    // This has been removed for simplicity, but can be re-added here
-    // by fetching user roles from WordPress and updating the ability instance.
+    // Grant default abilities
+    const userAbilities = [{ action: 'read', subject: 'all' }]
+    ability.update(userAbilities)
+    useCookie('userAbilityRules').value = userAbilities
 
     // Redirect to `to` query if exist or redirect to index route
     // ❗ nextTick is required to wait for DOM updates and later redirect
@@ -97,6 +101,9 @@ const login = async () => {
   catch (err: any) {
     console.error(err)
     genericError.value = err.data?.message || 'Failed to connect to the server. Please check your connection or contact support.'
+  }
+  finally {
+    isSubmitting.value = false
   }
 }
 
@@ -215,6 +222,8 @@ const onSubmit = () => {
                 <VBtn
                   block
                   type="submit"
+                  :loading="isSubmitting"
+                  :disabled="isSubmitting"
                 >
                   Login
                 </VBtn>
