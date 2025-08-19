@@ -3,7 +3,7 @@ const chartColors = {
   line: {
     series1: '#FFB400',
     series2: '#9055FD',
-    series3: '#7367f029',
+    series3: '#ff1e0a29',
   },
 }
 
