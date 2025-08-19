@@ -112,3 +112,25 @@ function motorlan_register_taxonomies() {
     register_taxonomy( 'marca', array( 'motor' ), $args_marca );
 }
 add_action( 'init', 'motorlan_register_taxonomies', 0 );
+
+/**
+ * Add a UUID to the motor post type if it doesn't have one.
+ *
+ * @param int $post_id The post ID.
+ */
+function motorlan_add_uuid_to_motor( $post_id ) {
+    // If this is just a revision, don't send the email.
+    if ( wp_is_post_revision( $post_id ) ) {
+        return;
+    }
+
+    // Check if the 'uuid' meta key exists and is not empty.
+    $uuid = get_post_meta( $post_id, 'uuid', true );
+    if ( empty( $uuid ) ) {
+        // Generate a UUID.
+        $uuid = wp_generate_uuid4();
+        // Add the UUID as a custom field.
+        update_post_meta( $post_id, 'uuid', $uuid );
+    }
+}
+add_action( 'save_post_motor', 'motorlan_add_uuid_to_motor' );

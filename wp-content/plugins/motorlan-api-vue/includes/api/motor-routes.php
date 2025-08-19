@@ -60,7 +60,7 @@ function motorlan_get_motors_callback( $request ) {
     $filterable_fields = [
         'marca', 'tipo_o_referencia', 'potencia', 'velocidad', 'par_nominal', 'voltaje', 'intensidad',
         'pais', 'provincia', 'estado_del_articulo', 'posibilidad_de_alquiler', 'tipo_de_alimentacion',
-        'servomotores', 'regulacion_electronica_drivers', 'precio_de_venta', 'precio_negociable'
+        'servomotores', 'regulacion_electronica_drivers', 'precio_de_venta', 'precio_negociable', 'uuid'
     ];
 
     // Build the meta_query dynamically based on request parameters.
@@ -96,6 +96,7 @@ function motorlan_get_motors_callback( $request ) {
 
             $motor_item = array(
                 'id'           => $post_id,
+                'uuid'         => get_post_meta( $post_id, 'uuid', true ),
                 'title'        => get_the_title(),
                 'slug'         => get_post_field( 'post_name', $post_id ),
                 'status'       => get_post_status( $post_id ),
