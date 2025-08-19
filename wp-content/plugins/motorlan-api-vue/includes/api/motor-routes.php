@@ -105,10 +105,24 @@ function motorlan_get_motors_callback( $request ) {
         wp_reset_postdata();
     }
 
-    // Create the response object.
-    $response = new WP_REST_Response( $motors_data, 200 );
+    // Pagination data.
+    $pagination = array(
+        'total'     => (int) $query->found_posts,
+        'totalPages' => (int) $query->max_num_pages,
+        'currentPage'    => (int) $page,
+        'perPage'   => (int) $per_page,
+    );
 
-    // Add pagination headers for client-side rendering.
+    // Prepare the data for the response.
+    $response_data = array(
+        'motors'      => $motors_data,
+        'pagination' => $pagination,
+    );
+
+    // Create the response object.
+    $response = new WP_REST_Response( $response_data, 200 );
+
+    // Add pagination headers for client-side rendering (optional, but good practice).
     $response->header( 'X-WP-Total', $query->found_posts );
     $response->header( 'X-WP-TotalPages', $query->max_num_pages );
 
