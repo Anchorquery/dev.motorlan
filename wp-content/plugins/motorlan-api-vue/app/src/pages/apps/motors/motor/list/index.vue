@@ -1,15 +1,15 @@
 <script setup lang="ts">
 interface Motor {
   id: number
-  name: string
-  brand: string
-  image?: string
-  category: string
-  stock: boolean
-  sku: string
-  price: number
-  qty: number
+  title: string
+  imagen_destacada: string
+  acf: {
+    marca: string
+    tipo_o_referencia: string
+    precio_de_venta: number
+  }
   status: string
+  categories: { name: string }[]
 }
 
 const widgetData = ref([
@@ -21,28 +21,33 @@ const widgetData = ref([
 
 const headers = [
   { title: 'Motor', key: 'motor' },
-  { title: 'Category', key: 'category' },
-  { title: 'Stock', key: 'stock', sortable: false },
-  { title: 'SKU', key: 'sku' },
-  { title: 'Price', key: 'price' },
-  { title: 'QTY', key: 'qty' },
+  { title: 'Referencia', key: 'referencia' },
+  { title: 'Precio', key: 'precio' },
   { title: 'Status', key: 'status' },
   { title: 'Actions', key: 'actions', sortable: false },
 ]
 
 const selectedStatus = ref()
 const selectedCategory = ref()
-const selectedStock = ref<boolean | undefined>()
 const searchQuery = ref('')
 const selectedRows = ref([])
 
-const status = ref([])
+const status = ref([
+  { title: 'Publicado', value: 'publish' },
+  { title: 'Borrador', value: 'draft' },
+  { title: 'Pausado', value: 'paused' },
+  { title: 'Vendido', value: 'sold' },
+])
 const categories = ref([])
 
-const stockStatus = ref([
-  { title: 'In Stock', value: true },
-  { title: 'Out of Stock', value: false },
-])
+// Fetch categories from the new endpoint
+const { data: categoriesData } = await useApi<any>(createUrl('/wp-json/wp/v2/motor-categories'))
+if (categoriesData.value) {
+  categories.value = categoriesData.value.map((cat: any) => ({
+    title: cat.name,
+    value: cat.slug,
+  }))
+}
 
 // Data table options
 const itemsPerPage = ref(10)
@@ -56,27 +61,24 @@ const updateOptions = (options: any) => {
   orderBy.value = options.sortBy[0]?.order
 }
 
-const resolveCategory = (category: string) => {
-  // This needs to be adapted for motor categories
-  return { color: 'primary', icon: 'tabler-settings' }
-}
-
 const resolveStatus = (statusMsg: string) => {
-  if (statusMsg === 'Scheduled')
-    return { text: 'Scheduled', color: 'warning' }
-  if (statusMsg === 'Published')
-    return { text: 'Publish', color: 'success' }
-  if (statusMsg === 'Inactive')
-    return { text: 'Inactive', color: 'error' }
+  if (statusMsg === 'publish')
+    return { text: 'Publicado', color: 'success' }
+  if (statusMsg === 'draft')
+    return { text: 'Borrador', color: 'secondary' }
+  if (statusMsg === 'paused')
+    return { text: 'Pausado', color: 'warning' }
+  if (statusMsg === 'sold')
+    return { text: 'Vendido', color: 'error' }
+  return { text: 'Unknown', color: 'info' }
 }
 
 const { data: motorsData, execute: fetchMotors } = await useApi<any>(createUrl('/wp-json/wp/v2/motors',
   {
     query: {
       search: searchQuery,
-      stock_status: selectedStock,
-      // category: selectedCategory, // This will need to be adapted for WordPress taxonomies
-      // status: selectedStatus,
+      category: selectedCategory,
+      status: selectedStatus,
       page,
       per_page: itemsPerPage,
       orderby: sortBy,
@@ -193,7 +195,7 @@ const deleteMotor = async (id: number) => {
           <!-- 👉 Select Status -->
           <VCol
             cols="12"
-            sm="4"
+            sm="6"
           >
             <AppSelect
               v-model="selectedStatus"
@@ -207,26 +209,12 @@ const deleteMotor = async (id: number) => {
           <!-- 👉 Select Category -->
           <VCol
             cols="12"
-            sm="4"
+            sm="6"
           >
             <AppSelect
               v-model="selectedCategory"
               placeholder="Category"
               :items="categories"
-              clearable
-              clear-icon="tabler-x"
-            />
-          </VCol>
-
-          <!-- 👉 Select Stock Status -->
-          <VCol
-            cols="12"
-            sm="4"
-          >
-            <AppSelect
-              v-model="selectedStock"
-              placeholder="Stock"
-              :items="stockStatus"
               clearable
               clear-icon="tabler-x"
             />
@@ -290,44 +278,33 @@ const deleteMotor = async (id: number) => {
         <template #item.motor="{ item }">
           <div class="d-flex align-center gap-x-4">
             <VAvatar
-              v-if="item.image"
+              v-if="item.raw.imagen_destacada"
               size="38"
               variant="tonal"
               rounded
-              :image="item.image"
+              :image="item.raw.imagen_destacada"
             />
             <div class="d-flex flex-column">
-              <span class="text-body-1 font-weight-medium text-high-emphasis">{{ item.name }}</span>
-              <span class="text-body-2">{{ item.brand }}</span>
+              <span class="text-body-1 font-weight-medium text-high-emphasis">{{ item.raw.title }}</span>
+              <span class="text-body-2">{{ item.raw.acf.marca }}</span>
             </div>
           </div>
         </template>
 
-        <!-- category -->
-        <template #item.category="{ item }">
-          <VAvatar
-            size="30"
-            variant="tonal"
-            :color="resolveCategory(item.category)?.color"
-            class="me-4"
-          >
-            <VIcon
-              :icon="resolveCategory(item.category)?.icon"
-              size="18"
-            />
-          </VAvatar>
-          <span class="text-body-1 text-high-emphasis">{{ item.category }}</span>
+        <!-- referencia -->
+        <template #item.referencia="{ item }">
+          <span class="text-body-1 text-high-emphasis">{{ item.raw.acf.tipo_o_referencia }}</span>
         </template>
 
-        <!-- stock -->
-        <template #item.stock="{ item }">
-          <VSwitch :model-value="item.stock" />
+        <!-- precio -->
+        <template #item.precio="{ item }">
+          <span class="text-body-1 text-high-emphasis">{{ item.raw.acf.precio_de_venta }}</span>
         </template>
 
         <!-- status -->
         <template #item.status="{ item }">
           <VChip
-            v-bind="resolveStatus(item.status)"
+            v-bind="resolveStatus(item.raw.status)"
             density="default"
             label
             size="small"
@@ -354,7 +331,7 @@ const deleteMotor = async (id: number) => {
                 <VListItem
                   value="delete"
                   prepend-icon="tabler-trash"
-                  @click="deleteMotor(item.id)"
+                  @click="deleteMotor(item.raw.id)"
                 >
                   Delete
                 </VListItem>

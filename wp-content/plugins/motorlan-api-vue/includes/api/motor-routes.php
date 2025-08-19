@@ -35,6 +35,7 @@ function motorlan_get_motors_callback( $request ) {
     // --- FILTERING LOGIC ---
     $params = $request->get_params();
     $meta_query = array('relation' => 'AND');
+    $tax_query = array();
 
     // Define the list of fields that can be used for filtering.
     $filterable_fields = [
@@ -54,9 +55,26 @@ function motorlan_get_motors_callback( $request ) {
         }
     }
 
+    // Filter by status (publicar_acf field)
+    if ( !empty($params['status']) ) {
+        $meta_query[] = array(
+            'key'     => 'publicar_acf',
+            'value'   => sanitize_text_field($params['status']),
+            'compare' => '=',
+        );
+    }
+
+    // Filter by category (categoria taxonomy)
+    if ( !empty($params['category']) ) {
+        $tax_query[] = array(
+            'taxonomy' => 'categoria',
+            'field'    => 'slug',
+            'terms'    => sanitize_text_field($params['category']),
+        );
+    }
+
     $args = array(
         'post_type'      => 'motor',
-        'post_status'    => 'publish',
         'posts_per_page' => $per_page,
         'paged'          => $page,
     );
@@ -64,6 +82,11 @@ function motorlan_get_motors_callback( $request ) {
     // Only add meta_query if there are filters.
     if (count($meta_query) > 1) {
         $args['meta_query'] = $meta_query;
+    }
+
+    // Only add tax_query if there are filters.
+    if (!empty($tax_query)) {
+        $args['tax_query'] = $tax_query;
     }
 
     $query = new WP_Query( $args );
@@ -78,19 +101,18 @@ function motorlan_get_motors_callback( $request ) {
                 'id'           => $post_id,
                 'title'        => get_the_title(),
                 'slug'         => get_post_field( 'post_name', $post_id ),
-                'status'       => get_post_status( $post_id ),
+                'status'       => get_field('publicar_acf', $post_id),
+                'imagen_destacada' => get_the_post_thumbnail_url($post_id, 'thumbnail'),
                 'author_id'    => get_post_field( 'post_author', $post_id ),
-                'categories'   => wp_get_post_categories( $post_id ),
+                'categories'   => wp_get_post_terms( $post_id, 'categoria', array( 'fields' => 'all' ) ),
                 'acf'          => array(),
             );
 
             // Populate ACF fields if ACF is active
             if ( function_exists('get_field') ) {
                 $acf_fields = [
-
                     'marca', 'tipo_o_referencia','estado_del_articulo','descripcion',
                     'precio_de_venta',
-                    'publicar_acf'
                 ];
 
                 foreach($acf_fields as $field_name) {
@@ -113,4 +135,33 @@ function motorlan_get_motors_callback( $request ) {
     $response->header( 'X-WP-TotalPages', $query->max_num_pages );
 
     return $response;
+}
+
+/**
+ * Register custom REST API route for motor categories.
+ */
+function motorlan_register_motor_categories_rest_route() {
+    register_rest_route( '/wp/v2/', 'motor-categories', array(
+        'methods'  => WP_REST_Server::READABLE,
+        'callback' => 'motorlan_get_motor_categories_callback',
+    ) );
+}
+add_action( 'rest_api_init', 'motorlan_register_motor_categories_rest_route' );
+
+/**
+ * Callback function to get a list of motor categories.
+ *
+ * @return WP_REST_Response The response object.
+ */
+function motorlan_get_motor_categories_callback() {
+    $terms = get_terms( array(
+        'taxonomy'   => 'categoria',
+        'hide_empty' => false,
+    ) );
+
+    if ( is_wp_error( $terms ) ) {
+        return new WP_REST_Response( array( 'message' => $terms->get_error_message() ), 500 );
+    }
+
+    return new WP_REST_Response( $terms, 200 );
 }

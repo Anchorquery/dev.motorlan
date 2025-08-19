@@ -202,12 +202,14 @@ acf_add_local_field_group(array(
 		),
 		array(
 			'key' => 'field_6643d3c3b0358',
-			'label' => 'Publicar (ACF)',
+			'label' => 'Status',
 			'name' => 'publicar_acf',
 			'type' => 'radio',
 			'choices' => array(
-				'publish' => 'Publicar',
+				'publish' => 'Publicado',
 				'draft' => 'Borrador',
+				'paused' => 'Pausado',
+				'sold' => 'Vendido',
 			),
 			'default_value' => 'publish',
 			'layout' => 'horizontal',
