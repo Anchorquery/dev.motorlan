@@ -87,9 +87,12 @@ const { data: motorsData, execute: fetchMotors } = await useApi<any>(createUrl('
       order: orderBy,
     },
   },
+
+
 ))
 
-const motors = computed((): Motor[] => motorsData.value?.motors || [])
+const motors = computed((): Motor[] => motorsData.value?.data || [])
+console.log(motors)
 const totalMotors = computed(() => motorsData.value?.pagination.total || 0)
 
 const deleteMotor = async (id: number) => {
