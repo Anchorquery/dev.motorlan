@@ -47,7 +47,7 @@ watch(() => props.modelValue, () => {
 </script>
 
 <template>
-  <div class="pa-6 productDescriptionEditor">
+  <div class="pa-6 motorDescriptionEditor">
     <!-- buttons -->
     <div
       v-if="editor"
@@ -173,7 +173,7 @@ watch(() => props.modelValue, () => {
 </template>
 
 <style lang="scss">
-.productDescriptionEditor {
+.motorDescriptionEditor {
   .ProseMirror {
     padding: 0 !important;
     min-block-size: 12vh;

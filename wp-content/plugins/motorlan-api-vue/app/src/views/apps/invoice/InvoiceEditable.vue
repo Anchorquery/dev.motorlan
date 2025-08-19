@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import InvoiceProductEdit from './InvoiceProductEdit.vue'
+import InvoiceMotorEdit from './InvoiceMotorEdit.vue'
 import type { InvoiceData, PurchasedProduct } from './types'
 import type { Client } from '@db/apps/invoice/types'
 import { VNodeRenderer } from '@layouts/components/VNodeRenderer'
@@ -46,8 +46,8 @@ const addItem = () => {
   })
 }
 
-// 👉 Remove Product edit section
-const removeProduct = (id: number) => {
+// 👉 Remove Motor edit section
+const removeMotor = (id: number) => {
   emit('remove', id)
 }
 </script>
@@ -219,17 +219,17 @@ const removeProduct = (id: number) => {
     </VRow>
 
     <VDivider class="my-6 border-dashed" />
-    <!-- 👉 Add purchased products -->
-    <div class="add-products-form">
+    <!-- 👉 Add purchased motors -->
+    <div class="add-motors-form">
       <div
-        v-for="(product, index) in props.data.purchasedProducts"
-        :key="product.title"
+        v-for="(motor, index) in props.data.purchasedProducts"
+        :key="motor.title"
         class="mb-4"
       >
-        <InvoiceProductEdit
+        <InvoiceMotorEdit
           :id="index"
-          :data="product"
-          @remove-product="removeProduct"
+          :data="motor"
+          @remove-motor="removeMotor"
         />
       </div>
 

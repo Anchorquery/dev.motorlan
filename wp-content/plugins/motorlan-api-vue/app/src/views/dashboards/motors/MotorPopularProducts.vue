@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import amazonEchoDot from '@images/eCommerce/amazon-echo-dot.png'
-import appleWatch from '@images/eCommerce/apple-watch.png'
-import headphone from '@images/eCommerce/headphone.png'
-import iphone from '@images/eCommerce/iphone.png'
-import nike from '@images/eCommerce/nike.png'
-import sonyDualsense from '@images/eCommerce/sony-dualsense.png'
+import amazonEchoDot from '@images/motors/amazon-echo-dot.png'
+import appleWatch from '@images/motors/apple-watch.png'
+import headphone from '@images/motors/headphone.png'
+import iphone from '@images/motors/iphone.png'
+import nike from '@images/motors/nike.png'
+import sonyDualsense from '@images/motors/sony-dualsense.png'
 
-const popularProducts = [
+const popularMotors = [
   {
     avatarImg: iphone,
     title: 'Apple iPhone 13',
@@ -54,40 +54,43 @@ const moreList = [
 
 <template>
   <VCard
-    title="Popular Products"
+    title="Popular Motors"
     subtitle="Total 10.4k Visitors"
   >
     <template #append>
       <div class="mt-n4 me-n2">
-        <MoreBtn :menu-list="moreList" />
+        <MoreBtn
+          size="small"
+          :menu-list="moreList"
+        />
       </div>
     </template>
 
     <VCardText>
       <VList class="card-list">
         <VListItem
-          v-for="product in popularProducts"
-          :key="product.title"
+          v-for="motor in popularMotors"
+          :key="motor.title"
         >
           <template #prepend>
             <VAvatar
               size="46"
               rounded
               class="me-1"
-              :image="product.avatarImg"
+              :image="motor.avatarImg"
             />
           </template>
 
           <VListItemTitle class="font-weight-medium me-4">
-            {{ product.title }}
+            {{ motor.title }}
           </VListItemTitle>
           <VListItemSubtitle class="me-4">
-            {{ product.subtitle }}
+            {{ motor.subtitle }}
           </VListItemSubtitle>
 
           <template #append>
             <div class="d-flex align-center">
-              <span class="text-body-1">{{ product.stats }}</span>
+              <span class="text-body-1">{{ motor.stats }}</span>
             </div>
           </template>
         </VListItem>
@@ -98,6 +101,6 @@ const moreList = [
 
 <style lang="scss" scoped>
 .card-list {
-  --v-card-list-gap: 24px;
+  --v-card-list-gap: 1.25rem;
 }
 </style>

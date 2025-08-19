@@ -45,7 +45,7 @@ onMounted(() => {
       title: 'Welcome',
       arrow: true,
       attachTo: { element: navbar, on: 'bottom' },
-      text: 'Welcome to our tour page, Guide users to the key features of the product.',
+      text: 'Welcome to our tour page, Guide users to the key features of the motor.',
       buttons: [
         {
           action: tour.cancel,

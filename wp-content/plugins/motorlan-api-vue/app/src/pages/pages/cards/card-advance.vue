@@ -10,7 +10,7 @@ import CardAdvanceLastTransaction from '@/views/pages/cards/card-advance/CardAdv
 import CardAdvanceMonthlyCampaignState from '@/views/pages/cards/card-advance/CardAdvanceMonthlyCampaignState.vue'
 import CardAdvanceOrder from '@/views/pages/cards/card-advance/CardAdvanceOrder.vue'
 import CardAdvancePopularInstructor from '@/views/pages/cards/card-advance/CardAdvancePopularInstructor.vue'
-import CardAdvancePopularProducts from '@/views/pages/cards/card-advance/CardAdvancePopularProducts.vue'
+import CardAdvancePopularMotors from '@/views/pages/cards/card-advance/CardAdvancePopularMotors.vue'
 import CardAdvanceSalesByCountries from '@/views/pages/cards/card-advance/CardAdvanceSalesByCountries.vue'
 import CardAdvanceSourceVisits from '@/views/pages/cards/card-advance/CardAdvanceSourceVisits.vue'
 import CardAdvanceTopCourses from '@/views/pages/cards/card-advance/CardAdvanceTopCourses.vue'
@@ -94,13 +94,13 @@ import CardAdvanceWebsiteAnalytics from '@/views/pages/cards/card-advance/CardAd
       <CardAdvanceTransactions />
     </VCol>
 
-    <!-- 👉 Popular Products -->
+    <!-- 👉 Popular Motors -->
     <VCol
       cols="12"
       sm="6"
       lg="4"
     >
-      <CardAdvancePopularProducts />
+      <CardAdvancePopularMotors />
     </VCol>
 
     <!-- 👉 Top Courses -->

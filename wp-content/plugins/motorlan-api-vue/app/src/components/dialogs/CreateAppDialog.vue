@@ -53,7 +53,7 @@ const categories = [
     color: 'success',
     title: 'Ecommerce Platforms',
     subtitle: 'Grow Your Business With App',
-    slug: 'ecommerce-application',
+    slug: 'motors-application',
   },
   {
     icon: 'tabler-device-laptop',

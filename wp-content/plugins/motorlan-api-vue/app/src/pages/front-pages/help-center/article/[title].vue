@@ -45,7 +45,7 @@ setTimeout(async () => {
             <div>
               <VBreadcrumbs
                 class="px-0 pb-2 pt-0 help-center-breadcrumbs"
-                :items="[{ title: 'Help Center', to: { name: 'front-pages-help-center' }, class: 'text-primary' }, { title: 'how to add product in cart' }]"
+                :items="[{ title: 'Help Center', to: { name: 'front-pages-help-center' }, class: 'text-primary' }, { title: 'how to add motor in cart' }]"
               />
               <h4 class="text-h4 mb-2">
                 {{ articleData?.title }}
@@ -58,11 +58,11 @@ setTimeout(async () => {
             <!-- eslint-disable vue/no-v-html -->
             <div
               class="mb-6 text-body-1"
-              v-html="articleData?.productContent"
+              v-html="articleData?.motorContent"
             />
             <VImg
               class="rounded-lg"
-              :src="articleData?.productImg"
+              :src="articleData?.motorImg"
             />
             <p class="my-6 text-body-1">
               {{ articleData?.checkoutContent }}
