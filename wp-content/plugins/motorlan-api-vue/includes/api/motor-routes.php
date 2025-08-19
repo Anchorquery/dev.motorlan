@@ -123,7 +123,8 @@ function motorlan_get_motors_callback( $request ) {
                 'title'        => get_the_title(),
                 'slug'         => get_post_field( 'post_name', $post_id ),
                 'status'       => get_field('publicar_acf', $post_id),
-                'imagen_destacada' => get_the_post_thumbnail_url($post_id, 'thumbnail'),
+                // saco de acf motor_image
+                'imagen_destacada' =>  get_field('motor_image', $post_id , ) ,
                 'author_id'    => get_post_field( 'post_author', $post_id ),
                 'categories'   => motorlan_get_post_taxonomy_details( $post_id, 'categoria' ),
 
@@ -169,7 +170,7 @@ function motorlan_get_motors_callback( $request ) {
 
     // Prepare the data for the response.
     $response_data = array(
-        'motors'      => $motors_data,
+        'data'      => $motors_data,
         'pagination' => $pagination,
     );
 
