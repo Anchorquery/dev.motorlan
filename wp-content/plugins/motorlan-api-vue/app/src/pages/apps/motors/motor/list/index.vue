@@ -95,6 +95,21 @@ const deleteMotor = async (id: number) => {
   fetchMotors()
 }
 
+const duplicateMotor = async (id: number) => {
+  await $api(`/wp-json/wp/v2/motors/${id}/duplicate`, {
+    method: 'POST',
+  })
+  fetchMotors()
+}
+
+const changeStatus = async (id: number, status: string) => {
+  await $api(`/wp-json/wp/v2/motors/${id}/status`, {
+    method: 'POST',
+    body: { status },
+  })
+  fetchMotors()
+}
+
 const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail'): string => {
   let imageObj: ImagenDestacada | null = null
 
@@ -316,7 +331,7 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
 
         <!-- Actions -->
         <template #item.actions="{ item }">
-          <IconBtn>
+          <IconBtn @click="$router.push(`/apps/motors/motor/edit/${(item as any).raw.uuid}`)">
             <VIcon icon="tabler-edit" />
           </IconBtn>
 
@@ -324,13 +339,6 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
             <VIcon icon="tabler-dots-vertical" />
             <VMenu activator="parent">
               <VList>
-                <VListItem
-                  value="download"
-                  prepend-icon="tabler-download"
-                >
-                  Download
-                </VListItem>
-
                 <VListItem
                   value="delete"
                   prepend-icon="tabler-trash"
@@ -342,8 +350,36 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
                 <VListItem
                   value="duplicate"
                   prepend-icon="tabler-copy"
+                  @click="duplicateMotor((item as any).raw.id)"
                 >
                   Duplicate
+                </VListItem>
+
+                <VListItem
+                  v-if="(item as any).raw.status !== 'publish'"
+                  value="publish"
+                  prepend-icon="tabler-player-play"
+                  @click="changeStatus((item as any).raw.id, 'publish')"
+                >
+                  Publish
+                </VListItem>
+
+                <VListItem
+                  v-if="(item as any).raw.status !== 'paused'"
+                  value="pause"
+                  prepend-icon="tabler-player-pause"
+                  @click="changeStatus((item as any).raw.id, 'paused')"
+                >
+                  Pause
+                </VListItem>
+
+                <VListItem
+                  v-if="(item as any).raw.status !== 'draft'"
+                  value="draft"
+                  prepend-icon="tabler-file-text"
+                  @click="changeStatus((item as any).raw.id, 'draft')"
+                >
+                  Move to Draft
                 </VListItem>
               </VList>
             </VMenu>
