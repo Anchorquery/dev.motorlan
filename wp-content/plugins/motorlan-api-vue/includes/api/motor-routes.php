@@ -11,6 +11,26 @@ if ( ! defined( 'WPINC' ) ) {
 }
 
 /**
+ * Get post taxonomy details.
+ *
+ * @param int    $post_id  The post ID.
+ * @param string $taxonomy The taxonomy.
+ * @return array
+ */
+function motorlan_get_post_taxonomy_details( $post_id, $taxonomy ) {
+    $terms_details = [];
+    $terms = wp_get_post_terms( $post_id, $taxonomy );
+    foreach ( $terms as $term ) {
+        $terms_details[] = array(
+            'id'   => $term->term_id,
+            'name' => $term->name,
+            'slug' => $term->slug,
+        );
+    }
+    return $terms_details;
+}
+
+/**
  * Register custom REST API routes for motors.
  */
 function motorlan_register_motor_rest_routes() {
@@ -41,7 +61,7 @@ function motorlan_get_motors_callback( $request ) {
     $filterable_fields = [
         'marca', 'tipo_o_referencia', 'potencia', 'velocidad', 'par_nominal', 'voltaje', 'intensidad',
         'pais', 'provincia', 'estado_del_articulo', 'posibilidad_de_alquiler', 'tipo_de_alimentacion',
-        'servomotores', 'regulacion_electronica_drivers', 'precio_de_venta', 'precio_negociable'
+        'servomotores', 'regulacion_electronica_drivers', 'precio_de_venta', 'precio_negociable', 'uuid'
     ];
 
     // Build the meta_query dynamically based on request parameters.
@@ -99,12 +119,14 @@ function motorlan_get_motors_callback( $request ) {
 
             $motor_item = array(
                 'id'           => $post_id,
+                'uuid'         => get_post_meta( $post_id, 'uuid', true ),
                 'title'        => get_the_title(),
                 'slug'         => get_post_field( 'post_name', $post_id ),
                 'status'       => get_field('publicar_acf', $post_id),
                 'imagen_destacada' => get_the_post_thumbnail_url($post_id, 'thumbnail'),
                 'author_id'    => get_post_field( 'post_author', $post_id ),
-                'categories'   => wp_get_post_terms( $post_id, 'categoria', array( 'fields' => 'all' ) ),
+                'categories'   => motorlan_get_post_taxonomy_details( $post_id, 'categoria' ),
+
                 'acf'          => array(),
             );
 
@@ -116,7 +138,17 @@ function motorlan_get_motors_callback( $request ) {
                 ];
 
                 foreach($acf_fields as $field_name) {
-                    $motor_item['acf'][$field_name] = get_field($field_name, $post_id);
+                    $value = get_field($field_name, $post_id);
+                    if ($field_name === 'marca' && $value) {
+                        $term = get_term($value, 'marca');
+                        if ($term && !is_wp_error($term)) {
+                            $motor_item['acf'][$field_name] = $term->name;
+                        } else {
+                            $motor_item['acf'][$field_name] = null;
+                        }
+                    } else {
+                        $motor_item['acf'][$field_name] = $value;
+                    }
                 }
             } else {
                  $motor_item['acf_error'] = 'Advanced Custom Fields plugin is not active.';
@@ -127,10 +159,24 @@ function motorlan_get_motors_callback( $request ) {
         wp_reset_postdata();
     }
 
-    // Create the response object.
-    $response = new WP_REST_Response( $motors_data, 200 );
+    // Pagination data.
+    $pagination = array(
+        'total'     => (int) $query->found_posts,
+        'totalPages' => (int) $query->max_num_pages,
+        'currentPage'    => (int) $page,
+        'perPage'   => (int) $per_page,
+    );
 
-    // Add pagination headers for client-side rendering.
+    // Prepare the data for the response.
+    $response_data = array(
+        'motors'      => $motors_data,
+        'pagination' => $pagination,
+    );
+
+    // Create the response object.
+    $response = new WP_REST_Response( $response_data, 200 );
+
+    // Add pagination headers for client-side rendering (optional, but good practice).
     $response->header( 'X-WP-Total', $query->found_posts );
     $response->header( 'X-WP-TotalPages', $query->max_num_pages );
 
