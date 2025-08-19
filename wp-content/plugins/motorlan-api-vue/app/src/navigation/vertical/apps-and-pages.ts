@@ -4,13 +4,8 @@ export default [
     title: 'Motors',
     icon: { icon: 'tabler-car' },
     children: [
-      {
-        title: 'Motor',
-        children: [
           { title: 'List', to: 'apps-motors-motor-list' },
           { title: 'Add', to: 'apps-motors-motor-add' },
-        ],
-      },
     ],
   },
   {

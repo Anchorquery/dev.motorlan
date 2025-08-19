@@ -14,7 +14,7 @@ if ( ! defined( 'WPINC' ) ) {
  * Register custom REST API routes for motors.
  */
 function motorlan_register_motor_rest_routes() {
-    register_rest_route( 'motorlan/v1', '/motors', array(
+    register_rest_route( '/wp/v2/', 'motors', array(
         'methods'  => WP_REST_Server::READABLE,
         'callback' => 'motorlan_get_motors_callback',
     ) );
