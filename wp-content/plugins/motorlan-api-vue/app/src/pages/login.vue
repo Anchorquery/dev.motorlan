@@ -83,13 +83,19 @@ const login = async () => {
 
     // Grant default abilities
     const userAbilities = [{ action: 'read', subject: 'all' }]
+
     ability.update(userAbilities)
     useCookie('userAbilityRules').value = userAbilities
 
     // Redirect to `to` query if exist or redirect to index route
     // ❗ nextTick is required to wait for DOM updates and later redirect
     await nextTick(() => {
-      router.replace(route.query.to ? String(route.query.to) : '/')
+      // reenvio a la ruta de dashboards-motors
+
+      if (route.query.to)
+        router.replace({ path: String(route.query.to) })
+      else
+        router.replace({ name: 'dashboards-motors' })
     })
   }
   catch (err: any) {
@@ -249,8 +255,7 @@ const onSubmit = () => {
               <VCol
                 cols="12"
                 class="text-center"
-              >
-              </VCol>
+              />
             </VRow>
           </VForm>
         </VCardText>
