@@ -97,8 +97,8 @@ $table_prefix = 'wp_';
  * @link https://developer.wordpress.org/advanced-administration/debug/debug-wordpress/
  */
 define('JWT_AUTH_SECRET_KEY', '|)yLz~k;4ba)#vu^f79K4cc0_+{2`vK4T@?%Pw$/3LyT>m=2SrXf!C+^N,K6opi]');
-define( 'WP_DEBUG', false );
-
+define( 'WP_DEBUG', true );
+define( 'WP_DEBUG_DISPLAY', true );
 /* Add any custom values between this line and the "stop editing" line. */
 
 if (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') {
