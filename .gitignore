@@ -20,3 +20,4 @@ wp-content/debug.log
 .DS_Store
 .env
 wp-config.php
+wp-content/plugins/motorlan-api-vue/app/typed-router.d.ts
