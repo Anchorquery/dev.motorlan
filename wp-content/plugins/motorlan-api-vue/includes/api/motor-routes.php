@@ -38,7 +38,7 @@ function motorlan_get_motors_callback( $request ) {
 
     // Define the list of fields that can be used for filtering.
     $filterable_fields = [
-        'titulo_entrada', 'marca', 'tipo_o_referencia', 'potencia', 'velocidad', 'par_nominal', 'voltaje', 'intensidad',
+        'marca', 'tipo_o_referencia', 'potencia', 'velocidad', 'par_nominal', 'voltaje', 'intensidad',
         'pais', 'provincia', 'estado_del_articulo', 'posibilidad_de_alquiler', 'tipo_de_alimentacion',
         'servomotores', 'regulacion_electronica_drivers', 'precio_de_venta', 'precio_negociable'
     ];
@@ -88,7 +88,7 @@ function motorlan_get_motors_callback( $request ) {
             if ( function_exists('get_field') ) {
                 $acf_fields = [
 
-                    'titulo_entrada', 'marca', 'tipo_o_referencia','estado_del_articulo','descripcion',
+                    'marca', 'tipo_o_referencia','estado_del_articulo','descripcion',
                     'precio_de_venta',
                     'publicar_acf'
                 ];

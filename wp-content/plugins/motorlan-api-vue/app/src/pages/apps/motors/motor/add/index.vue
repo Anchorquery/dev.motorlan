@@ -10,7 +10,6 @@ const motorData = ref({
   title: '',
   status: 'publish',
   acf: {
-    titulo_entrada: '',
     marca: null,
     tipo_o_referencia: '',
     motor_image: null,
@@ -147,7 +146,7 @@ const content = ref(
               >
                 <AppTextField
                   v-model="motorData.title"
-                  label="Título entrada"
+                  label="Título de la publicación"
                   placeholder="Título"
                 />
               </VCol>
