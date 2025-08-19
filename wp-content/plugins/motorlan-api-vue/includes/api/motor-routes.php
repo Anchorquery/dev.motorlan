@@ -11,6 +11,26 @@ if ( ! defined( 'WPINC' ) ) {
 }
 
 /**
+ * Get post taxonomy details.
+ *
+ * @param int    $post_id  The post ID.
+ * @param string $taxonomy The taxonomy.
+ * @return array
+ */
+function motorlan_get_post_taxonomy_details( $post_id, $taxonomy ) {
+    $terms_details = [];
+    $terms = wp_get_post_terms( $post_id, $taxonomy );
+    foreach ( $terms as $term ) {
+        $terms_details[] = array(
+            'id'   => $term->term_id,
+            'name' => $term->name,
+            'slug' => $term->slug,
+        );
+    }
+    return $terms_details;
+}
+
+/**
  * Register custom REST API routes for motors.
  */
 function motorlan_register_motor_rest_routes() {
@@ -80,7 +100,7 @@ function motorlan_get_motors_callback( $request ) {
                 'slug'         => get_post_field( 'post_name', $post_id ),
                 'status'       => get_post_status( $post_id ),
                 'author_id'    => get_post_field( 'post_author', $post_id ),
-                'categories'   => wp_get_post_categories( $post_id ),
+                'categories'   => motorlan_get_post_taxonomy_details( $post_id, 'categoria' ),
                 'acf'          => array(),
             );
 
@@ -94,7 +114,17 @@ function motorlan_get_motors_callback( $request ) {
                 ];
 
                 foreach($acf_fields as $field_name) {
-                    $motor_item['acf'][$field_name] = get_field($field_name, $post_id);
+                    $value = get_field($field_name, $post_id);
+                    if ($field_name === 'marca' && $value) {
+                        $term = get_term($value, 'marca');
+                        if ($term && !is_wp_error($term)) {
+                            $motor_item['acf'][$field_name] = $term->name;
+                        } else {
+                            $motor_item['acf'][$field_name] = null;
+                        }
+                    } else {
+                        $motor_item['acf'][$field_name] = $value;
+                    }
                 }
             } else {
                  $motor_item['acf_error'] = 'Advanced Custom Fields plugin is not active.';
