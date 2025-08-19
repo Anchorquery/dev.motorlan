@@ -42,6 +42,258 @@ function motorlan_register_motor_rest_routes() {
 add_action( 'rest_api_init', 'motorlan_register_motor_rest_routes' );
 
 /**
+ * Register a REST route for getting a motor by UUID.
+ */
+register_rest_route('wp/v2', '/motors/uuid/(?P<uuid>[a-zA-Z0-9-]+)', array(
+    'methods' => 'GET',
+    'callback' => 'motorlan_get_motor_by_uuid',
+    'permission_callback' => '__return_true' // Consider more specific permissions
+));
+
+/**
+ * Get a single motor by UUID.
+ *
+ * @param WP_REST_Request $request The request object.
+ * @return WP_REST_Response|WP_Error The response object or error.
+ */
+function motorlan_get_motor_by_uuid(WP_REST_Request $request) {
+    $uuid = $request->get_param('uuid');
+
+    if (empty($uuid)) {
+        return new WP_Error('no_uuid', 'UUID not provided', array('status' => 400));
+    }
+
+    $args = array(
+        'post_type' => 'motor',
+        'meta_key' => 'uuid',
+        'meta_value' => $uuid,
+        'posts_per_page' => 1
+    );
+
+    $query = new WP_Query($args);
+
+    if (!$query->have_posts()) {
+        return new WP_Error('not_found', 'Motor not found', array('status' => 404));
+    }
+
+    $query->the_post();
+    $post_id = get_the_ID();
+    $motor_data = motorlan_get_motor_data($post_id); // Re-use logic to get motor data
+
+    wp_reset_postdata();
+
+    return new WP_REST_Response($motor_data, 200);
+}
+
+/**
+ * Helper function to get all motor data.
+ *
+ * @param int $post_id The post ID.
+ * @return array The motor data.
+ */
+function motorlan_get_motor_data($post_id) {
+    $motor_item = array(
+        'id'           => $post_id,
+        'uuid'         => get_post_meta($post_id, 'uuid', true),
+        'title'        => get_the_title($post_id),
+        'slug'         => get_post_field('post_name', $post_id),
+        'status'       => get_field('publicar_acf', $post_id),
+        'imagen_destacada' => get_field('motor_image', $post_id, true),
+        'author_id'    => get_post_field('post_author', $post_id),
+        'categories'   => motorlan_get_post_taxonomy_details($post_id, 'categoria'),
+        'acf'          => array(),
+    );
+
+    if (function_exists('get_field')) {
+        $acf_fields = [
+            'marca', 'tipo_o_referencia', 'estado_del_articulo', 'descripcion',
+            'precio_de_venta', 'potencia', 'velocidad', 'par_nominal', 'voltaje',
+            'intensidad', 'pais', 'provincia', 'posibilidad_de_alquiler',
+            'tipo_de_alimentacion', 'servomotores', 'regulacion_electronica_drivers',
+            'precio_negociable'
+        ];
+
+        foreach ($acf_fields as $field_name) {
+            $value = get_field($field_name, $post_id);
+            $motor_item['acf'][$field_name] = $value;
+        }
+    } else {
+        $motor_item['acf_error'] = 'Advanced Custom Fields plugin is not active.';
+    }
+
+    return $motor_item;
+}
+
+
+/**
+ * Register a REST route for updating a motor by UUID.
+ */
+register_rest_route('wp/v2', '/motors/uuid/(?P<uuid>[a-zA-Z0-9-]+)', array(
+    'methods' => 'POST', // Or 'PUT'
+    'callback' => 'motorlan_update_motor_by_uuid',
+    'permission_callback' => function () {
+        return current_user_can('edit_posts');
+    }
+));
+
+/**
+ * Update a motor by UUID.
+ *
+ * @param WP_REST_Request $request The request object.
+ * @return WP_REST_Response|WP_Error The response object or error.
+ */
+function motorlan_update_motor_by_uuid(WP_REST_Request $request) {
+    $uuid = $request->get_param('uuid');
+    if (empty($uuid)) {
+        return new WP_Error('no_uuid', 'UUID not provided', array('status' => 400));
+    }
+
+    $args = array(
+        'post_type' => 'motor',
+        'meta_key' => 'uuid',
+        'meta_value' => $uuid,
+        'posts_per_page' => 1
+    );
+    $query = new WP_Query($args);
+
+    if (!$query->have_posts()) {
+        return new WP_Error('not_found', 'Motor not found', array('status' => 404));
+    }
+
+    $query->the_post();
+    $post_id = get_the_ID();
+    wp_reset_postdata();
+
+    $params = $request->get_json_params();
+
+    // Update post title
+    if (isset($params['title'])) {
+        wp_update_post(array('ID' => $post_id, 'post_title' => $params['title']));
+    }
+
+    // Update ACF fields
+    if (isset($params['acf']) && is_array($params['acf'])) {
+        foreach ($params['acf'] as $key => $value) {
+            update_field($key, $value, $post_id);
+        }
+    }
+
+    return new WP_REST_Response(array('message' => 'Motor updated successfully'), 200);
+}
+
+/**
+ * Register a REST route for deleting a motor by ID.
+ */
+register_rest_route('wp/v2', '/motors/(?P<id>\\d+)', array(
+    'methods' => 'DELETE',
+    'callback' => 'motorlan_delete_motor',
+    'permission_callback' => function () {
+        return current_user_can('delete_posts');
+    }
+));
+
+/**
+ * Delete a motor by ID.
+ *
+ * @param WP_REST_Request $request The request object.
+ * @return WP_REST_Response|WP_Error The response object or error.
+ */
+function motorlan_delete_motor(WP_REST_Request $request) {
+    $post_id = $request->get_param('id');
+    $result = wp_delete_post($post_id, true); // true to force delete
+
+    if ($result === false) {
+        return new WP_Error('delete_failed', 'Failed to delete motor', array('status' => 500));
+    }
+
+    return new WP_REST_Response(array('message' => 'Motor deleted successfully'), 200);
+}
+
+/**
+ * Register a REST route for duplicating a motor by ID.
+ */
+register_rest_route('wp/v2', '/motors/(?P<id>\\d+)/duplicate', array(
+    'methods' => 'POST',
+    'callback' => 'motorlan_duplicate_motor',
+    'permission_callback' => function () {
+        return current_user_can('edit_posts');
+    }
+));
+
+/**
+ * Duplicate a motor by ID.
+ *
+ * @param WP_REST_Request $request The request object.
+ * @return WP_REST_Response|WP_Error The response object or error.
+ */
+function motorlan_duplicate_motor(WP_REST_Request $request) {
+    $original_post_id = $request->get_param('id');
+    $original_post = get_post($original_post_id);
+
+    if (!$original_post) {
+        return new WP_Error('not_found', 'Original motor not found', array('status' => 404));
+    }
+
+    $new_post_data = array(
+        'post_title' => $original_post->post_title . ' (copia)',
+        'post_status' => 'draft',
+        'post_type' => $original_post->post_type,
+        'post_author' => get_current_user_id(),
+    );
+
+    $new_post_id = wp_insert_post($new_post_data);
+
+    if (is_wp_error($new_post_id)) {
+        return $new_post_id;
+    }
+
+    // Duplicate ACF fields
+    $acf_fields = get_fields($original_post_id);
+    if ($acf_fields) {
+        foreach ($acf_fields as $name => $value) {
+            update_field($name, $value, $new_post_id);
+        }
+    }
+
+    // Asignar un nuevo UUID
+    update_field('uuid', wp_generate_uuid4(), $new_post_id);
+
+    return new WP_REST_Response(array('message' => 'Motor duplicated successfully', 'new_post_id' => $new_post_id), 200);
+}
+
+/**
+ * Register a REST route for updating motor status by ID.
+ */
+register_rest_route('wp/v2', '/motors/(?P<id>\\d+)/status', array(
+    'methods' => 'POST',
+    'callback' => 'motorlan_update_motor_status',
+    'permission_callback' => function () {
+        return current_user_can('edit_posts');
+    }
+));
+
+
+/**
+ * Update motor status by ID.
+ *
+ * @param WP_REST_Request $request The request object.
+ * @return WP_REST_Response|WP_Error The response object or error.
+ */
+function motorlan_update_motor_status(WP_REST_Request $request) {
+    $post_id = $request->get_param('id');
+    $params = $request->get_json_params();
+    $new_status = $params['status'];
+
+    if (empty($new_status)) {
+        return new WP_Error('no_status', 'Status not provided', array('status' => 400));
+    }
+
+    update_field('publicar_acf', $new_status, $post_id);
+
+    return new WP_REST_Response(array('message' => 'Motor status updated successfully'), 200);
+}
+
+/**
  * Callback function to get a list of motors with pagination and filtering, using ACF.
  *
  * @param WP_REST_Request $request The request object.
