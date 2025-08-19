@@ -132,7 +132,7 @@ const { data: motorsData, execute: fetchMotors } = await useApi<any>(createUrl('
 
 ))
 
-const motors = computed((): Motor[] => (motorsData.value?.data || []).filter((motor: any) => motor && motor.id))
+const motors = computed((): Motor[] => (motorsData.value?.data || []).filter(Boolean))
 const totalMotors = computed(() => motorsData.value?.pagination.total || 0)
 
 const deleteMotor = async (id: number) => {
@@ -149,14 +149,21 @@ const deleteMotor = async (id: number) => {
   fetchMotors()
 }
 
-const getImageBySize = (image: ImagenDestacada | null, size = 'thumbnail'): string => {
-  if (!image)
+const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail'): string => {
+  let imageObj: ImagenDestacada | null = null
+
+  if (Array.isArray(image) && image.length > 0)
+    imageObj = image[0]
+  else if (image && !Array.isArray(image))
+    imageObj = image as ImagenDestacada
+
+  if (!imageObj)
     return ''
 
-  if (image.sizes && image.sizes[size])
-    return image.sizes[size] as string
+  if (imageObj.sizes && imageObj.sizes[size])
+    return imageObj.sizes[size] as string
 
-  return image.url || ''
+  return imageObj.url || ''
 }
 </script>
 
