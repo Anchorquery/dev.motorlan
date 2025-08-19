@@ -64,7 +64,7 @@ const isPricingPlanDialogVisible = ref(false)
                     Checkout
                   </h4>
                   <div class="text-body-1">
-                    All plans include 40+ advanced tools and features to boost your product. Choose the best plan to fit your needs.
+                    All plans include 40+ advanced tools and features to boost your motor. Choose the best plan to fit your needs.
                   </div>
                 </div>
 

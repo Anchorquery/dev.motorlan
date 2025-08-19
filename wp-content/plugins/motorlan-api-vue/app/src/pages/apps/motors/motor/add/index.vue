@@ -56,7 +56,38 @@ if (motorId) {
     }
   })
 }
+const uploadMedia = async (file: File) => {
+  const api = useApi()
+  const formData = new FormData()
+  formData.append('file', file)
 
+  try {
+    const response = await api('/wp-json/wp/v2/media', {
+      method: 'POST',
+      body: formData,
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    })
+    return response.data.value.id
+  }
+  catch (error) {
+    console.error('Failed to upload media:', error)
+    return null
+  }
+}
+
+const handleFeaturedImageUpload = async (file: File) => {
+  const imageId = await uploadMedia(file)
+  if (imageId)
+    motorData.value.acf.motor_image = imageId
+}
+
+const handleGalleryImageUpload = async (file: File) => {
+  const imageId = await uploadMedia(file)
+  if (imageId)
+    motorData.value.acf.motor_gallery.push(imageId)
+}
 const publishMotor = async () => {
   const api = useApi()
   const url = motorId ? `/wp-json/wp/v2/motors/${motorId}` : '/wp-json/wp/v2/motors'
@@ -337,6 +368,23 @@ const content = ref(
                 </VRadioGroup>
               </VCol>
             </VRow>
+          </VCardText>
+        </VCard>
+        <VCard
+          class="mb-6"
+          title="Imagen del Motor"
+        >
+          <VCardText>
+            <DropZone @file-added="handleFeaturedImageUpload" />
+          </VCardText>
+        </VCard>
+
+        <VCard
+          class="mb-6"
+          title="Galería de Imágenes"
+        >
+          <VCardText>
+            <DropZone @file-added="handleGalleryImageUpload" />
           </VCardText>
         </VCard>
       </VCol>

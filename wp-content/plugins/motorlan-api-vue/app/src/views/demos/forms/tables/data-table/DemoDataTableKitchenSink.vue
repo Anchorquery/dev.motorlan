@@ -99,33 +99,33 @@ if (error.value)
     <!-- 👉 Data Table  -->
     <VDataTable
       :headers="headers"
-      :items="productList || []"
+      :items="motorList || []"
       :search="search"
       :items-per-page="5"
       class="text-no-wrap"
     >
-      <!-- product -->
-      <template #item.product.name="{ item }">
+      <!-- motor -->
+      <template #item.motor.name="{ item }">
         <div class="d-flex align-center">
           <div>
             <VImg
-              :src="item.product.image"
+              :src="item.motor.image"
               height="40"
               width="40"
             />
           </div>
           <div class="d-flex flex-column ms-3">
-            <span class="d-block font-weight-medium text-truncate text-high-emphasis">{{ item.product.name }}</span>
-            <span class="text-xs">{{ item.product.brand }}</span>
+            <span class="d-block font-weight-medium text-truncate text-high-emphasis">{{ item.motor.name }}</span>
+            <span class="text-xs">{{ item.motor.brand }}</span>
           </div>
         </div>
       </template>
 
       <!-- category -->
-      <template #item.product.category="{ item }">
+      <template #item.motor.category="{ item }">
         <div class="d-flex align-center">
           <VAvatar
-            v-for="(category, index) in categoryIconFilter(item.product.category)"
+            v-for="(category, index) in categoryIconFilter(item.motor.category)"
             :key="index"
             size="26"
             :color="category.color"
@@ -139,7 +139,7 @@ if (error.value)
               {{ category.icon }}
             </VIcon>
           </VAvatar>
-          <span class="ms-1 text-no-wrap">{{ item.product.category }}</span>
+          <span class="ms-1 text-no-wrap">{{ item.motor.category }}</span>
         </div>
       </template>
 
@@ -186,7 +186,7 @@ if (error.value)
 
       <!-- Delete -->
       <template #item.delete="{ item }">
-        <IconBtn @click="deleteItem(item.product.id)">
+        <IconBtn @click="deleteItem(item.motor.id)">
           <VIcon icon="tabler-trash" />
         </IconBtn>
       </template>

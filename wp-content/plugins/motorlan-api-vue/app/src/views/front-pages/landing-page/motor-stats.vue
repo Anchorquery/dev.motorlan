@@ -7,7 +7,7 @@ import user from '@images/svg/user.svg'
 const statData = [
   { title: 'Support Tickets Resolved', value: '7.1k+', icon: laptop, color: 'primary' },
   { title: 'Join creatives community', value: '50k+', icon: user, color: 'success' },
-  { title: 'Highly Rated Products', value: '4.8/5', icon: diamond, color: 'info' },
+  { title: 'Highly Rated Motors', value: '4.8/5', icon: diamond, color: 'info' },
   { title: 'Money Back Guarantee', value: '100%', icon: check, color: 'warning' },
 ]
 </script>
@@ -18,7 +18,7 @@ const statData = [
       <div class="py-12">
         <VRow>
           <VCol
-            v-for="(product, index) in statData"
+            v-for="(motor, index) in statData"
             :key="index"
             cols="12"
             sm="6"
@@ -26,20 +26,20 @@ const statData = [
           >
             <VCard
               flat
-              :style="{ border: `1px solid rgba(var(--v-theme-${product.color}))` }"
+              :style="{ border: `1px solid rgba(var(--v-theme-${motor.color}))` }"
             >
               <VCardText class="text-center">
                 <VIcon
-                  :color="product.color"
-                  :icon="product.icon"
+                  :color="motor.color"
+                  :icon="motor.icon"
                   size="64"
                   class="mb-4"
                 />
                 <h3 class="text-h3">
-                  {{ product.value }}
+                  {{ motor.value }}
                 </h3>
                 <p class="text-body-1 font-weight-medium mb-0 text-wrap">
-                  {{ product.title }}
+                  {{ motor.title }}
                 </p>
               </VCardText>
             </VCard>

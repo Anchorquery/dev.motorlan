@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { useDropZone, useFileDialog, useObjectUrl } from '@vueuse/core'
 
+const emit = defineEmits(['file-added'])
+
 const dropZoneRef = ref<HTMLDivElement>()
 interface FileData {
   file: File
@@ -23,6 +25,7 @@ function onDrop(DroppedFiles: File[] | null) {
       file,
       url: useObjectUrl(file).value ?? '',
     })
+    emit('file-added', file)
   },
   )
 }
@@ -36,6 +39,7 @@ onChange((selectedFiles: any) => {
       file,
       url: useObjectUrl(file).value ?? '',
     })
+    emit('file-added', file)
   }
 })
 

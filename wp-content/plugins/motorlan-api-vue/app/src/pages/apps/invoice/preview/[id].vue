@@ -424,7 +424,7 @@ const printInvoice = () => {
     padding: 0 !important;
   }
 
-  .product-buy-now {
+  .motor-buy-now {
     display: none;
   }
 

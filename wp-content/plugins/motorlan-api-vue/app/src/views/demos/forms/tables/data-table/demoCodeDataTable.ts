@@ -1697,15 +1697,15 @@ export const kitchenSink = {
   ts: `<script setup lang="ts">
 import type { SalesDetails } from '@db/pages/datatable/types'
 
-const { data: productList, error } = await useApi<SalesDetails[]>('pages/datatable')
+const { data: motorList, error } = await useApi<SalesDetails[]>('pages/datatable')
 
 const search = ref('')
 
 // headers
 const headers = [
-  { title: 'PRODUCT', key: 'product.name' },
+  { title: 'MOTOR', key: 'motor.name' },
   { title: 'DATE', key: 'date' },
-  { title: 'CATEGORY', key: 'product.category' },
+  { title: 'CATEGORY', key: 'motor.category' },
   { title: 'BUYERS', key: 'buyer.name' },
   { title: 'PAYMENT', key: 'payment', sortable: false },
   { title: 'STATUS', key: 'status', sortable: false },
@@ -1714,12 +1714,12 @@ const headers = [
 
 // 👉 methods
 const deleteItem = (itemId: number) => {
-  if (!productList.value)
+  if (!motorList.value)
     return
 
-  const index = productList.value.findIndex(item => item.product.id === itemId)
+  const index = motorList.value.findIndex(item => item.motor.id === itemId)
 
-  productList.value.splice(index, 1)
+  motorList.value.splice(index, 1)
 }
 
 const categoryIcons = [
@@ -1795,33 +1795,33 @@ if (error.value)
     <!-- 👉 Data Table  -->
     <VDataTable
       :headers="headers"
-      :items="productList || []"
+      :items="motorList || []"
       :search="search"
       :items-per-page="5"
       class="text-no-wrap"
     >
-      <!-- product -->
-      <template #item.product.name="{ item }">
+      <!-- motor -->
+      <template #item.motor.name="{ item }">
         <div class="d-flex align-center">
           <div>
             <VImg
-              :src="item.product.image"
+              :src="item.motor.image"
               height="40"
               width="40"
             />
           </div>
           <div class="d-flex flex-column ms-3">
-            <span class="d-block font-weight-medium text-truncate text-high-emphasis">{{ item.product.name }}</span>
-            <span class="text-xs">{{ item.product.brand }}</span>
+            <span class="d-block font-weight-medium text-truncate text-high-emphasis">{{ item.motor.name }}</span>
+            <span class="text-xs">{{ item.motor.brand }}</span>
           </div>
         </div>
       </template>
 
       <!-- category -->
-      <template #item.product.category="{ item }">
+      <template #item.motor.category="{ item }">
         <div class="d-flex align-center">
           <VAvatar
-            v-for="(category, index) in categoryIconFilter(item.product.category)"
+            v-for="(category, index) in categoryIconFilter(item.motor.category)"
             :key="index"
             size="26"
             :color="category.color"
@@ -1835,7 +1835,7 @@ if (error.value)
               {{ category.icon }}
             </VIcon>
           </VAvatar>
-          <span class="ms-1 text-no-wrap">{{ item.product.category }}</span>
+          <span class="ms-1 text-no-wrap">{{ item.motor.category }}</span>
         </div>
       </template>
 
@@ -1882,7 +1882,7 @@ if (error.value)
 
       <!-- Delete -->
       <template #item.delete="{ item }">
-        <IconBtn @click="deleteItem(item.product.id)">
+        <IconBtn @click="deleteItem(item.motor.id)">
           <VIcon icon="tabler-trash" />
         </IconBtn>
       </template>
@@ -1892,7 +1892,7 @@ if (error.value)
 `,
   js: `<script setup>
 const {
-  data: productList,
+  data: motorList,
   error,
 } = await useApi('pages/datatable')
 
@@ -1901,8 +1901,8 @@ const search = ref('')
 // headers
 const headers = [
   {
-    title: 'PRODUCT',
-    key: 'product.name',
+    title: 'MOTOR',
+    key: 'motor.name',
   },
   {
     title: 'DATE',
@@ -1910,7 +1910,7 @@ const headers = [
   },
   {
     title: 'CATEGORY',
-    key: 'product.category',
+    key: 'motor.category',
   },
   {
     title: 'BUYERS',
@@ -1934,11 +1934,11 @@ const headers = [
 ]
 
 const deleteItem = itemId => {
-  if (!productList.value)
+  if (!motorList.value)
     return
-  const index = productList.value.findIndex(item => item.product.id === itemId)
+  const index = motorList.value.findIndex(item => item.motor.id === itemId)
 
-  productList.value.splice(index, 1)
+  motorList.value.splice(index, 1)
 }
 
 const categoryIcons = [
@@ -2101,33 +2101,33 @@ if (error.value)
     <!-- 👉 Data Table  -->
     <VDataTable
       :headers="headers"
-      :items="productList || []"
+      :items="motorList || []"
       :search="search"
       :items-per-page="5"
       class="text-no-wrap"
     >
-      <!-- product -->
-      <template #item.product.name="{ item }">
+      <!-- motor -->
+      <template #item.motor.name="{ item }">
         <div class="d-flex align-center">
           <div>
             <VImg
-              :src="item.product.image"
+              :src="item.motor.image"
               height="40"
               width="40"
             />
           </div>
           <div class="d-flex flex-column ms-3">
-            <span class="d-block font-weight-medium text-truncate text-high-emphasis">{{ item.product.name }}</span>
-            <span class="text-xs">{{ item.product.brand }}</span>
+            <span class="d-block font-weight-medium text-truncate text-high-emphasis">{{ item.motor.name }}</span>
+            <span class="text-xs">{{ item.motor.brand }}</span>
           </div>
         </div>
       </template>
 
       <!-- category -->
-      <template #item.product.category="{ item }">
+      <template #item.motor.category="{ item }">
         <div class="d-flex align-center">
           <VAvatar
-            v-for="(category, index) in categoryIconFilter(item.product.category)"
+            v-for="(category, index) in categoryIconFilter(item.motor.category)"
             :key="index"
             size="26"
             :color="category.color"
@@ -2141,7 +2141,7 @@ if (error.value)
               {{ category.icon }}
             </VIcon>
           </VAvatar>
-          <span class="ms-1 text-no-wrap">{{ item.product.category }}</span>
+          <span class="ms-1 text-no-wrap">{{ item.motor.category }}</span>
         </div>
       </template>
 
@@ -2188,7 +2188,7 @@ if (error.value)
 
       <!-- Delete -->
       <template #item.delete="{ item }">
-        <IconBtn @click="deleteItem(item.product.id)">
+        <IconBtn @click="deleteItem(item.motor.id)">
           <VIcon icon="tabler-trash" />
         </IconBtn>
       </template>
