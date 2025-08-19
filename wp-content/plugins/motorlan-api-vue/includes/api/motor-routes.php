@@ -124,7 +124,7 @@ function motorlan_get_motors_callback( $request ) {
                 'slug'         => get_post_field( 'post_name', $post_id ),
                 'status'       => get_field('publicar_acf', $post_id),
                 // saco de acf motor_image
-                'imagen_destacada' =>  get_field('motor_image', $post_id , ) ,
+                'imagen_destacada' =>  get_field('motor_image', $post_id ,true ) ,
                 'author_id'    => get_post_field( 'post_author', $post_id ),
                 'categories'   => motorlan_get_post_taxonomy_details( $post_id, 'categoria' ),
 
