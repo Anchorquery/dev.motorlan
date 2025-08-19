@@ -74,36 +74,17 @@ function motorlan_get_motors_callback( $request ) {
             $query->the_post();
             $post_id = get_the_ID();
 
+            $featured_image_url = get_the_post_thumbnail_url($post_id, 'full');
+
             $motor_item = array(
-                'id'           => $post_id,
-                'title'        => get_the_title(),
-                'slug'         => get_post_field( 'post_name', $post_id ),
-                'content'      => get_the_content(),
-                'excerpt'      => get_the_excerpt(),
-                'status'       => get_post_status( $post_id ),
-                'author_id'    => get_post_field( 'post_author', $post_id ),
-                'categories'   => wp_get_post_categories( $post_id ),
-                'featured_image_id' => get_post_thumbnail_id( $post_id ),
-                'acf'          => array(),
+                'Titulo'           => get_the_title(),
+                'Precio'           => get_field('precio_de_venta', $post_id),
+                'imagen_destacada' => $featured_image_url ? $featured_image_url : null,
+                'marca'            => get_field('marca', $post_id),
+                'referencia'       => get_field('tipo_o_referencia', $post_id),
+                'precio_de_venta'  => get_field('precio_de_venta', $post_id),
+                'status'           => get_post_status( $post_id ),
             );
-
-            // Populate ACF fields if ACF is active
-            if ( function_exists('get_field') ) {
-                $acf_fields = [
-
-                    'titulo_entrada', 'marca', 'tipo_o_referencia', 'motor_gallery',
-                    'potencia', 'velocidad', 'par_nominal', 'voltaje', 'intensidad', 'pais', 'provincia', 'estado_del_articulo',
-                    'informe_de_reparacion', 'descripcion', 'posibilidad_de_alquiler', 'tipo_de_alimentacion',
-                    'servomotores', 'regulacion_electronica_drivers', 'precio_de_venta', 'precio_negociable',
-                    'documentacion_adjunta', 'publicar_acf'
-                ];
-
-                foreach($acf_fields as $field_name) {
-                    $motor_item['acf'][$field_name] = get_field($field_name, $post_id);
-                }
-            } else {
-                 $motor_item['acf_error'] = 'Advanced Custom Fields plugin is not active.';
-            }
 
             $motors_data[] = $motor_item;
         }
