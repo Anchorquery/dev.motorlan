@@ -333,7 +333,7 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
 
         <!-- Actions -->
         <template #item.actions="{ item }">
-          <IconBtn @click="$router.push(`/apps/motors/motor/edit/${(item as any).raw.uuid}`)">
+          <IconBtn @click="$router.push(`/apps/motors/motor/edit/${(item as any).uuid}`)">
             <VIcon icon="tabler-edit" />
           </IconBtn>
 
@@ -352,34 +352,34 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
                 <VListItem
                   value="duplicate"
                   prepend-icon="tabler-copy"
-                  @click="duplicateMotor((item as any).raw.id)"
+                  @click="duplicateMotor((item as any).id)"
                 >
                   Duplicate
                 </VListItem>
 
                 <VListItem
-                  v-if="(item as any).raw.status !== 'publish'"
+                  v-if="(item as any).status !== 'publish'"
                   value="publish"
                   prepend-icon="tabler-player-play"
-                  @click="changeStatus((item as any).raw.id, 'publish')"
+                  @click="changeStatus((item as any).id, 'publish')"
                 >
                   Publish
                 </VListItem>
 
                 <VListItem
-                  v-if="(item as any).raw.status !== 'paused'"
+                  v-if="(item as any).status !== 'paused'"
                   value="pause"
                   prepend-icon="tabler-player-pause"
-                  @click="changeStatus((item as any).raw.id, 'paused')"
+                  @click="changeStatus((item as any).id, 'paused')"
                 >
                   Pause
                 </VListItem>
 
                 <VListItem
-                  v-if="(item as any).raw.status !== 'draft'"
+                  v-if="(item as any).status !== 'draft'"
                   value="draft"
                   prepend-icon="tabler-file-text"
-                  @click="changeStatus((item as any).raw.id, 'draft')"
+                  @click="changeStatus((item as any).id, 'draft')"
                 >
                   Move to Draft
                 </VListItem>
