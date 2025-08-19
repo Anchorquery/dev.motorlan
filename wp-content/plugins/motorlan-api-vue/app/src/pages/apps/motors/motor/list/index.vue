@@ -96,6 +96,8 @@ const deleteMotor = async (id: number) => {
 }
 
 const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail'): string => {
+
+  console.log(image)
   let imageObj: ImagenDestacada | null = null
 
   if (Array.isArray(image) && image.length > 0)
@@ -116,7 +118,7 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
 <template>
   <div>
     <!-- 👉 widgets -->
-    <VCard class="mb-6">
+    <!-- <VCard class="mb-6">
       <VCardText class="px-3">
         <VRow>
           <template
@@ -186,7 +188,7 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
           </template>
         </VRow>
       </VCardText>
-    </VCard>
+    </VCard> -->
 
     <!-- 👉 motors -->
     <VCard
@@ -281,33 +283,33 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
         <template #item.motor="{ item }">
           <div class="d-flex align-center gap-x-4">
             <VAvatar
-              v-if="(item as any).raw.imagen_destacada"
+              v-if="(item as any).imagen_destacada"
               size="38"
               variant="tonal"
               rounded
-              :image="getImageBySize((item as any).raw.imagen_destacada, 'thumbnail')"
+              :image="getImageBySize((item as any).imagen_destacada, 'thumbnail')"
             />
             <div class="d-flex flex-column">
-              <span class="text-body-1 font-weight-medium text-high-emphasis">{{ (item as any).raw.title }}</span>
-              <span class="text-body-2">{{ (item as any).raw.acf.marca }}</span>
+              <span class="text-body-1 font-weight-medium text-high-emphasis">{{ (item as any).title }}</span>
+              <span class="text-body-2">{{ (item as any).acf.marca }}</span>
             </div>
           </div>
         </template>
 
         <!-- referencia -->
         <template #item.referencia="{ item }">
-          <span class="text-body-1 text-high-emphasis">{{ (item as any).raw.acf.tipo_o_referencia }}</span>
+          <span class="text-body-1 text-high-emphasis">{{ (item as any).acf.tipo_o_referencia }}</span>
         </template>
 
         <!-- precio -->
         <template #item.precio="{ item }">
-          <span class="text-body-1 text-high-emphasis">{{ (item as any).raw.acf.precio_de_venta }}</span>
+          <span class="text-body-1 text-high-emphasis">{{ (item as any).acf.precio_de_venta }}</span>
         </template>
 
         <!-- status -->
         <template #item.status="{ item }">
           <VChip
-            v-bind="resolveStatus((item as any).raw.status)"
+            v-bind="resolveStatus((item as any).status)"
             density="default"
             label
             size="small"
@@ -334,7 +336,7 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
                 <VListItem
                   value="delete"
                   prepend-icon="tabler-trash"
-                  @click="deleteMotor((item as any).raw.id)"
+                  @click="deleteMotor((item as any).id)"
                 >
                   Delete
                 </VListItem>
