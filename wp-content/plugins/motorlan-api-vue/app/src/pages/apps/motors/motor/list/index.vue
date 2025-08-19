@@ -2,7 +2,9 @@
 interface Motor {
   id: number
   title: string
-  imagen_destacada: string
+  imagen_destacada: {
+    url: string
+  } | null
   acf: {
     marca: string
     tipo_o_referencia: string
@@ -87,13 +89,8 @@ const { data: motorsData, execute: fetchMotors } = await useApi<any>(createUrl('
   },
 ))
 
-const motors = computed((): Motor[] => motorsData.value || [])
-const totalMotors = computed(() => {
-  if (motorsData.value && motorsData.value.headers) {
-    return parseInt(motorsData.value.headers['x-wp-total'], 10)
-  }
-  return 0
-})
+const motors = computed((): Motor[] => motorsData.value?.motors || [])
+const totalMotors = computed(() => motorsData.value?.pagination.total || 0)
 
 const deleteMotor = async (id: number) => {
   await $api(`/wp-json/wp/v2/motors/${id}`, {
@@ -282,7 +279,7 @@ const deleteMotor = async (id: number) => {
               size="38"
               variant="tonal"
               rounded
-              :image="item.raw.imagen_destacada"
+              :image="item.raw.imagen_destacada.url"
             />
             <div class="d-flex flex-column">
               <span class="text-body-1 font-weight-medium text-high-emphasis">{{ item.raw.title }}</span>
