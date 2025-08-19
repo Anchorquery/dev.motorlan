@@ -79,17 +79,21 @@ const login = async () => {
       displayName: user_display_name,
       email: user_email,
       nicename: user_nicename,
+      role: user_nicename, // Add the role to the user data
     }
 
-    // Grant default abilities
-    const userAbilities = [{ action: 'read', subject: 'all' }]
+    // Grant abilities based on role
+    const userAbilities = user_nicename === 'admin'
+      ? [{ action: 'manage', subject: 'all' }]
+      : [{ action: 'manage', subject: 'all' }]
+
     ability.update(userAbilities)
     useCookie('userAbilityRules').value = userAbilities
 
     // Redirect to `to` query if exist or redirect to index route
     // ❗ nextTick is required to wait for DOM updates and later redirect
     await nextTick(() => {
-      router.replace(route.query.to ? String(route.query.to) : '/')
+      router.replace(route.query.to ? String(route.query.to) : '/dashboards-motors')
     })
   }
   catch (err: any) {
