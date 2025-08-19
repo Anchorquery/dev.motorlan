@@ -132,7 +132,7 @@ const { data: motorsData, execute: fetchMotors } = await useApi<any>(createUrl('
 
 ))
 
-const motors = computed((): Motor[] => (motorsData.value?.data || []).filter(Boolean))
+const motors = computed((): Motor[] => (motorsData.value?.data || []).filter((motor: any) => motor && motor.id))
 const totalMotors = computed(() => motorsData.value?.pagination.total || 0)
 
 const deleteMotor = async (id: number) => {
