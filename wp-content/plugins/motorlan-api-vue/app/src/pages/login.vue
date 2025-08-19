@@ -28,6 +28,7 @@ const isPasswordVisible = ref(false)
 
 const route = useRoute()
 const router = useRouter()
+const ability = useAbility()
 
 const errors = ref<Record<string, string | undefined>>({
   username: undefined,
@@ -37,6 +38,7 @@ const errors = ref<Record<string, string | undefined>>({
 const genericError = ref<string | null>(null)
 
 const refVForm = ref<VForm>()
+const isSubmitting = ref(false)
 
 const credentials = ref({
   username: 'admin',
@@ -44,6 +46,7 @@ const credentials = ref({
 })
 
 const login = async () => {
+  isSubmitting.value = true
   try {
     // Reset errors
     errors.value = { username: undefined, password: undefined }
@@ -79,9 +82,10 @@ const login = async () => {
       nicename: user_nicename,
     }
 
-    // NOTE: The original template had logic for user roles and abilities.
-    // This has been removed for simplicity, but can be re-added here
-    // by fetching user roles from WordPress and updating the ability instance.
+    // Grant default abilities
+    const userAbilities = [{ action: 'read', subject: 'all' }]
+    ability.update(userAbilities)
+    useCookie('userAbilityRules').value = userAbilities
 
     // Redirect to `to` query if exist or redirect to index route
     // ❗ nextTick is required to wait for DOM updates and later redirect
@@ -92,6 +96,9 @@ const login = async () => {
   catch (err: any) {
     console.error(err)
     genericError.value = err.data?.message || 'Failed to connect to the server. Please check your connection or contact support.'
+  }
+  finally {
+    isSubmitting.value = false
   }
 }
 
@@ -210,6 +217,8 @@ const onSubmit = () => {
                 <VBtn
                   block
                   type="submit"
+                  :loading="isSubmitting"
+                  :disabled="isSubmitting"
                 >
                   Login
                 </VBtn>

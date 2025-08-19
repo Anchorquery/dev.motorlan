@@ -56,7 +56,6 @@ if (motorId) {
     }
   })
 }
-
 const uploadMedia = async (file: File) => {
   const api = useApi()
   const formData = new FormData()
@@ -89,7 +88,6 @@ const handleGalleryImageUpload = async (file: File) => {
   if (imageId)
     motorData.value.acf.motor_gallery.push(imageId)
 }
-
 const publishMotor = async () => {
   const api = useApi()
   const url = motorId ? `/wp-json/wp/v2/motors/${motorId}` : '/wp-json/wp/v2/motors'
@@ -372,7 +370,6 @@ const content = ref(
             </VRow>
           </VCardText>
         </VCard>
-
         <VCard
           class="mb-6"
           title="Imagen del Motor"
