@@ -34,21 +34,67 @@ function motorlan_get_post_taxonomy_details( $post_id, $taxonomy ) {
  * Register custom REST API routes for motors.
  */
 function motorlan_register_motor_rest_routes() {
-    register_rest_route( '/wp/v2/', 'motors', array(
+    $namespace = 'wp/v2';
+
+    // Route for getting a list of motors
+    register_rest_route( $namespace, '/motors', array(
         'methods'  => WP_REST_Server::READABLE,
         'callback' => 'motorlan_get_motors_callback',
+        'permission_callback' => '__return_true',
+    ) );
+
+    // Route for getting a single motor by UUID
+    register_rest_route($namespace, '/motors/uuid/(?P<uuid>[a-zA-Z0-9-]+)', array(
+        'methods' => 'GET',
+        'callback' => 'motorlan_get_motor_by_uuid',
+        'permission_callback' => '__return_true'
+    ));
+
+    // Route for updating a motor by UUID
+    register_rest_route($namespace, '/motors/uuid/(?P<uuid>[a-zA-Z0-9-]+)', array(
+        'methods' => 'POST',
+        'callback' => 'motorlan_update_motor_by_uuid',
+        'permission_callback' => function () {
+            return current_user_can('edit_posts');
+        }
+    ));
+
+    // Route for deleting a motor by ID
+    register_rest_route($namespace, '/motors/(?P<id>\\d+)', array(
+        'methods' => 'DELETE',
+        'callback' => 'motorlan_delete_motor',
+        'permission_callback' => function () {
+            return current_user_can('delete_posts');
+        }
+    ));
+
+    // Route for duplicating a motor by ID
+    register_rest_route($namespace, '/motors/(?P<id>\\d+)/duplicate', array(
+        'methods' => 'POST',
+        'callback' => 'motorlan_duplicate_motor',
+        'permission_callback' => function () {
+            return current_user_can('edit_posts');
+        }
+    ));
+
+    // Route for updating motor status by ID
+    register_rest_route($namespace, '/motors/(?P<id>\\d+)/status', array(
+        'methods' => 'POST',
+        'callback' => 'motorlan_update_motor_status',
+        'permission_callback' => function () {
+            return current_user_can('edit_posts');
+        }
+    ));
+
+    // Route for getting motor categories
+    register_rest_route( $namespace, '/motor-categories', array(
+        'methods'  => WP_REST_Server::READABLE,
+        'callback' => 'motorlan_get_motor_categories_callback',
+        'permission_callback' => '__return_true',
     ) );
 }
 add_action( 'rest_api_init', 'motorlan_register_motor_rest_routes' );
 
-/**
- * Register a REST route for getting a motor by UUID.
- */
-register_rest_route('wp/v2', '/motors/uuid/(?P<uuid>[a-zA-Z0-9-]+)', array(
-    'methods' => 'GET',
-    'callback' => 'motorlan_get_motor_by_uuid',
-    'permission_callback' => '__return_true' // Consider more specific permissions
-));
 
 /**
  * Get a single motor by UUID.
@@ -67,7 +113,8 @@ function motorlan_get_motor_by_uuid(WP_REST_Request $request) {
         'post_type' => 'motor',
         'meta_key' => 'uuid',
         'meta_value' => $uuid,
-        'posts_per_page' => 1
+        'posts_per_page' => 1,
+        'post_status' => 'any',
     );
 
     $query = new WP_Query($args);
@@ -78,7 +125,7 @@ function motorlan_get_motor_by_uuid(WP_REST_Request $request) {
 
     $query->the_post();
     $post_id = get_the_ID();
-    $motor_data = motorlan_get_motor_data($post_id); // Re-use logic to get motor data
+    $motor_data = motorlan_get_motor_data($post_id);
 
     wp_reset_postdata();
 
@@ -126,17 +173,6 @@ function motorlan_get_motor_data($post_id) {
 
 
 /**
- * Register a REST route for updating a motor by UUID.
- */
-register_rest_route('wp/v2', '/motors/uuid/(?P<uuid>[a-zA-Z0-9-]+)', array(
-    'methods' => 'POST', // Or 'PUT'
-    'callback' => 'motorlan_update_motor_by_uuid',
-    'permission_callback' => function () {
-        return current_user_can('edit_posts');
-    }
-));
-
-/**
  * Update a motor by UUID.
  *
  * @param WP_REST_Request $request The request object.
@@ -152,7 +188,8 @@ function motorlan_update_motor_by_uuid(WP_REST_Request $request) {
         'post_type' => 'motor',
         'meta_key' => 'uuid',
         'meta_value' => $uuid,
-        'posts_per_page' => 1
+        'posts_per_page' => 1,
+        'post_status' => 'any',
     );
     $query = new WP_Query($args);
 
@@ -168,12 +205,16 @@ function motorlan_update_motor_by_uuid(WP_REST_Request $request) {
 
     // Update post title
     if (isset($params['title'])) {
-        wp_update_post(array('ID' => $post_id, 'post_title' => $params['title']));
+        wp_update_post(array('ID' => $post_id, 'post_title' => sanitize_text_field($params['title'])));
     }
 
     // Update ACF fields
     if (isset($params['acf']) && is_array($params['acf'])) {
         foreach ($params['acf'] as $key => $value) {
+            // A basic sanitization, you might need more specific sanitization based on the field type
+            if (is_string($value)) {
+                $value = sanitize_text_field($value);
+            }
             update_field($key, $value, $post_id);
         }
     }
@@ -181,16 +222,6 @@ function motorlan_update_motor_by_uuid(WP_REST_Request $request) {
     return new WP_REST_Response(array('message' => 'Motor updated successfully'), 200);
 }
 
-/**
- * Register a REST route for deleting a motor by ID.
- */
-register_rest_route('wp/v2', '/motors/(?P<id>\\d+)', array(
-    'methods' => 'DELETE',
-    'callback' => 'motorlan_delete_motor',
-    'permission_callback' => function () {
-        return current_user_can('delete_posts');
-    }
-));
 
 /**
  * Delete a motor by ID.
@@ -209,16 +240,6 @@ function motorlan_delete_motor(WP_REST_Request $request) {
     return new WP_REST_Response(array('message' => 'Motor deleted successfully'), 200);
 }
 
-/**
- * Register a REST route for duplicating a motor by ID.
- */
-register_rest_route('wp/v2', '/motors/(?P<id>\\d+)/duplicate', array(
-    'methods' => 'POST',
-    'callback' => 'motorlan_duplicate_motor',
-    'permission_callback' => function () {
-        return current_user_can('edit_posts');
-    }
-));
 
 /**
  * Duplicate a motor by ID.
@@ -255,22 +276,13 @@ function motorlan_duplicate_motor(WP_REST_Request $request) {
         }
     }
 
-    // Asignar un nuevo UUID
+    // Assign a new UUID and set the status to draft
     update_field('uuid', wp_generate_uuid4(), $new_post_id);
+    update_field('publicar_acf', 'draft', $new_post_id);
+
 
     return new WP_REST_Response(array('message' => 'Motor duplicated successfully', 'new_post_id' => $new_post_id), 200);
 }
-
-/**
- * Register a REST route for updating motor status by ID.
- */
-register_rest_route('wp/v2', '/motors/(?P<id>\\d+)/status', array(
-    'methods' => 'POST',
-    'callback' => 'motorlan_update_motor_status',
-    'permission_callback' => function () {
-        return current_user_can('edit_posts');
-    }
-));
 
 
 /**
@@ -282,7 +294,7 @@ register_rest_route('wp/v2', '/motors/(?P<id>\\d+)/status', array(
 function motorlan_update_motor_status(WP_REST_Request $request) {
     $post_id = $request->get_param('id');
     $params = $request->get_json_params();
-    $new_status = $params['status'];
+    $new_status = isset($params['status']) ? sanitize_text_field($params['status']) : '';
 
     if (empty($new_status)) {
         return new WP_Error('no_status', 'Status not provided', array('status' => 400));
@@ -349,6 +361,7 @@ function motorlan_get_motors_callback( $request ) {
         'post_type'      => 'motor',
         'posts_per_page' => $per_page,
         'paged'          => $page,
+        'post_status'    => 'any',
     );
 
     // Only add meta_query if there are filters.
@@ -435,17 +448,6 @@ function motorlan_get_motors_callback( $request ) {
 
     return $response;
 }
-
-/**
- * Register custom REST API route for motor categories.
- */
-function motorlan_register_motor_categories_rest_route() {
-    register_rest_route( '/wp/v2/', 'motor-categories', array(
-        'methods'  => WP_REST_Server::READABLE,
-        'callback' => 'motorlan_get_motor_categories_callback',
-    ) );
-}
-add_action( 'rest_api_init', 'motorlan_register_motor_categories_rest_route' );
 
 /**
  * Callback function to get a list of motor categories.
