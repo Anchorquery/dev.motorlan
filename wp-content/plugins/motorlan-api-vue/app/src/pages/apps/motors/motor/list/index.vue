@@ -1,10 +1,51 @@
 <script setup lang="ts">
+interface ImageSizes {
+  thumbnail: string
+  'thumbnail-width': number
+  'thumbnail-height': number
+  medium: string
+  'medium-width': number
+  'medium-height': number
+  medium_large: string
+  'medium_large-width': number
+  'medium_large-height': number
+  large: string
+  'large-width': number
+  'large-height': number
+  [key: string]: string | number
+}
+
+interface ImagenDestacada {
+  ID: number
+  id: number
+  title: string
+  filename: string
+  filesize: number
+  url: string
+  link: string
+  alt: string
+  author: string
+  description: string
+  caption: string
+  name: string
+  status: string
+  uploaded_to: number
+  date: string
+  modified: string
+  menu_order: number
+  mime_type: string
+  type: string
+  subtype: string
+  icon: string
+  width: number
+  height: number
+  sizes: ImageSizes
+}
+
 interface Motor {
   id: number
   title: string
-  imagen_destacada: {
-    url: string
-  } | null
+  imagen_destacada: ImagenDestacada | null
   acf: {
     marca: string
     tipo_o_referencia: string
@@ -89,7 +130,7 @@ const { data: motorsData, execute: fetchMotors } = await useApi<any>(createUrl('
   },
 ))
 
-const motors = computed((): Motor[] => motorsData.value?.motors || [])
+const motors = computed((): Motor[] => (motorsData.value?.motors || []).filter(Boolean))
 const totalMotors = computed(() => motorsData.value?.pagination.total || 0)
 
 const deleteMotor = async (id: number) => {
@@ -104,6 +145,16 @@ const deleteMotor = async (id: number) => {
 
   // Refetch motors
   fetchMotors()
+}
+
+const getImageBySize = (image: ImagenDestacada | null, size = 'thumbnail'): string => {
+  if (!image)
+    return ''
+
+  if (image.sizes && image.sizes[size])
+    return image.sizes[size] as string
+
+  return image.url || ''
 }
 </script>
 
@@ -275,33 +326,33 @@ const deleteMotor = async (id: number) => {
         <template #item.motor="{ item }">
           <div class="d-flex align-center gap-x-4">
             <VAvatar
-              v-if="item.raw.imagen_destacada"
+              v-if="(item as any).raw.imagen_destacada"
               size="38"
               variant="tonal"
               rounded
-              :image="item.raw.imagen_destacada.url"
+              :image="getImageBySize((item as any).raw.imagen_destacada, 'thumbnail')"
             />
             <div class="d-flex flex-column">
-              <span class="text-body-1 font-weight-medium text-high-emphasis">{{ item.raw.title }}</span>
-              <span class="text-body-2">{{ item.raw.acf.marca }}</span>
+              <span class="text-body-1 font-weight-medium text-high-emphasis">{{ (item as any).raw.title }}</span>
+              <span class="text-body-2">{{ (item as any).raw.acf.marca }}</span>
             </div>
           </div>
         </template>
 
         <!-- referencia -->
         <template #item.referencia="{ item }">
-          <span class="text-body-1 text-high-emphasis">{{ item.raw.acf.tipo_o_referencia }}</span>
+          <span class="text-body-1 text-high-emphasis">{{ (item as any).raw.acf.tipo_o_referencia }}</span>
         </template>
 
         <!-- precio -->
         <template #item.precio="{ item }">
-          <span class="text-body-1 text-high-emphasis">{{ item.raw.acf.precio_de_venta }}</span>
+          <span class="text-body-1 text-high-emphasis">{{ (item as any).raw.acf.precio_de_venta }}</span>
         </template>
 
         <!-- status -->
         <template #item.status="{ item }">
           <VChip
-            v-bind="resolveStatus(item.raw.status)"
+            v-bind="resolveStatus((item as any).raw.status)"
             density="default"
             label
             size="small"
@@ -328,7 +379,7 @@ const deleteMotor = async (id: number) => {
                 <VListItem
                   value="delete"
                   prepend-icon="tabler-trash"
-                  @click="deleteMotor(item.raw.id)"
+                  @click="deleteMotor((item as any).raw.id)"
                 >
                   Delete
                 </VListItem>
