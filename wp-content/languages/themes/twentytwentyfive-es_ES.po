@@ -2,7 +2,7 @@
 # This file is distributed under the same license as the Themes - Twenty Twenty-Five package.
 msgid ""
 msgstr ""
-"PO-Revision-Date: 2025-04-15 14:49:10+0000\n"
+"PO-Revision-Date: 2025-08-05 21:28:23+0000\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -23,6 +23,16 @@ msgstr "Twenty Twenty-Five hace hincapié en la sencillez y la adaptabilidad. Of
 #, gp-priority: high
 msgid "Twenty Twenty-Five"
 msgstr "Twenty Twenty-Five"
+
+#: patterns/template-home-vertical-header-blog.php
+msgctxt "Pattern title"
+msgid "Right-aligned home"
+msgstr "Inicio alineado a la derecha"
+
+#: patterns/template-archive-vertical-header-blog.php
+msgctxt "Pattern title"
+msgid "Right-aligned archive"
+msgstr "Archivo alineado a la derecha"
 
 #: patterns/template-search-text-blog.php
 msgctxt "Pattern title"
@@ -744,6 +754,11 @@ msgstr "Archivo de foto blog"
 msgctxt "Pattern title"
 msgid "News blog archive"
 msgstr "Archivo de blog de noticias"
+
+#: patterns/template-404-vertical-header-blog.php
+msgctxt "Pattern title"
+msgid "Right-aligned 404"
+msgstr "404 alineado a la derecha"
 
 #: patterns/services-team-photos.php:50
 msgid "Man in hat, standing in front of a building."
