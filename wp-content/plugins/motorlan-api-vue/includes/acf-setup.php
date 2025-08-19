@@ -17,12 +17,6 @@ acf_add_local_field_group(array(
 	'title' => 'Detalles del Motor',
 	'fields' => array(
 		array(
-			'key' => 'field_6643d3c3b0340',
-			'label' => 'Título entrada',
-			'name' => 'titulo_entrada',
-			'type' => 'text',
-		),
-		array(
 			'key' => 'field_6643d3c3b0341',
 			'label' => 'Marca',
 			'name' => 'marca',
