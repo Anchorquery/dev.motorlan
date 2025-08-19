@@ -16,10 +16,15 @@ const getToken = () => {
   return cookies.accessToken || null
 }
 
+// Helper function to clear a cookie by name
+const clearCookie = (name: string) => {
+  document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`
+}
+
 const api = ofetch.create({
   baseURL,
   headers: {
-    'Content-Type': 'application/json', 
+    'Content-Type': 'application/json',
   },
   onRequest: ({ options }) => {
     const token = getToken()
@@ -31,6 +36,20 @@ const api = ofetch.create({
       headers.set('Authorization', `Bearer ${token}`)
 
     options.headers = headers
+  },
+  onResponseError: ({ response }) => {
+    if (response.status === 401) {
+      // Clear all user-related cookies
+      clearCookie('userData')
+      clearCookie('accessToken')
+      clearCookie('userAbilityRules')
+
+      // We are using hard navigation here as router instance is not available here
+      // You can also use create a plugin to navigate to login page
+      // e.g. create a new plugin that exposes a function to navigate to login page
+      // and then call that function here
+      window.location.href = '/login'
+    }
   },
 })
 
