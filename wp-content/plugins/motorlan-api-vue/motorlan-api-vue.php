@@ -27,3 +27,18 @@ require_once MOTORLAN_API_VUE_PATH . 'includes/api/motor-routes.php';
 require_once MOTORLAN_API_VUE_PATH . 'includes/admin-mods.php';
 require_once MOTORLAN_API_VUE_PATH . 'includes/vue-app-setup.php';
 
+/**
+ * Add CORS headers to the REST API.
+ */
+function motorlan_add_cors_headers() {
+    header( 'Access-Control-Allow-Origin: *' );
+    header( 'Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS' );
+    header( 'Access-Control-Allow-Headers: Content-Type, X-Requested-With, X-WP-Nonce, Authorization' );
+    header( 'Access-Control-Allow-Credentials: true' );
+
+    if ( 'OPTIONS' === $_SERVER['REQUEST_METHOD'] ) {
+        status_header( 200 );
+        exit();
+    }
+}
+add_action( 'rest_api_init', 'motorlan_add_cors_headers', 15 );
