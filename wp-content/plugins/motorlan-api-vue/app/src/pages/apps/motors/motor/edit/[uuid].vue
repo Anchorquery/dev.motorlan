@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import DropZone from '@/@core/components/DropZone.vue'
+import { requiredValidator } from '@/@core/utils/validators'
 import { onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -37,6 +38,8 @@ const motorImageFile = ref([])
 const motorGalleryFiles = ref([])
 
 const marcas = ref([])
+const form = ref(null)
+const isFormValid = ref(false)
 
 // Fetch brands for the select dropdown
 useApi('/wp-json/motorlan/v1/marcas').then(response => {
@@ -103,6 +106,11 @@ const uploadImage = async (file: File) => {
 }
 
 const updateMotor = async () => {
+  const { valid } = await form.value.validate()
+
+  if (!valid)
+    return
+
   const api = useApi()
   const url = `/wp-json/motorlan/v1/motors/uuid/${motorUuid}`
   const method = 'POST'
@@ -169,18 +177,26 @@ const updateMotor = async () => {
         >
           Discard
         </VBtn>
-        <VBtn @click="updateMotor">
+        <VBtn
+          type="submit"
+          :disabled="!isFormValid"
+        >
           Update Motor
         </VBtn>
       </div>
     </div>
 
-    <VRow>
-      <VCol>
-        <VCard
-          class="mb-6"
-          title="Detalles del Motor"
-        >
+    <VForm
+      ref="form"
+      v-model="isFormValid"
+      @submit.prevent="updateMotor"
+    >
+      <VRow>
+        <VCol>
+          <VCard
+            class="mb-6"
+            title="Detalles del Motor"
+          >
           <VCardText>
             <VRow>
               <!-- Fields from here -->
@@ -192,6 +208,7 @@ const updateMotor = async () => {
                   v-model="motorData.title"
                   label="Título de la publicación"
                   placeholder="Título"
+                  :rules="[requiredValidator]"
                 />
               </VCol>
               <VCol
@@ -202,6 +219,7 @@ const updateMotor = async () => {
                   v-model="motorData.acf.tipo_o_referencia"
                   label="Tipo o referencia"
                   placeholder="Referencia"
+                  :rules="[requiredValidator]"
                 />
               </VCol>
               <VCol
@@ -212,6 +230,7 @@ const updateMotor = async () => {
                   v-model="motorData.acf.marca"
                   label="Marca"
                   :items="marcas"
+                  :rules="[requiredValidator]"
                 />
               </VCol>
 
@@ -224,6 +243,7 @@ const updateMotor = async () => {
                   label="Potencia (kW)"
                   type="number"
                   placeholder="100"
+                  :rules="[requiredValidator]"
                 />
               </VCol>
               <VCol
@@ -235,6 +255,7 @@ const updateMotor = async () => {
                   label="Velocidad (rpm)"
                   type="number"
                   placeholder="3000"
+                  :rules="[requiredValidator]"
                 />
               </VCol>
               <VCol
@@ -246,6 +267,7 @@ const updateMotor = async () => {
                   label="PAR Nominal (Nm)"
                   type="number"
                   placeholder="50"
+                  :rules="[requiredValidator]"
                 />
               </VCol>
               <VCol
@@ -257,6 +279,7 @@ const updateMotor = async () => {
                   label="Voltaje (V)"
                   type="number"
                   placeholder="220"
+                  :rules="[requiredValidator]"
                 />
               </VCol>
               <VCol
@@ -268,6 +291,7 @@ const updateMotor = async () => {
                   label="Intensidad (A)"
                   type="number"
                   placeholder="10"
+                  :rules="[requiredValidator]"
                 />
               </VCol>
               <VCol
@@ -278,6 +302,7 @@ const updateMotor = async () => {
                   v-model="motorData.acf.pais"
                   label="País (localización)"
                   :items="['España', 'Portugal', 'Francia']"
+                  :rules="[requiredValidator]"
                 />
               </VCol>
               <VCol
@@ -288,6 +313,7 @@ const updateMotor = async () => {
                   v-model="motorData.acf.provincia"
                   label="Provincia"
                   placeholder="Madrid"
+                  :rules="[requiredValidator]"
                 />
               </VCol>
               <VCol
@@ -298,6 +324,7 @@ const updateMotor = async () => {
                   v-model="motorData.acf.estado_del_articulo"
                   label="Estado del artículo"
                   :items="['Nuevo', 'Usado', 'Restaurado']"
+                  :rules="[requiredValidator]"
                 />
               </VCol>
               <VCol cols="12">
@@ -305,6 +332,7 @@ const updateMotor = async () => {
                   v-model="motorData.acf.descripcion"
                   label="Descripción"
                   placeholder="Descripción del motor"
+                  :rules="[requiredValidator]"
                 />
               </VCol>
 
@@ -316,6 +344,7 @@ const updateMotor = async () => {
                   v-model="motorData.acf.posibilidad_de_alquiler"
                   inline
                   label="Posibilidad de alquiler"
+                  :rules="[requiredValidator]"
                 >
                   <VRadio
                     label="Sí"
@@ -335,6 +364,7 @@ const updateMotor = async () => {
                   v-model="motorData.acf.tipo_de_alimentacion"
                   inline
                   label="Tipo de alimentación"
+                  :rules="[requiredValidator]"
                 >
                   <VRadio
                     label="Continua (C.C.)"
@@ -373,6 +403,7 @@ const updateMotor = async () => {
                   label="Precio de venta (€)"
                   type="number"
                   placeholder="1000"
+                  :rules="[requiredValidator]"
                 />
               </VCol>
               <VCol
@@ -429,5 +460,6 @@ const updateMotor = async () => {
         </VCard>
       </VCol>
     </VRow>
+    </VForm>
   </div>
 </template>
