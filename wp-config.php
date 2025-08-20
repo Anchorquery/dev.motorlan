@@ -39,11 +39,11 @@ define( 'DB_COLLATE', '' );
 
 define('WP_ENVIRONMENT_TYPE', getenv('WP_ENVIRONMENT_TYPE') ?: 'production');
 
-$home = getenv('WP_HOME') ?: 'https://dev.motorlan.test';
-if ($home) {
-    define('WP_HOME', rtrim($home, '/'));
-    define('WP_SITEURL', rtrim(getenv('WP_SITEURL') ?: $home, '/'));
-}
+//$home = getenv('WP_HOME') ?: 'https://dev.motorlan.test';
+// if ($home) {
+//     define('WP_HOME', rtrim($home, '/'));
+//     define('WP_SITEURL', rtrim(getenv('WP_SITEURL') ?: $home, '/'));
+// }
 
 // Forzar admin sobre HTTPS solo si lo pides por env
 define('FORCE_SSL_ADMIN', getenv('FORCE_SSL_ADMIN') === '1');
