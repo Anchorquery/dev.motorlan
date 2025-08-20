@@ -34,7 +34,7 @@ function motorlan_get_post_taxonomy_details( $post_id, $taxonomy ) {
  * Register custom REST API routes for motors.
  */
 function motorlan_register_motor_rest_routes() {
-    $namespace = 'wp/v2';
+    $namespace = 'motorlan/v1';
 
     // Route for getting a list of motors
     register_rest_route( $namespace, '/motors', array(
@@ -90,6 +90,13 @@ function motorlan_register_motor_rest_routes() {
     register_rest_route( $namespace, '/motor-categories', array(
         'methods'  => WP_REST_Server::READABLE,
         'callback' => 'motorlan_get_motor_categories_callback',
+        'permission_callback' => '__return_true',
+    ) );
+
+    // Route for getting motor brands
+    register_rest_route( $namespace, '/marcas', array(
+        'methods'  => WP_REST_Server::READABLE,
+        'callback' => 'motorlan_get_motor_marcas_callback',
         'permission_callback' => '__return_true',
     ) );
 }
@@ -456,6 +463,24 @@ function motorlan_get_motors_callback( $request ) {
 function motorlan_get_motor_categories_callback() {
     $terms = get_terms( array(
         'taxonomy'   => 'categoria',
+        'hide_empty' => false,
+    ) );
+
+    if ( is_wp_error( $terms ) ) {
+        return new WP_REST_Response( array( 'message' => $terms->get_error_message() ), 500 );
+    }
+
+    return new WP_REST_Response( $terms, 200 );
+}
+
+/**
+ * Callback function to get a list of motor brands.
+ *
+ * @return WP_REST_Response The response object.
+ */
+function motorlan_get_motor_marcas_callback() {
+    $terms = get_terms( array(
+        'taxonomy'   => 'marca',
         'hide_empty' => false,
     ) );
 

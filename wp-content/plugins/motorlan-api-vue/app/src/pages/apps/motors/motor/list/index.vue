@@ -31,7 +31,7 @@ const status = ref([
 const categories = ref([])
 
 // Fetch categories from the new endpoint
-const { data: categoriesData } = await useApi<any>(createUrl('/wp-json/wp/v2/motor-categories'))
+const { data: categoriesData } = await useApi<any>(createUrl('/wp-json/motorlan/v1/motor-categories'))
 if (categoriesData.value) {
   categories.value = categoriesData.value.map((cat: any) => ({
     title: cat.name,
@@ -64,7 +64,7 @@ const resolveStatus = (statusMsg: string) => {
   return { text: 'Unknown', color: 'info' }
 }
 
-const { data: motorsData, execute: fetchMotors } = await useApi<any>(createUrl('/wp-json/wp/v2/motors',
+const { data: motorsData, execute: fetchMotors } = await useApi<any>(createUrl('/wp-json/motorlan/v1/motors',
   {
     query: {
       search: searchQuery,
@@ -83,7 +83,7 @@ const motors = computed((): Motor[] => (motorsData.value?.data || []).filter(Boo
 const totalMotors = computed(() => motorsData.value?.pagination.total || 0)
 
 const deleteMotor = async (id: number) => {
-  await $api(`/wp-json/wp/v2/motors/${id}`, {
+  await $api(`/wp-json/motorlan/v1/motors/${id}`, {
     method: 'DELETE',
   })
 
@@ -98,13 +98,14 @@ const deleteMotor = async (id: number) => {
 
 const duplicateMotor = async (id: number) => {
   await useApi<any>(createUrl(`/wp-json/wp/v2/motors/${id}/duplicate`, {
+
     method: 'POST',
   }))
   fetchMotors()
 }
 
 const changeStatus = async (id: number, status: string) => {
-  await $api(`/wp-json/wp/v2/motors/${id}/status`, {
+  await $api(`/wp-json/motorlan/v1/motors/${id}/status`, {
     method: 'POST',
     body: { status },
   })
