@@ -73,6 +73,10 @@ const removeFile = (index: number) => {
   currentFiles.splice(index, 1)
   fileData.value = currentFiles
 }
+
+const viewImage = (url: string) => {
+  window.open(url, '_blank')
+}
 </script>
 
 <template>
@@ -96,14 +100,6 @@ const removeFile = (index: number) => {
           <h4 class="text-h4">
             Drag and drop your image here.
           </h4>
-          <span class="text-disabled">or</span>
-
-          <VBtn
-            variant="tonal"
-            size="small"
-          >
-            Browse Images
-          </VBtn>
         </div>
 
         <div
@@ -119,7 +115,10 @@ const removeFile = (index: number) => {
                 cols="12"
                 sm="4"
               >
-                <VCard :ripple="false">
+                <VCard
+                  :ripple="false"
+                  style="position: relative;"
+                >
                   <VCardText
                     class="d-flex flex-column"
                     @click.stop
@@ -140,15 +139,16 @@ const removeFile = (index: number) => {
                       </span>
                     </div>
                   </VCardText>
-                  <VCardActions>
-                    <VBtn
-                      variant="text"
-                      block
+                  <div class="image-actions">
+                    <IconBtn
+                      icon="tabler-eye"
+                      @click.stop="viewImage(item.url)"
+                    />
+                    <IconBtn
+                      icon="tabler-x"
                       @click.stop="removeFile(index)"
-                    >
-                      Remove File
-                    </VBtn>
-                  </VCardActions>
+                    />
+                  </div>
                 </VCard>
               </VCol>
             </template>
@@ -162,5 +162,15 @@ const removeFile = (index: number) => {
 <style lang="scss" scoped>
 .drop-zone {
   border: 1px dashed rgba(var(--v-theme-on-surface), var(--v-border-opacity));
+}
+
+.image-actions {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  border-radius: 0 0 0 6px;
+  padding: 2px;
+  display: flex;
 }
 </style>
