@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import DropZone from 'src/@core/components/DropZone.vue'
+import DropZone from '@/@core/components/DropZone.vue'
 import { onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
