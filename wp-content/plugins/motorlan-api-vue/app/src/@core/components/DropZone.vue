@@ -24,7 +24,7 @@ interface FileData {
 
 const fileData = computed({
   get: () => props.modelValue,
-  set: (value) => emit('update:modelValue', value),
+  set: value => emit('update:modelValue', value),
 })
 
 const { open, onChange } = useFileDialog({ accept: 'image/*', multiple: props.multiple })
@@ -70,6 +70,7 @@ useDropZone(dropZoneRef, onDrop)
 
 const removeFile = (index: number) => {
   const currentFiles = [...fileData.value]
+
   currentFiles.splice(index, 1)
   fileData.value = currentFiles
 }
