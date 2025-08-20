@@ -34,7 +34,7 @@ const motorData = ref({
 
 const marcas = ref([])
 
-useApi('/wp-json/wp/v2/marca').then(response => {
+useApi('/wp-json/motorlan/v1/marcas').then(response => {
   marcas.value = response.data.value.map(marca => ({
     title: marca.name,
     value: marca.id,
@@ -43,7 +43,7 @@ useApi('/wp-json/wp/v2/marca').then(response => {
 
 onMounted(async () => {
   if (motorUuid) {
-    const { data } = await useApi<any>(`/wp-json/wp/v2/motors/uuid/${motorUuid}`)
+    const { data } = await useApi<any>(`/wp-json/motorlan/v1/motors/uuid/${motorUuid}`)
     const post = data.value
     motorData.value = {
       title: post.title,
@@ -55,7 +55,7 @@ onMounted(async () => {
 
 const updateMotor = async () => {
   const api = useApi()
-  const url = `/wp-json/wp/v2/motors/uuid/${motorUuid}`
+  const url = `/wp-json/motorlan/v1/motors/uuid/${motorUuid}`
   const method = 'POST'
 
   try {
