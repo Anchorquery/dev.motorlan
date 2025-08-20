@@ -6,9 +6,9 @@ export default [
       {
         title: 'Ecommerce',
         to: 'dashboards-motors',
-      }
+      },
     ],
     badgeContent: '5',
     badgeClass: 'bg-error',
-  }
+  },
 ]

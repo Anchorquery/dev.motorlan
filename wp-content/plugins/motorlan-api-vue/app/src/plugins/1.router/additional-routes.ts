@@ -1,6 +1,5 @@
 import type { RouteRecordRaw } from 'vue-router/auto'
 
-
 // 👉 Redirects
 export const redirects: RouteRecordRaw[] = [
   // ℹ️ We are redirecting to different pages based on role.
@@ -15,7 +14,6 @@ export const redirects: RouteRecordRaw[] = [
 
       if (userRole === 'admin')
         return { name: 'dashboards-motors' }
-
 
       return { name: 'login', query: to.query }
     },

@@ -27,6 +27,7 @@ const status = ref([
   { title: 'Pausado', value: 'paused' },
   { title: 'Vendido', value: 'sold' },
 ])
+
 const categories = ref([])
 
 // Fetch categories from the new endpoint
@@ -59,6 +60,7 @@ const resolveStatus = (statusMsg: string) => {
     return { text: 'Pausado', color: 'warning' }
   if (statusMsg === 'sold')
     return { text: 'Vendido', color: 'error' }
+
   return { text: 'Unknown', color: 'info' }
 }
 
@@ -74,7 +76,6 @@ const { data: motorsData, execute: fetchMotors } = await useApi<any>(createUrl('
       order: orderBy,
     },
   },
-
 
 ))
 
@@ -96,9 +97,10 @@ const deleteMotor = async (id: number) => {
 }
 
 const duplicateMotor = async (id: number) => {
-  await $api(`/wp-json/motorlan/v1/motors/${id}/duplicate`, {
+  await useApi<any>(createUrl(`/wp-json/wp/v2/motors/${id}/duplicate`, {
+
     method: 'POST',
-  })
+  }))
   fetchMotors()
 }
 
@@ -111,7 +113,6 @@ const changeStatus = async (id: number, status: string) => {
 }
 
 const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail'): string => {
-
   console.log(image)
   let imageObj: ImagenDestacada | null = null
 
@@ -133,77 +134,79 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
 <template>
   <div>
     <!-- 👉 widgets -->
-    <!-- <VCard class="mb-6">
+    <!--
+      <VCard class="mb-6">
       <VCardText class="px-3">
-        <VRow>
-          <template
-            v-for="(data, id) in widgetData"
-            :key="id"
-          >
-            <VCol
-              cols="12"
-              sm="6"
-              md="3"
-              class="px-6"
-            >
-              <div
-                class="d-flex justify-space-between"
-                :class="$vuetify.display.xs
-                  ? id !== widgetData.length - 1 ? 'border-b pb-4' : ''
-                  : $vuetify.display.sm
-                    ? id < (widgetData.length / 2) ? 'border-b pb-4' : ''
-                    : ''"
-              >
-                <div class="d-flex flex-column gap-y-1">
-                  <div class="text-body-1 text-capitalize">
-                    {{ data.title }}
-                  </div>
+      <VRow>
+      <template
+      v-for="(data, id) in widgetData"
+      :key="id"
+      >
+      <VCol
+      cols="12"
+      sm="6"
+      md="3"
+      class="px-6"
+      >
+      <div
+      class="d-flex justify-space-between"
+      :class="$vuetify.display.xs
+      ? id !== widgetData.length - 1 ? 'border-b pb-4' : ''
+      : $vuetify.display.sm
+      ? id < (widgetData.length / 2) ? 'border-b pb-4' : ''
+      : ''"
+      >
+      <div class="d-flex flex-column gap-y-1">
+      <div class="text-body-1 text-capitalize">
+      {{ data.title }}
+      </div>
 
-                  <h4 class="text-h4">
-                    {{ data.value }}
-                  </h4>
+      <h4 class="text-h4">
+      {{ data.value }}
+      </h4>
 
-                  <div class="d-flex align-center gap-x-2">
-                    <div class="text-no-wrap">
-                      {{ data.desc }}
-                    </div>
+      <div class="d-flex align-center gap-x-2">
+      <div class="text-no-wrap">
+      {{ data.desc }}
+      </div>
 
-                    <VChip
-                      v-if="data.change"
-                      label
-                      :color="data.change > 0 ? 'success' : 'error'"
-                      size="small"
-                    >
-                      {{ prefixWithPlus(data.change) }}%
-                    </VChip>
-                  </div>
-                </div>
+      <VChip
+      v-if="data.change"
+      label
+      :color="data.change > 0 ? 'success' : 'error'"
+      size="small"
+      >
+      {{ prefixWithPlus(data.change) }}%
+      </VChip>
+      </div>
+      </div>
 
-                <VAvatar
-                  variant="tonal"
-                  rounded
-                  size="44"
-                >
-                  <VIcon
-                    :icon="data.icon"
-                    size="28"
-                    class="text-high-emphasis"
-                  />
-                </VAvatar>
-              </div>
-            </VCol>
-            <VDivider
-              v-if="$vuetify.display.mdAndUp ? id !== widgetData.length - 1
-                : $vuetify.display.smAndUp ? id % 2 === 0
-                  : false"
-              vertical
-              inset
-              length="92"
-            />
-          </template>
-        </VRow>
+      <VAvatar
+      variant="tonal"
+      rounded
+      size="44"
+      >
+      <VIcon
+      :icon="data.icon"
+      size="28"
+      class="text-high-emphasis"
+      />
+      </VAvatar>
+      </div>
+      </VCol>
+      <VDivider
+      v-if="$vuetify.display.mdAndUp ? id !== widgetData.length - 1
+      : $vuetify.display.smAndUp ? id % 2 === 0
+      : false"
+      vertical
+      inset
+      length="92"
+      />
+      </template>
+      </VRow>
       </VCardText>
-    </VCard> -->
+      </VCard>
+    -->
 
     <!-- 👉 motors -->
     <VCard

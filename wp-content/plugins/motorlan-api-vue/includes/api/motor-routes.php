@@ -152,7 +152,6 @@ function motorlan_get_motor_data($post_id) {
         'title'        => get_the_title($post_id),
         'slug'         => get_post_field('post_name', $post_id),
         'status'       => get_field('publicar_acf', $post_id),
-        'imagen_destacada' => get_field('motor_image', $post_id, true),
         'author_id'    => get_post_field('post_author', $post_id),
         'categories'   => motorlan_get_post_taxonomy_details($post_id, 'categoria'),
         'acf'          => array(),
@@ -164,7 +163,7 @@ function motorlan_get_motor_data($post_id) {
             'precio_de_venta', 'potencia', 'velocidad', 'par_nominal', 'voltaje',
             'intensidad', 'pais', 'provincia', 'posibilidad_de_alquiler',
             'tipo_de_alimentacion', 'servomotores', 'regulacion_electronica_drivers',
-            'precio_negociable'
+            'precio_negociable', 'motor_image', 'motor_gallery', 'informe_de_reparacion'
         ];
 
         foreach ($acf_fields as $field_name) {
