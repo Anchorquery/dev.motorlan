@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import DropZone from 'src/@core/components/DropZone.vue'
+import { onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 const route = useRoute()
@@ -32,8 +33,12 @@ const motorData = ref({
   },
 })
 
+const motorImageFile = ref([])
+const motorGalleryFiles = ref([])
+
 const marcas = ref([])
 
+// Fetch brands for the select dropdown
 useApi('/wp-json/motorlan/v1/marcas').then(response => {
   marcas.value = response.data.value.map(marca => ({
     title: marca.name,
@@ -41,11 +46,17 @@ useApi('/wp-json/motorlan/v1/marcas').then(response => {
   }))
 })
 
+// Fetch motor data on component mount
 onMounted(async () => {
   if (motorUuid) {
     const { data } = await useApi<any>(`/wp-json/motorlan/v1/motors/uuid/${motorUuid}`)
     const post = data.value
     if (post) {
+      // If marca is an object, extract the ID for the v-model
+      if (post.acf.marca && typeof post.acf.marca === 'object') {
+        post.acf.marca = post.acf.marca.id
+      }
+
       motorData.value = {
         ...motorData.value,
         ...post,
@@ -54,9 +65,42 @@ onMounted(async () => {
           ...post.acf,
         },
       }
+
+      // Populate file refs for DropZone components
+      if (motorData.value.acf.motor_image) {
+        motorImageFile.value = [{
+          url: motorData.value.acf.motor_image.url,
+          id: motorData.value.acf.motor_image.id,
+        }]
+      }
+      if (motorData.value.acf.motor_gallery) {
+        motorGalleryFiles.value = motorData.value.acf.motor_gallery.map(img => ({
+          url: img.url,
+          id: img.id,
+        }))
+      }
     }
   }
 })
+
+const uploadImage = async (file: File) => {
+  const accessToken = useCookie('accessToken').value
+  const formData = new FormData()
+  formData.append('file', file)
+
+  const response = await fetch('/wp-json/wp/v2/media', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: formData,
+  })
+
+  if (!response.ok)
+    throw new Error('Failed to upload image')
+
+  return response.json()
+}
 
 const updateMotor = async () => {
   const api = useApi()
@@ -64,6 +108,39 @@ const updateMotor = async () => {
   const method = 'POST'
 
   try {
+    // Handle main image upload
+    if (motorImageFile.value.length > 0) {
+      const image = motorImageFile.value[0]
+      if (image.file) { // New file
+        const uploadedImage = await uploadImage(image.file)
+        motorData.value.acf.motor_image = uploadedImage.id
+      }
+      else { // Existing image
+        motorData.value.acf.motor_image = image.id
+      }
+    }
+    else {
+      motorData.value.acf.motor_image = null
+    }
+
+    // Handle gallery images upload
+    if (motorGalleryFiles.value.length > 0) {
+      const newGalleryIds = []
+      for (const image of motorGalleryFiles.value) {
+        if (image.file) { // New file
+          const uploadedImage = await uploadImage(image.file)
+          newGalleryIds.push(uploadedImage.id)
+        }
+        else { // Existing image
+          newGalleryIds.push(image.id)
+        }
+      }
+      motorData.value.acf.motor_gallery = newGalleryIds
+    }
+    else {
+      motorData.value.acf.motor_gallery = []
+    }
+
     await api(url, {
       method,
       body: motorData.value,
@@ -106,6 +183,7 @@ const updateMotor = async () => {
         >
           <VCardText>
             <VRow>
+              <!-- Fields from here -->
               <VCol
                 cols="12"
                 md="6"
@@ -315,6 +393,36 @@ const updateMotor = async () => {
                     value="No"
                   />
                 </VRadioGroup>
+              </VCol>
+            </VRow>
+          </VCardText>
+        </VCard>
+        <VCard
+          class="mb-6"
+          title="Imágenes del Motor"
+        >
+          <VCardText>
+            <VRow>
+              <VCol
+                cols="12"
+                md="6"
+              >
+                <VLabel class="mb-1 text-body-2 text-high-emphasis">
+                  Imagen Principal
+                </VLabel>
+                <DropZone
+                  v-model="motorImageFile"
+                  :multiple="false"
+                />
+              </VCol>
+              <VCol
+                cols="12"
+                md="6"
+              >
+                <VLabel class="mb-1 text-body-2 text-high-emphasis">
+                  Galería de Imágenes
+                </VLabel>
+                <DropZone v-model="motorGalleryFiles" />
               </VCol>
             </VRow>
           </VCardText>

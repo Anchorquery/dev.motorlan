@@ -1,49 +1,78 @@
 <script setup lang="ts">
 import { useDropZone, useFileDialog, useObjectUrl } from '@vueuse/core'
+import { computed } from 'vue'
 
-const emit = defineEmits(['file-added'])
+const props = defineProps({
+  modelValue: {
+    type: Array,
+    default: () => [],
+  },
+  multiple: {
+    type: Boolean,
+    default: true,
+  },
+})
+
+const emit = defineEmits(['update:modelValue'])
 
 const dropZoneRef = ref<HTMLDivElement>()
+
 interface FileData {
   file: File
   url: string
 }
 
-const fileData = ref<FileData[]>([])
-const { open, onChange } = useFileDialog({ accept: 'image/*' })
+const fileData = computed({
+  get: () => props.modelValue,
+  set: (value) => emit('update:modelValue', value),
+})
+
+const { open, onChange } = useFileDialog({ accept: 'image/*', multiple: props.multiple })
 
 function onDrop(DroppedFiles: File[] | null) {
-  DroppedFiles?.forEach(file => {
-    if (file.type.slice(0, 6) !== 'image/') {
-      // eslint-disable-next-line no-alert
-      alert('Only image files are allowed')
+  if (!DroppedFiles)
+    return
 
-      return
-    }
+  if (!props.multiple && DroppedFiles.length > 1) {
+    // eslint-disable-next-line no-alert
+    alert('Only one file is allowed')
 
-    fileData.value.push({
-      file,
-      url: useObjectUrl(file).value ?? '',
-    })
-    emit('file-added', file)
-  },
-  )
+    return
+  }
+
+  const newFiles = DroppedFiles.map(file => ({
+    file,
+    url: useObjectUrl(file).value ?? '',
+  }))
+
+  if (props.multiple)
+    fileData.value = [...fileData.value, ...newFiles]
+  else
+    fileData.value = newFiles
 }
 
 onChange((selectedFiles: any) => {
   if (!selectedFiles)
     return
 
-  for (const file of selectedFiles) {
-    fileData.value.push({
-      file,
-      url: useObjectUrl(file).value ?? '',
-    })
-    emit('file-added', file)
-  }
+  const newFiles = Array.from(selectedFiles).map((file: any) => ({
+    file,
+    url: useObjectUrl(file).value ?? '',
+  }))
+
+  if (props.multiple)
+    fileData.value = [...fileData.value, ...newFiles]
+  else
+    fileData.value = newFiles
 })
 
 useDropZone(dropZoneRef, onDrop)
+
+const removeFile = (index: number) => {
+  const currentFiles = [...fileData.value]
+  currentFiles.splice(index, 1)
+  fileData.value = currentFiles
+}
 </script>
 
 <template>
@@ -97,15 +126,16 @@ useDropZone(dropZoneRef, onDrop)
                   >
                     <VImg
                       :src="item.url"
-                      width="200px"
-                      height="150px"
-                      class="w-100 mx-auto"
+                      width="150px"
+                      height="100px"
+                      class="mx-auto"
+                      cover
                     />
                     <div class="mt-2">
                       <span class="clamp-text text-wrap">
-                        {{ item.file.name }}
+                        {{ item.file?.name || 'Image' }}
                       </span>
-                      <span>
+                      <span v-if="item.file?.size">
                         {{ item.file.size / 1000 }} KB
                       </span>
                     </div>
@@ -114,7 +144,7 @@ useDropZone(dropZoneRef, onDrop)
                     <VBtn
                       variant="text"
                       block
-                      @click.stop="fileData.splice(index, 1)"
+                      @click.stop="removeFile(index)"
                     >
                       Remove File
                     </VBtn>
