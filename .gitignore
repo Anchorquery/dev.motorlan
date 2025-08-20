@@ -21,3 +21,4 @@ wp-content/debug.log
 .env
 wp-config.php
 wp-content/plugins/motorlan-api-vue/app/typed-router.d.ts
+wp-config.php
