@@ -48,6 +48,7 @@ if (motorId) {
   // Fetch motor data for editing
   useApi(`/wp-json/wp/v2/motors/${motorId}?_embed`).then(response => {
     const post = response.data.value
+
     motorData.value = {
       title: post.title.rendered,
       status: post.status,
@@ -55,9 +56,11 @@ if (motorId) {
     }
   })
 }
+
 const uploadMedia = async (file: File) => {
   const api = useApi()
   const formData = new FormData()
+
   formData.append('file', file)
 
   try {
@@ -68,10 +71,12 @@ const uploadMedia = async (file: File) => {
         'Content-Type': 'multipart/form-data',
       },
     })
+
     return response.data.value.id
   }
   catch (error) {
     console.error('Failed to upload media:', error)
+
     return null
   }
 }
@@ -87,6 +92,7 @@ const handleGalleryImageUpload = async (file: File) => {
   if (imageId)
     motorData.value.acf.motor_gallery.push(imageId)
 }
+
 const publishMotor = async () => {
   const api = useApi()
   const url = motorId ? `/wp-json/wp/v2/motors/${motorId}` : '/wp-json/wp/v2/motors'

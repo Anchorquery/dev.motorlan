@@ -53,6 +53,5 @@ import { VNodeRenderer } from '@layouts/components/VNodeRenderer'
     </template>
 
     <!-- 👉 Customizer -->
-
   </HorizontalNavLayout>
 </template>

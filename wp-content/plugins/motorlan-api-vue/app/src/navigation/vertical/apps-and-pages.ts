@@ -4,8 +4,8 @@ export default [
     title: 'Motors',
     icon: { icon: 'tabler-car' },
     children: [
-          { title: 'List', to: 'apps-motors-motor-list' },
-          { title: 'Add', to: 'apps-motors-motor-add' },
+      { title: 'List', to: 'apps-motors-motor-list' },
+      { title: 'Add', to: 'apps-motors-motor-add' },
     ],
   },
   {
@@ -32,5 +32,5 @@ export default [
       { title: 'List', to: 'apps-user-list' },
       { title: 'View', to: { name: 'apps-user-view-id', params: { id: 21 } } },
     ],
-  }
+  },
 ]

@@ -24,7 +24,7 @@ export const { themeConfig, layoutConfig } = defineThemeConfig({
           label: 'Spanish',
           i18nLang: 'es',
           isRTL: false,
-        }
+        },
       ],
     },
     theme: 'system',

@@ -94,20 +94,20 @@ export default defineConfig({
       '@api-utils': fileURLToPath(new URL('./src/plugins/fake-api/utils/', import.meta.url)),
     },
   },
-    base: '/',
-  
+  base: '/',
+
   // 2. Configuración del servidor de desarrollo para solucionar CORS y HMR.
   server: {
     // (EDITADO) Escucha en todas las interfaces de red, no solo localhost.
     // Esto es crucial para que tu sitio en dev.motorlan.test pueda acceder a él.
     host: '0.0.0.0',
-    
+
     // Escucha en el puerto 5173
     port: 5173,
-    
+
     // Habilita CORS para permitir conexiones desde tu sitio de WordPress.
     cors: true,
-    
+
     // Configuración para que el HMR (Hot Module Replacement) se conecte correctamente.
     hmr: {
       host: 'localhost',

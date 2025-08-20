@@ -1,7 +1,6 @@
 <script lang="ts" setup>
 import type { Component } from 'vue'
 import { PerfectScrollbar } from 'vue3-perfect-scrollbar'
-import { VNodeRenderer } from './VNodeRenderer'
 import { layoutConfig } from '@layouts'
 import { VerticalNavGroup, VerticalNavLink, VerticalNavSectionTitle } from '@layouts/components'
 import { useLayoutConfigStore } from '@layouts/stores/config'
