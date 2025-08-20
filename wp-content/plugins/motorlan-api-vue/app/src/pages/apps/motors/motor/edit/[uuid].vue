@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 const route = useRoute()
@@ -45,13 +45,18 @@ onMounted(async () => {
   if (motorUuid) {
     const { data } = await useApi<any>(`/wp-json/wp/v2/motors/uuid/${motorUuid}`)
     const post = data.value
-    motorData.value = {
-      title: post.title,
-      acf: post.acf,
+    if (post) {
+      motorData.value = {
+        ...motorData.value,
+        ...post,
+        acf: {
+          ...motorData.value.acf,
+          ...post.acf,
+        },
+      }
     }
   }
 })
-
 
 const updateMotor = async () => {
   const api = useApi()
@@ -69,7 +74,6 @@ const updateMotor = async () => {
     console.error('Failed to update motor:', error)
   }
 }
-
 </script>
 
 <template>

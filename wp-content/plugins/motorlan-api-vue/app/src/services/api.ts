@@ -10,7 +10,6 @@ const getToken = () => {
   if (typeof document === 'undefined')
     return null
 
-
   const cookies = parse(document.cookie)
 
   return cookies.accessToken || null
