@@ -96,9 +96,9 @@ const deleteMotor = async (id: number) => {
 }
 
 const duplicateMotor = async (id: number) => {
-  await $api(`/wp-json/wp/v2/motors/${id}/duplicate`, {
+  await useApi<any>(createUrl(`/wp-json/wp/v2/motors/${id}/duplicate`, {
     method: 'POST',
-  })
+  }))
   fetchMotors()
 }
 
