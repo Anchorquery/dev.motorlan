@@ -3,7 +3,7 @@ import type { App } from 'vue'
 
 import type { RouteRecordRaw } from 'vue-router/auto'
 
-import { createRouter, createWebHashHistory} from 'vue-router/auto'
+import { createRouter, createWebHashHistory } from 'vue-router/auto'
 
 import { redirects, routes } from './additional-routes'
 import { setupGuards } from './guards'
