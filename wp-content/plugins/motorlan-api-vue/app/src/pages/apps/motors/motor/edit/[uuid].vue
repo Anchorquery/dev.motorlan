@@ -426,11 +426,9 @@ const handleMotorGallery = (files: FileList) => {
                 <VLabel class="mb-1 text-body-2 text-high-emphasis">
                   Imagen Principal
                 </VLabel>
-
                 <DropZone
                   v-model="motorImageFile"
                   :multiple="false"
-
                 />
               </VCol>
               <VCol
@@ -440,9 +438,7 @@ const handleMotorGallery = (files: FileList) => {
                 <VLabel class="mb-1 text-body-2 text-high-emphasis">
                   Galería de Imágenes
                 </VLabel>
-
                 <DropZone v-model="motorGalleryFiles" />
-
               </VCol>
             </VRow>
           </VCardText>
