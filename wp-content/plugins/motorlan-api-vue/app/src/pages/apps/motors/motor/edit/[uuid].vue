@@ -10,6 +10,7 @@ const motorUuid = route.params.uuid as string
 
 const motorData = ref({
   title: '',
+  categories: [],
   acf: {
     marca: null,
     tipo_o_referencia: '',
@@ -38,6 +39,7 @@ const motorImageFile = ref([])
 const motorGalleryFiles = ref([])
 
 const marcas = ref([])
+const categories = ref([])
 const form = ref(null)
 const isFormValid = ref(false)
 
@@ -46,6 +48,13 @@ useApi('/wp-json/motorlan/v1/marcas').then(response => {
   marcas.value = response.data.value.map(marca => ({
     title: marca.name,
     value: marca.id,
+  }))
+})
+
+useApi('/motorlan/v1/motor-categories').then(response => {
+  categories.value = response.data.value.map(category => ({
+    title: category.name,
+    value: category.term_id,
   }))
 })
 
@@ -58,6 +67,10 @@ onMounted(async () => {
       // If marca is an object, extract the ID for the v-model
       if (post.acf.marca && typeof post.acf.marca === 'object') {
         post.acf.marca = post.acf.marca.id
+      }
+
+      if (post.categories) {
+        motorData.value.categories = post.categories.map(cat => cat.id)
       }
 
       motorData.value = {
@@ -231,6 +244,17 @@ const updateMotor = async () => {
                   label="Marca"
                   :items="marcas"
                   :rules="[requiredValidator]"
+                />
+              </VCol>
+              <VCol
+                cols="12"
+                md="6"
+              >
+                <AppSelect
+                  v-model="motorData.categories"
+                  label="Categoría"
+                  :items="categories"
+                  multiple
                 />
               </VCol>
 

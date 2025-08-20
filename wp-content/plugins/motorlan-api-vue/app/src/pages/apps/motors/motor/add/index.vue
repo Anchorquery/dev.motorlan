@@ -9,6 +9,7 @@ const motorId = Number(route.params.id)
 const motorData = ref({
   title: '',
   status: 'publish',
+  categories: [],
   acf: {
     marca: null,
     tipo_o_referencia: '',
@@ -36,11 +37,19 @@ const motorData = ref({
 })
 
 const marcas = ref([])
+const categories = ref([])
 
 useApi('/wp-json/wp/v2/marca').then(response => {
   marcas.value = response.data.value.map(marca => ({
     title: marca.name,
     value: marca.id,
+  }))
+})
+
+useApi('/motorlan/v1/motor-categories').then(response => {
+  categories.value = response.data.value.map(category => ({
+    title: category.name,
+    value: category.term_id,
   }))
 })
 
@@ -174,6 +183,17 @@ const content = ref(
                   v-model="motorData.acf.marca"
                   label="Marca"
                   :items="marcas"
+                />
+              </VCol>
+              <VCol
+                cols="12"
+                md="6"
+              >
+                <AppSelect
+                  v-model="motorData.categories"
+                  label="Categoría"
+                  :items="categories"
+                  multiple
                 />
               </VCol>
 
