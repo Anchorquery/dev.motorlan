@@ -157,21 +157,44 @@ function motorlan_get_motor_data($post_id) {
         'acf'          => array(),
     );
 
-    if (function_exists('get_field')) {
-        $acf_fields = [
-            'marca', 'tipo_o_referencia', 'estado_del_articulo', 'descripcion',
-            'precio_de_venta', 'potencia', 'velocidad', 'par_nominal', 'voltaje',
-            'intensidad', 'pais', 'provincia', 'posibilidad_de_alquiler',
-            'tipo_de_alimentacion', 'servomotores', 'regulacion_electronica_drivers',
-            'precio_negociable', 'motor_image', 'motor_gallery', 'informe_de_reparacion'
-        ];
-
-        foreach ($acf_fields as $field_name) {
-            $value = get_field($field_name, $post_id);
-            $motor_item['acf'][$field_name] = $value;
+    if (function_exists('get_fields')) {
+        $fields = get_fields($post_id);
+        if ($fields) {
+            $motor_item['acf'] = $fields;
         }
     } else {
         $motor_item['acf_error'] = 'Advanced Custom Fields plugin is not active.';
+    }
+
+    // Ensure essential fields are present, even if they have no value, to avoid issues in the frontend
+    $essential_fields = [
+        'marca', 'tipo_o_referencia', 'estado_del_articulo', 'descripcion',
+        'precio_de_venta', 'potencia', 'velocidad', 'par_nominal', 'voltaje',
+        'intensidad', 'pais', 'provincia', 'posibilidad_de_alquiler',
+        'tipo_de_alimentacion', 'servomotores', 'regulacion_electronica_drivers',
+        'precio_negociable', 'motor_image', 'motor_gallery', 'informe_de_reparacion'
+    ];
+
+    foreach ($essential_fields as $field) {
+        if (!isset($motor_item['acf'][$field])) {
+            $motor_item['acf'][$field] = null;
+        }
+    }
+
+    // For 'marca' (brand), which is a taxonomy, return the full term object
+    if (!empty($motor_item['acf']['marca'])) {
+        $term_id = $motor_item['acf']['marca'];
+        // Check if it's an array (already processed) or a term ID
+        if (is_numeric($term_id)) {
+            $term = get_term($term_id, 'marca');
+            if ($term && !is_wp_error($term)) {
+                $motor_item['acf']['marca'] = array(
+                    'id' => $term->term_id,
+                    'name' => $term->name,
+                    'slug' => $term->slug,
+                );
+            }
+        }
     }
 
     return $motor_item;

@@ -34,6 +34,7 @@ const motorData = ref({
 
 const marcas = ref([])
 
+// Fetch brands for the select dropdown
 useApi('/wp-json/motorlan/v1/marcas').then(response => {
   marcas.value = response.data.value.map(marca => ({
     title: marca.name,
@@ -41,11 +42,17 @@ useApi('/wp-json/motorlan/v1/marcas').then(response => {
   }))
 })
 
+// Fetch motor data on component mount
 onMounted(async () => {
   if (motorUuid) {
     const { data } = await useApi<any>(`/wp-json/motorlan/v1/motors/uuid/${motorUuid}`)
     const post = data.value
     if (post) {
+      // If marca is an object, extract the ID for the v-model
+      if (post.acf.marca && typeof post.acf.marca === 'object') {
+        post.acf.marca = post.acf.marca.id
+      }
+
       motorData.value = {
         ...motorData.value,
         ...post,
@@ -58,12 +65,53 @@ onMounted(async () => {
   }
 })
 
+const uploadImage = async (file: File) => {
+  const accessToken = useCookie('accessToken').value
+  const formData = new FormData()
+  formData.append('file', file)
+
+  const response = await fetch('/wp-json/wp/v2/media', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: formData,
+  })
+
+  if (!response.ok)
+    throw new Error('Failed to upload image')
+
+  return response.json()
+}
+
 const updateMotor = async () => {
   const api = useApi()
   const url = `/wp-json/motorlan/v1/motors/uuid/${motorUuid}`
   const method = 'POST'
 
   try {
+    // Handle main image upload
+    if (motorData.value.acf.motor_image instanceof File) {
+      const uploadedImage = await uploadImage(motorData.value.acf.motor_image)
+      motorData.value.acf.motor_image = uploadedImage.id
+    }
+
+    // Handle gallery images upload
+    if (motorData.value.acf.motor_gallery.length > 0) {
+      const newGalleryIds = []
+      for (const image of motorData.value.acf.motor_gallery) {
+        if (image instanceof File) {
+          const uploadedImage = await uploadImage(image)
+          newGalleryIds.push(uploadedImage.id)
+        }
+        else {
+          // Keep existing image ID
+          newGalleryIds.push(image.id)
+        }
+      }
+      motorData.value.acf.motor_gallery = newGalleryIds
+    }
+
     await api(url, {
       method,
       body: motorData.value,
@@ -72,6 +120,22 @@ const updateMotor = async () => {
   }
   catch (error) {
     console.error('Failed to update motor:', error)
+  }
+}
+
+// Function to handle file selection for the main image
+const handleMotorImage = (files: FileList) => {
+  if (files.length > 0)
+    motorData.value.acf.motor_image = files[0]
+}
+
+// Function to handle file selection for the gallery
+const handleMotorGallery = (files: FileList) => {
+  if (files.length > 0) {
+    // If there are existing images, we add the new ones.
+    // The logic in updateMotor will handle the upload.
+    const existingImages = motorData.value.acf.motor_gallery.filter(img => !(img instanceof File))
+    motorData.value.acf.motor_gallery = [...existingImages, ...Array.from(files)]
   }
 }
 </script>
@@ -106,6 +170,7 @@ const updateMotor = async () => {
         >
           <VCardText>
             <VRow>
+              <!-- Fields from here -->
               <VCol
                 cols="12"
                 md="6"
@@ -315,6 +380,60 @@ const updateMotor = async () => {
                     value="No"
                   />
                 </VRadioGroup>
+              </VCol>
+            </VRow>
+          </VCardText>
+        </VCard>
+        <VCard
+          class="mb-6"
+          title="Imágenes del Motor"
+        >
+          <VCardText>
+            <VRow>
+              <VCol
+                cols="12"
+                md="6"
+              >
+                <VLabel class="mb-1 text-body-2 text-high-emphasis">
+                  Imagen Principal
+                </VLabel>
+                <VFileInput
+                  label="Seleccionar imagen principal"
+                  @change="handleMotorImage($event.target.files)"
+                />
+                <VImg
+                  v-if="motorData.acf.motor_image && motorData.acf.motor_image.url"
+                  :src="motorData.acf.motor_image.url"
+                  :alt="motorData.acf.motor_image.alt"
+                  height="150"
+                  class="mt-4"
+                />
+              </VCol>
+              <VCol
+                cols="12"
+                md="6"
+              >
+                <VLabel class="mb-1 text-body-2 text-high-emphasis">
+                  Galería de Imágenes
+                </VLabel>
+                <VFileInput
+                  label="Seleccionar imágenes para la galería"
+                  multiple
+                  @change="handleMotorGallery($event.target.files)"
+                />
+                <div
+                  v-if="motorData.acf.motor_gallery && motorData.acf.motor_gallery.length"
+                  class="d-flex flex-wrap gap-4 mt-4"
+                >
+                  <VImg
+                    v-for="image in motorData.acf.motor_gallery"
+                    :key="image.id"
+                    :src="image.url"
+                    :alt="image.alt"
+                    height="100"
+                    width="100"
+                  />
+                </div>
               </VCol>
             </VRow>
           </VCardText>
