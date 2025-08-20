@@ -193,6 +193,8 @@ const content = ref(
                   v-model="motorData.categories"
                   label="Categoría"
                   :items="categories"
+                  item-title="title"
+                  item-value="value"
                   multiple
                 />
               </VCol>
