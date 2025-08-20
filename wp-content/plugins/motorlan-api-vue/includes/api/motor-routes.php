@@ -43,20 +43,20 @@ function motorlan_register_motor_rest_routes() {
         'permission_callback' => '__return_true',
     ) );
 
-    // Route for getting a single motor by UUID
+    // Route for getting and updating a single motor by UUID
     register_rest_route($namespace, '/motors/uuid/(?P<uuid>[a-zA-Z0-9-]+)', array(
-        'methods' => 'GET',
-        'callback' => 'motorlan_get_motor_by_uuid',
-        'permission_callback' => '__return_true'
-    ));
-
-    // Route for updating a motor by UUID
-    register_rest_route($namespace, '/motors/uuid/(?P<uuid>[a-zA-Z0-9-]+)', array(
-        'methods' => 'POST',
-        'callback' => 'motorlan_update_motor_by_uuid',
-        'permission_callback' => function () {
-            return current_user_can('edit_posts');
-        }
+        array(
+            'methods' => 'GET',
+            'callback' => 'motorlan_get_motor_by_uuid',
+            'permission_callback' => '__return_true'
+        ),
+        array(
+            'methods' => 'POST',
+            'callback' => 'motorlan_update_motor_by_uuid',
+            'permission_callback' => function () {
+                return current_user_can('edit_posts');
+            }
+        ),
     ));
 
     // Route for deleting a motor by ID
