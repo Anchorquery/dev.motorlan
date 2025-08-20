@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import DropZone from '@/@core/components/DropZone.vue'
-import { requiredValidator } from '@/@core/utils/validators'
 import { onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import DropZone from '@/@core/components/DropZone.vue'
+import { requiredValidator } from '@/@core/utils/validators'
 
 const route = useRoute()
 const router = useRouter()
@@ -65,13 +65,11 @@ onMounted(async () => {
     const post = data.value
     if (post) {
       // If marca is an object, extract the ID for the v-model
-      if (post.acf.marca && typeof post.acf.marca === 'object') {
+      if (post.acf.marca && typeof post.acf.marca === 'object')
         post.acf.marca = post.acf.marca.id
-      }
 
-      if (post.categories) {
+      if (post.categories)
         motorData.value.categories = post.categories.map(cat => cat.id)
-      }
 
       motorData.value = {
         ...motorData.value,
@@ -102,6 +100,7 @@ onMounted(async () => {
 const uploadImage = async (file: File) => {
   const accessToken = useCookie('accessToken').value
   const formData = new FormData()
+
   formData.append('file', file)
 
   const response = await fetch('/wp-json/wp/v2/media', {
@@ -134,6 +133,7 @@ const updateMotor = async () => {
       const image = motorImageFile.value[0]
       if (image.file) { // New file
         const uploadedImage = await uploadImage(image.file)
+
         motorData.value.acf.motor_image = uploadedImage.id
       }
       else { // Existing image
@@ -150,6 +150,7 @@ const updateMotor = async () => {
       for (const image of motorGalleryFiles.value) {
         if (image.file) { // New file
           const uploadedImage = await uploadImage(image.file)
+
           newGalleryIds.push(uploadedImage.id)
         }
         else { // Existing image
@@ -210,282 +211,282 @@ const updateMotor = async () => {
             class="mb-6"
             title="Detalles del Motor"
           >
-          <VCardText>
-            <VRow>
-              <!-- Fields from here -->
-              <VCol
-                cols="12"
-                md="6"
-              >
-                <AppTextField
-                  v-model="motorData.title"
-                  label="Título de la publicación"
-                  placeholder="Título"
-                  :rules="[requiredValidator]"
-                />
-              </VCol>
-              <VCol
-                cols="12"
-                md="6"
-              >
-                <AppTextField
-                  v-model="motorData.acf.tipo_o_referencia"
-                  label="Tipo o referencia"
-                  placeholder="Referencia"
-                  :rules="[requiredValidator]"
-                />
-              </VCol>
-              <VCol
-                cols="12"
-                md="6"
-              >
-                <AppSelect
-                  v-model="motorData.acf.marca"
-                  label="Marca"
-                  :items="marcas"
-                  :rules="[requiredValidator]"
-                />
-              </VCol>
-              <VCol
-                cols="12"
-                md="6"
-              >
-                <AppSelect
-                  v-model="motorData.categories"
-                  label="Categoría"
-                  :items="categories"
-                  item-title="title"
-                  item-value="value"
-                  multiple
-                />
-              </VCol>
+            <VCardText>
+              <VRow>
+                <!-- Fields from here -->
+                <VCol
+                  cols="12"
+                  md="6"
+                >
+                  <AppTextField
+                    v-model="motorData.title"
+                    label="Título de la publicación"
+                    placeholder="Título"
+                    :rules="[requiredValidator]"
+                  />
+                </VCol>
+                <VCol
+                  cols="12"
+                  md="6"
+                >
+                  <AppTextField
+                    v-model="motorData.acf.tipo_o_referencia"
+                    label="Tipo o referencia"
+                    placeholder="Referencia"
+                    :rules="[requiredValidator]"
+                  />
+                </VCol>
+                <VCol
+                  cols="12"
+                  md="6"
+                >
+                  <AppSelect
+                    v-model="motorData.acf.marca"
+                    label="Marca"
+                    :items="marcas"
+                    :rules="[requiredValidator]"
+                  />
+                </VCol>
+                <VCol
+                  cols="12"
+                  md="6"
+                >
+                  <AppSelect
+                    v-model="motorData.categories"
+                    label="Categoría"
+                    :items="categories"
+                    item-title="title"
+                    item-value="value"
+                    multiple
+                  />
+                </VCol>
 
-              <VCol
-                cols="12"
-                md="6"
-              >
-                <AppTextField
-                  v-model="motorData.acf.potencia"
-                  label="Potencia (kW)"
-                  type="number"
-                  placeholder="100"
-                  :rules="[requiredValidator]"
-                />
-              </VCol>
-              <VCol
-                cols="12"
-                md="6"
-              >
-                <AppTextField
-                  v-model="motorData.acf.velocidad"
-                  label="Velocidad (rpm)"
-                  type="number"
-                  placeholder="3000"
-                  :rules="[requiredValidator]"
-                />
-              </VCol>
-              <VCol
-                cols="12"
-                md="6"
-              >
-                <AppTextField
-                  v-model="motorData.acf.par_nominal"
-                  label="PAR Nominal (Nm)"
-                  type="number"
-                  placeholder="50"
-                  :rules="[requiredValidator]"
-                />
-              </VCol>
-              <VCol
-                cols="12"
-                md="6"
-              >
-                <AppTextField
-                  v-model="motorData.acf.voltaje"
-                  label="Voltaje (V)"
-                  type="number"
-                  placeholder="220"
-                  :rules="[requiredValidator]"
-                />
-              </VCol>
-              <VCol
-                cols="12"
-                md="6"
-              >
-                <AppTextField
-                  v-model="motorData.acf.intensidad"
-                  label="Intensidad (A)"
-                  type="number"
-                  placeholder="10"
-                  :rules="[requiredValidator]"
-                />
-              </VCol>
-              <VCol
-                cols="12"
-                md="6"
-              >
-                <AppSelect
-                  v-model="motorData.acf.pais"
-                  label="País (localización)"
-                  :items="['España', 'Portugal', 'Francia']"
-                  :rules="[requiredValidator]"
-                />
-              </VCol>
-              <VCol
-                cols="12"
-                md="6"
-              >
-                <AppTextField
-                  v-model="motorData.acf.provincia"
-                  label="Provincia"
-                  placeholder="Madrid"
-                  :rules="[requiredValidator]"
-                />
-              </VCol>
-              <VCol
-                cols="12"
-                md="6"
-              >
-                <AppSelect
-                  v-model="motorData.acf.estado_del_articulo"
-                  label="Estado del artículo"
-                  :items="['Nuevo', 'Usado', 'Restaurado']"
-                  :rules="[requiredValidator]"
-                />
-              </VCol>
-              <VCol cols="12">
-                <VTextarea
-                  v-model="motorData.acf.descripcion"
-                  label="Descripción"
-                  placeholder="Descripción del motor"
-                  :rules="[requiredValidator]"
-                />
-              </VCol>
+                <VCol
+                  cols="12"
+                  md="6"
+                >
+                  <AppTextField
+                    v-model="motorData.acf.potencia"
+                    label="Potencia (kW)"
+                    type="number"
+                    placeholder="100"
+                    :rules="[requiredValidator]"
+                  />
+                </VCol>
+                <VCol
+                  cols="12"
+                  md="6"
+                >
+                  <AppTextField
+                    v-model="motorData.acf.velocidad"
+                    label="Velocidad (rpm)"
+                    type="number"
+                    placeholder="3000"
+                    :rules="[requiredValidator]"
+                  />
+                </VCol>
+                <VCol
+                  cols="12"
+                  md="6"
+                >
+                  <AppTextField
+                    v-model="motorData.acf.par_nominal"
+                    label="PAR Nominal (Nm)"
+                    type="number"
+                    placeholder="50"
+                    :rules="[requiredValidator]"
+                  />
+                </VCol>
+                <VCol
+                  cols="12"
+                  md="6"
+                >
+                  <AppTextField
+                    v-model="motorData.acf.voltaje"
+                    label="Voltaje (V)"
+                    type="number"
+                    placeholder="220"
+                    :rules="[requiredValidator]"
+                  />
+                </VCol>
+                <VCol
+                  cols="12"
+                  md="6"
+                >
+                  <AppTextField
+                    v-model="motorData.acf.intensidad"
+                    label="Intensidad (A)"
+                    type="number"
+                    placeholder="10"
+                    :rules="[requiredValidator]"
+                  />
+                </VCol>
+                <VCol
+                  cols="12"
+                  md="6"
+                >
+                  <AppSelect
+                    v-model="motorData.acf.pais"
+                    label="País (localización)"
+                    :items="['España', 'Portugal', 'Francia']"
+                    :rules="[requiredValidator]"
+                  />
+                </VCol>
+                <VCol
+                  cols="12"
+                  md="6"
+                >
+                  <AppTextField
+                    v-model="motorData.acf.provincia"
+                    label="Provincia"
+                    placeholder="Madrid"
+                    :rules="[requiredValidator]"
+                  />
+                </VCol>
+                <VCol
+                  cols="12"
+                  md="6"
+                >
+                  <AppSelect
+                    v-model="motorData.acf.estado_del_articulo"
+                    label="Estado del artículo"
+                    :items="['Nuevo', 'Usado', 'Restaurado']"
+                    :rules="[requiredValidator]"
+                  />
+                </VCol>
+                <VCol cols="12">
+                  <VTextarea
+                    v-model="motorData.acf.descripcion"
+                    label="Descripción"
+                    placeholder="Descripción del motor"
+                    :rules="[requiredValidator]"
+                  />
+                </VCol>
 
-              <VCol
-                cols="12"
-                md="6"
-              >
-                <VRadioGroup
-                  v-model="motorData.acf.posibilidad_de_alquiler"
-                  inline
-                  label="Posibilidad de alquiler"
-                  :rules="[requiredValidator]"
+                <VCol
+                  cols="12"
+                  md="6"
                 >
-                  <VRadio
-                    label="Sí"
-                    value="Sí"
-                  />
-                  <VRadio
-                    label="No"
-                    value="No"
-                  />
-                </VRadioGroup>
-              </VCol>
-              <VCol
-                cols="12"
-                md="6"
-              >
-                <VRadioGroup
-                  v-model="motorData.acf.tipo_de_alimentacion"
-                  inline
-                  label="Tipo de alimentación"
-                  :rules="[requiredValidator]"
+                  <VRadioGroup
+                    v-model="motorData.acf.posibilidad_de_alquiler"
+                    inline
+                    label="Posibilidad de alquiler"
+                    :rules="[requiredValidator]"
+                  >
+                    <VRadio
+                      label="Sí"
+                      value="Sí"
+                    />
+                    <VRadio
+                      label="No"
+                      value="No"
+                    />
+                  </VRadioGroup>
+                </VCol>
+                <VCol
+                  cols="12"
+                  md="6"
                 >
-                  <VRadio
-                    label="Continua (C.C.)"
-                    value="Continua (C.C.)"
-                  />
-                  <VRadio
-                    label="Alterna (C.A.)"
-                    value="Alterna (C.A.)"
-                  />
-                </VRadioGroup>
-              </VCol>
-              <VCol
-                cols="12"
-                md="6"
-              >
-                <VCheckbox
-                  v-model="motorData.acf.servomotores"
-                  label="Servomotores"
-                />
-              </VCol>
-              <VCol
-                cols="12"
-                md="6"
-              >
-                <VCheckbox
-                  v-model="motorData.acf.regulacion_electronica_drivers"
-                  label="Regulación electrónica/Drivers"
-                />
-              </VCol>
-              <VCol
-                cols="12"
-                md="6"
-              >
-                <AppTextField
-                  v-model="motorData.acf.precio_de_venta"
-                  label="Precio de venta (€)"
-                  type="number"
-                  placeholder="1000"
-                  :rules="[requiredValidator]"
-                />
-              </VCol>
-              <VCol
-                cols="12"
-                md="6"
-              >
-                <VRadioGroup
-                  v-model="motorData.acf.precio_negociable"
-                  inline
-                  label="Precio negociable"
+                  <VRadioGroup
+                    v-model="motorData.acf.tipo_de_alimentacion"
+                    inline
+                    label="Tipo de alimentación"
+                    :rules="[requiredValidator]"
+                  >
+                    <VRadio
+                      label="Continua (C.C.)"
+                      value="Continua (C.C.)"
+                    />
+                    <VRadio
+                      label="Alterna (C.A.)"
+                      value="Alterna (C.A.)"
+                    />
+                  </VRadioGroup>
+                </VCol>
+                <VCol
+                  cols="12"
+                  md="6"
                 >
-                  <VRadio
-                    label="Sí"
-                    value="Sí"
+                  <VCheckbox
+                    v-model="motorData.acf.servomotores"
+                    label="Servomotores"
                   />
-                  <VRadio
-                    label="No"
-                    value="No"
+                </VCol>
+                <VCol
+                  cols="12"
+                  md="6"
+                >
+                  <VCheckbox
+                    v-model="motorData.acf.regulacion_electronica_drivers"
+                    label="Regulación electrónica/Drivers"
                   />
-                </VRadioGroup>
-              </VCol>
-            </VRow>
-          </VCardText>
-        </VCard>
-        <VCard
-          class="mb-6"
-          title="Imágenes del Motor"
-        >
-          <VCardText>
-            <VRow>
-              <VCol
-                cols="12"
-                md="6"
-              >
-                <VLabel class="mb-1 text-body-2 text-high-emphasis">
-                  Imagen Principal
-                </VLabel>
-                <DropZone
-                  v-model="motorImageFile"
-                  :multiple="false"
-                />
-              </VCol>
-              <VCol
-                cols="12"
-                md="6"
-              >
-                <VLabel class="mb-1 text-body-2 text-high-emphasis">
-                  Galería de Imágenes
-                </VLabel>
-                <DropZone v-model="motorGalleryFiles" />
-              </VCol>
-            </VRow>
-          </VCardText>
-        </VCard>
-      </VCol>
-    </VRow>
+                </VCol>
+                <VCol
+                  cols="12"
+                  md="6"
+                >
+                  <AppTextField
+                    v-model="motorData.acf.precio_de_venta"
+                    label="Precio de venta (€)"
+                    type="number"
+                    placeholder="1000"
+                    :rules="[requiredValidator]"
+                  />
+                </VCol>
+                <VCol
+                  cols="12"
+                  md="6"
+                >
+                  <VRadioGroup
+                    v-model="motorData.acf.precio_negociable"
+                    inline
+                    label="Precio negociable"
+                  >
+                    <VRadio
+                      label="Sí"
+                      value="Sí"
+                    />
+                    <VRadio
+                      label="No"
+                      value="No"
+                    />
+                  </VRadioGroup>
+                </VCol>
+              </VRow>
+            </VCardText>
+          </VCard>
+          <VCard
+            class="mb-6"
+            title="Imágenes del Motor"
+          >
+            <VCardText>
+              <VRow>
+                <VCol
+                  cols="12"
+                  md="6"
+                >
+                  <VLabel class="mb-1 text-body-2 text-high-emphasis">
+                    Imagen Principal
+                  </VLabel>
+                  <DropZone
+                    v-model="motorImageFile"
+                    :multiple="false"
+                  />
+                </VCol>
+                <VCol
+                  cols="12"
+                  md="6"
+                >
+                  <VLabel class="mb-1 text-body-2 text-high-emphasis">
+                    Galería de Imágenes
+                  </VLabel>
+                  <DropZone v-model="motorGalleryFiles" />
+                </VCol>
+              </VRow>
+            </VCardText>
+          </VCard>
+        </VCol>
+      </VRow>
     </VForm>
   </div>
 </template>
