@@ -237,6 +237,11 @@ function motorlan_update_motor_by_uuid(WP_REST_Request $request) {
         wp_update_post(array('ID' => $post_id, 'post_title' => sanitize_text_field($params['title'])));
     }
 
+    // Update post categories
+    if (isset($params['categories'])) {
+        wp_set_post_terms($post_id, $params['categories'], 'categoria', false);
+    }
+
     // Update ACF fields
     if (isset($params['acf']) && is_array($params['acf'])) {
         foreach ($params['acf'] as $key => $value) {
