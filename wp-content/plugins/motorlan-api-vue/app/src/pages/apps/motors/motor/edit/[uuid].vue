@@ -151,6 +151,22 @@ const updateMotor = async () => {
     console.error('Failed to update motor:', error)
   }
 }
+
+// Function to handle file selection for the main image
+const handleMotorImage = (files: FileList) => {
+  if (files.length > 0)
+    motorData.value.acf.motor_image = files[0]
+}
+
+// Function to handle file selection for the gallery
+const handleMotorGallery = (files: FileList) => {
+  if (files.length > 0) {
+    // If there are existing images, we add the new ones.
+    // The logic in updateMotor will handle the upload.
+    const existingImages = motorData.value.acf.motor_gallery.filter(img => !(img instanceof File))
+    motorData.value.acf.motor_gallery = [...existingImages, ...Array.from(files)]
+  }
+}
 </script>
 
 <template>
@@ -410,9 +426,11 @@ const updateMotor = async () => {
                 <VLabel class="mb-1 text-body-2 text-high-emphasis">
                   Imagen Principal
                 </VLabel>
+
                 <DropZone
                   v-model="motorImageFile"
                   :multiple="false"
+
                 />
               </VCol>
               <VCol
@@ -422,7 +440,9 @@ const updateMotor = async () => {
                 <VLabel class="mb-1 text-body-2 text-high-emphasis">
                   Galería de Imágenes
                 </VLabel>
+
                 <DropZone v-model="motorGalleryFiles" />
+
               </VCol>
             </VRow>
           </VCardText>
