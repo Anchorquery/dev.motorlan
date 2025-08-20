@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import DropZone from 'src/@core/components/DropZone.vue'
+import { onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 const route = useRoute()
@@ -32,6 +33,9 @@ const motorData = ref({
   },
 })
 
+const motorImageFile = ref([])
+const motorGalleryFiles = ref([])
+
 const marcas = ref([])
 
 // Fetch brands for the select dropdown
@@ -60,6 +64,20 @@ onMounted(async () => {
           ...motorData.value.acf,
           ...post.acf,
         },
+      }
+
+      // Populate file refs for DropZone components
+      if (motorData.value.acf.motor_image) {
+        motorImageFile.value = [{
+          url: motorData.value.acf.motor_image.url,
+          id: motorData.value.acf.motor_image.id,
+        }]
+      }
+      if (motorData.value.acf.motor_gallery) {
+        motorGalleryFiles.value = motorData.value.acf.motor_gallery.map(img => ({
+          url: img.url,
+          id: img.id,
+        }))
       }
     }
   }
@@ -91,25 +109,36 @@ const updateMotor = async () => {
 
   try {
     // Handle main image upload
-    if (motorData.value.acf.motor_image instanceof File) {
-      const uploadedImage = await uploadImage(motorData.value.acf.motor_image)
-      motorData.value.acf.motor_image = uploadedImage.id
+    if (motorImageFile.value.length > 0) {
+      const image = motorImageFile.value[0]
+      if (image.file) { // New file
+        const uploadedImage = await uploadImage(image.file)
+        motorData.value.acf.motor_image = uploadedImage.id
+      }
+      else { // Existing image
+        motorData.value.acf.motor_image = image.id
+      }
+    }
+    else {
+      motorData.value.acf.motor_image = null
     }
 
     // Handle gallery images upload
-    if (motorData.value.acf.motor_gallery.length > 0) {
+    if (motorGalleryFiles.value.length > 0) {
       const newGalleryIds = []
-      for (const image of motorData.value.acf.motor_gallery) {
-        if (image instanceof File) {
-          const uploadedImage = await uploadImage(image)
+      for (const image of motorGalleryFiles.value) {
+        if (image.file) { // New file
+          const uploadedImage = await uploadImage(image.file)
           newGalleryIds.push(uploadedImage.id)
         }
-        else {
-          // Keep existing image ID
+        else { // Existing image
           newGalleryIds.push(image.id)
         }
       }
       motorData.value.acf.motor_gallery = newGalleryIds
+    }
+    else {
+      motorData.value.acf.motor_gallery = []
     }
 
     await api(url, {
@@ -397,16 +426,11 @@ const handleMotorGallery = (files: FileList) => {
                 <VLabel class="mb-1 text-body-2 text-high-emphasis">
                   Imagen Principal
                 </VLabel>
-                <VFileInput
-                  label="Seleccionar imagen principal"
-                  @change="handleMotorImage($event.target.files)"
-                />
-                <VImg
-                  v-if="motorData.acf.motor_image && motorData.acf.motor_image.url"
-                  :src="motorData.acf.motor_image.url"
-                  :alt="motorData.acf.motor_image.alt"
-                  height="150"
-                  class="mt-4"
+
+                <DropZone
+                  v-model="motorImageFile"
+                  :multiple="false"
+
                 />
               </VCol>
               <VCol
@@ -416,24 +440,9 @@ const handleMotorGallery = (files: FileList) => {
                 <VLabel class="mb-1 text-body-2 text-high-emphasis">
                   Galería de Imágenes
                 </VLabel>
-                <VFileInput
-                  label="Seleccionar imágenes para la galería"
-                  multiple
-                  @change="handleMotorGallery($event.target.files)"
-                />
-                <div
-                  v-if="motorData.acf.motor_gallery && motorData.acf.motor_gallery.length"
-                  class="d-flex flex-wrap gap-4 mt-4"
-                >
-                  <VImg
-                    v-for="image in motorData.acf.motor_gallery"
-                    :key="image.id"
-                    :src="image.url"
-                    :alt="image.alt"
-                    height="100"
-                    width="100"
-                  />
-                </div>
+
+                <DropZone v-model="motorGalleryFiles" />
+
               </VCol>
             </VRow>
           </VCardText>
