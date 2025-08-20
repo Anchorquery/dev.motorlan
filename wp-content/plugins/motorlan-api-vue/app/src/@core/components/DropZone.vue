@@ -126,9 +126,10 @@ const removeFile = (index: number) => {
                   >
                     <VImg
                       :src="item.url"
-                      width="200px"
-                      height="150px"
-                      class="w-100 mx-auto"
+                      width="150px"
+                      height="100px"
+                      class="mx-auto"
+                      cover
                     />
                     <div class="mt-2">
                       <span class="clamp-text text-wrap">
