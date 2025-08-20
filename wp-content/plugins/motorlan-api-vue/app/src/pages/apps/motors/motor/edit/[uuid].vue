@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import DropZone from '@/@core/components/DropZone.vue'
 import { requiredValidator } from '@/@core/utils/validators'
@@ -195,12 +195,24 @@ const updateMotor = async () => {
   }
 }
 
-const prepareCateogies = (categories: any[]) => {
-  return categories.map((category: { title: any; value: any }) => ({
-    title: category.title,
-    value: category.value,
-  }))
-}
+const formattedCategories = computed({
+  // 'get' se ejecuta cuando el componente lee el valor
+  get() {
+    console.log(motorData.value.categories)
+    if (Array.isArray(motorData.value.categories))
+      return motorData.value.categories.map(cat => (typeof cat === 'object' ? cat.id : cat))
+
+    return []
+  },
+
+  // 'set' se ejecuta cuando el usuario cambia la selección en AppSelect
+  set(newValue) {
+    // 'newValue' es lo que envía el componente AppSelect
+    // Actualizamos la variable original con el nuevo valor
+    motorData.value.categories = newValue
+  },
+
+})
 </script>
 
 <template>
@@ -280,11 +292,11 @@ const prepareCateogies = (categories: any[]) => {
                   md="6"
                 >
                   <AppSelect
-                    v-model="prepareCateogies(motorData.categories)"
+                    v-model="formattedCategories"
                     label="Categoría"
                     :items="categories"
-                    item-title="title"
-                    item-value="value"
+                    item-title="name"
+                    item-value="id"
                     multiple
                   />
                 </VCol>
