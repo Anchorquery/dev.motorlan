@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import DropZone from '@/@core/components/DropZone.vue'
 import { requiredValidator } from '@/@core/utils/validators'
@@ -43,33 +43,49 @@ const categories = ref([])
 const form = ref(null)
 const isFormValid = ref(false)
 
-// Fetch brands for the select dropdown
-useApi('/wp-json/motorlan/v1/marcas').then(response => {
-  marcas.value = response.data.value.map(marca => ({
-    title: marca.name,
-    value: marca.id,
-  }))
-})
-
-useApi('/motorlan/v1/motor-categories').then(response => {
-  categories.value = response.data.value.map(category => ({
-    title: category.name,
-    value: category.term_id,
-  }))
-})
-
-// Fetch motor data on component mount
 onMounted(async () => {
-  if (motorUuid) {
-    const { data } = await useApi<any>(`/wp-json/motorlan/v1/motors/uuid/${motorUuid}`)
-    const post = data.value
-    if (post) {
-      // If marca is an object, extract the ID for the v-model
+  try {
+    // 1. Crear un arreglo de promesas
+    const promises = [
+      useApi('/wp-json/motorlan/v1/marcas'),
+      useApi('/wp-json/motorlan/v1/motor-categories'),
+    ]
+
+    // Añadir la promesa del motor solo si existe el UUID
+    if (motorUuid)
+      promises.push(useApi(`/wp-json/motorlan/v1/motors/uuid/${motorUuid}`))
+
+    // 2. Ejecutar todas las promesas en paralelo
+    const [marcasResponse, categoriesResponse, motorResponse] = await Promise.all(promises)
+
+    // 3. Procesar los resultados una vez que todos han llegado
+
+    // Procesar marcas
+    if (marcasResponse && marcasResponse.data.value) {
+      marcas.value = marcasResponse.data.value.map((marca: { name: any; id: any }) => ({
+        title: marca.name,
+        value: marca.id,
+      }))
+    }
+
+    // Procesar categorías
+    if (categoriesResponse && categoriesResponse.data.value) {
+      categories.value = categoriesResponse.data.value.map((category: { name: any; term_id: any }) => ({
+        title: category.name,
+        value: category.term_id,
+      }))
+    }
+
+    // Procesar datos del motor (si se solicitó)
+    if (motorUuid && motorResponse && motorResponse.data.value) {
+      const post = motorResponse.data.value
+
+      // Si marca es un objeto, extraer el ID
       if (post.acf.marca && typeof post.acf.marca === 'object')
         post.acf.marca = post.acf.marca.id
 
       if (post.categories)
-        motorData.value.categories = post.categories.map(cat => cat.id)
+        motorData.value.categories = post.categories.map((cat: { id: any }) => cat.id)
 
       motorData.value = {
         ...motorData.value,
@@ -80,7 +96,7 @@ onMounted(async () => {
         },
       }
 
-      // Populate file refs for DropZone components
+      // Poblar las referencias de archivos para DropZone
       if (motorData.value.acf.motor_image) {
         motorImageFile.value = [{
           url: motorData.value.acf.motor_image.url,
@@ -94,6 +110,11 @@ onMounted(async () => {
         }))
       }
     }
+  }
+  catch (error) {
+    console.error('Error al obtener los datos iniciales:', error)
+
+    // Aquí puedes manejar el error, por ejemplo, mostrando una notificación al usuario.
   }
 })
 
@@ -172,6 +193,13 @@ const updateMotor = async () => {
   catch (error) {
     console.error('Failed to update motor:', error)
   }
+}
+
+const prepareCateogies = (categories: any[]) => {
+  return categories.map((category: { title: any; value: any }) => ({
+    title: category.title,
+    value: category.value,
+  }))
 }
 </script>
 
@@ -252,7 +280,7 @@ const updateMotor = async () => {
                   md="6"
                 >
                   <AppSelect
-                    v-model="motorData.categories"
+                    v-model="prepareCateogies(motorData.categories)"
                     label="Categoría"
                     :items="categories"
                     item-title="title"
@@ -270,7 +298,6 @@ const updateMotor = async () => {
                     label="Potencia (kW)"
                     type="number"
                     placeholder="100"
-                    :rules="[requiredValidator]"
                   />
                 </VCol>
                 <VCol
@@ -282,7 +309,6 @@ const updateMotor = async () => {
                     label="Velocidad (rpm)"
                     type="number"
                     placeholder="3000"
-                    :rules="[requiredValidator]"
                   />
                 </VCol>
                 <VCol
@@ -294,7 +320,6 @@ const updateMotor = async () => {
                     label="PAR Nominal (Nm)"
                     type="number"
                     placeholder="50"
-                    :rules="[requiredValidator]"
                   />
                 </VCol>
                 <VCol
@@ -306,7 +331,6 @@ const updateMotor = async () => {
                     label="Voltaje (V)"
                     type="number"
                     placeholder="220"
-                    :rules="[requiredValidator]"
                   />
                 </VCol>
                 <VCol
@@ -318,7 +342,6 @@ const updateMotor = async () => {
                     label="Intensidad (A)"
                     type="number"
                     placeholder="10"
-                    :rules="[requiredValidator]"
                   />
                 </VCol>
                 <VCol
