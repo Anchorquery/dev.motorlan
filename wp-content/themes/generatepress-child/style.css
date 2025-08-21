@@ -11,3 +11,17 @@ Updated: 2025-08-14 20:51:42
 
 */
 
+/* Motor detail template styles */
+.motor-detail { display: flex; flex-direction: column; gap: 2rem; }
+.motor-top { display: flex; flex-wrap: wrap; gap: 2rem; }
+.motor-gallery { flex: 1 1 60%; }
+.motor-info-card { flex: 1 1 35%; }
+.motor-gallery a { display: block; margin-bottom: 0.5rem; }
+.motor-gallery img { width: 100%; height: auto; display: block; }
+.motor-actions { display: flex; gap: 0.5rem; margin: 1rem 0; }
+.motor-info-table table { width: 100%; border-collapse: collapse; }
+.motor-info-table th { text-align: left; padding-right: 1rem; }
+.motor-docs, .motor-info-table, .motor-related { margin-top: 2rem; }
+.related-products { display: flex; flex-wrap: wrap; gap: 1rem; }
+.related-products .product { width: calc(25% - 1rem); box-sizing: border-box; }
+.related-products img { width: 100%; height: auto; display: block; }
