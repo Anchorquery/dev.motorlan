@@ -39,13 +39,13 @@ export default [
     ],
   },
   {
-    title: 'My Account',
+    title: 'Mis Compras',
     icon: { icon: 'tabler-user-circle' },
     children: [
-      { title: 'Purchases', to: '/apps/my-account/purchases' },
-      { title: 'Questions', to: '/apps/my-account/questions' },
-      { title: 'Opinions', to: '/apps/my-account/opinions' },
-      { title: 'Favorites', to: '/apps/my-account/favorites' },
+      { title: 'Compras', to: 'apps-my-account-purchases' },
+      { title: 'Preguntas', to: 'apps-my-account-questions' },
+      { title: 'Opiniones', to: 'apps-my-account-opinions' },
+      { title: 'Favoritos', to: 'apps-my-account-favorites' },
     ],
   },
 ]
