@@ -121,6 +121,7 @@ const handleMotorAction = async (message: string, action: () => Promise<void>) =
   }
 }
 
+
 const deleteMotor = () => {
   if (motorToDelete.value === null)
     return
@@ -135,6 +136,7 @@ const deleteMotor = () => {
     if (index !== -1)
       selectedRows.value.splice(index, 1)
   })
+
 }
 
 const duplicateMotor = () => {
@@ -296,6 +298,7 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
               v-model="selectedCategory"
               placeholder="Category"
               :items="categories"
+              
               clearable
               clear-icon="tabler-x"
             />
@@ -367,7 +370,7 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
             />
             <div class="d-flex flex-column">
               <span class="text-body-1 font-weight-medium text-high-emphasis">{{ (item as any).title }}</span>
-              <span class="text-body-2">{{ (item as any).acf.marca }}</span>
+              <span class="text-body-2">{{ (item as any).acf.marca.name }}</span>
             </div>
           </div>
         </template>
