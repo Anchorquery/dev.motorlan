@@ -121,7 +121,6 @@ const handleMotorAction = async (message: string, action: () => Promise<void>) =
   }
 }
 
-
 const deleteMotor = () => {
   if (motorToDelete.value === null)
     return
@@ -130,13 +129,12 @@ const deleteMotor = () => {
   handleMotorAction('Borrando motor...', async () => {
     if (motorToDelete.value === null)
       return
-    await $api(`/wp-json/motorlan/v1/motors/${motorToDelete.value}`, { method: 'DELETE' })
+    await useApi(`/wp-json/motorlan/v1/motors/${motorToDelete.value}`).delete()
 
     const index = selectedRows.value.findIndex(row => row === motorToDelete.value)
     if (index !== -1)
       selectedRows.value.splice(index, 1)
   })
-
 }
 
 const duplicateMotor = () => {
@@ -147,7 +145,7 @@ const duplicateMotor = () => {
   handleMotorAction('Duplicando motor...', async () => {
     if (motorToDuplicate.value === null)
       return
-    await $api(`/wp-json/motorlan/v1/motors/${motorToDuplicate.value}/duplicate`, { method: 'POST' })
+    await useApi(`/wp-json/motorlan/v1/motors/duplicate/${motorToDuplicate.value}`).get()
   })
 }
 
@@ -165,10 +163,7 @@ const changeStatus = () => {
   }
 
   handleMotorAction(messages[status] || 'Actualizando estado...', async () => {
-    await $api(`/wp-json/motorlan/v1/motors/${id}/status`, {
-      method: 'POST',
-      body: { status },
-    })
+    await useApi(`/wp-json/motorlan/v1/motors/${id}/status`).post({ status })
   })
 }
 
@@ -298,7 +293,6 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
               v-model="selectedCategory"
               placeholder="Category"
               :items="categories"
-              
               clearable
               clear-icon="tabler-x"
             />
@@ -370,7 +364,7 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
             />
             <div class="d-flex flex-column">
               <span class="text-body-1 font-weight-medium text-high-emphasis">{{ (item as any).title }}</span>
-              <span class="text-body-2">{{ (item as any).acf.marca.name }}</span>
+              <span class="text-body-2">{{ (item as any).acf.marca.name}}</span>
             </div>
           </div>
         </template>
@@ -462,21 +456,25 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
         </template>
       </VDataTableServer>
     </VCard>
-    <!-- 👉 Loading overlay -->
-    <VOverlay
+    <!-- 👉 Loading Dialog -->
+    <VDialog
       v-model="isLoading"
-      class="d-flex align-center justify-center"
+      width="300"
       persistent
     >
-      <VProgressCircular
-        indeterminate
-        size="64"
+      <VCard
         color="primary"
-      />
-      <p class="text-center">
-        {{ loadingMessage }}
-      </p>
-    </VOverlay>
+      >
+        <VCardText class="d-flex align-center pa-4">
+          <VProgressCircular
+            indeterminate
+            color="white"
+            class="me-4"
+          />
+          <span class="text-white">{{ loadingMessage }}</span>
+        </VCardText>
+      </VCard>
+    </VDialog>
 
     <!-- 👉 Delete Confirmation Dialog -->
     <VDialog
