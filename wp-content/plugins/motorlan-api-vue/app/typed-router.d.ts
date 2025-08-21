@@ -78,14 +78,11 @@ declare module 'vue-router/auto-routes' {
     'front-pages-payment': RouteRecordInfo<'front-pages-payment', '/front-pages/payment', Record<never, never>, Record<never, never>>,
     'front-pages-pricing': RouteRecordInfo<'front-pages-pricing', '/front-pages/pricing', Record<never, never>, Record<never, never>>,
     'login': RouteRecordInfo<'login', '/login', Record<never, never>, Record<never, never>>,
-
     'my-purchases-favorites': RouteRecordInfo<'my-purchases-favorites', '/my-purchases/favorites', Record<never, never>, Record<never, never>>,
     'my-purchases-purchases': RouteRecordInfo<'my-purchases-purchases', '/my-purchases/purchases', Record<never, never>, Record<never, never>>,
     'my-purchases-questions': RouteRecordInfo<'my-purchases-questions', '/my-purchases/questions', Record<never, never>, Record<never, never>>,
     'my-purchases-reviews': RouteRecordInfo<'my-purchases-reviews', '/my-purchases/reviews', Record<never, never>, Record<never, never>>,
-
     'motores': RouteRecordInfo<'motores', '/motores', Record<never, never>, Record<never, never>>,
-
     'not-authorized': RouteRecordInfo<'not-authorized', '/not-authorized', Record<never, never>, Record<never, never>>,
     'pages-account-settings-tab': RouteRecordInfo<'pages-account-settings-tab', '/pages/account-settings/:tab', { tab: ParamValue<true> }, { tab: ParamValue<false> }>,
     'pages-authentication-forgot-password-v1': RouteRecordInfo<'pages-authentication-forgot-password-v1', '/pages/authentication/forgot-password-v1', Record<never, never>, Record<never, never>>,
@@ -117,6 +114,7 @@ declare module 'vue-router/auto-routes' {
     'register': RouteRecordInfo<'register', '/register', Record<never, never>, Record<never, never>>,
     'tables-data-table': RouteRecordInfo<'tables-data-table', '/tables/data-table', Record<never, never>, Record<never, never>>,
     'tables-simple-table': RouteRecordInfo<'tables-simple-table', '/tables/simple-table', Record<never, never>, Record<never, never>>,
+    'tienda': RouteRecordInfo<'tienda', '/tienda', Record<never, never>, Record<never, never>>,
     'wizard-examples-checkout': RouteRecordInfo<'wizard-examples-checkout', '/wizard-examples/checkout', Record<never, never>, Record<never, never>>,
     'wizard-examples-create-deal': RouteRecordInfo<'wizard-examples-create-deal', '/wizard-examples/create-deal', Record<never, never>, Record<never, never>>,
     'wizard-examples-property-listing': RouteRecordInfo<'wizard-examples-property-listing', '/wizard-examples/property-listing', Record<never, never>, Record<never, never>>,
