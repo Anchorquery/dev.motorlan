@@ -82,34 +82,92 @@ const { data: motorsData, execute: fetchMotors } = await useApi<any>(createUrl('
 const motors = computed((): Motor[] => (motorsData.value?.data || []).filter(Boolean))
 const totalMotors = computed(() => motorsData.value?.pagination.total || 0)
 
-const deleteMotor = async (id: number) => {
-  await $api(`/wp-json/motorlan/v1/motors/${id}`, {
-    method: 'DELETE',
-  })
+const isLoading = ref(false)
+const loadingMessage = ref('')
+const isDeleteDialogVisible = ref(false)
+const motorToDelete = ref<number | null>(null)
+const isDuplicateDialogVisible = ref(false)
+const motorToDuplicate = ref<number | null>(null)
+const isStatusDialogVisible = ref(false)
+const motorToChangeStatus = ref<{ id: number; status: string } | null>(null)
 
-  // Delete from selectedRows
-  const index = selectedRows.value.findIndex(row => row === id)
-  if (index !== -1)
-    selectedRows.value.splice(index, 1)
-
-  // Refetch motors
-  fetchMotors()
+const openDeleteDialog = (id: number) => {
+  motorToDelete.value = id
+  isDeleteDialogVisible.value = true
 }
 
-const duplicateMotor = async (id: number) => {
-  await useApi<any>(createUrl(`/wp-json/motorlan/v1/motors/${id}/duplicate`, {
-
-    method: 'POST',
-  }))
-  fetchMotors()
+const openDuplicateDialog = (id: number) => {
+  motorToDuplicate.value = id
+  isDuplicateDialogVisible.value = true
 }
 
-const changeStatus = async (id: number, status: string) => {
-  await $api(`/wp-json/motorlan/v1/motors/${id}/status`, {
-    method: 'POST',
-    body: { status },
+const openStatusDialog = (id: number, status: string) => {
+  motorToChangeStatus.value = { id, status }
+  isStatusDialogVisible.value = true
+}
+
+const handleMotorAction = async (message: string, action: () => Promise<void>) => {
+  isLoading.value = true
+  loadingMessage.value = message
+  try {
+    await action()
+    await fetchMotors()
+  }
+  catch (error) {
+    console.error(error)
+  }
+  finally {
+    isLoading.value = false
+  }
+}
+
+const deleteMotor = () => {
+  if (motorToDelete.value === null)
+    return
+
+  isDeleteDialogVisible.value = false
+  handleMotorAction('Borrando motor...', async () => {
+    if (motorToDelete.value === null)
+      return
+    await $api(`/wp-json/motorlan/v1/motors/${motorToDelete.value}`, { method: 'DELETE' })
+
+    const index = selectedRows.value.findIndex(row => row === motorToDelete.value)
+    if (index !== -1)
+      selectedRows.value.splice(index, 1)
   })
-  fetchMotors()
+}
+
+const duplicateMotor = () => {
+  if (motorToDuplicate.value === null)
+    return
+
+  isDuplicateDialogVisible.value = false
+  handleMotorAction('Duplicando motor...', async () => {
+    if (motorToDuplicate.value === null)
+      return
+    await $api(`/wp-json/motorlan/v1/motors/${motorToDuplicate.value}/duplicate`, { method: 'POST' })
+  })
+}
+
+const changeStatus = () => {
+  if (!motorToChangeStatus.value)
+    return
+
+  const { id, status } = motorToChangeStatus.value
+  isStatusDialogVisible.value = false
+
+  const messages: { [key: string]: string } = {
+    publish: 'Publicando motor...',
+    paused: 'Pausando motor...',
+    draft: 'Moviendo a borrador...',
+  }
+
+  handleMotorAction(messages[status] || 'Actualizando estado...', async () => {
+    await $api(`/wp-json/motorlan/v1/motors/${id}/status`, {
+      method: 'POST',
+      body: { status },
+    })
+  })
 }
 
 const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail'): string => {
@@ -347,7 +405,7 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
                 <VListItem
                   value="delete"
                   prepend-icon="tabler-trash"
-                  @click="deleteMotor((item as any).id)"
+                  @click="openDeleteDialog((item as any).id)"
                 >
                   Delete
                 </VListItem>
@@ -355,7 +413,7 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
                 <VListItem
                   value="duplicate"
                   prepend-icon="tabler-copy"
-                  @click="duplicateMotor((item as any).id)"
+                  @click="openDuplicateDialog((item as any).id)"
                 >
                   Duplicate
                 </VListItem>
@@ -364,7 +422,7 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
                   v-if="(item as any).status !== 'publish'"
                   value="publish"
                   prepend-icon="tabler-player-play"
-                  @click="changeStatus((item as any).id, 'publish')"
+                  @click="openStatusDialog((item as any).id, 'publish')"
                 >
                   Publish
                 </VListItem>
@@ -373,7 +431,7 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
                   v-if="(item as any).status !== 'paused'"
                   value="pause"
                   prepend-icon="tabler-player-pause"
-                  @click="changeStatus((item as any).id, 'paused')"
+                  @click="openStatusDialog((item as any).id, 'paused')"
                 >
                   Pause
                 </VListItem>
@@ -382,7 +440,7 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
                   v-if="(item as any).status !== 'draft'"
                   value="draft"
                   prepend-icon="tabler-file-text"
-                  @click="changeStatus((item as any).id, 'draft')"
+                  @click="openStatusDialog((item as any).id, 'draft')"
                 >
                   Move to Draft
                 </VListItem>
@@ -401,5 +459,113 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
         </template>
       </VDataTableServer>
     </VCard>
+    <!-- 👉 Loading overlay -->
+    <VOverlay
+      v-model="isLoading"
+      class="d-flex align-center justify-center"
+      persistent
+    >
+      <VProgressCircular
+        indeterminate
+        size="64"
+        color="primary"
+      />
+      <p class="text-center">
+        {{ loadingMessage }}
+      </p>
+    </VOverlay>
+
+    <!-- 👉 Delete Confirmation Dialog -->
+    <VDialog
+      v-model="isDeleteDialogVisible"
+      max-width="500"
+      persistent
+    >
+      <VCard>
+        <VCardTitle>
+          Confirmar Eliminación
+        </VCardTitle>
+        <VCardText>
+          ¿Estás seguro de que quieres eliminar este motor? Esta acción no se puede deshacer.
+        </VCardText>
+        <VCardActions>
+          <VSpacer />
+          <VBtn
+            color="error"
+            @click="isDeleteDialogVisible = false"
+          >
+            Cancelar
+          </VBtn>
+          <VBtn
+            color="primary"
+            @click="deleteMotor"
+          >
+            Eliminar
+          </VBtn>
+        </VCardActions>
+      </VCard>
+    </VDialog>
+
+    <!-- 👉 Duplicate Confirmation Dialog -->
+    <VDialog
+      v-model="isDuplicateDialogVisible"
+      max-width="500"
+      persistent
+    >
+      <VCard>
+        <VCardTitle>
+          Confirmar Duplicación
+        </VCardTitle>
+        <VCardText>
+          ¿Estás seguro de que quieres duplicar este motor?
+        </VCardText>
+        <VCardActions>
+          <VSpacer />
+          <VBtn
+            color="error"
+            @click="isDuplicateDialogVisible = false"
+          >
+            Cancelar
+          </VBtn>
+          <VBtn
+            color="primary"
+            @click="duplicateMotor"
+          >
+            Duplicar
+          </VBtn>
+        </VCardActions>
+      </VCard>
+    </VDialog>
+
+    <!-- 👉 Status Confirmation Dialog -->
+    <VDialog
+      v-model="isStatusDialogVisible"
+      max-width="500"
+      persistent
+    >
+      <VCard>
+        <VCardTitle>
+          Confirmar Cambio de Estado
+        </VCardTitle>
+        <VCardText>
+          ¿Estás seguro de que quieres cambiar el estado de este motor?
+        </VCardText>
+        <VCardActions>
+          <VSpacer />
+          <VBtn
+            color="error"
+            @click="isStatusDialogVisible = false"
+          >
+            Cancelar
+          </VBtn>
+          <VBtn
+            color="primary"
+            @click="changeStatus"
+          >
+            Aceptar
+          </VBtn>
+        </VCardActions>
+      </VCard>
+    </VDialog>
   </div>
 </template>
