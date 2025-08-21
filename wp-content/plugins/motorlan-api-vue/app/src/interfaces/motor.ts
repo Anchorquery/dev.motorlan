@@ -49,6 +49,7 @@ export interface Motor {
     marca: string
     tipo_o_referencia: string
     precio_de_venta: number
+    [key: string]: any
   }
   status: string
   categories: { name: string }[]
