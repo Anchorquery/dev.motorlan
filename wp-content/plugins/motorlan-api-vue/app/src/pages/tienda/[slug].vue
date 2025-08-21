@@ -13,10 +13,10 @@ const route = useRoute()
 const slug = route.params.slug as string
 
 const { data, isFetching } = await useApi<any>(
-  createUrl('/wp-json/motorlan/v1/motors', { query: { slug } })
+  createUrl(`/wp-json/motorlan/v1/motor/${slug}`),
 ).get().json()
 
-const motor = computed(() => (data.value?.data?.[0] as Motor | undefined))
+const motor = computed(() => data.value?.data as Motor | undefined)
 </script>
 
 <template>
