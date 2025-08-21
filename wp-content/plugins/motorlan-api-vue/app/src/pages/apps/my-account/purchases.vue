@@ -1,36 +1,128 @@
 <script setup lang="ts">
-const { data: purchases, pending, error } = await useApi<any>(createUrl('/wp-json/motorlan/v1/my-account/purchases'))
+import type { ImagenDestacada } from '../../../../../interfaces/motor'
 
 const headers = [
-  { title: 'Motor', key: 'motor.title' },
+  { title: 'Motor', key: 'motor' },
   { title: 'Fecha de Compra', key: 'fecha_compra' },
 ]
+
+const searchQuery = ref('')
+const selectedRows = ref([])
+
+// Data table options
+const itemsPerPage = ref(10)
+const page = ref(1)
+const sortBy = ref()
+const orderBy = ref()
+
+// Update data table options
+const updateOptions = (options: any) => {
+  page.value = options.page
+  sortBy.value = options.sortBy[0]?.key
+  orderBy.value = options.sortBy[0]?.order
+}
+
+const { data: purchasesData, execute: fetchPurchases } = await useApi<any>(createUrl('/wp-json/motorlan/v1/my-account/purchases', {
+  query: {
+    page,
+    per_page: itemsPerPage,
+    orderby: sortBy,
+    order: orderBy,
+    search: searchQuery,
+  },
+}))
+
+const purchases = computed(() => purchasesData.value?.data || [])
+const totalPurchases = computed(() => purchasesData.value?.pagination.total || 0)
+
+const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail'): string => {
+  let imageObj: ImagenDestacada | null = null
+
+  if (Array.isArray(image) && image.length > 0)
+    imageObj = image[0]
+  else if (image && !Array.isArray(image))
+    imageObj = image as ImagenDestacada
+
+  if (!imageObj)
+    return ''
+
+  if (imageObj.sizes && imageObj.sizes[size])
+    return imageObj.sizes[size] as string
+
+  return imageObj.url || ''
+}
 </script>
 
 <template>
-  <VCard>
-    <VCardTitle>Mis Compras</VCardTitle>
+  <VCard
+    id="purchase-list"
+  >
     <VCardText>
-      <VDataTable
-        :headers="headers"
-        :items="purchases"
-        :loading="pending"
-        class="elevation-1"
-      >
-        <template #item.motor.title="{ item }">
-          <NuxtLink :to="`/apps/motors/motor/edit/${item.raw.motor.uuid}`">
-            {{ item.raw.motor.title }}
-          </NuxtLink>
-        </template>
-        <template #loading>
-          <VSkeletonLoader type="table-row@10" />
-        </template>
-        <template #no-data>
-          <p class="text-center">
-            No has realizado ninguna compra.
-          </p>
-        </template>
-      </VDataTable>
+      <div class="d-flex flex-wrap gap-4">
+        <div class="d-flex align-center">
+          <!-- 👉 Search  -->
+          <AppTextField
+            v-model="searchQuery"
+            placeholder="Buscar Compra"
+            style="inline-size: 200px;"
+            class="me-3"
+          />
+        </div>
+
+        <VSpacer />
+        <div class="d-flex gap-4 flex-wrap align-center">
+          <AppSelect
+            v-model="itemsPerPage"
+            :items="[5, 10, 20, 25, 50]"
+          />
+        </div>
+      </div>
     </VCardText>
+
+    <VDivider />
+
+    <!-- 👉 Datatable  -->
+    <VDataTableServer
+      v-model:items-per-page="itemsPerPage"
+      v-model:page="page"
+      :headers="headers"
+      :items="purchases"
+      :items-length="totalPurchases"
+      class="text-no-wrap"
+      @update:options="updateOptions"
+    >
+      <!-- motor -->
+      <template #item.motor="{ item }">
+        <div class="d-flex align-center gap-x-4">
+          <VAvatar
+            v-if="item.raw.motor?.imagen_destacada"
+            size="38"
+            variant="tonal"
+            rounded
+            :image="getImageBySize(item.raw.motor.imagen_destacada, 'thumbnail')"
+          />
+          <div class="d-flex flex-column">
+            <NuxtLink :to="`/apps/motors/motor/edit/${item.raw.motor.uuid}`">
+              <span class="text-body-1 font-weight-medium text-high-emphasis">{{ item.raw.motor.title }}</span>
+            </NuxtLink>
+            <span class="text-body-2">{{ item.raw.motor.acf.marca.name }}</span>
+          </div>
+        </div>
+      </template>
+
+      <!-- fecha_compra -->
+      <template #item.fecha_compra="{ item }">
+        <span class="text-body-1 text-high-emphasis">{{ item.raw.fecha_compra }}</span>
+      </template>
+
+      <!-- pagination -->
+      <template #bottom>
+        <TablePagination
+          v-model:page="page"
+          :items-per-page="itemsPerPage"
+          :total-items="totalPurchases"
+        />
+      </template>
+    </VDataTableServer>
   </VCard>
 </template>
