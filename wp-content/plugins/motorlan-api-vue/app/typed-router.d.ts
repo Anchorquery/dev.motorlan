@@ -83,6 +83,7 @@ declare module 'vue-router/auto-routes' {
     'my-purchases-purchases': RouteRecordInfo<'my-purchases-purchases', '/my-purchases/purchases', Record<never, never>, Record<never, never>>,
     'my-purchases-questions': RouteRecordInfo<'my-purchases-questions', '/my-purchases/questions', Record<never, never>, Record<never, never>>,
     'my-purchases-reviews': RouteRecordInfo<'my-purchases-reviews', '/my-purchases/reviews', Record<never, never>, Record<never, never>>,
+
     'not-authorized': RouteRecordInfo<'not-authorized', '/not-authorized', Record<never, never>, Record<never, never>>,
     'pages-account-settings-tab': RouteRecordInfo<'pages-account-settings-tab', '/pages/account-settings/:tab', { tab: ParamValue<true> }, { tab: ParamValue<false> }>,
     'pages-authentication-forgot-password-v1': RouteRecordInfo<'pages-authentication-forgot-password-v1', '/pages/authentication/forgot-password-v1', Record<never, never>, Record<never, never>>,
