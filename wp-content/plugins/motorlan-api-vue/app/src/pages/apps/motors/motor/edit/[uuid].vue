@@ -214,17 +214,16 @@ const formattedCategories = computed({
 })
 
 const formattedMarca = computed({
-  get () {
-    console.log(motorData.value.marca)
-    if (Array.isArray(motorData.value.marca))
-      return motorData.value.marca.map(cat => (typeof cat === 'object' ? cat.id : cat))
+  get() {
+    const marca = motorData.value.acf.marca
+    if (marca && typeof marca === 'object')
+      return marca.id
 
-    return []
+    return marca
   },
-
-  set (newValue) {
-    motorData.value.marca = newValue
-  }
+  set(newValue) {
+    motorData.value.acf.marca = newValue
+  },
 })
 </script>
 
