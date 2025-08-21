@@ -108,7 +108,13 @@ const totalPages = computed(() => motorsData.value?.pagination.totalPages || 1);
               {{ motor.title }}
             </div>
             <div class="d-flex justify-space-between align-center">
-              <VBtn color="error" class="rounded-pill px-6">+ INFO</VBtn>
+              <VBtn
+                color="error"
+                class="rounded-pill px-6"
+                :to="'/tienda/' + motor.slug"
+              >
+                + INFO
+              </VBtn>
               <div class="price text-error font-weight-bold">
                 {{ motor.acf.precio_de_venta ? `${motor.acf.precio_de_venta} €` : 'Consultar precio' }}
               </div>
