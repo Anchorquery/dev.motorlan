@@ -174,8 +174,8 @@ const handleFilterSearch = () => {
         md="3"
       >
         <VCard>
-          <VCardTitle>
-            <VIcon>mdi-filter-variant</VIcon>
+          <VCardTitle class="filters-title">
+            <VIcon color="#E1081E">mdi-filter-variant</VIcon>
             FILTROS
           </VCardTitle>
           <VDivider />
@@ -191,6 +191,7 @@ const handleFilterSearch = () => {
                 clearable
                 dense
                 outlined
+                class="red-select"
               />
             </div>
 
@@ -202,14 +203,15 @@ const handleFilterSearch = () => {
             </div>
 
             <div class="select-group">
-              <label class="select-label">Par</label>
+              <label class="select-label">PAR (Nm)</label>
               <VSelect
                 v-model="filters.par_nominal"
-                label="Seleccionar par"
+                label="Seleccionar PAR (Nm)"
                 :items="parOptions"
                 clearable
                 dense
                 outlined
+                class="red-select"
               />
             </div>
 
@@ -222,6 +224,7 @@ const handleFilterSearch = () => {
                 clearable
                 dense
                 outlined
+                class="red-select"
               />
             </div>
 
@@ -234,6 +237,7 @@ const handleFilterSearch = () => {
                 clearable
                 dense
                 outlined
+                class="red-select"
               />
             </div>
 
@@ -248,6 +252,7 @@ const handleFilterSearch = () => {
                 clearable
                 dense
                 outlined
+                class="red-select"
               />
             </div>
 
@@ -260,6 +265,7 @@ const handleFilterSearch = () => {
                 clearable
                 dense
                 outlined
+                class="red-select"
               />
             </div>
           </VCardText>
@@ -271,45 +277,35 @@ const handleFilterSearch = () => {
         cols="12"
         md="9"
       >
-        <div class="d-flex justify-space-between align-center mb-4">
-          <h1 class="text-h4 text-primary">COMPRA VENTA DE MOTORES ELÉCTRICOS INDUSTRIALES</h1>
+        <div class="page-header">
+          <h1 class="page-title">COMPRA VENTA DE MOTORES ELÉCTRÍCOS INDUSTRIALES</h1>
           <VSelect
             v-model="filters.orderby"
             label="Ordenar"
             :items="sortOptions"
             dense
             outlined
-            class="sort-select"
+            class="order-select red-select"
           />
         </div>
 
-        <VRow class="mb-4 align-center">
-          <VCol
-            cols="12"
-            sm="8"
+        <div class="search-row">
+          <VTextField
+            v-model="filters.s"
+            placeholder="Buscar..."
+            dense
+            outlined
+            class="search-input"
+            @keydown.enter="handleFilterSearch"
+          />
+          <VBtn
+            class="search-btn"
+            @click="handleFilterSearch"
+            :loading="loading"
           >
-            <VTextField
-              v-model="filters.s"
-              label="Tipo / modelo"
-              dense
-              outlined
-              @keydown.enter="handleFilterSearch"
-            />
-          </VCol>
-          <VCol
-            cols="12"
-            sm="4"
-          >
-            <VBtn
-              color="primary"
-              block
-              @click="handleFilterSearch"
-              :loading="loading"
-            >
-              Buscar
-            </VBtn>
-          </VCol>
-        </VRow>
+            BUSCAR
+          </VBtn>
+        </div>
 
         <div v-if="loading" class="text-center pa-12">
           <VProgressCircular indeterminate size="64" />
@@ -364,8 +360,56 @@ const handleFilterSearch = () => {
 </template>
 
 <style scoped>
-.sort-select {
-  max-width: 200px;
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.page-title {
+  color: #E1081E;
+  font-size: 24px;
+  font-family: Inter, sans-serif;
+  font-weight: 600;
+  line-height: 28px;
+}
+
+.search-row {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.search-input {
+  flex: 1;
+}
+
+.search-btn {
+  background: #E1081E !important;
+  color: #fff !important;
+}
+
+.filters-title,
+.filter-label,
+.product-type-label,
+.select-label {
+  color: #DA291C;
+  font-family: Inter, sans-serif;
+}
+
+.red-select :deep(.v-field__outline) {
+  border-color: #DA291C !important;
+}
+
+.red-select :deep(.v-field__label),
+.red-select :deep(.v-field__input),
+.red-select :deep(.v-select__selection-text) {
+  color: #DA291C !important;
+}
+
+.order-select {
+  max-width: 220px;
 }
 
 .product-card {
