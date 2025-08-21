@@ -59,10 +59,15 @@ add_action( 'rest_api_init', 'motorlan_register_my_account_rest_routes' );
  */
 function motorlan_get_my_purchases_callback( $request ) {
     $user_id = get_current_user_id();
+    $page = $request->get_param( 'page' ) ? absint( $request->get_param( 'page' ) ) : 1;
+    $per_page = $request->get_param( 'per_page' ) ? absint( $request->get_param( 'per_page' ) ) : 10;
+    $search = $request->get_param( 'search' );
 
     $args = array(
         'post_type'      => 'compra',
-        'posts_per_page' => -1,
+        's'              => $search,
+        'posts_per_page' => $per_page,
+        'paged'          => $page,
         'meta_query' => array(
             array(
                 'key'     => 'usuario',
@@ -96,7 +101,19 @@ function motorlan_get_my_purchases_callback( $request ) {
         wp_reset_postdata();
     }
 
-    return new WP_REST_Response( $data, 200 );
+    $pagination = array(
+        'total'     => (int) $query->found_posts,
+        'totalPages' => (int) $query->max_num_pages,
+        'currentPage'    => (int) $page,
+        'perPage'   => (int) $per_page,
+    );
+
+    $response_data = array(
+        'data'      => $data,
+        'pagination' => $pagination,
+    );
+
+    return new WP_REST_Response( $response_data, 200 );
 }
 
 /**
@@ -104,10 +121,15 @@ function motorlan_get_my_purchases_callback( $request ) {
  */
 function motorlan_get_my_questions_callback( $request ) {
     $user_id = get_current_user_id();
+    $page = $request->get_param( 'page' ) ? absint( $request->get_param( 'page' ) ) : 1;
+    $per_page = $request->get_param( 'per_page' ) ? absint( $request->get_param( 'per_page' ) ) : 10;
+    $search = $request->get_param( 'search' );
 
     $args = array(
         'post_type'      => 'pregunta',
-        'posts_per_page' => -1,
+        's'              => $search,
+        'posts_per_page' => $per_page,
+        'paged'          => $page,
         'meta_query' => array(
             array(
                 'key'     => 'usuario',
@@ -142,7 +164,19 @@ function motorlan_get_my_questions_callback( $request ) {
         wp_reset_postdata();
     }
 
-    return new WP_REST_Response( $data, 200 );
+    $pagination = array(
+        'total'     => (int) $query->found_posts,
+        'totalPages' => (int) $query->max_num_pages,
+        'currentPage'    => (int) $page,
+        'perPage'   => (int) $per_page,
+    );
+
+    $response_data = array(
+        'data'      => $data,
+        'pagination' => $pagination,
+    );
+
+    return new WP_REST_Response( $response_data, 200 );
 }
 
 /**
@@ -150,10 +184,15 @@ function motorlan_get_my_questions_callback( $request ) {
  */
 function motorlan_get_my_opinions_callback( $request ) {
     $user_id = get_current_user_id();
+    $page = $request->get_param( 'page' ) ? absint( $request->get_param( 'page' ) ) : 1;
+    $per_page = $request->get_param( 'per_page' ) ? absint( $request->get_param( 'per_page' ) ) : 10;
+    $search = $request->get_param( 'search' );
 
     $args = array(
         'post_type'      => 'opinion',
-        'posts_per_page' => -1,
+        's'              => $search,
+        'posts_per_page' => $per_page,
+        'paged'          => $page,
         'meta_query' => array(
             array(
                 'key'     => 'usuario',
@@ -188,7 +227,19 @@ function motorlan_get_my_opinions_callback( $request ) {
         wp_reset_postdata();
     }
 
-    return new WP_REST_Response( $data, 200 );
+    $pagination = array(
+        'total'     => (int) $query->found_posts,
+        'totalPages' => (int) $query->max_num_pages,
+        'currentPage'    => (int) $page,
+        'perPage'   => (int) $per_page,
+    );
+
+    $response_data = array(
+        'data'      => $data,
+        'pagination' => $pagination,
+    );
+
+    return new WP_REST_Response( $response_data, 200 );
 }
 
 /**
@@ -196,15 +247,19 @@ function motorlan_get_my_opinions_callback( $request ) {
  */
 function motorlan_get_my_favorites_callback( $request ) {
     $user_id = get_current_user_id();
+    $page = $request->get_param( 'page' ) ? absint( $request->get_param( 'page' ) ) : 1;
+    $per_page = $request->get_param( 'per_page' ) ? absint( $request->get_param( 'per_page' ) ) : 10;
+
     $favorite_ids = get_user_meta( $user_id, 'favorite_motors', true );
 
     if ( empty( $favorite_ids ) ) {
-        return new WP_REST_Response( array(), 200 );
+        return new WP_REST_Response( array( 'data' => [], 'pagination' => [ 'total' => 0 ] ), 200 );
     }
 
     $args = array(
         'post_type'      => 'motor',
-        'posts_per_page' => -1,
+        'posts_per_page' => $per_page,
+        'paged'          => $page,
         'post__in'       => $favorite_ids,
     );
 
@@ -220,5 +275,20 @@ function motorlan_get_my_favorites_callback( $request ) {
         wp_reset_postdata();
     }
 
-    return new WP_REST_Response( $data, 200 );
+    $total_favorites = count($favorite_ids);
+    $max_num_pages = ceil($total_favorites / $per_page);
+
+    $pagination = array(
+        'total'     => (int) $total_favorites,
+        'totalPages' => (int) $max_num_pages,
+        'currentPage'    => (int) $page,
+        'perPage'   => (int) $per_page,
+    );
+
+    $response_data = array(
+        'data'      => $data,
+        'pagination' => $pagination,
+    );
+
+    return new WP_REST_Response( $response_data, 200 );
 }
