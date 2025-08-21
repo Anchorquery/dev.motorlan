@@ -91,7 +91,6 @@ const images = computed(() => {
   background: #EEF1F4;
   border-radius: 8px;
 }
-
 .thumbsSwiper {
   swiper-slide {
     opacity: 0.5;
