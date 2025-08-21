@@ -59,6 +59,13 @@ function motorlan_register_motor_rest_routes() {
         ),
     ));
 
+    // Route for getting a single motor by slug
+    register_rest_route($namespace, '/motor/(?P<slug>[a-zA-Z0-9-]+)', array(
+        'methods'  => WP_REST_Server::READABLE,
+        'callback' => 'motorlan_get_motor_by_slug',
+        'permission_callback' => '__return_true',
+    ) );
+
     // Route for deleting a motor by ID
     register_rest_route($namespace, '/motors/(?P<id>\\d+)', array(
         'methods' => 'DELETE',
@@ -138,6 +145,42 @@ function motorlan_get_motor_by_uuid(WP_REST_Request $request) {
 
     return new WP_REST_Response($motor_data, 200);
 }
+
+/**
+ * Get a single motor by slug.
+ *
+ * @param WP_REST_Request $request The request object.
+ * @return WP_REST_Response|WP_Error The response object or error.
+ */
+function motorlan_get_motor_by_slug(WP_REST_Request $request) {
+    $slug = $request->get_param('slug');
+
+    if (empty($slug)) {
+        return new WP_Error('no_slug', 'Slug not provided', array('status' => 400));
+    }
+
+    $args = array(
+        'post_type' => 'motor',
+        'name' => $slug,
+        'posts_per_page' => 1,
+        'post_status' => 'any',
+    );
+
+    $query = new WP_Query($args);
+
+    if (!$query->have_posts()) {
+        return new WP_Error('not_found', 'Motor not found', array('status' => 404));
+    }
+
+    $query->the_post();
+    $post_id = get_the_ID();
+    $motor_data = motorlan_get_motor_data($post_id);
+
+    wp_reset_postdata();
+
+    return new WP_REST_Response(array('data' => $motor_data), 200);
+}
+
 
 /**
  * Helper function to get all motor data.
