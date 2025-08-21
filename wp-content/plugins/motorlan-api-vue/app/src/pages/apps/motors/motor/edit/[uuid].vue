@@ -3,7 +3,6 @@ import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import DropZone from '@/@core/components/DropZone.vue'
 import { requiredValidator } from '@/@core/utils/validators'
-import { useApi } from '@/composables/useApi'
 
 const route = useRoute()
 const router = useRouter()
@@ -42,6 +41,7 @@ const motorGalleryFiles = ref([])
 const marcas = ref([])
 const categories = ref([])
 const form = ref(null)
+const isFormValid = ref(false)
 
 onMounted(async () => {
   try {
@@ -102,8 +102,6 @@ onMounted(async () => {
   }
   catch (error) {
     console.error('Error al obtener los datos iniciales:', error)
-
-    // Aquí puedes manejar el error, por ejemplo, mostrando una notificación al usuario.
   }
 })
 
@@ -129,11 +127,14 @@ const uploadImage = async (file: File) => {
 
 const updateMotor = async () => {
   const { valid } = await form.value.validate()
-console.log(valid )  
-  if (!valid)
-    return
 
-  
+  if (!valid) {
+    alert('Por favor, rellene todos los campos obligatorios.')
+
+    return
+  }
+
+  const api = useApi()
   const url = `/wp-json/motorlan/v1/motors/uuid/${motorUuid}`
   const method = 'POST'
 
@@ -173,7 +174,7 @@ console.log(valid )
       motorData.value.acf.motor_gallery = []
     }
 
-    await useApi(url, {
+    await api(url, {
       method,
       body: motorData.value,
     })
@@ -191,14 +192,9 @@ const formattedCategories = computed({
 
     return []
   },
-
-  // 'set' se ejecuta cuando el usuario cambia la selección en AppSelect
   set(newValue) {
-    // 'newValue' es lo que envía el componente AppSelect
-    // Actualizamos la variable original con el nuevo valor
     motorData.value.categories = newValue
   },
-
 })
 
 const formattedMarca = computed({
@@ -219,6 +215,7 @@ const formattedMarca = computed({
   <div>
     <VForm
       ref="form"
+      v-model="isFormValid"
       @submit.prevent="updateMotor"
     >
       <div class="d-flex flex-wrap justify-start justify-sm-space-between gap-y-4 gap-x-6 mb-6">
@@ -235,7 +232,9 @@ const formattedMarca = computed({
           >
             Discard
           </VBtn>
-          <VBtn type="submit">
+          <VBtn
+            type="submit"
+          >
             Update Motor
           </VBtn>
         </div>
