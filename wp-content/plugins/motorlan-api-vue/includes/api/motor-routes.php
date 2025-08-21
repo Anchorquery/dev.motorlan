@@ -442,7 +442,12 @@ function motorlan_get_motors_callback( $request ) {
                     if ($field_name === 'marca' && $value) {
                         $term = get_term($value, 'marca');
                         if ($term && !is_wp_error($term)) {
-                            $motor_item['acf'][$field_name] = $term->name;
+                            $motor_item['acf'][$field_name] = array(
+                                'id' => $term->term_id,
+                                'name' => $term->name
+                            );
+                            
+
                         } else {
                             $motor_item['acf'][$field_name] = null;
                         }

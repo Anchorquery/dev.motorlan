@@ -63,16 +63,16 @@ onMounted(async () => {
     // Procesar marcas
     if (marcasResponse && marcasResponse.data.value) {
       marcas.value = marcasResponse.data.value.map((marca: { name: any; id: any }) => ({
-        title: marca.name,
-        value: marca.id,
+        name: marca.name,
+        id: marca.id,
       }))
     }
 
     // Procesar categorías
     if (categoriesResponse && categoriesResponse.data.value) {
       categories.value = categoriesResponse.data.value.map((category: { name: any; term_id: any }) => ({
-        title: category.name,
-        value: category.term_id,
+        name: category.name,
+        id: category.term_id,
       }))
     }
 
@@ -81,8 +81,9 @@ onMounted(async () => {
       const post = motorResponse.data.value
 
       // Si marca es un objeto, extraer el ID
-      if (post.acf.marca && typeof post.acf.marca === 'object')
-        post.acf.marca = post.acf.marca.id
+      if (post.acf.marca)
+        // es un objero de forma : "id": 3, "name": "Mitsubishi"
+        motorData.value.acf.marca = post.acf.marca
 
       if (post.categories)
         motorData.value.categories = post.categories.map((cat: { id: any }) => cat.id)
@@ -196,9 +197,7 @@ const updateMotor = async () => {
 }
 
 const formattedCategories = computed({
-  // 'get' se ejecuta cuando el componente lee el valor
   get() {
-    console.log(motorData.value.categories)
     if (Array.isArray(motorData.value.categories))
       return motorData.value.categories.map(cat => (typeof cat === 'object' ? cat.id : cat))
 
@@ -212,6 +211,20 @@ const formattedCategories = computed({
     motorData.value.categories = newValue
   },
 
+})
+
+const formattedMarca = computed({
+  get () {
+    console.log(motorData.value.marca)
+    if (Array.isArray(motorData.value.marca))
+      return motorData.value.marca.map(cat => (typeof cat === 'object' ? cat.id : cat))
+
+    return []
+  },
+
+  set (newValue) {
+    motorData.value.marca = newValue
+  }
 })
 </script>
 
@@ -281,8 +294,10 @@ const formattedCategories = computed({
                   md="6"
                 >
                   <AppSelect
-                    v-model="motorData.acf.marca"
+                    v-model="formattedMarca"
                     label="Marca"
+                    item-title="name"
+                    item-value="id"
                     :items="marcas"
                     :rules="[requiredValidator]"
                   />
