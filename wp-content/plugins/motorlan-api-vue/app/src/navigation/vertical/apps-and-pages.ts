@@ -33,4 +33,14 @@ export default [
       { title: 'View', to: { name: 'apps-user-view-id', params: { id: 21 } } },
     ],
   },
+  {
+    title: 'My Purchases',
+    icon: { icon: 'tabler-shopping-cart' },
+    children: [
+      { title: 'Purchases', to: 'my-purchases-purchases' },
+      { title: 'Questions', to: 'my-purchases-questions' },
+      { title: 'Reviews', to: 'my-purchases-reviews' },
+      { title: 'Favorites', to: 'my-purchases-favorites' },
+    ],
+  },
 ]
