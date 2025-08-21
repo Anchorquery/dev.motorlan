@@ -80,10 +80,22 @@ onMounted(async () => {
     if (motorUuid && motorResponse && motorResponse.data.value) {
       const post = motorResponse.data.value
 
-      // Assign data from post to motorData
-      motorData.value.title = post.title
-      motorData.value.categories = post.categories ? post.categories.map((cat: { id: any }) => cat.id) : []
-      motorData.value.acf = { ...motorData.value.acf, ...post.acf }
+      // Si marca es un objeto, extraer el ID
+      if (post.acf.marca)
+        // es un objero de forma : "id": 3, "name": "Mitsubishi"
+        motorData.value.acf.marca = post.acf.marca
+
+      if (post.categories)
+        motorData.value.categories = post.categories.map((cat: { id: any }) => cat.id)
+
+      motorData.value = {
+        ...motorData.value,
+        ...post,
+        acf: {
+          ...motorData.value.acf,
+          ...post.acf,
+        },
+      }
 
       // Poblar las referencias de archivos para DropZone
       if (motorData.value.acf.motor_image) {
@@ -130,8 +142,11 @@ const uploadImage = async (file: File) => {
 const updateMotor = async () => {
   const { valid } = await form.value.validate()
 
-  if (!valid)
+  if (!valid) {
+    alert('Por favor, rellene todos los campos obligatorios.')
+
     return
+  }
 
   const api = useApi()
   const url = `/wp-json/motorlan/v1/motors/uuid/${motorUuid}`
@@ -202,48 +217,49 @@ const formattedCategories = computed({
 })
 
 const formattedMarca = computed({
-  get() {
-    const marca = motorData.value.acf.marca
-    if (marca && typeof marca === 'object')
-      return marca.id
+  get () {
+    console.log(motorData.value.marca)
+    if (Array.isArray(motorData.value.marca))
+      return motorData.value.marca.map(cat => (typeof cat === 'object' ? cat.id : cat))
 
-    return marca
+    return []
   },
-  set(newValue) {
-    motorData.value.acf.marca = newValue
-  },
+
+  set (newValue) {
+    motorData.value.marca = newValue
+  }
 })
 </script>
 
 <template>
   <div>
+    <div class="d-flex flex-wrap justify-start justify-sm-space-between gap-y-4 gap-x-6 mb-6">
+      <div class="d-flex flex-column justify-center">
+        <h4 class="text-h4 font-weight-medium">
+          Edit motor
+        </h4>
+      </div>
+      <div class="d-flex gap-4 align-center flex-wrap">
+        <VBtn
+          variant="tonal"
+          color="secondary"
+          @click="router.push('/apps/motors/motor/list')"
+        >
+          Discard
+        </VBtn>
+        <VBtn
+          type="submit"
+        >
+          Update Motor
+        </VBtn>
+      </div>
+    </div>
+
     <VForm
       ref="form"
       v-model="isFormValid"
       @submit.prevent="updateMotor"
     >
-      <div class="d-flex flex-wrap justify-start justify-sm-space-between gap-y-4 gap-x-6 mb-6">
-        <div class="d-flex flex-column justify-center">
-          <h4 class="text-h4 font-weight-medium">
-            Edit motor
-          </h4>
-        </div>
-        <div class="d-flex gap-4 align-center flex-wrap">
-          <VBtn
-            variant="tonal"
-            color="secondary"
-            @click="router.push('/apps/motors/motor/list')"
-          >
-            Discard
-          </VBtn>
-          <VBtn
-            type="submit"
-            :disabled="!isFormValid"
-          >
-            Update Motor
-          </VBtn>
-        </div>
-      </div>
       <VRow>
         <VCol>
           <VCard
@@ -255,7 +271,7 @@ const formattedMarca = computed({
                 <!-- Fields from here -->
                 <VCol
                   cols="12"
-                  md="4"
+                  md="6"
                 >
                   <AppTextField
                     v-model="motorData.title"
@@ -266,7 +282,7 @@ const formattedMarca = computed({
                 </VCol>
                 <VCol
                   cols="12"
-                  md="4"
+                  md="6"
                 >
                   <AppTextField
                     v-model="motorData.acf.tipo_o_referencia"
@@ -277,7 +293,7 @@ const formattedMarca = computed({
                 </VCol>
                 <VCol
                   cols="12"
-                  md="4"
+                  md="6"
                 >
                   <AppSelect
                     v-model="formattedMarca"
@@ -290,7 +306,7 @@ const formattedMarca = computed({
                 </VCol>
                 <VCol
                   cols="12"
-                  md="4"
+                  md="6"
                 >
                   <AppSelect
                     v-model="formattedCategories"
@@ -304,7 +320,7 @@ const formattedMarca = computed({
 
                 <VCol
                   cols="12"
-                  md="4"
+                  md="6"
                 >
                   <AppTextField
                     v-model="motorData.acf.potencia"
@@ -315,7 +331,7 @@ const formattedMarca = computed({
                 </VCol>
                 <VCol
                   cols="12"
-                  md="4"
+                  md="6"
                 >
                   <AppTextField
                     v-model="motorData.acf.velocidad"
@@ -326,7 +342,7 @@ const formattedMarca = computed({
                 </VCol>
                 <VCol
                   cols="12"
-                  md="4"
+                  md="6"
                 >
                   <AppTextField
                     v-model="motorData.acf.par_nominal"
@@ -337,7 +353,7 @@ const formattedMarca = computed({
                 </VCol>
                 <VCol
                   cols="12"
-                  md="4"
+                  md="6"
                 >
                   <AppTextField
                     v-model="motorData.acf.voltaje"
@@ -348,7 +364,7 @@ const formattedMarca = computed({
                 </VCol>
                 <VCol
                   cols="12"
-                  md="4"
+                  md="6"
                 >
                   <AppTextField
                     v-model="motorData.acf.intensidad"
@@ -359,7 +375,7 @@ const formattedMarca = computed({
                 </VCol>
                 <VCol
                   cols="12"
-                  md="4"
+                  md="6"
                 >
                   <AppSelect
                     v-model="motorData.acf.pais"
@@ -370,7 +386,7 @@ const formattedMarca = computed({
                 </VCol>
                 <VCol
                   cols="12"
-                  md="4"
+                  md="6"
                 >
                   <AppTextField
                     v-model="motorData.acf.provincia"
@@ -381,7 +397,7 @@ const formattedMarca = computed({
                 </VCol>
                 <VCol
                   cols="12"
-                  md="4"
+                  md="6"
                 >
                   <AppSelect
                     v-model="motorData.acf.estado_del_articulo"
@@ -390,40 +406,18 @@ const formattedMarca = computed({
                     :rules="[requiredValidator]"
                   />
                 </VCol>
-                <VCol
-                  cols="12"
-                  md="4"
-                >
-                  <AppTextField
-                    v-model="motorData.acf.precio_de_venta"
-                    label="Precio de venta (€)"
-                    type="number"
-                    placeholder="1000"
+                <VCol cols="12">
+                  <VTextarea
+                    v-model="motorData.acf.descripcion"
+                    label="Descripción"
+                    placeholder="Descripción del motor"
                     :rules="[requiredValidator]"
                   />
                 </VCol>
+
                 <VCol
                   cols="12"
-                  md="4"
-                >
-                  <VRadioGroup
-                    v-model="motorData.acf.precio_negociable"
-                    inline
-                    label="Precio negociable"
-                  >
-                    <VRadio
-                      label="Sí"
-                      value="Sí"
-                    />
-                    <VRadio
-                      label="No"
-                      value="No"
-                    />
-                  </VRadioGroup>
-                </VCol>
-                <VCol
-                  cols="12"
-                  md="4"
+                  md="6"
                 >
                   <VRadioGroup
                     v-model="motorData.acf.posibilidad_de_alquiler"
@@ -443,7 +437,7 @@ const formattedMarca = computed({
                 </VCol>
                 <VCol
                   cols="12"
-                  md="4"
+                  md="6"
                 >
                   <VRadioGroup
                     v-model="motorData.acf.tipo_de_alimentacion"
@@ -463,7 +457,7 @@ const formattedMarca = computed({
                 </VCol>
                 <VCol
                   cols="12"
-                  md="4"
+                  md="6"
                 >
                   <VCheckbox
                     v-model="motorData.acf.servomotores"
@@ -472,20 +466,43 @@ const formattedMarca = computed({
                 </VCol>
                 <VCol
                   cols="12"
-                  md="4"
+                  md="6"
                 >
                   <VCheckbox
                     v-model="motorData.acf.regulacion_electronica_drivers"
                     label="Regulación electrónica/Drivers"
                   />
                 </VCol>
-                <VCol cols="12">
-                  <VTextarea
-                    v-model="motorData.acf.descripcion"
-                    label="Descripción"
-                    placeholder="Descripción del motor"
+                <VCol
+                  cols="12"
+                  md="6"
+                >
+                  <AppTextField
+                    v-model="motorData.acf.precio_de_venta"
+                    label="Precio de venta (€)"
+                    type="number"
+                    placeholder="1000"
                     :rules="[requiredValidator]"
                   />
+                </VCol>
+                <VCol
+                  cols="12"
+                  md="6"
+                >
+                  <VRadioGroup
+                    v-model="motorData.acf.precio_negociable"
+                    inline
+                    label="Precio negociable"
+                  >
+                    <VRadio
+                      label="Sí"
+                      value="Sí"
+                    />
+                    <VRadio
+                      label="No"
+                      value="No"
+                    />
+                  </VRadioGroup>
                 </VCol>
               </VRow>
             </VCardText>
