@@ -1,8 +1,4 @@
 <script setup lang="ts">
-import { useUser } from '~/composables/useUser'
-
-const { user } = useUser()
-
 const { data: favorites, pending, error } = await useApi<any>(createUrl('/wp-json/motorlan/v1/my-account/favorites'))
 
 const headers = [
