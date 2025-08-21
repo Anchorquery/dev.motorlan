@@ -70,14 +70,17 @@ const docs = computed(() => {
 }
 
 .top-section {
-  display: grid;
-  grid-template-columns: 2fr 1fr;
+  display: flex;
   gap: 24px;
+}
+
+.top-section > * {
+  flex: 1 1 50%;
 }
 
 @media (max-width: 960px) {
   .top-section {
-    grid-template-columns: 1fr;
+    flex-direction: column;
   }
 }
 </style>

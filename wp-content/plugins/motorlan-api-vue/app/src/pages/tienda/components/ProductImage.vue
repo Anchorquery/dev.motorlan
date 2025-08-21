@@ -56,6 +56,10 @@ const images = computed(() => {
         >
       </swiper-slide>
     </swiper-container>
+    <div
+      v-if="!images.length"
+      class="image-placeholder"
+    />
   </div>
 </template>
 
@@ -80,6 +84,13 @@ const images = computed(() => {
   max-height: 100%;
 }
 
+.image-placeholder {
+  width: 100%;
+  height: 100%;
+  min-height: 300px;
+  background: #EEF1F4;
+  border-radius: 8px;
+}
 .thumbsSwiper {
   swiper-slide {
     opacity: 0.5;
