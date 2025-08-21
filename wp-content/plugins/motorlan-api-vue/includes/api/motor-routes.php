@@ -60,8 +60,8 @@ function motorlan_register_motor_rest_routes() {
     ));
 
     // Route for getting a single motor by slug
-    register_rest_route($namespace, '/motor/(?P<slug>[a-zA-Z0-9-]+)', array(
-        'methods'  => WP_REST_Server::READABLE,
+    register_rest_route($namespace, '/motors/(?P<slug>[a-zA-Z0-9-]+)', array(
+        'methods'  =>  'GET',
         'callback' => 'motorlan_get_motor_by_slug',
         'permission_callback' => '__return_true',
     ) );
@@ -158,7 +158,6 @@ function motorlan_get_motor_by_slug(WP_REST_Request $request) {
     if (empty($slug)) {
         return new WP_Error('no_slug', 'Slug not provided', array('status' => 400));
     }
-
     $args = array(
         'post_type' => 'motor',
         'name' => $slug,
