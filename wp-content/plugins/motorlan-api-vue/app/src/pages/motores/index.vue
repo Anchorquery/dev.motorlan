@@ -320,9 +320,25 @@ const handleFilterSearch = () => {
             md="4"
           >
             <VCard
+              v-if="motor.uuid"
               class="product-card"
-              v-bind="motor.uuid ? { to: `/motores/${motor.uuid}` } : {}"
+              :to="`/motores/${motor.uuid}`"
             >
+              <div class="product-card-inner">
+                <div class="product-image-background">
+                  <VImg :src="motor.imagen_destacada?.url" height="185" />
+                </div>
+                <div class="product-name">{{ motor.title }}</div>
+                <div class="product-price">{{ motor.acf.precio_de_venta ? `${motor.acf.precio_de_venta} €` : 'Consultar' }}</div>
+                <div class="info-button">
+                  <div class="info-button-text">+ INFO</div>
+                  <div class="info-button-icon-container">
+                    <div class="info-button-icon"></div>
+                  </div>
+                </div>
+              </div>
+            </VCard>
+            <VCard v-else class="product-card">
               <div class="product-card-inner">
                 <div class="product-image-background">
                   <VImg :src="motor.imagen_destacada?.url" height="185" />
