@@ -215,8 +215,9 @@ const handleFilterSearch = () => {
             </div>
           </VCardText>
           <VCardActions>
-            <!-- Replace with actual single motor page later -->
-            <VBtn :to="{ name: 'index' }">
+              <!-- The :to prop is temporarily removed to prevent a router crash. -->
+              <!-- A separate task will be needed to create the single motor page and re-enable this link. -->
+              <VBtn>
               Ver Detalles
             </VBtn>
           </VCardActions>
