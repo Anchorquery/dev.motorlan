@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from 'vue'
-import { useApi } from '@/composables/useApi'
 
 // Define interfaces for our data structures
 interface Term {
