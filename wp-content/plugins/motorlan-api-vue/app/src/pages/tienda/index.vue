@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import { useApi } from '@/composables/useApi';
 import { createUrl } from '@/@core/composable/createUrl';
 import type { Motor } from '@/interfaces/motor';
@@ -38,21 +38,15 @@ const categories = computed(() => categoriesData.value || []);
 const { data: brandsData } = await useApi<Term[]>(createUrl('/wp-json/motorlan/v1/marcas'));
 const marcas = computed(() => brandsData.value || []);
 
-const sortOptions = computed(() => {
-  if (order.value === 'Recientes') {
-    return { orderby: 'date', order: 'desc' };
-  }
-  if (order.value === 'Precio asc') {
-    return { orderby: 'price', order: 'asc' };
-  }
-  if (order.value === 'Precio desc') {
-    return { orderby: 'price', order: 'desc' };
-  }
-  return {};
-});
-
 const motorsApiUrl = computed(() => {
-  const query = {
+  const baseUrl = '/wp-json/motorlan/v1/motors';
+  const sortOptions = {
+    'Recientes': { orderby: 'date', order: 'desc' },
+    'Precio asc': { orderby: 'price', order: 'asc' },
+    'Precio desc': { orderby: 'price', order: 'desc' },
+  };
+
+  const queryParams = {
     per_page: itemsPerPage.value,
     page: page.value,
     status: 'publish',
@@ -64,27 +58,27 @@ const motorsApiUrl = computed(() => {
     potencia: selectedPotencia.value,
     velocidad: selectedVelocidad.value,
     par_nominal: selectedPar.value,
-    ...sortOptions.value,
+    ...(order.value ? sortOptions[order.value] : {}),
   };
 
-  // Remove null/undefined values
-  Object.keys(query).forEach(key => (query[key] == null || query[key] === '') && delete query[key]);
+  const filteredParams = Object.entries(queryParams)
+    .filter(([_, value]) => value !== null && value !== undefined && value !== '')
+    .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
+    .join('&');
 
-  return createUrl('/wp-json/motorlan/v1/motors', { query });
+  return `${baseUrl}?${filteredParams}`;
 });
 
 const { data: motorsData, isFetching: loading, execute: fetchMotors } = useApi<any>(motorsApiUrl, { immediate: false }).get();
 
 watch(
-  () => [page.value, order.value, selectedCategory.value, selectedBrand.value, selectedCountry.value, selectedState.value, selectedPotencia.value, selectedVelocidad.value, selectedPar.value],
+  () => motorsApiUrl.value,
   () => {
     fetchMotors();
-  },
-  { deep: true }
+  }
 );
 
 onMounted(fetchMotors);
-
 
 const motors = computed((): Motor[] => motorsData.value?.data || []);
 const totalMotors = computed(() => motorsData.value?.pagination.total || 0);
