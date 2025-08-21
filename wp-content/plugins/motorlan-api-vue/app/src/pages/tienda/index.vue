@@ -38,23 +38,57 @@ const categories = computed(() => categoriesData.value || []);
 const { data: brandsData } = await useApi<Term[]>(createUrl('/wp-json/motorlan/v1/marcas'));
 const marcas = computed(() => brandsData.value || []);
 
-const motorsApiUrl = createUrl('/wp-json/motorlan/v1/motors', {
-  query: {
-    per_page: itemsPerPage,
-    page,
-    status: 'publish',
-    category: selectedCategory,
-    marca: selectedBrand,
-    pais: selectedCountry,
-    estado_del_articulo: selectedState,
-  },
+const sortOptions = computed(() => {
+  if (order.value === 'Recientes') {
+    return { orderby: 'date', order: 'desc' };
+  }
+  if (order.value === 'Precio asc') {
+    return { orderby: 'price', order: 'asc' };
+  }
+  if (order.value === 'Precio desc') {
+    return { orderby: 'price', order: 'desc' };
+  }
+  return {};
 });
 
-const { data: motorsData, isFetching: loading } = await useApi<any>(motorsApiUrl).get().json();
+const motorsApiUrl = computed(() => createUrl('/wp-json/motorlan/v1/motors', {
+  query: {
+    per_page: itemsPerPage.value,
+    page: page.value,
+    status: 'publish',
+    s: searchTerm.value,
+    category: selectedCategory.value,
+    marca: selectedBrand.value,
+    pais: selectedCountry.value,
+    estado_del_articulo: selectedState.value,
+    potencia: selectedPotencia.value,
+    velocidad: selectedVelocidad.value,
+    par_nominal: selectedPar.value,
+    ...sortOptions.value,
+  },
+}));
+
+const { data: motorsData, isFetching: loading, execute: fetchMotors } = useApi<any>(motorsApiUrl, { immediate: false }).get();
+
+watch(
+  () => [page.value, order.value, selectedCategory.value, selectedBrand.value, selectedCountry.value, selectedState.value, selectedPotencia.value, selectedVelocidad.value, selectedPar.value],
+  () => {
+    fetchMotors();
+  },
+  { deep: true }
+);
+
+onMounted(fetchMotors);
+
 
 const motors = computed((): Motor[] => motorsData.value?.data || []);
 const totalMotors = computed(() => motorsData.value?.pagination.total || 0);
 const totalPages = computed(() => motorsData.value?.pagination.totalPages || 1);
+
+const search = () => {
+  page.value = 1;
+  fetchMotors();
+};
 </script>
 
 <template>
@@ -81,9 +115,18 @@ const totalPages = computed(() => motorsData.value?.pagination.totalPages || 1);
     </aside>
 
     <section class="flex-grow-1 ps-6">
-      <div class="d-flex align-center mb-6">
-        <VTextField v-model="searchTerm" placeholder="Buscar..." variant="outlined" hide-details class="me-4" />
-        <VBtn color="error" class="me-6">Buscar</VBtn>
+      <div class="d-flex align-center mb-6 gap-4">
+        <VTextField
+          v-model="searchTerm"
+          placeholder="Buscar..."
+          variant="outlined"
+          hide-details
+          class="flex-grow-1"
+          @keydown.enter="search"
+        />
+        <VBtn icon color="error" :loading="loading" @click="search">
+          <VIcon>mdi-magnify</VIcon>
+        </VBtn>
         <AppSelect v-model="order" :items="orderOptions" label="Ordenar" clearable style="max-width:220px" />
       </div>
 
@@ -151,6 +194,7 @@ const totalPages = computed(() => motorsData.value?.pagination.totalPages || 1);
 .motor-card {
   background: #fff;
   border-radius: 16px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
 }
 .motor-image {
   height: 185px;
