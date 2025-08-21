@@ -63,8 +63,7 @@ const images = computed(() => {
 @use "swiper/css/bundle";
 
 .product-image {
-  flex: 1 1 300px;
-  max-width: 600px;
+  width: 100%;
 }
 
 .product-image swiper-container {

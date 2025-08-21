@@ -36,7 +36,7 @@ const docs = computed(() => {
     v-if="motor"
     class="motor-detail"
   >
-    <div class="d-flex flex-wrap gap-6 mb-8">
+    <div class="top-section mb-8">
       <ProductImage :motor="motor" />
       <ProductDetails :motor="motor" />
     </div>
@@ -67,5 +67,17 @@ const docs = computed(() => {
 .motor-detail {
   max-width: 1200px;
   margin-inline: auto;
+}
+
+.top-section {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+}
+
+@media (max-width: 960px) {
+  .top-section {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

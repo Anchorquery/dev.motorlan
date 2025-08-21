@@ -45,6 +45,13 @@ const form = ref({
         color="error"
         class="rounded-pill px-6 flex-grow-1"
       >
+        Hacer una pregunta
+      </VBtn>
+      <VBtn
+        variant="outlined"
+        color="error"
+        class="rounded-pill px-6 flex-grow-1"
+      >
         Hacer una oferta
       </VBtn>
       <div class="d-flex align-center gap-2">
@@ -62,12 +69,12 @@ const form = ref({
     </div>
     <div class="contact-card pa-4">
       <h3 class="text-error mb-4">
-        Contactar ahora
+        Hacer una pregunta
       </h3>
       <VForm class="d-flex flex-column gap-4">
         <VTextarea
           v-model="form.message"
-          label="Mensaje"
+          label="Pregunta"
           rows="3"
         />
         <VTextField
@@ -86,7 +93,7 @@ const form = ref({
           color="error"
           class="rounded-pill align-self-start"
         >
-          Enviar
+          Preguntar
         </VBtn>
       </VForm>
     </div>
