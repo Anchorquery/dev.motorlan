@@ -23,7 +23,7 @@ const products = computed(() => (data.value?.data || []).filter((m: Motor) => m.
             <img :src="motor.imagen_destacada?.url || '/placeholder.png'" alt="" />
           </div>
           <div class="text-error text-body-1 mb-4">{{ motor.title }}</div>
-          <VBtn color="error" class="rounded-pill px-6" :to="'/tienda/' + motor.id">+ INFO</VBtn>
+          <VBtn color="error" class="rounded-pill px-6" :to="'/tienda/' + motor.slug">+ INFO</VBtn>
         </div>
       </VCol>
     </VRow>

@@ -111,7 +111,7 @@ const totalPages = computed(() => motorsData.value?.pagination.totalPages || 1);
               <VBtn
                 color="error"
                 class="rounded-pill px-6"
-                :to="'/tienda/' + motor.id"
+                :to="'/tienda/' + motor.slug"
               >
                 + INFO
               </VBtn>

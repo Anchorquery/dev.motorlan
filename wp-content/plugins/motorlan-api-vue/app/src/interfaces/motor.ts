@@ -44,6 +44,7 @@ export interface ImagenDestacada {
 export interface Motor {
   id: number
   title: string
+  slug: string
   imagen_destacada: ImagenDestacada | null | any[]
   acf: {
     marca: string
