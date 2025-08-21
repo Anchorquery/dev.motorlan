@@ -55,9 +55,7 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
 </script>
 
 <template>
-  <VCard
-    id="opinion-list"
-  >
+  <VCard id="opinion-list">
     <VCardText>
       <div class="d-flex flex-wrap gap-4">
         <div class="d-flex align-center">

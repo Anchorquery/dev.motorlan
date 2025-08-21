@@ -232,9 +232,7 @@ const formattedMarca = computed({
           >
             Discard
           </VBtn>
-          <VBtn
-            type="submit"
-          >
+          <VBtn type="submit">
             Update Motor
           </VBtn>
         </div>

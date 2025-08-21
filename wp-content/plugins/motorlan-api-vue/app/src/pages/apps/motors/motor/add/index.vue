@@ -1,10 +1,8 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 
-const route = useRoute()
 const router = useRouter()
-const motorId = Number(route.params.id)
 
 const motorData = ref({
   title: '',
@@ -39,35 +37,34 @@ const motorData = ref({
 const marcas = ref([])
 const categories = ref([])
 
-useApi('/wp-json/wp/v2/marca').then(response => {
-  marcas.value = response.data.value.map(marca => ({
-    title: marca.name,
-    value: marca.id,
-  }))
-})
+onMounted(async () => {
+  try {
+    const [marcasResponse, categoriesResponse] = await Promise.all([
+      useApi<any>('/wp-json/motorlan/v1/marcas'),
+      useApi<any>('/wp-json/motorlan/v1/motor-categories'),
+    ])
 
-useApi('/motorlan/v1/motor-categories').then(response => {
-  categories.value = response.data.value.map(category => ({
-    title: category.name,
-    value: category.term_id,
-  }))
-})
-
-if (motorId) {
-  // Fetch motor data for editing
-  useApi(`/wp-json/wp/v2/motors/${motorId}?_embed`).then(response => {
-    const post = response.data.value
-
-    motorData.value = {
-      title: post.title.rendered,
-      status: post.status,
-      acf: post.acf,
+    if (marcasResponse && marcasResponse.data.value) {
+      marcas.value = marcasResponse.data.value.map((marca: any) => ({
+        title: marca.name,
+        value: marca.id,
+      }))
     }
-  })
-}
+
+    if (categoriesResponse && categoriesResponse.data.value) {
+      categories.value = categoriesResponse.data.value.map((category: any) => ({
+        title: category.name,
+        value: category.term_id,
+      }))
+    }
+  }
+  catch (error) {
+    console.error('Error al obtener los datos iniciales:', error)
+  }
+})
 
 const uploadMedia = async (file: File) => {
-  const api = useApi()
+  const api = useApi<any>()
   const formData = new FormData()
 
   formData.append('file', file)
@@ -103,9 +100,9 @@ const handleGalleryImageUpload = async (file: File) => {
 }
 
 const publishMotor = async () => {
-  const api = useApi()
-  const url = motorId ? `/wp-json/wp/v2/motors/${motorId}` : '/wp-json/wp/v2/motors'
-  const method = motorId ? 'PUT' : 'POST'
+  const api = useApi<any>()
+  const url = '/wp-json/wp/v2/motors'
+  const method = 'POST'
 
   try {
     await api(url, {
@@ -119,10 +116,6 @@ const publishMotor = async () => {
   }
 }
 
-const content = ref(
-  `<p>
-    Keep your account secure with authentication step.
-    </p>`)
 </script>
 
 <template>
@@ -130,7 +123,7 @@ const content = ref(
     <div class="d-flex flex-wrap justify-start justify-sm-space-between gap-y-4 gap-x-6 mb-6">
       <div class="d-flex flex-column justify-center">
         <h4 class="text-h4 font-weight-medium">
-          {{ motorId ? 'Edit' : 'Add' }} a new motor
+          Add a new motor
         </h4>
       </div>
       <div class="d-flex gap-4 align-center flex-wrap">
@@ -142,7 +135,7 @@ const content = ref(
           Discard
         </VBtn>
         <VBtn @click="publishMotor">
-          {{ motorId ? 'Update' : 'Publish' }} Motor
+          Publish Motor
         </VBtn>
       </div>
     </div>

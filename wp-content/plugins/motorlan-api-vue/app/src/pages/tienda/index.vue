@@ -1,37 +1,37 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
-import { useApi } from '@/composables/useApi';
-import { createUrl } from '@/@core/composable/createUrl';
-import type { Motor } from '@/interfaces/motor';
+import { computed, ref } from 'vue'
+import { useApi } from '@/composables/useApi'
+import { createUrl } from '@/@core/composable/createUrl'
+import type { Motor } from '@/interfaces/motor'
 
 // Define interfaces for our data structures
 interface Term {
-  id: number;
-  name: string;
-  slug: string;
+  id: number
+  name: string
+  slug: string
 }
 
 // -- State Management --
 
 // Filter state
-const selectedCategory = ref<string | null>(null);
-const selectedBrand = ref<number | null>(null);
-const selectedCountry = ref<string | null>(null);
-const selectedState = ref<string | null>(null);
+const selectedCategory = ref<string | null>(null)
+const selectedBrand = ref<number | null>(null)
+const selectedCountry = ref<string | null>(null)
+const selectedState = ref<string | null>(null)
 
 // Pagination state
-const itemsPerPage = ref(9);
-const page = ref(1);
+const itemsPerPage = ref(9)
+const page = ref(1)
 
 // -- Data Fetching --
 
 // Fetch categories for the filter dropdown
-const { data: categoriesData } = await useApi<Term[]>(createUrl('/wp-json/motorlan/v1/motor-categories'));
-const categories = computed(() => categoriesData.value || []);
+const { data: categoriesData } = await useApi<Term[]>(createUrl('/wp-json/motorlan/v1/motor-categories'))
+const categories = computed(() => categoriesData.value || [])
 
 // Fetch brands for the filter dropdown
-const { data: brandsData } = await useApi<Term[]>(createUrl('/wp-json/motorlan/v1/marcas'));
-const marcas = computed(() => brandsData.value || []);
+const { data: brandsData } = await useApi<Term[]>(createUrl('/wp-json/motorlan/v1/marcas'))
+const marcas = computed(() => brandsData.value || [])
 
 // Reactive URL for fetching motors
 const motorsApiUrl = createUrl('/wp-json/motorlan/v1/motors', {
@@ -44,76 +44,91 @@ const motorsApiUrl = createUrl('/wp-json/motorlan/v1/motors', {
     pais: selectedCountry,
     estado_del_articulo: selectedState,
   },
-});
+})
 
 // Fetch motors
-const { data: motorsData, isFetching: loading } = await useApi<any>(motorsApiUrl).get().json();
+const { data: motorsData, isFetching: loading } = await useApi<any>(motorsApiUrl).get().json()
 
 // Computed properties to extract data from the API response
-const motors = computed((): Motor[] => motorsData.value?.data || []);
-const totalMotors = computed(() => motorsData.value?.pagination.total || 0);
-const totalPages = computed(() => motorsData.value?.pagination.totalPages || 1);
-
+const motors = computed((): Motor[] => motorsData.value?.data || [])
+const totalMotors = computed(() => motorsData.value?.pagination.total || 0)
+const totalPages = computed(() => motorsData.value?.pagination.totalPages || 1)
 </script>
 
 <template>
   <VRow>
     <!-- Filters Sidebar -->
-    <VCol cols="12" md="3">
+    <VCol
+      cols="12"
+      md="3"
+    >
       <VCard>
         <VCardItem>
-          <VCardTitle class="text-error">Filtros</VCardTitle>
+          <VCardTitle class="text-error">
+            Filtros
+          </VCardTitle>
         </VCardItem>
         <VCardText>
-            <!-- Category Filter -->
-            <AppSelect
-              v-model="selectedCategory"
-              label="Categoría"
-              :items="categories"
-              item-title="name"
-              item-value="slug"
-              clearable
-              class="mb-4"
-            />
+          <!-- Category Filter -->
+          <AppSelect
+            v-model="selectedCategory"
+            label="Categoría"
+            :items="categories"
+            item-title="name"
+            item-value="slug"
+            clearable
+            class="mb-4"
+          />
 
-            <!-- Brand Filter -->
-            <AppSelect
-              v-model="selectedBrand"
-              label="Marca"
-              :items="marcas"
-              item-title="name"
-              item-value="id"
-              clearable
-              class="mb-4"
-            />
+          <!-- Brand Filter -->
+          <AppSelect
+            v-model="selectedBrand"
+            label="Marca"
+            :items="marcas"
+            item-title="name"
+            item-value="id"
+            clearable
+            class="mb-4"
+          />
 
-            <!-- Country Filter -->
-            <AppSelect
-              v-model="selectedCountry"
-              label="País"
-              :items="['España', 'Portugal', 'Francia']"
-              clearable
-              class="mb-4"
-            />
+          <!-- Country Filter -->
+          <AppSelect
+            v-model="selectedCountry"
+            label="País"
+            :items="['España', 'Portugal', 'Francia']"
+            clearable
+            class="mb-4"
+          />
 
-            <!-- State Filter -->
-            <AppSelect
-              v-model="selectedState"
-              label="Estado"
-              :items="['Nuevo', 'Usado', 'Restaurado']"
-              clearable
-              class="mb-4"
-            />
+          <!-- State Filter -->
+          <AppSelect
+            v-model="selectedState"
+            label="Estado"
+            :items="['Nuevo', 'Usado', 'Restaurado']"
+            clearable
+            class="mb-4"
+          />
         </VCardText>
       </VCard>
     </VCol>
 
     <!-- Products Content -->
-    <VCol cols="12" md="9">
+    <VCol
+      cols="12"
+      md="9"
+    >
       <!-- Loading Indicator -->
-      <div v-if="loading && !motors.length" class="text-center pa-12">
-        <VProgressCircular indeterminate size="64"></VProgressCircular>
-        <p class="mt-4">Cargando motores...</p>
+      <div
+        v-if="loading && !motors.length"
+        class="text-center pa-12"
+      >
+        <VProgressCircular
+          indeterminate
+          size="64"
+        />
+        <p class="mt-4">
+          Cargando motores...
+        </p>
       </div>
 
       <!-- Motors Grid -->
@@ -131,7 +146,7 @@ const totalPages = computed(() => motorsData.value?.pagination.totalPages || 1);
                 :src="motor.imagen_destacada?.url || '/placeholder.png'"
                 height="200px"
                 cover
-              ></VImg>
+              />
               <VCardItem>
                 <VCardTitle>{{ motor.title }}</VCardTitle>
                 <VCardSubtitle v-if="motor.acf.marca">
@@ -144,9 +159,9 @@ const totalPages = computed(() => motorsData.value?.pagination.totalPages || 1);
                 </div>
               </VCardText>
               <VCardActions>
-                  <!-- The :to prop is temporarily removed to prevent a router crash. -->
-                  <!-- A separate task will be needed to create the single motor page and re-enable this link. -->
-                  <VBtn color="error">
+                <!-- The :to prop is temporarily removed to prevent a router crash. -->
+                <!-- A separate task will be needed to create the single motor page and re-enable this link. -->
+                <VBtn color="error">
                   + INFO
                 </VBtn>
               </VCardActions>
@@ -155,9 +170,14 @@ const totalPages = computed(() => motorsData.value?.pagination.totalPages || 1);
         </VRow>
 
         <!-- No Results Message -->
-        <VCard v-else class="pa-8 text-center">
+        <VCard
+          v-else
+          class="pa-8 text-center"
+        >
           <VCardText>
-            <p class="text-h6">No se encontraron motores</p>
+            <p class="text-h6">
+              No se encontraron motores
+            </p>
             <p>Intenta ajustar los filtros de búsqueda.</p>
           </VCardText>
         </VCard>
@@ -170,7 +190,7 @@ const totalPages = computed(() => motorsData.value?.pagination.totalPages || 1);
         :length="totalPages"
         :total-visible="5"
         class="mt-6"
-      ></VPagination>
+      />
     </VCol>
   </VRow>
 </template>

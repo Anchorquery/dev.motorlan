@@ -121,7 +121,6 @@ const handleMotorAction = async (message: string, action: () => Promise<void>) =
   }
 }
 
-
 const deleteMotor = () => {
   if (motorToDelete.value === null)
     return
@@ -136,7 +135,6 @@ const deleteMotor = () => {
     if (index !== -1)
       selectedRows.value.splice(index, 1)
   })
-
 }
 
 const duplicateMotor = () => {
@@ -156,6 +154,7 @@ const changeStatus = () => {
     return
 
   const { id, status } = motorToChangeStatus.value
+
   isStatusDialogVisible.value = false
 
   const messages: { [key: string]: string } = {
