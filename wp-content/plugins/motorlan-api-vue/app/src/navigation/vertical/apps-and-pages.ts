@@ -1,4 +1,9 @@
 export default [
+  {
+    title: 'Tienda de Motores',
+    to: { name: 'motores' },
+    icon: { icon: 'tabler-shopping-cart' },
+  },
   { heading: 'Apps & Pages' },
   {
     title: 'Motors',
