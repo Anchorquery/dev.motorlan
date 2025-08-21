@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 const route = useRoute()
 const router = useRouter()
-const motorId = Number(route.params.id)
 
 const motorData = ref({
   title: '',
@@ -38,33 +37,41 @@ const motorData = ref({
 
 const marcas = ref([])
 const categories = ref([])
+const form = ref(null)
 
-useApi('/wp-json/wp/v2/marca').then(response => {
-  marcas.value = response.data.value.map(marca => ({
-    title: marca.name,
-    value: marca.id,
-  }))
-})
+onMounted(async () => {
+  try {
+    // 1. Crear un arreglo de promesas
+    const promises = [
+      useApi('/wp-json/motorlan/v1/marcas'),
+      useApi('/wp-json/motorlan/v1/motor-categories'),
+    ]
 
-useApi('/motorlan/v1/motor-categories').then(response => {
-  categories.value = response.data.value.map(category => ({
-    title: category.name,
-    value: category.term_id,
-  }))
-})
+    // 2. Ejecutar todas las promesas en paralelo
+    const [marcasResponse, categoriesResponse] = await Promise.all(promises)
 
-if (motorId) {
-  // Fetch motor data for editing
-  useApi(`/wp-json/wp/v2/motors/${motorId}?_embed`).then(response => {
-    const post = response.data.value
+    // 3. Procesar los resultados una vez que todos han llegado
 
-    motorData.value = {
-      title: post.title.rendered,
-      status: post.status,
-      acf: post.acf,
+    // Procesar marcas
+    if (marcasResponse && marcasResponse.data.value) {
+      marcas.value = marcasResponse.data.value.map((marca: { name: any; id: any }) => ({
+        name: marca.name,
+        id: marca.id,
+      }))
     }
-  })
-}
+
+    // Procesar categorías
+    if (categoriesResponse && categoriesResponse.data.value) {
+      categories.value = categoriesResponse.data.value.map((category: { name: any; term_id: any }) => ({
+        name: category.name,
+        id: category.term_id,
+      }))
+    }
+  }
+  catch (error) {
+    console.error('Error al obtener los datos iniciales:', error)
+  }
+})
 
 const uploadMedia = async (file: File) => {
   const api = useApi()
@@ -104,8 +111,8 @@ const handleGalleryImageUpload = async (file: File) => {
 
 const publishMotor = async () => {
   const api = useApi()
-  const url = motorId ? `/wp-json/wp/v2/motors/${motorId}` : '/wp-json/wp/v2/motors'
-  const method = motorId ? 'PUT' : 'POST'
+  const url = '/wp-json/wp/v2/motors'
+  const method = 'POST'
 
   try {
     await api(url, {
@@ -130,7 +137,7 @@ const content = ref(
     <div class="d-flex flex-wrap justify-start justify-sm-space-between gap-y-4 gap-x-6 mb-6">
       <div class="d-flex flex-column justify-center">
         <h4 class="text-h4 font-weight-medium">
-          {{ motorId ? 'Edit' : 'Add' }} a new motor
+          Add a new motor
         </h4>
       </div>
       <div class="d-flex gap-4 align-center flex-wrap">
@@ -142,7 +149,7 @@ const content = ref(
           Discard
         </VBtn>
         <VBtn @click="publishMotor">
-          {{ motorId ? 'Update' : 'Publish' }} Motor
+          Publish Motor
         </VBtn>
       </div>
     </div>
@@ -183,6 +190,8 @@ const content = ref(
                   v-model="motorData.acf.marca"
                   label="Marca"
                   :items="marcas"
+                  item-title="name"
+                  item-value="id"
                 />
               </VCol>
               <VCol
@@ -193,8 +202,8 @@ const content = ref(
                   v-model="motorData.categories"
                   label="Categoría"
                   :items="categories"
-                  item-title="title"
-                  item-value="value"
+                  item-title="name"
+                  item-value="id"
                   multiple
                 />
               </VCol>
