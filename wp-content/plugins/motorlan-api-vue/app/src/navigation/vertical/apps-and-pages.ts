@@ -38,4 +38,14 @@ export default [
       { title: 'View', to: { name: 'apps-user-view-id', params: { id: 21 } } },
     ],
   },
+  {
+    title: 'My Account',
+    icon: { icon: 'tabler-user-circle' },
+    children: [
+      { title: 'Purchases', to: '/apps/my-account/purchases' },
+      { title: 'Questions', to: '/apps/my-account/questions' },
+      { title: 'Opinions', to: '/apps/my-account/opinions' },
+      { title: 'Favorites', to: '/apps/my-account/favorites' },
+    ],
+  },
 ]
