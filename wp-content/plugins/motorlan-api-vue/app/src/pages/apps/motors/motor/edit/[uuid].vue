@@ -41,7 +41,6 @@ const motorGalleryFiles = ref([])
 const marcas = ref([])
 const categories = ref([])
 const form = ref(null)
-const isFormValid = ref(false)
 
 onMounted(async () => {
   try {
@@ -215,7 +214,6 @@ const formattedMarca = computed({
   <div>
     <VForm
       ref="form"
-      v-model="isFormValid"
       @submit.prevent="updateMotor"
     >
       <div class="d-flex flex-wrap justify-start justify-sm-space-between gap-y-4 gap-x-6 mb-6">
@@ -232,9 +230,7 @@ const formattedMarca = computed({
           >
             Discard
           </VBtn>
-          <VBtn
-            type="submit"
-          >
+          <VBtn type="submit">
             Update Motor
           </VBtn>
         </div>
