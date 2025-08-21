@@ -164,7 +164,7 @@ const handleFilterSearch = () => {
           <VBtn variant="text">Login</VBtn>
           <VIcon>mdi-account</VIcon>
         </div>
-      </V-card-text>
+      </VCardText>
     </VCard>
 
     <VRow>
