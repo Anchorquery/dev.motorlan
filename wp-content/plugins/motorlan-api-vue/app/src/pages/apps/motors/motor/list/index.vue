@@ -97,9 +97,8 @@ const deleteMotor = async (id: number) => {
 }
 
 const duplicateMotor = async (id: number) => {
-  await useApi<any>(createUrl(`/wp-json/motorlan/v1/motors/${id}/duplicate`, {
-
-    method: 'POST',
+  await useApi<any>(createUrl(`/wp-json/motorlan/v1/motors/duplicate/${id}`, {
+    method: 'GET',
   }))
   fetchMotors()
 }
@@ -238,6 +237,7 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
               v-model="selectedCategory"
               placeholder="Category"
               :items="categories"
+              
               clearable
               clear-icon="tabler-x"
             />
@@ -309,7 +309,7 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
             />
             <div class="d-flex flex-column">
               <span class="text-body-1 font-weight-medium text-high-emphasis">{{ (item as any).title }}</span>
-              <span class="text-body-2">{{ (item as any).acf.marca }}</span>
+              <span class="text-body-2">{{ (item as any).acf.marca.name }}</span>
             </div>
           </div>
         </template>
