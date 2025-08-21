@@ -35,6 +35,16 @@ interface Pagination {
 const motors = ref<Motor[]>([])
 const categories = ref<Term[]>([])
 const marcas = ref<Term[]>([])
+
+// static option lists for filters and sorting
+const parOptions = ['0-50 Nm', '50-100 Nm', '100-150 Nm', '150+ Nm']
+const potenciaOptions = ['0-10 kW', '10-50 kW', '50-100 kW', '100+ kW']
+const velocidadOptions = ['750 rpm', '1000 rpm', '1500 rpm', '3000 rpm']
+const sortOptions = [
+  { title: 'Precio más bajo', value: 'price_asc' },
+  { title: 'Precio más alto', value: 'price_desc' },
+]
+
 const loading = ref(true)
 
 const filters = ref({
@@ -42,6 +52,10 @@ const filters = ref({
   marca: null,
   pais: null,
   estado_del_articulo: null,
+  par_nominal: null,
+  potencia: null,
+  velocidad: null,
+  orderby: null,
   status: 'publish', // Always fetch only published motors for the shop
   s: '', // for search term
   product_type: [], // for checkboxes
@@ -160,8 +174,8 @@ const handleFilterSearch = () => {
         md="3"
       >
         <VCard>
-          <VCardTitle>
-            <VIcon>mdi-filter-variant</VIcon>
+          <VCardTitle class="filters-title">
+            <VIcon color="#E1081E">mdi-filter-variant</VIcon>
             FILTROS
           </VCardTitle>
           <VDivider />
@@ -177,6 +191,7 @@ const handleFilterSearch = () => {
                 clearable
                 dense
                 outlined
+                class="red-select"
               />
             </div>
 
@@ -185,6 +200,45 @@ const handleFilterSearch = () => {
               <VCheckbox v-model="filters.product_type" label="Motor" value="motor" />
               <VCheckbox v-model="filters.product_type" label="Regulador" value="regulador" />
               <VCheckbox v-model="filters.product_type" label="Otros repuestos" value="otros" />
+            </div>
+
+            <div class="select-group">
+              <label class="select-label">PAR (Nm)</label>
+              <VSelect
+                v-model="filters.par_nominal"
+                label="Seleccionar PAR (Nm)"
+                :items="parOptions"
+                clearable
+                dense
+                outlined
+                class="red-select"
+              />
+            </div>
+
+            <div class="select-group">
+              <label class="select-label">Potencia</label>
+              <VSelect
+                v-model="filters.potencia"
+                label="Seleccionar potencia"
+                :items="potenciaOptions"
+                clearable
+                dense
+                outlined
+                class="red-select"
+              />
+            </div>
+
+            <div class="select-group">
+              <label class="select-label">Velocidad</label>
+              <VSelect
+                v-model="filters.velocidad"
+                label="Seleccionar velocidad"
+                :items="velocidadOptions"
+                clearable
+                dense
+                outlined
+                class="red-select"
+              />
             </div>
 
             <div class="select-group">
@@ -198,6 +252,7 @@ const handleFilterSearch = () => {
                 clearable
                 dense
                 outlined
+                class="red-select"
               />
             </div>
 
@@ -210,6 +265,7 @@ const handleFilterSearch = () => {
                 clearable
                 dense
                 outlined
+                class="red-select"
               />
             </div>
           </VCardText>
@@ -221,35 +277,35 @@ const handleFilterSearch = () => {
         cols="12"
         md="9"
       >
-        <h1 class="text-h4 text-primary mb-4">COMPRA VENTA DE MOTORES ELÉCTRICOS INDUSTRIALES</h1>
+        <div class="page-header">
+          <h1 class="page-title">COMPRA VENTA DE MOTORES ELÉCTRÍCOS INDUSTRIALES</h1>
+          <VSelect
+            v-model="filters.orderby"
+            label="Ordenar"
+            :items="sortOptions"
+            dense
+            outlined
+            class="order-select red-select"
+          />
+        </div>
 
-        <VRow class="mb-4 align-center">
-          <VCol
-            cols="12"
-            sm="8"
+        <div class="search-row">
+          <VTextField
+            v-model="filters.s"
+            placeholder="Buscar..."
+            dense
+            outlined
+            class="search-input"
+            @keydown.enter="handleFilterSearch"
+          />
+          <VBtn
+            class="search-btn"
+            @click="handleFilterSearch"
+            :loading="loading"
           >
-            <VTextField
-              v-model="filters.s"
-              label="Buscar..."
-              dense
-              outlined
-              @keydown.enter="handleFilterSearch"
-            />
-          </VCol>
-          <VCol
-            cols="12"
-            sm="4"
-          >
-            <VBtn
-              color="primary"
-              block
-              @click="handleFilterSearch"
-              :loading="loading"
-            >
-              BUSCAR
-            </VBtn>
-          </VCol>
-        </VRow>
+            BUSCAR
+          </VBtn>
+        </div>
 
         <div v-if="loading" class="text-center pa-12">
           <VProgressCircular indeterminate size="64" />
@@ -304,6 +360,58 @@ const handleFilterSearch = () => {
 </template>
 
 <style scoped>
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.page-title {
+  color: #E1081E;
+  font-size: 24px;
+  font-family: Inter, sans-serif;
+  font-weight: 600;
+  line-height: 28px;
+}
+
+.search-row {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.search-input {
+  flex: 1;
+}
+
+.search-btn {
+  background: #E1081E !important;
+  color: #fff !important;
+}
+
+.filters-title,
+.filter-label,
+.product-type-label,
+.select-label {
+  color: #DA291C;
+  font-family: Inter, sans-serif;
+}
+
+.red-select :deep(.v-field__outline) {
+  border-color: #DA291C !important;
+}
+
+.red-select :deep(.v-field__label),
+.red-select :deep(.v-field__input),
+.red-select :deep(.v-select__selection-text) {
+  color: #DA291C !important;
+}
+
+.order-select {
+  max-width: 220px;
+}
+
 .product-card {
   height: 339px;
   position: relative;
