@@ -51,8 +51,8 @@ const sortOptions = computed(() => {
   return {};
 });
 
-const motorsApiUrl = computed(() => createUrl('/wp-json/motorlan/v1/motors', {
-  query: {
+const motorsApiUrl = computed(() => {
+  const query = {
     per_page: itemsPerPage.value,
     page: page.value,
     status: 'publish',
@@ -65,8 +65,13 @@ const motorsApiUrl = computed(() => createUrl('/wp-json/motorlan/v1/motors', {
     velocidad: selectedVelocidad.value,
     par_nominal: selectedPar.value,
     ...sortOptions.value,
-  },
-}));
+  };
+
+  // Remove null/undefined values
+  Object.keys(query).forEach(key => (query[key] == null || query[key] === '') && delete query[key]);
+
+  return createUrl('/wp-json/motorlan/v1/motors', { query });
+});
 
 const { data: motorsData, isFetching: loading, execute: fetchMotors } = useApi<any>(motorsApiUrl, { immediate: false }).get();
 
