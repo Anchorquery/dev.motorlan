@@ -35,6 +35,16 @@ interface Pagination {
 const motors = ref<Motor[]>([])
 const categories = ref<Term[]>([])
 const marcas = ref<Term[]>([])
+
+// static option lists for filters and sorting
+const parOptions = ['0-50 Nm', '50-100 Nm', '100-150 Nm', '150+ Nm']
+const potenciaOptions = ['0-10 kW', '10-50 kW', '50-100 kW', '100+ kW']
+const velocidadOptions = ['750 rpm', '1000 rpm', '1500 rpm', '3000 rpm']
+const sortOptions = [
+  { title: 'Precio más bajo', value: 'price_asc' },
+  { title: 'Precio más alto', value: 'price_desc' },
+]
+
 const loading = ref(true)
 
 const filters = ref({
@@ -42,6 +52,10 @@ const filters = ref({
   marca: null,
   pais: null,
   estado_del_articulo: null,
+  par_nominal: null,
+  potencia: null,
+  velocidad: null,
+  orderby: null,
   status: 'publish', // Always fetch only published motors for the shop
   s: '', // for search term
   product_type: [], // for checkboxes
@@ -188,6 +202,42 @@ const handleFilterSearch = () => {
             </div>
 
             <div class="select-group">
+              <label class="select-label">Par</label>
+              <VSelect
+                v-model="filters.par_nominal"
+                label="Seleccionar par"
+                :items="parOptions"
+                clearable
+                dense
+                outlined
+              />
+            </div>
+
+            <div class="select-group">
+              <label class="select-label">Potencia</label>
+              <VSelect
+                v-model="filters.potencia"
+                label="Seleccionar potencia"
+                :items="potenciaOptions"
+                clearable
+                dense
+                outlined
+              />
+            </div>
+
+            <div class="select-group">
+              <label class="select-label">Velocidad</label>
+              <VSelect
+                v-model="filters.velocidad"
+                label="Seleccionar velocidad"
+                :items="velocidadOptions"
+                clearable
+                dense
+                outlined
+              />
+            </div>
+
+            <div class="select-group">
               <label class="select-label">Marcas</label>
               <VSelect
                 v-model="filters.marca"
@@ -221,7 +271,17 @@ const handleFilterSearch = () => {
         cols="12"
         md="9"
       >
-        <h1 class="text-h4 text-primary mb-4">COMPRA VENTA DE MOTORES ELÉCTRICOS INDUSTRIALES</h1>
+        <div class="d-flex justify-space-between align-center mb-4">
+          <h1 class="text-h4 text-primary">COMPRA VENTA DE MOTORES ELÉCTRICOS INDUSTRIALES</h1>
+          <VSelect
+            v-model="filters.orderby"
+            label="Ordenar"
+            :items="sortOptions"
+            dense
+            outlined
+            class="sort-select"
+          />
+        </div>
 
         <VRow class="mb-4 align-center">
           <VCol
@@ -230,7 +290,7 @@ const handleFilterSearch = () => {
           >
             <VTextField
               v-model="filters.s"
-              label="Buscar..."
+              label="Tipo / modelo"
               dense
               outlined
               @keydown.enter="handleFilterSearch"
@@ -246,7 +306,7 @@ const handleFilterSearch = () => {
               @click="handleFilterSearch"
               :loading="loading"
             >
-              BUSCAR
+              Buscar
             </VBtn>
           </VCol>
         </VRow>
@@ -304,6 +364,10 @@ const handleFilterSearch = () => {
 </template>
 
 <style scoped>
+.sort-select {
+  max-width: 200px;
+}
+
 .product-card {
   height: 339px;
   position: relative;
