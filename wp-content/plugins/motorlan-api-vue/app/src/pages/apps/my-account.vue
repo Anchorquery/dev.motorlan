@@ -2,37 +2,43 @@
 const route = useRoute()
 
 const tabs = [
-  { title: 'Compras', to: '/apps/my-account/purchases' },
-  { title: 'Preguntas', to: '/apps/my-account/questions' },
-  { title: 'Opiniones', to: '/apps/my-account/opinions' },
-  { title: 'Favoritos', to: '/apps/my-account/favorites' },
+  { title: 'Compras', to: { name: 'apps-my-account-purchases' } },
+  { title: 'Preguntas', to: { name: 'apps-my-account-questions' } },
+  { title: 'Opiniones', to: { name: 'apps-my-account-opinions' } },
+  { title: 'Favoritos', to: { name: 'apps-my-account-favorites' } },
 ]
+
+const activeTab = computed({
+  get: () => tabs.findIndex(tab => tab.to.name === route.name),
+  set: val => {
+    navigateTo(tabs[val].to)
+  },
+})
 </script>
 
 <template>
   <div>
     <VTabs
-      :model-value="route.path"
+      v-model="activeTab"
       class="v-tabs-pill"
     >
       <VTab
         v-for="tab in tabs"
-        :key="tab.to"
+        :key="tab.to.name"
         :to="tab.to"
-        :value="tab.to"
       >
         {{ tab.title }}
       </VTab>
     </VTabs>
 
     <VWindow
-      :model-value="route.path"
+      v-model="activeTab"
       class="mt-6"
+      :touch="false"
     >
       <VWindowItem
         v-for="tab in tabs"
-        :key="tab.to"
-        :value="tab.to"
+        :key="tab.to.name"
       >
         <NuxtPage />
       </VWindowItem>
