@@ -42,7 +42,6 @@ const motorGalleryFiles = ref([])
 const marcas = ref([])
 const categories = ref([])
 const form = ref(null)
-const isFormValid = ref(false)
 
 onMounted(async () => {
   try {
@@ -243,9 +242,27 @@ const formattedMarca = computed({
 
     <VForm
       ref="form"
-      v-model="isFormValid"
       @submit.prevent="updateMotor"
     >
+      <div class="d-flex flex-wrap justify-start justify-sm-space-between gap-y-4 gap-x-6 mb-6">
+        <div class="d-flex flex-column justify-center">
+          <h4 class="text-h4 font-weight-medium">
+            Edit motor
+          </h4>
+        </div>
+        <div class="d-flex gap-4 align-center flex-wrap">
+          <VBtn
+            variant="tonal"
+            color="secondary"
+            @click="router.push('/apps/motors/motor/list')"
+          >
+            Discard
+          </VBtn>
+          <VBtn type="submit">
+            Update Motor
+          </VBtn>
+        </div>
+      </div>
       <VRow>
         <VCol>
           <VCard
