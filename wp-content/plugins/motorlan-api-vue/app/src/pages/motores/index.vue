@@ -322,7 +322,7 @@ const handleFilterSearch = () => {
           >
             <VCard
               class="product-card"
-              :to="`/motores/${motor.uuid}`"
+              v-bind="motor.uuid ? { to: `/motores/${motor.uuid}` } : {}"
             >
               <div class="product-card-inner">
                 <div class="product-image-background">
