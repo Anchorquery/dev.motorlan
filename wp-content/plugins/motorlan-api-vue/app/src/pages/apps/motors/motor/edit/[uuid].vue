@@ -80,22 +80,10 @@ onMounted(async () => {
     if (motorUuid && motorResponse && motorResponse.data.value) {
       const post = motorResponse.data.value
 
-      // Si marca es un objeto, extraer el ID
-      if (post.acf.marca)
-        // es un objero de forma : "id": 3, "name": "Mitsubishi"
-        motorData.value.acf.marca = post.acf.marca
-
-      if (post.categories)
-        motorData.value.categories = post.categories.map((cat: { id: any }) => cat.id)
-
-      motorData.value = {
-        ...motorData.value,
-        ...post,
-        acf: {
-          ...motorData.value.acf,
-          ...post.acf,
-        },
-      }
+      // Assign data from post to motorData
+      motorData.value.title = post.title
+      motorData.value.categories = post.categories ? post.categories.map((cat: { id: any }) => cat.id) : []
+      motorData.value.acf = { ...motorData.value.acf, ...post.acf }
 
       // Poblar las referencias de archivos para DropZone
       if (motorData.value.acf.motor_image) {
@@ -214,17 +202,16 @@ const formattedCategories = computed({
 })
 
 const formattedMarca = computed({
-  get () {
-    console.log(motorData.value.marca)
-    if (Array.isArray(motorData.value.marca))
-      return motorData.value.marca.map(cat => (typeof cat === 'object' ? cat.id : cat))
+  get() {
+    const marca = motorData.value.acf.marca
+    if (marca && typeof marca === 'object')
+      return marca.id
 
-    return []
+    return marca
   },
-
-  set (newValue) {
-    motorData.value.marca = newValue
-  }
+  set(newValue) {
+    motorData.value.acf.marca = newValue
+  },
 })
 </script>
 
