@@ -398,6 +398,29 @@ function motorlan_get_motors_callback( $request ) {
         'post_status'    => 'any',
     );
 
+    // Add search parameter
+    if ( ! empty( $params['s'] ) ) {
+        $args['s'] = sanitize_text_field( $params['s'] );
+    }
+
+    // Add sorting parameters
+    if ( ! empty( $params['orderby'] ) ) {
+        $orderby = sanitize_text_field( $params['orderby'] );
+        if ( $orderby === 'price' ) {
+            $args['meta_key'] = 'precio_de_venta';
+            $args['orderby'] = 'meta_value_num';
+        } else {
+            $args['orderby'] = $orderby;
+        }
+    }
+
+    if ( ! empty( $params['order'] ) ) {
+        $order = sanitize_text_field( $params['order'] );
+        if (in_array(strtoupper($order), ['ASC', 'DESC'])) {
+            $args['order'] = $order;
+        }
+    }
+
     // Only add meta_query if there are filters.
     if (count($meta_query) > 1) {
         $args['meta_query'] = $meta_query;
