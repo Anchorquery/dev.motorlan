@@ -69,12 +69,12 @@ function motorlan_register_motor_rest_routes() {
     ));
 
     // Route for duplicating a motor by ID
-    register_rest_route($namespace, '/motors/(?P<id>\\d+)/duplicate', array(
-        'methods' => 'POST',
+    register_rest_route($namespace, '/motors/duplicate/(?P<id>\\d+)', array(
+        'methods' => 'GET',
         'callback' => 'motorlan_duplicate_motor',
-        'permission_callback' => function () {
-            return current_user_can('edit_posts');
-        }
+        // 'permission_callback' => function () {
+        //     return current_user_can('edit_posts');
+        // }
     ));
 
     // Route for updating motor status by ID
