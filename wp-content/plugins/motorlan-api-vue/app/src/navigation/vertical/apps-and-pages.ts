@@ -1,6 +1,6 @@
 export default [
   {
-    title: 'Tienda de Motores',
+    title: 'Motors Shop',
     to: { name: 'motores' },
     icon: { icon: 'tabler-shopping-cart' },
   },
