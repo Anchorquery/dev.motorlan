@@ -27,7 +27,7 @@ const selectedPar = ref<string | null>(null);
 const selectedPotencia = ref<string | null>(null);
 const selectedVelocidad = ref<string | null>(null);
 const searchTerm = ref('');
-const order = ref<string | null>(null);
+const order = ref<string | null>(t('tienda.order_options.recents'));
 
 const parOptions = computed(() => [t('tienda.par_options.range1'), t('tienda.par_options.range2')])
 const potenciaOptions = computed(() => [t('tienda.potencia_options.range1'), t('tienda.potencia_options.range2')])
