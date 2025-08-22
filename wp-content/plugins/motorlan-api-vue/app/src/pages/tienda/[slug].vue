@@ -49,11 +49,11 @@ const title = computed(() => {
   >
     <VRow>
       <VCol cols="12">
-        <div class="d-flex justify-space-between align-start mb-4">
-          <h1>
+        <div class="d-flex justify-space-between mb-4 title-price">
+          <h1 class="text-h4 mb-0">
             {{ title }}
           </h1>
-          <div class="text-h1 text-error">
+          <div class="text-h4 text-error font-weight-bold">
             {{ motor.acf.precio_de_venta ? `${motor.acf.precio_de_venta}€` : 'Consultar precio' }}
           </div>
         </div>
@@ -101,5 +101,7 @@ const title = computed(() => {
 </template>
 
 <style scoped>
-/* Ya no se necesita el CSS personalizado para el layout */
+.title-price {
+  align-items: baseline;
+}
 </style>
