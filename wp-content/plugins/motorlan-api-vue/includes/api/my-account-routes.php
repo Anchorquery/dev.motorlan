@@ -51,6 +51,33 @@ function motorlan_register_my_account_rest_routes() {
             return is_user_logged_in();
         }
     ) );
+
+    // Route for creating a new purchase
+    register_rest_route( $namespace, '/purchases', array(
+        'methods'  => WP_REST_Server::CREATABLE,
+        'callback' => 'motorlan_create_purchase_callback',
+        'permission_callback' => function () {
+            return is_user_logged_in();
+        }
+    ) );
+
+    // Route for getting purchase details
+    register_rest_route( $namespace, '/purchases/(?P<id>\\d+)', array(
+        'methods'  => WP_REST_Server::READABLE,
+        'callback' => 'motorlan_get_purchase_callback',
+        'permission_callback' => function () {
+            return is_user_logged_in();
+        }
+    ) );
+
+    // Route for adding an opinion to a purchase
+    register_rest_route( $namespace, '/purchases/(?P<id>\\d+)/opinion', array(
+        'methods'  => WP_REST_Server::CREATABLE,
+        'callback' => 'motorlan_add_purchase_opinion_callback',
+        'permission_callback' => function () {
+            return is_user_logged_in();
+        }
+    ) );
 }
 add_action( 'rest_api_init', 'motorlan_register_my_account_rest_routes' );
 
@@ -291,4 +318,90 @@ function motorlan_get_my_favorites_callback( $request ) {
     );
 
     return new WP_REST_Response( $response_data, 200 );
+}
+
+/**
+ * Create a purchase for the current user.
+ */
+function motorlan_create_purchase_callback( WP_REST_Request $request ) {
+    $user_id  = get_current_user_id();
+    $motor_id = absint( $request->get_param( 'motor_id' ) );
+
+    if ( ! $motor_id ) {
+        return new WP_Error( 'no_motor', 'Motor ID is required', array( 'status' => 400 ) );
+    }
+
+    $purchase_id = wp_insert_post( array(
+        'post_type'   => 'compra',
+        'post_status' => 'publish',
+        'post_title'  => 'Compra ' . $motor_id,
+    ) );
+
+    if ( is_wp_error( $purchase_id ) ) {
+        return $purchase_id;
+    }
+
+    update_field( 'usuario', $user_id, $purchase_id );
+    update_field( 'motor', $motor_id, $purchase_id );
+    update_field( 'fecha_compra', current_time( 'd/m/Y' ), $purchase_id );
+
+    return new WP_REST_Response( array( 'id' => $purchase_id ), 201 );
+}
+
+/**
+ * Get details for a single purchase.
+ */
+function motorlan_get_purchase_callback( WP_REST_Request $request ) {
+    $purchase_id = absint( $request['id'] );
+    $post        = get_post( $purchase_id );
+
+    if ( ! $post || 'compra' !== $post->post_type ) {
+        return new WP_Error( 'not_found', 'Purchase not found', array( 'status' => 404 ) );
+    }
+
+    $motor_post = get_field( 'motor', $purchase_id );
+    $motor_data = null;
+    if ( $motor_post ) {
+        $motor_data = motorlan_get_motor_data( $motor_post->ID );
+    }
+
+    $data = array(
+        'id'           => $purchase_id,
+        'title'        => get_the_title( $purchase_id ),
+        'fecha_compra' => get_field( 'fecha_compra', $purchase_id ),
+        'motor'        => $motor_data,
+    );
+
+    return new WP_REST_Response( array( 'data' => $data ), 200 );
+}
+
+/**
+ * Add an opinion for a purchase.
+ */
+function motorlan_add_purchase_opinion_callback( WP_REST_Request $request ) {
+    $purchase_id = absint( $request['id'] );
+    $valoracion  = absint( $request->get_param( 'valoracion' ) );
+    $comentario  = sanitize_textarea_field( $request->get_param( 'comentario' ) );
+
+    $motor_post = get_field( 'motor', $purchase_id );
+    if ( ! $motor_post ) {
+        return new WP_Error( 'no_motor', 'Purchase without motor', array( 'status' => 400 ) );
+    }
+
+    $opinion_id = wp_insert_post( array(
+        'post_type'   => 'opinion',
+        'post_status' => 'publish',
+        'post_title'  => 'Opinion compra ' . $purchase_id,
+    ) );
+
+    if ( is_wp_error( $opinion_id ) ) {
+        return $opinion_id;
+    }
+
+    update_field( 'usuario', get_current_user_id(), $opinion_id );
+    update_field( 'motor', $motor_post->ID, $opinion_id );
+    update_field( 'valoracion', $valoracion, $opinion_id );
+    update_field( 'comentario', $comentario, $opinion_id );
+
+    return new WP_REST_Response( array( 'id' => $opinion_id ), 201 );
 }
