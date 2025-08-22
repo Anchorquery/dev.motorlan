@@ -164,6 +164,29 @@
   "25": "25",
   "50": "50",
   "100": "100",
+  "tienda": {
+    "par_options": {
+      "range1": "0-50",
+      "range2": "50-100"
+    },
+    "potencia_options": {
+      "range1": "0-1 كيلو واط",
+      "range2": "1-5 كيلو واط"
+    },
+    "velocidad_options": {
+      "range1": "500 دورة في الدقيقة",
+      "range2": "1500 دورة في الدقيقة"
+    },
+    "technology_options": {
+      "dc": "تيار مباشر (C.C.)",
+      "ac": "تيار متردد (C.A.)"
+    },
+    "order_options": {
+      "recents": "الأحدث",
+      "price_asc": "السعر تصاعدي",
+      "price_desc": "السعر تنازلي"
+    }
+  },
   "$vuetify": {
     "badge": "شارة",
     "noDataText": "لا تتوافر بيانات",

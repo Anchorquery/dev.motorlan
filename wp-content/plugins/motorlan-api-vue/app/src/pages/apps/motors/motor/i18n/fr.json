@@ -1,0 +1,116 @@
+{
+  "add_motor": {
+    "title": "Ajouter Nouveau {postType}",
+    "step": "Étape {currentStep} de 3",
+    "buttons": {
+      "discard": "Annuler",
+      "save_and_continue": "Enregistrer et Continuer",
+      "add_document": "Ajouter un Document",
+      "skip": "Ignorer",
+      "accept_and_add_warranty": "Accepter et Ajouter la Garantie",
+      "go_back": "Retour",
+      "request_warranty": "Demander la Garantie"
+    },
+    "post_details": {
+      "section_title": "Détails du {postType}",
+      "publication_type": "Type de Publication",
+      "title": "Titre de la publication",
+      "title_placeholder": "Titre",
+      "reference": "Type ou référence",
+      "reference_placeholder": "Référence",
+      "brand": "Marque",
+      "category": "Catégorie",
+      "power": "Puissance (kW)",
+      "power_placeholder": "100",
+      "speed": "Vitesse (tr/min)",
+      "speed_placeholder": "3000",
+      "torque": "Couple Nominal (Nm)",
+      "torque_placeholder": "50",
+      "voltage": "Tension (V)",
+      "voltage_placeholder": "220",
+      "intensity": "Intensité (A)",
+      "intensity_placeholder": "10",
+      "country": "Pays (localisation)",
+      "province": "Province",
+      "province_placeholder": "Madrid",
+      "condition": "État de l'article",
+      "description": "Description",
+      "description_placeholder": "Description du produit",
+      "rent_option": "Possibilité de location",
+      "power_supply_type": "Type d'alimentation",
+      "servomotors": "Servomoteurs",
+      "electronic_regulation": "Régulation électronique/Drivers",
+      "price": "Prix de vente (€)",
+      "price_placeholder": "1000",
+      "stock": "Stock",
+      "stock_placeholder": "1",
+      "negotiable_price": "Prix négociable",
+      "publish_acf": "Publier (ACF)",
+      "publish_status_publish": "Publier",
+      "publish_status_draft": "Brouillon"
+    },
+    "post_type_options": {
+        "motor": "Moteur",
+        "regulator": "Régulateur",
+        "other_spare_part": "Autre Pièce de Rechange"
+    },
+    "condition_options": {
+        "new": "Neuf",
+        "used": "Occasion",
+        "restored": "Restauré"
+    },
+    "country_options": {
+        "spain": "Espagne",
+        "portugal": "Portugal",
+        "france": "France"
+    },
+    "boolean_options": {
+        "yes": "Oui",
+        "no": "Non"
+    },
+    "power_supply_options": {
+        "dc": "Courant Continu (C.C.)",
+        "ac": "Courant Alternatif (C.A.)"
+    },
+    "media": {
+      "main_image": "Image Principale",
+      "image_gallery": "Galerie d'Images",
+      "additional_documentation": "Documentation Additionnelle",
+      "document_name": "Nom du Document",
+      "document_name_placeholder": "Manuel de l'utilisateur",
+      "upload_file": "Télécharger un Fichier"
+    },
+    "warranty": {
+      "add_warranty_title": "Ajouter la Garantie Motorlan",
+      "add_warranty_subtitle": "Demandez la Garantie Motorlan, votre produit se vendra mieux !",
+      "add_warranty_text1": "Envoyez le produit à Motorlan pour révision et mise au point. L'envoi est à la charge du demandeur.",
+      "add_warranty_text2": "Une fois inspecté, nous vous enverrons un devis pour sa mise au point avec garantie.",
+      "add_warranty_text3": "La garantie des travaux et des matériaux est de 6 mois.",
+      "form_title": "Formulaire de Garantie",
+      "same_address_question": "Le produit se trouve-t-il à la même adresse que votre entreprise ?",
+      "pickup_address": "Adresse de collecte du produit",
+      "pickup_address_placeholder": "Rue, numéro, étage",
+      "postal_code": "Code Postal",
+      "postal_code_placeholder": "28001",
+      "shipping_title": "EXPÉDITION",
+      "shipping_text": "En cas d'envoi de matériel, tout le transport est payé par le client par l'intermédiaire du transporteur qu'il nous indique.",
+      "shipping_agency": "Agence de transport *",
+      "shipping_agency_placeholder": "Indiquez votre agence",
+      "payment_method_title": "MODE DE PAIEMENT",
+      "payment_method_text": "Le paiement des réparations s'effectue au comptant selon l'une de ces deux modalités.",
+      "payment_method_cod": "Contre remboursement",
+      "payment_method_transfer": "Virement sur notre compte avant la livraison",
+      "comments": "Commentaires",
+      "comments_placeholder": "Toute information supplémentaire"
+    },
+    "toasts": {
+      "post_created_success": "Publication créée. Décidez maintenant de la garantie.",
+      "post_created_error": "Erreur lors de la création de la publication : {message}",
+      "warranty_skipped_confirmation": "La publication sera publiée sans la garantie Motorlan. Êtes-vous sûr ?",
+      "warranty_skipped_info": "Publication sans garantie.",
+      "post_id_not_found_error": "Erreur : ID de la publication non trouvé.",
+      "warranty_request_success": "Demande de garantie réussie. Publication effectuée.",
+      "warranty_request_error": "Erreur lors de la demande de garantie : {message}"
+    }
+  }
+}

@@ -168,6 +168,29 @@
   "Preguntas": "Galderak",
   "Opiniones": "Iritziak",
   "Favoritos": "Gogokoak",
+  "tienda": {
+    "par_options": {
+      "range1": "0-50",
+      "range2": "50-100"
+    },
+    "potencia_options": {
+      "range1": "0-1 kW",
+      "range2": "1-5 kW"
+    },
+    "velocidad_options": {
+      "range1": "500 rpm",
+      "range2": "1500 rpm"
+    },
+    "technology_options": {
+      "dc": "Korronte Zuzena (C.C.)",
+      "ac": "Korronte Alternoa (C.A.)"
+    },
+    "order_options": {
+      "recents": "Berrienak",
+      "price_asc": "Prezioa gorantz",
+      "price_desc": "Prezioa beherantz"
+    }
+  },
   "$vuetify": {
     "badge": "Intsignia",
     "noDataText": "Ez dago daturik eskuragarri",
