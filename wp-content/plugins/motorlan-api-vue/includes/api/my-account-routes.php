@@ -333,7 +333,6 @@ function motorlan_create_purchase_callback( WP_REST_Request $request ) {
     if ( ! $motor_id ) {
         return new WP_Error( 'no_motor', 'Motor ID is required', array( 'status' => 400 ) );
     }
-
     $uuid = wp_generate_uuid4();
 
     $motor_title = get_the_title( $motor_id );
@@ -343,6 +342,7 @@ function motorlan_create_purchase_callback( WP_REST_Request $request ) {
     $purchase_id = wp_insert_post( array(
         'post_type'   => 'compra',
         'post_status' => 'publish',
+        'post_name'  => 'Compra ' . $motor_title,
         'post_title'  => $motor_title . ' - ' . $buyer_name,
     ) );
 
@@ -379,6 +379,7 @@ function motorlan_get_purchase_callback( WP_REST_Request $request ) {
     }
 
     $purchase_id = $purchases[0]->ID;
+
 
     $motor_post = get_field( 'motor', $purchase_id );
     $motor_data = null;
