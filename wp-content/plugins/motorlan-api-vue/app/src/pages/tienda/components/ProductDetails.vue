@@ -55,19 +55,25 @@ const router = useRouter()
 const isConfirmDialogOpen = ref(false)
 
 const handlePurchase = async (confirmed: boolean) => {
+  // 1. Se mantiene la validación inicial
   if (!confirmed)
     return
 
-  try {
-    const res = await $api('/wp-json/motorlan/v1/purchases', {
-      method: 'POST',
-      body: { motor_id: props.motor.id },
-    })
-    router.push(`/tienda/compra/${res.uuid}`)
+  // 2. Se utiliza useApi para la petición POST
+  const { data: res, error } = await useApi< { uuid: string } >(
+    '/wp-json/motorlan/v1/purchases',
+  ).post({ motor_id: props.motor.id }).json()
+
+  // 3. Se maneja el error devuelto por el composable
+  if (error.value) {
+    console.error('Error al realizar la compra:', error.value)
+
+    return
   }
-  catch (error) {
-    console.error(error)
-  }
+
+  // 4. Si la petición es exitosa y tenemos datos, redirigimos
+  if (res.value)
+    router.push(`/tienda/compra/${res.value.uuid}`)
 }
 </script>
 
@@ -112,7 +118,7 @@ const handlePurchase = async (confirmed: boolean) => {
         Hacer una oferta
       </VBtn>
     </div>
-    <!--
+
     <div class="contact-card pa-4">
       <h3 class="mb-4">
         Descripción
