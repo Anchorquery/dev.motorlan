@@ -3,7 +3,9 @@ import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import DropZone from '@/@core/components/DropZone.vue'
 import { requiredValidator } from '@/@core/utils/validators'
+import { useToast } from '@/composables/useToast'
 
+const { showToast } = useToast()
 const route = useRoute()
 const router = useRouter()
 const motorUuid = route.params.uuid as string
@@ -135,7 +137,7 @@ const updateMotor = async () => {
   const { valid } = await form.value.validate()
 
   if (!valid) {
-    alert('Por favor, rellene todos los campos obligatorios.')
+    showToast('Por favor, rellene todos los campos obligatorios.', 'error')
 
     return
   }
@@ -182,9 +184,12 @@ const updateMotor = async () => {
 
     // Handle additional documentation
     if (motorData.value.acf.documentacion_adicional) {
+      console.log('Processing additional documentation:', motorData.value.acf.documentacion_adicional)
       for (const doc of motorData.value.acf.documentacion_adicional) {
+        console.log('Processing doc:', doc)
         if (doc.archivo instanceof File) {
           const uploadedFile = await uploadMedia(doc.archivo)
+          console.log('Uploaded file:', uploadedFile)
           doc.archivo = uploadedFile.id
         } else if (doc.archivo && doc.archivo.id) {
           doc.archivo = doc.archivo.id
@@ -192,13 +197,16 @@ const updateMotor = async () => {
       }
     }
 
+    console.log('Data to send:', JSON.stringify(motorData.value, null, 2))
     await api(url, {
       method,
       body: motorData.value,
     })
+    showToast('Motor actualizado correctamente.', 'success')
     router.push('/apps/motors/motor/list')
   }
   catch (error) {
+    showToast(`Error al actualizar el motor: ${error.message}`, 'error')
     console.error('Failed to update motor:', error)
   }
 }

@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useToast } from '@/composables/useToast'
 
+const { showToast } = useToast()
 const route = useRoute()
 const router = useRouter()
 
@@ -117,13 +119,27 @@ const publishMotor = async () => {
   const method = 'POST'
 
   try {
+    if (motorData.value.acf.documentacion_adicional) {
+      console.log('Processing additional documentation:', motorData.value.acf.documentacion_adicional)
+      for (const doc of motorData.value.acf.documentacion_adicional) {
+        console.log('Processing doc:', doc)
+        if (doc.archivo instanceof File) {
+          const uploadedFile = await uploadMedia(doc.archivo)
+          console.log('Uploaded file:', uploadedFile)
+          doc.archivo = uploadedFile.id
+        }
+      }
+    }
+    console.log('Data to send:', JSON.stringify(motorData.value, null, 2))
     await api(url, {
       method,
       body: motorData.value,
     })
+    showToast('Motor publicado correctamente.', 'success')
     router.push('/apps/motors/motor/list')
   }
   catch (error) {
+    showToast(`Error al publicar el motor: ${error.message}`, 'error')
     console.error('Failed to publish motor:', error)
   }
 }

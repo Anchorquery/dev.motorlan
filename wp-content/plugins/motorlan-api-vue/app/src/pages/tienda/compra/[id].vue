@@ -5,16 +5,16 @@ import { createUrl } from '@/@core/composable/createUrl'
 import { useApi } from '@/composables/useApi'
 
 const route = useRoute()
-const uuid = route.params.uuid as string
+const id = route.params.id as string
 
-const { data } = await useApi<any>(createUrl(`/wp-json/motorlan/v1/purchases/${uuid}`)).get().json()
+const { data } = await useApi<any>(createUrl(`/wp-json/motorlan/v1/purchases/${id}`)).get().json()
 const purchase = computed(() => data.value?.data)
 
 const opinion = ref({ valoracion: 0, comentario: '' })
 
 const sendOpinion = async () => {
   try {
-    await $api(`/wp-json/motorlan/v1/purchases/${uuid}/opinion`, {
+    await $api(`/wp-json/motorlan/v1/purchases/${id}/opinion`, {
       method: 'POST',
       body: opinion.value,
     })
@@ -35,7 +35,6 @@ const sendOpinion = async () => {
           <div>
             <div class="text-h6">{{ purchase.motor?.title }}</div>
             <div>{{ purchase.fecha_compra }}</div>
-            <div>Estado: {{ purchase.estado }}</div>
           </div>
           <div class="text-h6">
             {{ purchase.motor?.acf?.precio_de_venta ? `${purchase.motor.acf.precio_de_venta} €` : '' }}
