@@ -112,7 +112,7 @@ const handlePurchase = async (confirmed: boolean) => {
         Hacer una oferta
       </VBtn>
     </div>
-    <!--
+    
     <div class="contact-card pa-4">
       <h3 class="mb-4">
         Descripción
