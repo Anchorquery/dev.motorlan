@@ -49,6 +49,7 @@ const share = () => {
 }
 
 const router = useRouter()
+
 const buyMotor = async () => {
   if (!confirm('¿Confirmar compra?'))
     return
