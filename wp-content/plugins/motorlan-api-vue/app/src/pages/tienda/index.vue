@@ -3,6 +3,10 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useApi } from '@/composables/useApi'
 import { createUrl } from '@/@core/composable/createUrl'
 import type { Motor } from '@/interfaces/motor'
+import TiendaFilters from './components/TiendaFilters.vue'
+import SearchBar from './components/SearchBar.vue'
+import MotorItems from './components/MotorItems.vue'
+import PaginationControls from './components/PaginationControls.vue'
 
 interface Term {
   id: number
@@ -91,143 +95,34 @@ const search = () => {
 
 <template>
   <div class="tienda d-flex">
-    <aside class="filters pa-4">
-      <div class="d-flex align-center mb-2">
-        <VIcon
-          size="18"
-          class="me-2"
-          color="error"
-        >
-          mdi-checkbox-blank-outline
-        </VIcon>
-        <span class="text-error font-weight-semibold">FILTROS</span>
-      </div>
-      <VDivider
-        thickness="3"
-        class="mb-4"
-        color="error"
-      />
-
-      <VTextField
-        v-model="typeModel"
-        label="Tipo / modelo"
-        variant="outlined"
-        density="comfortable"
-        class="mb-6"
-      />
-
-      <p class="text-body-2 mb-2">Tipo de producto</p>
-      <VCheckbox v-model="productTypes" label="Motor" value="motor" density="compact" hide-details />
-      <VCheckbox v-model="productTypes" label="Regulador" value="regulador" density="compact" hide-details />
-      <VCheckbox v-model="productTypes" label="Otros repuestos" value="otros-repuestos" density="compact" hide-details class="mb-6" />
-
-      <AppSelect v-model="selectedTechnology" label="Tecnología" :items="technologyOptions" class="mb-4" clearable />
-      <AppSelect v-model="selectedPar" label="PAR (Nm)" :items="parOptions" class="mb-4" clearable />
-      <AppSelect v-model="selectedPotencia" label="Potencia" :items="potenciaOptions" class="mb-4" clearable />
-      <AppSelect v-model="selectedVelocidad" label="Velocidad" :items="velocidadOptions" class="mb-4" clearable />
-      <AppSelect v-model="selectedBrand" label="Marcas" :items="marcas" item-title="name" item-value="id" class="mb-4" clearable />
-      <AppSelect v-model="selectedState" label="Estado" :items="['Nuevo','Usado','Restaurado']" class="mb-4" clearable />
-    </aside>
+    <TiendaFilters
+      v-model:typeModel="typeModel"
+      v-model:productTypes="productTypes"
+      v-model:selectedTechnology="selectedTechnology"
+      v-model:selectedPar="selectedPar"
+      v-model:selectedPotencia="selectedPotencia"
+      v-model:selectedVelocidad="selectedVelocidad"
+      v-model:selectedBrand="selectedBrand"
+      v-model:selectedState="selectedState"
+      :marcas="marcas"
+      :technology-options="technologyOptions"
+      :par-options="parOptions"
+      :potencia-options="potenciaOptions"
+      :velocidad-options="velocidadOptions"
+    />
 
     <section class="flex-grow-1 ps-6">
-      <div class="top-bar">
-        <VTextField
-          v-model="searchTerm"
-          placeholder="Buscar..."
-          variant="outlined"
-          hide-details
-          class="flex-grow-1"
-          @keydown.enter="search"
-        />
-        <VBtn
-          icon
-          color="error"
-          class="search-btn"
-          :loading="loading"
-          @click="search"
-        >
-          <VIcon color="white">
-            mdi-magnify
-          </VIcon>
-        </VBtn>
-        <AppSelect
-          v-model="order"
-          :items="orderOptions"
-          label="Ordenar"
-          clearable
-          style="max-width:220px"
-        />
-      </div>
-
-      <div
-        v-if="loading && !motors.length"
-        class="text-center pa-12"
-      >
-        <VProgressCircular
-          indeterminate
-          size="64"
-        />
-        <p class="mt-4">
-          Cargando motores...
-        </p>
-      </div>
-
-      <VRow
-        v-else-if="motors.length"
-        class="motor-grid"
-      >
-        <VCol
-          v-for="motor in motors"
-          :key="motor.id"
-          cols="12"
-          sm="6"
-          md="4"
-        >
-          <div class="motor-card pa-4">
-            <div class="motor-image mb-6">
-              <img
-                :src="motor.imagen_destacada?.url || '/placeholder.png'"
-                alt=""
-              >
-            </div>
-            <div class="text-error text-body-1 mb-4">
-              {{ motor.title }}
-            </div>
-            <div class="d-flex justify-space-between align-center">
-              <VBtn
-                color="error"
-                class="rounded-pill px-6"
-                :to="`/tienda/${motor.slug}`"
-              >
-                + INFO
-              </VBtn>
-              <div class="price text-error font-weight-bold">
-                {{ motor.acf.precio_de_venta ? `${motor.acf.precio_de_venta} €` : 'Consultar precio' }}
-              </div>
-            </div>
-          </div>
-        </VCol>
-      </VRow>
-
-      <VCard
-        v-else
-        class="pa-8 text-center"
-      >
-        <VCardText>
-          <p class="text-h6">
-            No se encontraron motores
-          </p>
-          <p>Intenta ajustar los filtros de búsqueda.</p>
-        </VCardText>
-      </VCard>
-
-      <VPagination
-        v-if="totalPages > 1"
-        v-model="page"
-        :length="totalPages"
-        :total-visible="5"
-        class="mt-6"
+      <SearchBar
+        v-model:searchTerm="searchTerm"
+        v-model:order="order"
+        :loading="loading"
+        :order-options="orderOptions"
+        @search="search"
       />
+
+      <MotorItems :motors="motors" :loading="loading" />
+
+      <PaginationControls v-model:page="page" :total-pages="totalPages" />
     </section>
   </div>
 </template>
@@ -235,38 +130,5 @@ const search = () => {
 <style scoped>
 .tienda {
   align-items: flex-start;
-}
-.filters {
-  width: 300px;
-}
-.motor-card {
-  background: #fff;
-  border-radius: 16px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-}
-.motor-image {
-  height: 185px;
-  border-radius: 8px;
-  background: #EEF1F4;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.motor-image img {
-  max-width: 100%;
-  max-height: 100%;
-}
-.price {
-  font-size: 24px;
-}
-.top-bar {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-bottom: 24px;
-}
-.search-btn {
-  height: 56px;
-  width: 56px;
 }
 </style>

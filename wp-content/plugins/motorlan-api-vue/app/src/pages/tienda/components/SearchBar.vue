@@ -1,0 +1,52 @@
+<script setup lang="ts">
+defineProps<{ loading: boolean; orderOptions: string[] }>()
+
+const searchTerm = defineModel<string>('searchTerm')
+const order = defineModel<string | null>('order')
+const emit = defineEmits(['search'])
+
+const onSearch = () => emit('search')
+</script>
+
+<template>
+  <div class="top-bar">
+    <VTextField
+      v-model="searchTerm"
+      placeholder="Buscar..."
+      variant="outlined"
+      hide-details
+      class="flex-grow-1"
+      @keydown.enter="onSearch"
+    />
+    <VBtn
+      icon
+      color="error"
+      class="search-btn"
+      :loading="loading"
+      @click="onSearch"
+    >
+      <VIcon color="white">mdi-magnify</VIcon>
+    </VBtn>
+    <AppSelect
+      v-model="order"
+      :items="orderOptions"
+      label="Ordenar"
+      clearable
+      style="max-width:220px"
+    />
+  </div>
+</template>
+
+<style scoped>
+.top-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.search-btn {
+  height: 56px;
+  width: 56px;
+}
+</style>
+
