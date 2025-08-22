@@ -9,7 +9,7 @@ defineProps<{ docs?: Doc[] }>()
     v-if="docs && docs.length"
     class="product-docs"
   >
-    <h3 class="text-error mb-4">
+    <h3 class="mb-4">
       Documentación adicional
     </h3>
     <ul>

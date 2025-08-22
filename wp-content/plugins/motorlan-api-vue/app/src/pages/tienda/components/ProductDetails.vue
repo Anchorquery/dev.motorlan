@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 import type { Motor } from '@/interfaces/motor'
 
 const props = defineProps<{ motor: Motor }>()
@@ -29,16 +29,10 @@ const form = ref({
         color="error"
         class="rounded-pill px-6 flex-grow-1"
       >
-        Hacer una pregunta
-      </VBtn>
-      <VBtn
-        variant="outlined"
-        color="error"
-        class="rounded-pill px-6 flex-grow-1"
-      >
         Hacer una oferta
       </VBtn>
-      <div class="d-flex align-center gap-2">
+      <div class="d-flex align-center gap-2 ms-auto">
+        <span class="text-body-2 font-weight-medium">Compartir</span>
         <VBtn
           icon="mdi-facebook"
           variant="text"
@@ -52,13 +46,13 @@ const form = ref({
       </div>
     </div>
     <div class="contact-card pa-4">
-      <h3 class="text-error mb-4">
-        Hacer una pregunta
+      <h3 class="mb-4">
+        Contactar ahora
       </h3>
       <VForm class="d-flex flex-column gap-4">
         <VTextarea
           v-model="form.message"
-          label="Pregunta"
+          label="Mensaje"
           rows="3"
         />
         <VTextField
@@ -77,7 +71,7 @@ const form = ref({
           color="error"
           class="rounded-pill align-self-start"
         >
-          Preguntar
+          Enviar
         </VBtn>
       </VForm>
     </div>
