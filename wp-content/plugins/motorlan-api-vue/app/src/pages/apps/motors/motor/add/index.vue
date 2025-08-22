@@ -1,12 +1,17 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRouter } from 'vue-router'
 import { useToast } from '@/composables/useToast'
+import { useApi } from '@/composables/useApi'
 
 const { showToast } = useToast()
-const route = useRoute()
 const router = useRouter()
 
+// Stepper state
+const currentStep = ref(1)
+const newMotorId = ref<number | null>(null)
+
+// Form data
 const motorData = ref({
   title: '',
   status: 'publish',
@@ -39,37 +44,49 @@ const motorData = ref({
   },
 })
 
+const garantiaData = ref({
+  motor_id: null,
+  is_same_address: 'SÍ',
+  direccion_motor: '',
+  cp_motor: '',
+  agencia_transporte: '',
+  modalidad_pago: 'Contra reembolso',
+  comentarios: '',
+})
+
+const userData = ref<any>(null)
 const marcas = ref([])
 const categories = ref([])
-const form = ref(null)
 
+// Fetch initial data for selects
 onMounted(async () => {
   try {
-    // 1. Crear un arreglo de promesas
-    const promises = [
+    const [
+      marcasResponse,
+      categoriesResponse,
+      userResponse,
+    ] = await Promise.all([
       useApi('/wp-json/motorlan/v1/marcas'),
       useApi('/wp-json/motorlan/v1/motor-categories'),
-    ]
+      useApi('/wp-json/wp/v2/users/me?context=edit'),
+    ])
 
-    // 2. Ejecutar todas las promesas en paralelo
-    const [marcasResponse, categoriesResponse] = await Promise.all(promises)
-
-    // 3. Procesar los resultados una vez que todos han llegado
-
-    // Procesar marcas
     if (marcasResponse && marcasResponse.data.value) {
       marcas.value = marcasResponse.data.value.map((marca: { name: any; id: any }) => ({
-        name: marca.name,
-        id: marca.id,
+        title: marca.name,
+        value: marca.id,
       }))
     }
 
-    // Procesar categorías
     if (categoriesResponse && categoriesResponse.data.value) {
       categories.value = categoriesResponse.data.value.map((category: { name: any; term_id: any }) => ({
-        name: category.name,
-        id: category.term_id,
+        title: category.name,
+        value: category.term_id,
       }))
+    }
+
+    if (userResponse && userResponse.data.value) {
+      userData.value = userResponse.data.value
     }
   }
   catch (error) {
@@ -77,21 +94,19 @@ onMounted(async () => {
   }
 })
 
+// Media upload utility
 const uploadMedia = async (file: File) => {
   const formData = new FormData()
 
   formData.append('file', file)
 
   try {
-    const response = await useApi('/wp-json/wp/v2/media', {
+    const { data } = await useApi<any>('/wp-json/wp/v2/media', {
       method: 'POST',
       body: formData,
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
     })
 
-    return response.data.value.id
+    return data.value.id
   }
   catch (error) {
     console.error('Failed to upload media:', error)
@@ -112,54 +127,84 @@ const handleGalleryImageUpload = async (file: File) => {
     motorData.value.acf.motor_gallery.push(imageId)
 }
 
-const publishMotor = async () => {
-  const url = '/wp-json/wp/v2/motors'
-  const method = 'POST'
-
-  try {
-    if (motorData.value.acf.documentacion_adicional) {
-      console.log('Processing additional documentation:', motorData.value.acf.documentacion_adicional)
-      for (const doc of motorData.value.acf.documentacion_adicional) {
-        console.log('Processing doc:', doc)
-        if (doc.archivo instanceof File) {
-          const uploadedFile = await uploadMedia(doc.archivo)
-          console.log('Uploaded file:', uploadedFile)
-          doc.archivo = uploadedFile.id
-        }
-      }
-    }
-    console.log('Data to send:', JSON.stringify(motorData.value, null, 2))
-    await useApi(url, {
-      method,
-      body: motorData.value,
-    })
-    showToast('Motor publicado correctamente.', 'success')
-    router.push('/apps/motors/motor/list')
-  }
-  catch (error) {
-    showToast(`Error al publicar el motor: ${error.message}`, 'error')
-    console.error('Failed to publish motor:', error)
-  }
-}
-
-const content = ref(
-  `<p>
-    Keep your account secure with authentication step.
-    </p>`)
-
 const addDocument = () => {
-  if (motorData.value.acf.documentacion_adicional.length < 5) {
+  if (motorData.value.acf.documentacion_adicional.length < 5)
     motorData.value.acf.documentacion_adicional.push({ nombre: '', archivo: null })
-  }
 }
 
-const handleFileUpload = async (event, index) => {
-  const file = event.target.files[0]
+const handleFileUpload = async (event: Event, index: number) => {
+  const file = (event.target as HTMLInputElement).files?.[0]
   if (file) {
     const fileId = await uploadMedia(file)
-    if (fileId) {
+    if (fileId)
       motorData.value.acf.documentacion_adicional[index].archivo = fileId
+  }
+}
+
+// Step 1: Create Motor and move to step 2
+const createMotorAndContinue = async () => {
+  try {
+    // Handle file uploads for additional documentation
+    for (const doc of motorData.value.acf.documentacion_adicional) {
+      if (doc.archivo instanceof File) {
+        const fileId = await uploadMedia(doc.archivo)
+        doc.archivo = fileId
+      }
     }
+
+    const response = await useApi<any>('/wp-json/wp/v2/motors', {
+      method: 'POST',
+      body: motorData.value,
+    })
+
+    newMotorId.value = response.data.value.id
+    showToast('Motor creado. Ahora decide sobre la garantía.', 'success')
+    currentStep.value = 2
+  }
+  catch (error: any) {
+    showToast(`Error al crear el motor: ${error.message}`, 'error')
+    console.error('Failed to create motor:', error)
+  }
+}
+
+// Step 2: Skip warranty
+const skipGarantia = () => {
+  // A simple confirm dialog
+  if (confirm('El motor se publicará sin la garantía Motorlan. ¿Estás seguro?')) {
+    showToast('Motor publicado sin garantía.', 'info')
+    router.push('/apps/motors/motor/list')
+  }
+}
+
+const goToGarantiaForm = () => {
+  if (userData.value && userData.value.acf) {
+    garantiaData.value.direccion_motor = userData.value.acf.direccion || ''
+    garantiaData.value.cp_motor = userData.value.acf.codigo_postal || ''
+  }
+  currentStep.value = 3
+}
+
+// Step 3: Submit warranty
+const submitGarantia = async () => {
+  if (!newMotorId.value) {
+    showToast('Error: No se ha encontrado el ID del motor.', 'error')
+
+    return
+  }
+
+  garantiaData.value.motor_id = newMotorId.value
+
+  try {
+    await useApi('/wp-json/motorlan/v1/garantias', {
+      method: 'POST',
+      body: garantiaData.value,
+    })
+    showToast('Garantía solicitada con éxito. Motor publicado.', 'success')
+    router.push('/apps/motors/motor/list')
+  }
+  catch (error: any) {
+    showToast(`Error al solicitar la garantía: ${error.message}`, 'error')
+    console.error('Failed to submit garantia:', error)
   }
 }
 </script>
@@ -169,8 +214,9 @@ const handleFileUpload = async (event, index) => {
     <div class="d-flex flex-wrap justify-start justify-sm-space-between gap-y-4 gap-x-6 mb-6">
       <div class="d-flex flex-column justify-center">
         <h4 class="text-h4 font-weight-medium">
-          Add a new motor
+          Añadir Nuevo Motor
         </h4>
+        <span class="text-body-1">Paso {{ currentStep }} de 3</span>
       </div>
       <div class="d-flex gap-4 align-center flex-wrap">
         <VBtn
@@ -178,15 +224,19 @@ const handleFileUpload = async (event, index) => {
           color="secondary"
           @click="router.push('/apps/motors/motor/list')"
         >
-          Discard
+          Descartar
         </VBtn>
-        <VBtn @click="publishMotor">
-          Publish Motor
+        <VBtn
+          v-if="currentStep === 1"
+          @click="createMotorAndContinue"
+        >
+          Guardar y Continuar
         </VBtn>
       </div>
     </div>
 
-    <VRow>
+    <!-- Step 1: Motor Details -->
+    <VRow v-if="currentStep === 1">
       <VCol>
         <VCard
           class="mb-6"
@@ -222,8 +272,6 @@ const handleFileUpload = async (event, index) => {
                   v-model="motorData.acf.marca"
                   label="Marca"
                   :items="marcas"
-                  item-title="name"
-                  item-value="id"
                 />
               </VCol>
               <VCol
@@ -234,12 +282,9 @@ const handleFileUpload = async (event, index) => {
                   v-model="motorData.categories"
                   label="Categoría"
                   :items="categories"
-                  item-title="name"
-                  item-value="id"
                   multiple
                 />
               </VCol>
-
               <VCol
                 cols="12"
                 md="6"
@@ -332,7 +377,6 @@ const handleFileUpload = async (event, index) => {
                   placeholder="Descripción del motor"
                 />
               </VCol>
-
               <VCol
                 cols="12"
                 md="6"
@@ -457,7 +501,6 @@ const handleFileUpload = async (event, index) => {
             <DropZone @file-added="handleFeaturedImageUpload" />
           </VCardText>
         </VCard>
-
         <VCard
           class="mb-6"
           title="Galería de Imágenes"
@@ -466,7 +509,6 @@ const handleFileUpload = async (event, index) => {
             <DropZone @file-added="handleGalleryImageUpload" />
           </VCardText>
         </VCard>
-
         <VCard
           class="mb-6"
           title="Documentación Adicional"
@@ -498,6 +540,144 @@ const handleFileUpload = async (event, index) => {
         </VCard>
       </VCol>
     </VRow>
+
+    <!-- Step 2: Warranty Offer -->
+    <VCard
+      v-if="currentStep === 2"
+      title="Añadir Garantía Motorlan"
+      class="mb-6"
+    >
+      <VCardText>
+        <p class="mb-4">
+          <strong>¡Solicita la Garantía Motorlan, tu motor se venderá mejor!</strong>
+        </p>
+        <p>
+          Envía el motor a Motorlan para su revisión y puesta a punto. El envío corre a cargo del solicitante.
+          Una vez inspeccionado, te enviaremos un presupuesto para su puesta a punto con garantía.
+        </p>
+        <p class="mt-2">
+          La garantía de los trabajos y materiales es de 6 meses.
+        </p>
+      </VCardText>
+      <VCardActions>
+        <VSpacer />
+        <VBtn
+          color="secondary"
+          @click="skipGarantia"
+        >
+          Omitir
+        </VBtn>
+        <VBtn @click="goToGarantiaForm">
+          Aceptar y Añadir Garantía
+        </VBtn>
+      </VCardActions>
+    </VCard>
+
+    <!-- Step 3: Warranty Form -->
+    <VCard
+      v-if="currentStep === 3"
+      title="Formulario de Garantía"
+      class="mb-6"
+    >
+      <VCardText>
+        <VRow>
+          <VCol cols="12">
+            <VRadioGroup
+              v-model="garantiaData.is_same_address"
+              inline
+              label="¿El motor se encuentra en la misma dirección de tu empresa?"
+            >
+              <VRadio
+                label="Sí"
+                value="SÍ"
+              />
+              <VRadio
+                label="No"
+                value="NO"
+              />
+            </VRadioGroup>
+          </VCol>
+          <template v-if="garantiaData.is_same_address === 'NO'">
+            <VCol
+              cols="12"
+              md="8"
+            >
+              <AppTextField
+                v-model="garantiaData.direccion_motor"
+                label="Dirección de recogida del motor"
+                placeholder="Calle, número, piso"
+              />
+            </VCol>
+            <VCol
+              cols="12"
+              md="4"
+            >
+              <AppTextField
+                v-model="garantiaData.cp_motor"
+                label="Código Postal"
+                placeholder="28001"
+              />
+            </VCol>
+          </template>
+          <VCol cols="12">
+            <p class="text-body-1 font-weight-medium">
+              ENVÍO
+            </p>
+            <p class="text-caption">
+              En los casos de envío de material todo transporte se realiza a portes pagados por el cliente mediante el transportista que nos indique.
+            </p>
+            <AppTextField
+              v-model="garantiaData.agencia_transporte"
+              label="Agencia de transporte *"
+              placeholder="Indique su agencia"
+              class="mt-4"
+            />
+          </VCol>
+
+          <VCol cols="12">
+            <p class="text-body-1 font-weight-medium">
+              FORMA DE PAGO
+            </p>
+            <p class="text-caption">
+              La forma de pago en las reparaciones se realiza al contado mediante una de estas dos modalidades.
+            </p>
+            <VRadioGroup
+              v-model="garantiaData.modalidad_pago"
+              class="mt-4"
+            >
+              <VRadio
+                label="Contra reembolso"
+                value="Contra reembolso"
+              />
+              <VRadio
+                label="Transferencia a nuestra cuenta previa a la entrega"
+                value="Transferencia"
+              />
+            </VRadioGroup>
+          </VCol>
+
+          <VCol cols="12">
+            <VTextarea
+              v-model="garantiaData.comentarios"
+              label="Comentarios"
+              placeholder="Cualquier información adicional"
+            />
+          </VCol>
+        </VRow>
+      </VCardText>
+      <VCardActions>
+        <VSpacer />
+        <VBtn
+          variant="tonal"
+          @click="currentStep = 2"
+        >
+          Volver
+        </VBtn>
+        <VBtn @click="submitGarantia">
+          Solicitar Garantía
+        </VBtn>
+      </VCardActions>
+    </VCard>
   </div>
 </template>
 
