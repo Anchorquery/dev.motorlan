@@ -1,10 +1,13 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 import type { Motor } from '@/interfaces/motor'
 
 const props = defineProps<{ motor: Motor }>()
 
 
+
+const router = useRouter()
 
 const form = ref({
   message: '',
@@ -12,6 +15,22 @@ const form = ref({
   email: '',
   phone: '',
 })
+
+const buyMotor = async () => {
+  if (!confirm('¿Confirmar compra?'))
+    return
+
+  try {
+    const res = await $api('/wp-json/motorlan/v1/purchases', {
+      method: 'POST',
+      body: { motor_id: props.motor.id },
+    })
+    router.push(`/tienda/compra/${res.id}`)
+  }
+  catch (error) {
+    console.error(error)
+  }
+}
 </script>
 
 <template>
@@ -21,6 +40,7 @@ const form = ref({
       <VBtn
         color="error"
         class="rounded-pill px-6 flex-grow-1"
+        @click="buyMotor"
       >
         Comprar
       </VBtn>
