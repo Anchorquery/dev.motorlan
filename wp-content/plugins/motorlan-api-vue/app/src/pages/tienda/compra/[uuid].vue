@@ -10,6 +10,11 @@ const uuid = route.params.uuid as string
 const { data } = await useApi<any>(createUrl(`/wp-json/motorlan/v1/purchases/${uuid}`)).get().json()
 const purchase = computed(() => data.value?.data)
 
+// Fetch vendor details
+const vendorId = data.value?.data?.vendedor
+const { data: vendorData } = await useApi<any>(createUrl(`/wp-json/wp/v2/users/${vendorId}`)).get().json()
+const vendor = computed(() => vendorData.value)
+
 const opinion = ref({ valoracion: 0, comentario: '' })
 
 const sendOpinion = async () => {
@@ -39,15 +44,26 @@ const sendOpinion = async () => {
     <VCard class="mb-6">
       <VCardTitle>Detalle de la compra</VCardTitle>
       <VCardText>
-        <div class="d-flex justify-space-between">
-          <div>
-            <div class="text-h6">
-              {{ purchase.motor?.title }}
-            </div>
+        <div class="d-flex">
+          <VImg
+            :src="purchase.motor?.acf?.motor_image?.url"
+            width="120"
+            class="me-4 rounded"
+            cover
+          />
+          <div class="flex-grow-1">
+            <div class="text-h6">{{ purchase.motor?.title }}</div>
             <div>{{ purchase.fecha_compra }}</div>
             <div>Estado: {{ purchase.estado }}</div>
+            <div v-if="vendor">Vendedor: {{ vendor.name }}</div>
+            <RouterLink
+              :to="{ name: 'apps-chat', query: { user: purchase.vendedor } }"
+              class="d-block mt-2"
+            >
+              Chatear con el vendedor
+            </RouterLink>
           </div>
-          <div class="text-h6">
+          <div class="text-h6 ms-auto">
             {{ purchase.motor?.acf?.precio_de_venta ? `${purchase.motor.acf.precio_de_venta} €` : '' }}
           </div>
         </div>
