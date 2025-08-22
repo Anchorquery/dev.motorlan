@@ -52,7 +52,6 @@ const share = () => {
 }
 
 const router = useRouter()
-
 const isConfirmDialogOpen = ref(false)
 
 const handlePurchase = async (confirmed: boolean) => {
@@ -100,10 +99,8 @@ const handlePurchase = async (confirmed: boolean) => {
     <div class="d-flex flex-wrap gap-4 mb-6">
       <VBtn
         color="error"
-
         class="px-6 flex-grow-1 action-btn"
         @click="isConfirmDialogOpen = true"
-
       >
         Comprar
       </VBtn>
@@ -115,13 +112,13 @@ const handlePurchase = async (confirmed: boolean) => {
         Hacer una oferta
       </VBtn>
     </div>
+    <!--
     <div class="contact-card pa-4">
       <h3 class="mb-4">
         Descripción
       </h3>
       <p v-html="props.motor.acf.descripcion" />
     </div>
-
     <ConfirmDialog
       v-model:is-dialog-visible="isConfirmDialogOpen"
       confirmation-question="¿Confirmar compra?"

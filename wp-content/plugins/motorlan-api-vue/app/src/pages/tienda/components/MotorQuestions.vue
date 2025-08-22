@@ -8,7 +8,9 @@ const props = defineProps<{ motorId: number }>()
 const newQuestion = ref('')
 const questions = ref<any[]>([])
 const loading = ref(false)
+
 const snackbar = ref({ show: false, text: '', color: 'success' as 'success' | 'error' })
+
 
 const fetchQuestions = async () => {
   try {
@@ -82,7 +84,6 @@ onMounted(fetchQuestions)
     <div v-else class="text-body-2">
       No hay preguntas todavía.
     </div>
-
     <VSnackbar
       v-model="snackbar.show"
       :color="snackbar.color"

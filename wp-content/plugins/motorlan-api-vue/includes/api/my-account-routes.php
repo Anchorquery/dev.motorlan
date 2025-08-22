@@ -333,14 +333,17 @@ function motorlan_create_purchase_callback( WP_REST_Request $request ) {
     if ( ! $motor_id ) {
         return new WP_Error( 'no_motor', 'Motor ID is required', array( 'status' => 400 ) );
     }
-
-
     $uuid = wp_generate_uuid4();
+
+    $motor_title = get_the_title( $motor_id );
+    $buyer       = get_userdata( $user_id );
+    $buyer_name  = $buyer ? $buyer->display_name : '';
+
     $purchase_id = wp_insert_post( array(
         'post_type'   => 'compra',
         'post_status' => 'publish',
-        'post_title'  => 'Compra ' . $motor_id,
-        'post_name'   => $uuid,
+        'post_name'  => 'Compra ' . $motor_title,
+        'post_title'  => $motor_title . ' - ' . $buyer_name,
     ) );
 
     if ( is_wp_error( $purchase_id ) ) {
@@ -364,13 +367,19 @@ function motorlan_create_purchase_callback( WP_REST_Request $request ) {
  */
 function motorlan_get_purchase_callback( WP_REST_Request $request ) {
     $uuid = sanitize_text_field( $request['uuid'] );
-    $post = get_page_by_path( $uuid, OBJECT, 'compra' );
+    $purchases = get_posts( array(
+        'post_type'      => 'compra',
+        'meta_key'       => 'uuid',
+        'meta_value'     => $uuid,
+        'posts_per_page' => 1,
+    ) );
 
-    if ( ! $post ) {
+    if ( empty( $purchases ) ) {
         return new WP_Error( 'not_found', 'Purchase not found', array( 'status' => 404 ) );
     }
 
-    $purchase_id = $post->ID;
+    $purchase_id = $purchases[0]->ID;
+
 
     $motor_post = get_field( 'motor', $purchase_id );
     $motor_data = null;
@@ -399,12 +408,18 @@ function motorlan_add_purchase_opinion_callback( WP_REST_Request $request ) {
     $valoracion = absint( $request->get_param( 'valoracion' ) );
     $comentario = sanitize_textarea_field( $request->get_param( 'comentario' ) );
 
-    $purchase = get_page_by_path( $uuid, OBJECT, 'compra' );
-    if ( ! $purchase ) {
+    $purchases = get_posts( array(
+        'post_type'      => 'compra',
+        'meta_key'       => 'uuid',
+        'meta_value'     => $uuid,
+        'posts_per_page' => 1,
+    ) );
+
+    if ( empty( $purchases ) ) {
         return new WP_Error( 'not_found', 'Purchase not found', array( 'status' => 404 ) );
     }
 
-    $purchase_id = $purchase->ID;
+    $purchase_id = $purchases[0]->ID;
     $motor_post  = get_field( 'motor', $purchase_id );
     if ( ! $motor_post ) {
         return new WP_Error( 'no_motor', 'Purchase without motor', array( 'status' => 400 ) );
