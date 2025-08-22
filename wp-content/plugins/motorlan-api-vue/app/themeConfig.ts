@@ -25,6 +25,11 @@ export const { themeConfig, layoutConfig } = defineThemeConfig({
           i18nLang: 'es',
           isRTL: false,
         },
+        {
+          label: 'Euskera',
+          i18nLang: 'eu',
+          isRTL: false,
+        },
       ],
     },
     theme: 'system',
