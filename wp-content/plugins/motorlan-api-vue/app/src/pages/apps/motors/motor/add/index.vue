@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { useToast } from '@/composables/useToast'
 import { useApi } from '@/composables/useApi'
 import { useI18n } from 'vue-i18n'
@@ -19,7 +19,7 @@ const currentStep = ref(1)
 const newPostId = ref<number | null>(null)
 
 // Form data
-const postType = ref('motor')
+const postType = ref()
 
 const postData = ref({
   title: '',
