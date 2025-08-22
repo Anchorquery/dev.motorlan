@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import ConfirmDialog from '@/components/dialogs/ConfirmDialog.vue'
 import type { Motor } from '@/interfaces/motor'
 
 const props = defineProps<{ motor: Motor }>()
@@ -34,6 +35,8 @@ const toggleFavorite = () => {
   isFavorite.value = !isFavorite.value
 }
 
+const shareSnackbar = ref(false)
+
 const share = () => {
   const url = window.location.href
   if (navigator.share) {
@@ -44,21 +47,16 @@ const share = () => {
   }
   else {
     navigator.clipboard.writeText(url)
-    alert('Enlace copiado al portapapeles')
+    shareSnackbar.value = true
   }
 }
 
 const router = useRouter()
 
-const form = ref({
-  message: '',
-  name: '',
-  email: '',
-  phone: '',
-})
+const isConfirmDialogOpen = ref(false)
 
-const buyMotor = async () => {
-  if (!confirm('¿Confirmar compra?'))
+const handlePurchase = async (confirmed: boolean) => {
+  if (!confirmed)
     return
 
   try {
@@ -104,7 +102,7 @@ const buyMotor = async () => {
         color="error"
 
         class="px-6 flex-grow-1 action-btn"
-        @click="buyMotor"
+        @click="isConfirmDialogOpen = true"
 
       >
         Comprar
@@ -119,34 +117,28 @@ const buyMotor = async () => {
     </div>
     <div class="contact-card pa-4">
       <h3 class="mb-4">
-        Contactar ahora
+        Descripción
       </h3>
-      <VForm class="d-flex flex-column gap-4">
-        <VTextarea
-          v-model="form.message"
-          label="Mensaje"
-          rows="3"
-        />
-        <VTextField
-          v-model="form.name"
-          label="Nombre"
-        />
-        <VTextField
-          v-model="form.email"
-          label="Email"
-        />
-        <VTextField
-          v-model="form.phone"
-          label="Teléfono"
-        />
-        <VBtn
-          color="error"
-          class="rounded-pill align-self-start"
-        >
-          Enviar
-        </VBtn>
-      </VForm>
+      <p v-html="props.motor.acf.descripcion" />
     </div>
+
+    <ConfirmDialog
+      v-model:is-dialog-visible="isConfirmDialogOpen"
+      confirmation-question="¿Confirmar compra?"
+      confirm-title="Compra realizada"
+      confirm-msg="Redirigiendo..."
+      cancel-title="Cancelado"
+      cancel-msg="Operación cancelada"
+      @confirm="handlePurchase"
+    />
+
+    <VSnackbar
+      v-model="shareSnackbar"
+      color="success"
+      location="top right"
+    >
+      Enlace copiado al portapapeles
+    </VSnackbar>
   </div>
 </template>
 
