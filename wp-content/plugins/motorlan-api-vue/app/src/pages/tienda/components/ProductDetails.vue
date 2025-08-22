@@ -49,8 +49,6 @@ const share = () => {
 }
 
 const router = useRouter()
-
-
 const buyMotor = async () => {
   if (!confirm('¿Confirmar compra?'))
     return
@@ -97,9 +95,9 @@ const buyMotor = async () => {
       <VBtn
         color="error"
 
+
         class="px-6 flex-grow-1 action-btn"
         @click="buyMotor"
-
       >
         Comprar
       </VBtn>
