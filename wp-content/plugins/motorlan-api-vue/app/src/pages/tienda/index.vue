@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
-import { useApi } from '@/composables/useApi'
-import { createUrl } from '@/@core/composable/createUrl'
-import type { Motor } from '@/interfaces/motor'
+import { useI18n } from 'vue-i18n'
 import TiendaFilters from './components/TiendaFilters.vue'
 import SearchBar from './components/SearchBar.vue'
 import MotorItems from './components/MotorItems.vue'
 import PaginationControls from './components/PaginationControls.vue'
-import { useI18n } from 'vue-i18n'
+import { useApi } from '@/composables/useApi'
+import { createUrl } from '@/@core/composable/createUrl'
+import type { Motor } from '@/interfaces/motor'
 
 const { t } = useI18n()
 
@@ -18,16 +18,16 @@ interface Term {
 }
 
 // -- State Management --
-const selectedBrand = ref<number | null>(null);
-const selectedState = ref<string | null>(null);
-const typeModel = ref('');
-const productTypes = ref<string[]>([]);
-const selectedTechnology = ref<string | null>(null);
-const selectedPar = ref<string | null>(null);
-const selectedPotencia = ref<string | null>(null);
-const selectedVelocidad = ref<string | null>(null);
-const searchTerm = ref('');
-const order = ref<string | null>(t('tienda.order_options.recents'));
+const selectedBrand = ref<number | null>(null)
+const selectedState = ref<string | null>(null)
+const typeModel = ref('')
+const productTypes = ref<string[]>([])
+const selectedTechnology = ref<string | null>(null)
+const selectedPar = ref<string | null>(null)
+const selectedPotencia = ref<string | null>(null)
+const selectedVelocidad = ref<string | null>(null)
+const searchTerm = ref('')
+const order = ref<string | null>(t('tienda.order_options.recents'))
 
 const parOptions = computed(() => [t('tienda.par_options.range1'), t('tienda.par_options.range2')])
 const potenciaOptions = computed(() => [t('tienda.potencia_options.range1'), t('tienda.potencia_options.range2')])
@@ -35,12 +35,12 @@ const velocidadOptions = computed(() => [t('tienda.velocidad_options.range1'), t
 const technologyOptions = computed(() => [t('tienda.technology_options.dc'), t('tienda.technology_options.ac')])
 const orderOptions = computed(() => [t('tienda.order_options.recents'), t('tienda.order_options.price_asc'), t('tienda.order_options.price_desc')])
 
-const itemsPerPage = ref(9);
-const page = ref(1);
+const itemsPerPage = ref(9)
+const page = ref(1)
 
 // -- Data Fetching --
-const { data: brandsData } = await useApi<Term[]>(createUrl('/wp-json/motorlan/v1/marcas'));
-const marcas = computed(() => brandsData.value || []);
+const { data: brandsData } = await useApi<Term[]>(createUrl('/wp-json/motorlan/v1/marcas'))
+const marcas = computed(() => brandsData.value || [])
 
 const motorsApiUrl = computed(() => {
   const baseUrl = '/wp-json/motorlan/v1/motors'
@@ -99,14 +99,14 @@ const search = () => {
 <template>
   <div class="tienda d-flex">
     <TiendaFilters
-      v-model:typeModel="typeModel"
-      v-model:productTypes="productTypes"
-      v-model:selectedTechnology="selectedTechnology"
-      v-model:selectedPar="selectedPar"
-      v-model:selectedPotencia="selectedPotencia"
-      v-model:selectedVelocidad="selectedVelocidad"
-      v-model:selectedBrand="selectedBrand"
-      v-model:selectedState="selectedState"
+      v-model:type-model="typeModel"
+      v-model:product-types="productTypes"
+      v-model:selected-technology="selectedTechnology"
+      v-model:selected-par="selectedPar"
+      v-model:selected-potencia="selectedPotencia"
+      v-model:selected-velocidad="selectedVelocidad"
+      v-model:selected-brand="selectedBrand"
+      v-model:selected-state="selectedState"
       :marcas="marcas"
       :technology-options="technologyOptions"
       :par-options="parOptions"
@@ -116,16 +116,22 @@ const search = () => {
 
     <section class="flex-grow-1 ps-6">
       <SearchBar
-        v-model:searchTerm="searchTerm"
+        v-model:search-term="searchTerm"
         v-model:order="order"
         :loading="loading"
         :order-options="orderOptions"
         @search="search"
       />
 
-      <MotorItems :motors="motors" :loading="loading" />
+      <MotorItems
+        :motors="motors"
+        :loading="loading"
+      />
 
-      <PaginationControls v-model:page="page" :total-pages="totalPages" />
+      <PaginationControls
+        v-model:page="page"
+        :total-pages="totalPages"
+      />
     </section>
   </div>
 </template>

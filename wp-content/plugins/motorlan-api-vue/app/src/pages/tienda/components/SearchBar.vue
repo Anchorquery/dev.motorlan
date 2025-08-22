@@ -1,10 +1,9 @@
 <script setup lang="ts">
 defineProps<{ loading: boolean; orderOptions: string[] }>()
 
+const emit = defineEmits(['search'])
 const searchTerm = defineModel<string>('searchTerm')
 const order = defineModel<string | null>('order')
-const emit = defineEmits(['search'])
-
 const onSearch = () => emit('search')
 </script>
 
@@ -25,14 +24,16 @@ const onSearch = () => emit('search')
       :loading="loading"
       @click="onSearch"
     >
-      <VIcon color="white">mdi-magnify</VIcon>
+      <VIcon color="white">
+        mdi-magnify
+      </VIcon>
     </VBtn>
     <AppSelect
+
       v-model="order"
       :items="orderOptions"
-      label="Ordenar"
-      clearable
-      style="max-width:220px"
+      label=""
+      max-width="250"
     />
   </div>
 </template>
@@ -50,4 +51,3 @@ const onSearch = () => emit('search')
   width: 56px;
 }
 </style>
-
