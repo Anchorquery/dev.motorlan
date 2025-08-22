@@ -1,13 +1,36 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import type { Motor } from '@/interfaces/motor'
 
 const props = defineProps<{ motor: Motor }>()
+const FAVORITES_KEY = 'motor-favorites'
 
 const isFavorite = ref(false)
 
+onMounted(() => {
+  try {
+    const saved = JSON.parse(localStorage.getItem(FAVORITES_KEY) || '[]') as number[]
+
+    isFavorite.value = saved.includes(props.motor.id)
+  }
+  catch {
+    // ignore
+  }
+})
+
 const toggleFavorite = () => {
+  try {
+    const saved = JSON.parse(localStorage.getItem(FAVORITES_KEY) || '[]') as number[]
+    if (isFavorite.value)
+      localStorage.setItem(FAVORITES_KEY, JSON.stringify(saved.filter(id => id !== props.motor.id)))
+    else
+      localStorage.setItem(FAVORITES_KEY, JSON.stringify([...saved, props.motor.id]))
+  }
+  catch {
+    // ignore
+  }
+
   isFavorite.value = !isFavorite.value
 }
 
@@ -18,13 +41,12 @@ const share = () => {
       title: props.motor.title,
       url,
     })
-  } else {
+  }
+  else {
     navigator.clipboard.writeText(url)
     alert('Enlace copiado al portapapeles')
   }
 }
-
-const router = useRouter()
 
 const router = useRouter()
 
@@ -54,14 +76,13 @@ const buyMotor = async () => {
 
 <template>
   <div class="product-details flex-grow-1">
-
     <div class="d-flex align-center gap-6 mb-4">
       <div
         class="d-flex align-center gap-2 pointer"
         @click="toggleFavorite"
       >
         <VIcon
-          :icon="isFavorite ? 'mdi-heart' : 'mdi-heart-outline'"
+          :icon="isFavorite ? 'tabler-heart-filled' : 'tabler-heart'"
           color="error"
         />
         <span class="text-body-2 font-weight-medium">Favorito</span>
@@ -71,7 +92,7 @@ const buyMotor = async () => {
         @click="share"
       >
         <VIcon
-          icon="mdi-share-variant"
+          icon="tabler-share"
           color="error"
         />
         <span class="text-body-2 font-weight-medium">Compartir</span>
@@ -81,8 +102,10 @@ const buyMotor = async () => {
     <div class="d-flex flex-wrap gap-4 mb-6">
       <VBtn
         color="error"
-        class="rounded-pill px-6 flex-grow-1"
+
+        class="px-6 flex-grow-1 action-btn"
         @click="buyMotor"
+
       >
         Comprar
       </VBtn>
