@@ -130,7 +130,6 @@ const handlePurchase = async (confirmed: boolean) => {
         Hacer una oferta
       </VBtn>
     </div>
-
     <VCard class="mb-6 detail-card">
       <VCardTitle class="px-4 pt-4 pb-2">Detalles del motor</VCardTitle>
       <VCardText class="pt-0">
@@ -182,6 +181,7 @@ const handlePurchase = async (confirmed: boolean) => {
       </VCardText>
     </VCard>
 
+
     <div class="contact-card pa-4">
       <h3 class="mb-4">
         Descripción
@@ -230,6 +230,7 @@ const handlePurchase = async (confirmed: boolean) => {
 }
 
 .detail-item {
+
   margin-bottom: 0.5rem;
 }
 </style>
