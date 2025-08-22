@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import ConfirmDialog from '@/components/dialogs/ConfirmDialog.vue'
 import type { Motor } from '@/interfaces/motor'
@@ -8,12 +8,29 @@ const props = defineProps<{ motor: Motor }>()
 const FAVORITES_KEY = 'motor-favorites'
 
 const isFavorite = ref(false)
+const sellerName = ref('')
+const sellerRating = ref('N/A')
+const location = computed(() => {
+  const { pais, provincia } = props.motor.acf
+  if (pais && provincia)
+    return `${pais} / ${provincia}`
+  return pais || provincia || ''
+})
 
-onMounted(() => {
+onMounted(async () => {
   try {
     const saved = JSON.parse(localStorage.getItem(FAVORITES_KEY) || '[]') as number[]
 
     isFavorite.value = saved.includes(props.motor.id)
+  }
+  catch {
+    // ignore
+  }
+
+  try {
+    const user = await $api(`/wp-json/wp/v2/users/${props.motor.author_id}`)
+    sellerName.value = user.name
+    sellerRating.value = user.acf?.calificacion ?? 'N/A'
   }
   catch {
     // ignore
@@ -112,7 +129,24 @@ const handlePurchase = async (confirmed: boolean) => {
         Hacer una oferta
       </VBtn>
     </div>
-    
+
+    <div class="detail-card pa-4 mb-6">
+      <h3 class="mb-4">
+        Detalles del motor
+      </h3>
+      <ul class="motor-details">
+        <li><strong>Nombre:</strong> {{ props.motor.title }}</li>
+        <li><strong>Precio:</strong> {{ props.motor.acf.precio_de_venta ? `${props.motor.acf.precio_de_venta} €` : 'Consultar precio' }}</li>
+        <li><strong>Precio negociable:</strong> {{ props.motor.acf.precio_negociable || 'No' }}</li>
+        <li><strong>Categoría:</strong> {{ props.motor.categories.map(c => c.name).join(', ') }}</li>
+        <li><strong>Marca:</strong> {{ props.motor.acf.marca?.name || props.motor.acf.marca }}</li>
+        <li><strong>País / Provincia:</strong> {{ location }}</li>
+        <li><strong>Vendedor:</strong> {{ sellerName || 'N/A' }}</li>
+        <li><strong>Calificación:</strong> {{ sellerRating }}</li>
+        <li><strong>Garantía Motorlan:</strong> {{ props.motor.acf.garantia_motorlan ? 'Sí' : 'No' }}</li>
+      </ul>
+    </div>
+
     <div class="contact-card pa-4">
       <h3 class="mb-4">
         Descripción
@@ -149,5 +183,20 @@ const handlePurchase = async (confirmed: boolean) => {
 .contact-card {
   border: 1px solid #E6E6E6;
   border-radius: 8px;
+}
+
+.detail-card {
+  border: 1px solid #E6E6E6;
+  border-radius: 8px;
+}
+
+.motor-details {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.motor-details li {
+  margin-bottom: 0.5rem;
 }
 </style>
