@@ -51,6 +51,33 @@ function motorlan_register_my_account_rest_routes() {
             return is_user_logged_in();
         }
     ) );
+
+    // Route for creating a new purchase
+    register_rest_route( $namespace, '/purchases', array(
+        'methods'  => WP_REST_Server::CREATABLE,
+        'callback' => 'motorlan_create_purchase_callback',
+        'permission_callback' => function () {
+            return is_user_logged_in();
+        }
+    ) );
+
+    // Route for getting purchase details
+    register_rest_route( $namespace, '/purchases/(?P<uuid>[\\w-]+)', array(
+        'methods'  => WP_REST_Server::READABLE,
+        'callback' => 'motorlan_get_purchase_callback',
+        'permission_callback' => function () {
+            return is_user_logged_in();
+        }
+    ) );
+
+    // Route for adding an opinion to a purchase
+    register_rest_route( $namespace, '/purchases/(?P<uuid>[\\w-]+)/opinion', array(
+        'methods'  => WP_REST_Server::CREATABLE,
+        'callback' => 'motorlan_add_purchase_opinion_callback',
+        'permission_callback' => function () {
+            return is_user_logged_in();
+        }
+    ) );
 }
 add_action( 'rest_api_init', 'motorlan_register_my_account_rest_routes' );
 
@@ -70,7 +97,7 @@ function motorlan_get_my_purchases_callback( $request ) {
         'paged'          => $page,
         'meta_query' => array(
             array(
-                'key'     => 'usuario',
+                'key'     => 'comprador',
                 'value'   => $user_id,
                 'compare' => '=',
             ),
@@ -92,10 +119,13 @@ function motorlan_get_my_purchases_callback( $request ) {
             }
 
             $data[] = array(
-                'id'           => $post_id,
+                'uuid'         => get_field('uuid', $post_id),
                 'title'        => get_the_title(),
                 'fecha_compra' => get_field('fecha_compra', $post_id),
                 'motor'        => $motor_data,
+                'vendedor'     => get_field('vendedor', $post_id),
+                'comprador'    => get_field('comprador', $post_id),
+                'estado'       => get_field('estado', $post_id),
             );
         }
         wp_reset_postdata();
@@ -291,4 +321,108 @@ function motorlan_get_my_favorites_callback( $request ) {
     );
 
     return new WP_REST_Response( $response_data, 200 );
+}
+
+/**
+ * Create a purchase for the current user.
+ */
+function motorlan_create_purchase_callback( WP_REST_Request $request ) {
+    $user_id  = get_current_user_id();
+    $motor_id = absint( $request->get_param( 'motor_id' ) );
+
+    if ( ! $motor_id ) {
+        return new WP_Error( 'no_motor', 'Motor ID is required', array( 'status' => 400 ) );
+    }
+
+    $uuid = wp_generate_uuid4();
+    $purchase_id = wp_insert_post( array(
+        'post_type'   => 'compra',
+        'post_status' => 'publish',
+        'post_title'  => 'Compra ' . $motor_id,
+        'post_name'   => $uuid,
+    ) );
+
+    if ( is_wp_error( $purchase_id ) ) {
+        return $purchase_id;
+    }
+
+    $seller_id = get_post_field( 'post_author', $motor_id );
+
+    update_field( 'uuid', $uuid, $purchase_id );
+    update_field( 'motor', $motor_id, $purchase_id );
+    update_field( 'vendedor', $seller_id, $purchase_id );
+    update_field( 'comprador', $user_id, $purchase_id );
+    update_field( 'estado', 'pendiente', $purchase_id );
+    update_field( 'fecha_compra', current_time( 'd/m/Y' ), $purchase_id );
+
+    return new WP_REST_Response( array( 'uuid' => $uuid ), 201 );
+}
+
+/**
+ * Get details for a single purchase.
+ */
+function motorlan_get_purchase_callback( WP_REST_Request $request ) {
+    $uuid = sanitize_text_field( $request['uuid'] );
+    $post = get_page_by_path( $uuid, OBJECT, 'compra' );
+
+    if ( ! $post ) {
+        return new WP_Error( 'not_found', 'Purchase not found', array( 'status' => 404 ) );
+    }
+
+    $purchase_id = $post->ID;
+
+    $motor_post = get_field( 'motor', $purchase_id );
+    $motor_data = null;
+    if ( $motor_post ) {
+        $motor_data = motorlan_get_motor_data( $motor_post->ID );
+    }
+
+    $data = array(
+        'uuid'         => $uuid,
+        'title'        => get_the_title( $purchase_id ),
+        'fecha_compra' => get_field( 'fecha_compra', $purchase_id ),
+        'motor'        => $motor_data,
+        'vendedor'     => get_field( 'vendedor', $purchase_id ),
+        'comprador'    => get_field( 'comprador', $purchase_id ),
+        'estado'       => get_field( 'estado', $purchase_id ),
+    );
+
+    return new WP_REST_Response( array( 'data' => $data ), 200 );
+}
+
+/**
+ * Add an opinion for a purchase.
+ */
+function motorlan_add_purchase_opinion_callback( WP_REST_Request $request ) {
+    $uuid       = sanitize_text_field( $request['uuid'] );
+    $valoracion = absint( $request->get_param( 'valoracion' ) );
+    $comentario = sanitize_textarea_field( $request->get_param( 'comentario' ) );
+
+    $purchase = get_page_by_path( $uuid, OBJECT, 'compra' );
+    if ( ! $purchase ) {
+        return new WP_Error( 'not_found', 'Purchase not found', array( 'status' => 404 ) );
+    }
+
+    $purchase_id = $purchase->ID;
+    $motor_post  = get_field( 'motor', $purchase_id );
+    if ( ! $motor_post ) {
+        return new WP_Error( 'no_motor', 'Purchase without motor', array( 'status' => 400 ) );
+    }
+
+    $opinion_id = wp_insert_post( array(
+        'post_type'   => 'opinion',
+        'post_status' => 'publish',
+        'post_title'  => 'Opinion compra ' . $purchase_id,
+    ) );
+
+    if ( is_wp_error( $opinion_id ) ) {
+        return $opinion_id;
+    }
+
+    update_field( 'usuario', get_current_user_id(), $opinion_id );
+    update_field( 'motor', $motor_post->ID, $opinion_id );
+    update_field( 'valoracion', $valoracion, $opinion_id );
+    update_field( 'comentario', $comentario, $opinion_id );
+
+    return new WP_REST_Response( array( 'id' => $opinion_id ), 201 );
 }
