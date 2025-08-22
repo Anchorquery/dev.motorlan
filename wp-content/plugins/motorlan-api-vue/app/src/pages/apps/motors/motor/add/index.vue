@@ -1,25 +1,20 @@
 <script setup lang="ts">
 import { onMounted, ref, computed } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+import { useRouter } from 'vue-router'
 import { useToast } from '@/composables/useToast'
 import { useApi } from '@/composables/useApi'
 import { useI18n } from 'vue-i18n'
-import ar from '../i18n/ar.json'
-import en from '../i18n/en.json'
-import es from '../i18n/es.json'
-import eu from '../i18n/eu.json'
-import fr from '../i18n/fr.json'
 
 const { showToast } = useToast()
 const router = useRouter()
-const { t, mergeLocaleMessage } = useI18n()
+const { t } = useI18n()
 
 // Stepper state
 const currentStep = ref(1)
 const newPostId = ref<number | null>(null)
 
 // Form data
-const postType = ref()
+const postType = ref('motor')
 
 const postData = ref({
   title: '',
@@ -107,11 +102,6 @@ const apiEndpoint = computed(() => {
 
 // Fetch initial data for selects
 onMounted(async () => {
-  mergeLocaleMessage('ar', ar)
-  mergeLocaleMessage('en', en)
-  mergeLocaleMessage('es', es)
-  mergeLocaleMessage('eu', eu)
-  mergeLocaleMessage('fr', fr)
   try {
     const [
       marcasResponse,
