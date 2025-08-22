@@ -9,7 +9,7 @@ const FAVORITES_KEY = 'motor-favorites'
 
 const isFavorite = ref(false)
 const sellerName = ref('')
-const sellerRating = ref('N/A')
+const sellerRating = ref<number | null>(null)
 const location = computed(() => {
   const { pais, provincia } = props.motor.acf
   if (pais && provincia)
@@ -30,7 +30,8 @@ onMounted(async () => {
   try {
     const user = await $api(`/wp-json/wp/v2/users/${props.motor.author_id}`)
     sellerName.value = user.name
-    sellerRating.value = user.acf?.calificacion ?? 'N/A'
+    const rating = Number(user.acf?.calificacion)
+    sellerRating.value = Number.isFinite(rating) ? rating : null
   }
   catch {
     // ignore
@@ -129,23 +130,57 @@ const handlePurchase = async (confirmed: boolean) => {
         Hacer una oferta
       </VBtn>
     </div>
+    <VCard class="mb-6 detail-card">
+      <VCardTitle class="px-4 pt-4 pb-2">Detalles del motor</VCardTitle>
+      <VCardText class="pt-0">
+        <VRow class="motor-details" dense>
+          <VCol cols="12" sm="6">
+            <div class="detail-item"><strong>Nombre:</strong> {{ props.motor.title }}</div>
+          </VCol>
+          <VCol cols="12" sm="6">
+            <div class="detail-item"><strong>Precio:</strong> {{ props.motor.acf.precio_de_venta ? `${props.motor.acf.precio_de_venta} €` : 'Consultar precio' }}</div>
+          </VCol>
+          <VCol cols="12" sm="6">
+            <div class="detail-item"><strong>Precio negociable:</strong> {{ props.motor.acf.precio_negociable || 'No' }}</div>
+          </VCol>
+          <VCol cols="12" sm="6">
+            <div class="detail-item"><strong>Categoría:</strong> {{ props.motor.categories.map(c => c.name).join(', ') }}</div>
+          </VCol>
+          <VCol cols="12" sm="6">
+            <div class="detail-item"><strong>Marca:</strong> {{ props.motor.acf.marca?.name || props.motor.acf.marca }}</div>
+          </VCol>
+          <VCol cols="12" sm="6">
+            <div class="detail-item"><strong>País / Provincia:</strong> {{ location }}</div>
+          </VCol>
+          <VCol cols="12" sm="6">
+            <div class="detail-item d-flex align-center">
+              <strong>Vendedor:</strong>
+              <span class="ml-1">{{ sellerName || 'N/A' }}</span>
+              <VRating
+                v-if="sellerRating !== null"
+                class="ml-2"
+                :model-value="sellerRating"
+                readonly
+                size="18"
+                color="warning"
+                density="compact"
+              />
+            </div>
+          </VCol>
+          <VCol cols="12" sm="6">
+            <div class="detail-item d-flex align-center">
+              <strong>Garantía Motorlan:</strong>
+              <template v-if="props.motor.acf.garantia_motorlan">
+                <VIcon icon="tabler-badge" color="success" class="mx-1" />
+                <span>Sí</span>
+              </template>
+              <span v-else>No</span>
+            </div>
+          </VCol>
+        </VRow>
+      </VCardText>
+    </VCard>
 
-    <div class="detail-card pa-4 mb-6">
-      <h3 class="mb-4">
-        Detalles del motor
-      </h3>
-      <ul class="motor-details">
-        <li><strong>Nombre:</strong> {{ props.motor.title }}</li>
-        <li><strong>Precio:</strong> {{ props.motor.acf.precio_de_venta ? `${props.motor.acf.precio_de_venta} €` : 'Consultar precio' }}</li>
-        <li><strong>Precio negociable:</strong> {{ props.motor.acf.precio_negociable || 'No' }}</li>
-        <li><strong>Categoría:</strong> {{ props.motor.categories.map(c => c.name).join(', ') }}</li>
-        <li><strong>Marca:</strong> {{ props.motor.acf.marca?.name || props.motor.acf.marca }}</li>
-        <li><strong>País / Provincia:</strong> {{ location }}</li>
-        <li><strong>Vendedor:</strong> {{ sellerName || 'N/A' }}</li>
-        <li><strong>Calificación:</strong> {{ sellerRating }}</li>
-        <li><strong>Garantía Motorlan:</strong> {{ props.motor.acf.garantia_motorlan ? 'Sí' : 'No' }}</li>
-      </ul>
-    </div>
 
     <div class="contact-card pa-4">
       <h3 class="mb-4">
@@ -191,12 +226,11 @@ const handlePurchase = async (confirmed: boolean) => {
 }
 
 .motor-details {
-  list-style: none;
-  padding: 0;
   margin: 0;
 }
 
-.motor-details li {
+.detail-item {
+
   margin-bottom: 0.5rem;
 }
 </style>
