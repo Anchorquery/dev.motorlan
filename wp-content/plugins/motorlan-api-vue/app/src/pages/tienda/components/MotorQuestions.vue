@@ -9,6 +9,9 @@ const newQuestion = ref('')
 const questions = ref<any[]>([])
 const loading = ref(false)
 
+const snackbar = ref({ show: false, text: '', color: 'success' as 'success' | 'error' })
+
+
 const fetchQuestions = async () => {
   try {
     const { data } = await useApi<any>(
@@ -30,10 +33,12 @@ const submitQuestion = async () => {
       createUrl(`/wp-json/motorlan/v1/motors/${props.motorId}/questions`),
     ).post({ body: { pregunta: newQuestion.value } })
     newQuestion.value = ''
+    snackbar.value = { show: true, text: 'Pregunta enviada', color: 'success' }
     await fetchQuestions()
   }
   catch (error) {
     console.error(error)
+    snackbar.value = { show: true, text: 'Error al enviar la pregunta', color: 'error' }
   }
   finally {
     loading.value = false
@@ -79,6 +84,13 @@ onMounted(fetchQuestions)
     <div v-else class="text-body-2">
       No hay preguntas todavía.
     </div>
+    <VSnackbar
+      v-model="snackbar.show"
+      :color="snackbar.color"
+      location="top"
+    >
+      {{ snackbar.text }}
+    </VSnackbar>
   </div>
 </template>
 
