@@ -26,7 +26,6 @@ declare module 'vue-router/auto-routes' {
     'apps-invoice-list': RouteRecordInfo<'apps-invoice-list', '/apps/invoice/list', Record<never, never>, Record<never, never>>,
     'apps-invoice-preview-id': RouteRecordInfo<'apps-invoice-preview-id', '/apps/invoice/preview/:id', { id: ParamValue<true> }, { id: ParamValue<false> }>,
     'apps-motors-motor-add': RouteRecordInfo<'apps-motors-motor-add', '/apps/motors/motor/add', Record<never, never>, Record<never, never>>,
-    'apps-motors-motor-add-select-type': RouteRecordInfo<'apps-motors-motor-add-select-type', '/apps/motors/motor/add/select-type', Record<never, never>, Record<never, never>>,
     'apps-motors-motor-edit-uuid': RouteRecordInfo<'apps-motors-motor-edit-uuid', '/apps/motors/motor/edit/:uuid', { uuid: ParamValue<true> }, { uuid: ParamValue<false> }>,
     'apps-motors-motor-list': RouteRecordInfo<'apps-motors-motor-list', '/apps/motors/motor/list', Record<never, never>, Record<never, never>>,
     'apps-my-account-parent': RouteRecordInfo<'apps-my-account-parent', '/apps/my-account', Record<never, never>, Record<never, never>>,
