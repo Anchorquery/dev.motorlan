@@ -16,7 +16,6 @@ const location = computed(() => {
     return `${pais} / ${provincia}`
   return pais || provincia || ''
 })
-
 const price = computed(() =>
   props.motor.acf.precio_de_venta
     ? `${props.motor.acf.precio_de_venta} €`
@@ -32,7 +31,6 @@ const negotiableLabel = computed(() => {
 
 const categories = computed(() => props.motor.categories.map(c => c.name).join(', '))
 const brand = computed(() => props.motor.acf.marca?.name || props.motor.acf.marca)
-
 onMounted(async () => {
   try {
     const saved = JSON.parse(localStorage.getItem(FAVORITES_KEY) || '[]') as number[]
