@@ -50,8 +50,6 @@ const share = () => {
 
 const router = useRouter()
 
-const router = useRouter()
-
 const form = ref({
   message: '',
   name: '',
