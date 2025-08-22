@@ -183,6 +183,13 @@ acf_add_local_field_group(array(
 			'prepend' => '€',
 		),
 		array(
+			'key' => 'field_stock',
+			'label' => 'Stock',
+			'name' => 'stock',
+			'type' => 'number',
+			'default_value' => 1,
+		),
+		array(
 			'key' => 'field_6643d3c3b0356',
 			'label' => 'Precio negociable',
 			'name' => 'precio_negociable',
@@ -199,6 +206,32 @@ acf_add_local_field_group(array(
 			'name' => 'documentacion_adjunta',
 			'type' => 'file',
 			'return_format' => 'array',
+		),
+		array(
+			'key' => 'field_documentacion_adicional',
+			'label' => 'Documentación Adicional',
+			'name' => 'documentacion_adicional',
+			'type' => 'repeater',
+			'instructions' => 'Añada hasta 5 documentos adicionales.',
+			'layout' => 'table',
+			'min' => 0,
+			'max' => 5,
+			'button_label' => 'Añadir Documento',
+			'sub_fields' => array(
+				array(
+					'key' => 'field_documento_archivo',
+					'label' => 'Archivo',
+					'name' => 'archivo',
+					'type' => 'file',
+					'return_format' => 'array',
+				),
+				array(
+					'key' => 'field_documento_nombre',
+					'label' => 'Nombre del Documento',
+					'name' => 'nombre',
+					'type' => 'text',
+				),
+			),
 		),
 		array(
 			'key' => 'field_6643d3c3b0358',

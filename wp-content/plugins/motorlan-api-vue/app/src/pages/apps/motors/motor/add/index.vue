@@ -33,6 +33,7 @@ const motorData = ref({
     documentacion_adjunta: null,
     publicar_acf: 'publish',
     stock: 1,
+    documentacion_adicional: [],
   },
 })
 
@@ -131,6 +132,22 @@ const content = ref(
   `<p>
     Keep your account secure with authentication step.
     </p>`)
+
+const addDocument = () => {
+  if (motorData.value.acf.documentacion_adicional.length < 5) {
+    motorData.value.acf.documentacion_adicional.push({ nombre: '', archivo: null })
+  }
+}
+
+const handleFileUpload = async (event, index) => {
+  const file = event.target.files[0]
+  if (file) {
+    const fileId = await uploadMedia(file)
+    if (fileId) {
+      motorData.value.acf.documentacion_adicional[index].archivo = fileId
+    }
+  }
+}
 </script>
 
 <template>
@@ -433,6 +450,36 @@ const content = ref(
         >
           <VCardText>
             <DropZone @file-added="handleGalleryImageUpload" />
+          </VCardText>
+        </VCard>
+
+        <VCard
+          class="mb-6"
+          title="Documentación Adicional"
+        >
+          <VCardText>
+            <div
+              v-for="(doc, index) in motorData.acf.documentacion_adicional"
+              :key="index"
+              class="d-flex gap-4 mb-4"
+            >
+              <AppTextField
+                v-model="doc.nombre"
+                label="Nombre del Documento"
+                placeholder="Manual de usuario"
+                style="width: 300px;"
+              />
+              <VFileInput
+                label="Subir Archivo"
+                @change="event => handleFileUpload(event, index)"
+              />
+            </div>
+            <VBtn
+              v-if="motorData.acf.documentacion_adicional.length < 5"
+              @click="addDocument"
+            >
+              Añadir Documento
+            </VBtn>
           </VCardText>
         </VCard>
       </VCol>
