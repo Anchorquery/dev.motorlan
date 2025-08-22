@@ -399,8 +399,8 @@ function motorlan_get_motors_callback( $request ) {
 
     // Define the list of fields that can be used for filtering.
     $filterable_fields = [
-        'marca', 'tipo_o_referencia', 'potencia', 'velocidad', 'par_nominal', 'voltaje', 'intensidad',
-        'pais', 'provincia', 'estado_del_articulo', 'posibilidad_de_alquiler', 'tipo_de_alimentacion',
+        'marca', 'tipo_o_referencia', 'potencia', 'velocidad', 'par_nominal', 'intensidad',
+        'pais', 'provincia', 'tipo_de_alimentacion',
         'servomotores', 'regulacion_electronica_drivers', 'precio_de_venta', 'precio_negociable', 'uuid'
     ];
 
