@@ -1,18 +1,19 @@
 <script setup lang="ts">
 import { onMounted, ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { useToast } from '@/composables/useToast'
 import { useApi } from '@/composables/useApi'
 
 const { showToast } = useToast()
 const router = useRouter()
+const route = useRoute()
 
 // Stepper state
 const currentStep = ref(1)
 const newPostId = ref<number | null>(null)
 
 // Form data
-const postType = ref('motor')
+const postType = ref()
 
 const postData = ref({
   title: '',
@@ -87,6 +88,7 @@ const apiEndpoint = computed(() => {
 
 // Fetch initial data for selects
 onMounted(async () => {
+  postType.value = route.query.type || 'motor'
   try {
     const [
       marcasResponse,
@@ -274,22 +276,6 @@ const submitGarantia = async () => {
     <!-- Step 1: Post Details -->
     <VRow v-if="currentStep === 1">
       <VCol>
-        <VCard class="mb-6">
-          <VCardText>
-            <VRow>
-              <VCol
-                cols="12"
-                md="6"
-              >
-                <AppSelect
-                  v-model="postType"
-                  label="Tipo de Publicación"
-                  :items="postTypeOptions"
-                />
-              </VCol>
-            </VRow>
-          </VCardText>
-        </VCard>
         <VCard
           class="mb-6"
           :title="`Detalles del ${postType}`"
