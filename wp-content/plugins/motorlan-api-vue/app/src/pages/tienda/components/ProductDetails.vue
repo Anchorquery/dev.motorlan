@@ -50,6 +50,8 @@ const share = () => {
 
 const router = useRouter()
 
+const router = useRouter()
+
 const form = ref({
   message: '',
   name: '',
@@ -103,9 +105,9 @@ const buyMotor = async () => {
       <VBtn
         color="error"
 
+
         class="px-6 flex-grow-1 action-btn"
         @click="buyMotor"
-
       >
         Comprar
       </VBtn>
