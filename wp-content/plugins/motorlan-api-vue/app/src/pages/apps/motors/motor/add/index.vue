@@ -78,13 +78,12 @@ onMounted(async () => {
 })
 
 const uploadMedia = async (file: File) => {
-  const api = useApi()
   const formData = new FormData()
 
   formData.append('file', file)
 
   try {
-    const response = await api('/wp-json/wp/v2/media', {
+    const response = await useApi('/wp-json/wp/v2/media', {
       method: 'POST',
       body: formData,
       headers: {
@@ -114,7 +113,6 @@ const handleGalleryImageUpload = async (file: File) => {
 }
 
 const publishMotor = async () => {
-  const api = useApi()
   const url = '/wp-json/wp/v2/motors'
   const method = 'POST'
 
@@ -131,7 +129,7 @@ const publishMotor = async () => {
       }
     }
     console.log('Data to send:', JSON.stringify(motorData.value, null, 2))
-    await api(url, {
+    await useApi(url, {
       method,
       body: motorData.value,
     })
