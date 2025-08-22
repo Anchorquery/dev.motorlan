@@ -123,6 +123,7 @@ declare module 'vue-router/auto-routes' {
     'tienda-components-product-image': RouteRecordInfo<'tienda-components-product-image', '/tienda/components/ProductImage', Record<never, never>, Record<never, never>>,
     'tienda-components-related-products': RouteRecordInfo<'tienda-components-related-products', '/tienda/components/RelatedProducts', Record<never, never>, Record<never, never>>,
     'tienda-compra-id': RouteRecordInfo<'tienda-compra-id', '/tienda/compra/:id', { id: ParamValue<true> }, { id: ParamValue<false> }>,
+    'tienda-compra-uuid': RouteRecordInfo<'tienda-compra-uuid', '/tienda/compra/:uuid', { uuid: ParamValue<true> }, { uuid: ParamValue<false> }>,
     'wizard-examples-checkout': RouteRecordInfo<'wizard-examples-checkout', '/wizard-examples/checkout', Record<never, never>, Record<never, never>>,
     'wizard-examples-create-deal': RouteRecordInfo<'wizard-examples-create-deal', '/wizard-examples/create-deal', Record<never, never>, Record<never, never>>,
     'wizard-examples-property-listing': RouteRecordInfo<'wizard-examples-property-listing', '/wizard-examples/property-listing', Record<never, never>, Record<never, never>>,
