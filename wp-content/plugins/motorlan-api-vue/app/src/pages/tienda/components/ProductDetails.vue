@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import ConfirmDialog from '@/components/dialogs/ConfirmDialog.vue'
 import type { Motor } from '@/interfaces/motor'
@@ -8,12 +8,30 @@ const props = defineProps<{ motor: Motor }>()
 const FAVORITES_KEY = 'motor-favorites'
 
 const isFavorite = ref(false)
+const sellerName = ref('')
+const sellerRating = ref<number | null>(null)
+const location = computed(() => {
+  const { pais, provincia } = props.motor.acf
+  if (pais && provincia)
+    return `${pais} / ${provincia}`
+  return pais || provincia || ''
+})
 
-onMounted(() => {
+onMounted(async () => {
   try {
     const saved = JSON.parse(localStorage.getItem(FAVORITES_KEY) || '[]') as number[]
 
     isFavorite.value = saved.includes(props.motor.id)
+  }
+  catch {
+    // ignore
+  }
+
+  try {
+    const user = await $api(`/wp-json/wp/v2/users/${props.motor.author_id}`)
+    sellerName.value = user.name
+    const rating = Number(user.acf?.calificacion)
+    sellerRating.value = Number.isFinite(rating) ? rating : null
   }
   catch {
     // ignore
@@ -112,7 +130,58 @@ const handlePurchase = async (confirmed: boolean) => {
         Hacer una oferta
       </VBtn>
     </div>
-    
+
+    <VCard class="mb-6 detail-card">
+      <VCardTitle class="px-4 pt-4 pb-2">Detalles del motor</VCardTitle>
+      <VCardText class="pt-0">
+        <VRow class="motor-details" dense>
+          <VCol cols="12" sm="6">
+            <div class="detail-item"><strong>Nombre:</strong> {{ props.motor.title }}</div>
+          </VCol>
+          <VCol cols="12" sm="6">
+            <div class="detail-item"><strong>Precio:</strong> {{ props.motor.acf.precio_de_venta ? `${props.motor.acf.precio_de_venta} €` : 'Consultar precio' }}</div>
+          </VCol>
+          <VCol cols="12" sm="6">
+            <div class="detail-item"><strong>Precio negociable:</strong> {{ props.motor.acf.precio_negociable || 'No' }}</div>
+          </VCol>
+          <VCol cols="12" sm="6">
+            <div class="detail-item"><strong>Categoría:</strong> {{ props.motor.categories.map(c => c.name).join(', ') }}</div>
+          </VCol>
+          <VCol cols="12" sm="6">
+            <div class="detail-item"><strong>Marca:</strong> {{ props.motor.acf.marca?.name || props.motor.acf.marca }}</div>
+          </VCol>
+          <VCol cols="12" sm="6">
+            <div class="detail-item"><strong>País / Provincia:</strong> {{ location }}</div>
+          </VCol>
+          <VCol cols="12" sm="6">
+            <div class="detail-item d-flex align-center">
+              <strong>Vendedor:</strong>
+              <span class="ml-1">{{ sellerName || 'N/A' }}</span>
+              <VRating
+                v-if="sellerRating !== null"
+                class="ml-2"
+                :model-value="sellerRating"
+                readonly
+                size="18"
+                color="warning"
+                density="compact"
+              />
+            </div>
+          </VCol>
+          <VCol cols="12" sm="6">
+            <div class="detail-item d-flex align-center">
+              <strong>Garantía Motorlan:</strong>
+              <template v-if="props.motor.acf.garantia_motorlan">
+                <VIcon icon="tabler-badge" color="success" class="mx-1" />
+                <span>Sí</span>
+              </template>
+              <span v-else>No</span>
+            </div>
+          </VCol>
+        </VRow>
+      </VCardText>
+    </VCard>
+
     <div class="contact-card pa-4">
       <h3 class="mb-4">
         Descripción
@@ -149,5 +218,18 @@ const handlePurchase = async (confirmed: boolean) => {
 .contact-card {
   border: 1px solid #E6E6E6;
   border-radius: 8px;
+}
+
+.detail-card {
+  border: 1px solid #E6E6E6;
+  border-radius: 8px;
+}
+
+.motor-details {
+  margin: 0;
+}
+
+.detail-item {
+  margin-bottom: 0.5rem;
 }
 </style>
