@@ -410,7 +410,7 @@ function motorlan_get_motors_callback( $request ) {
             $meta_query[] = array(
                 'key'     => $field_name,
                 'value'   => sanitize_text_field($params[$field_name]),
-                'compare' => '=',
+                'compare' => $field_name === 'tipo_o_referencia' ? 'LIKE' : '=',
             );
         }
     }
@@ -426,10 +426,11 @@ function motorlan_get_motors_callback( $request ) {
 
     // Filter by category (categoria taxonomy)
     if ( !empty($params['category']) ) {
+        $terms = array_map( 'sanitize_text_field', explode( ',', $params['category'] ) );
         $tax_query[] = array(
             'taxonomy' => 'categoria',
             'field'    => 'slug',
-            'terms'    => sanitize_text_field($params['category']),
+            'terms'    => $terms,
         );
     }
 

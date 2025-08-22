@@ -11,12 +11,11 @@ interface Term {
 }
 
 // -- State Management --
-const selectedCategory = ref<string | null>(null);
 const selectedBrand = ref<number | null>(null);
-const selectedCountry = ref<string | null>(null);
 const selectedState = ref<string | null>(null);
 const typeModel = ref('');
 const productTypes = ref<string[]>([]);
+const selectedTechnology = ref<string | null>(null);
 const selectedPar = ref<string | null>(null);
 const selectedPotencia = ref<string | null>(null);
 const selectedVelocidad = ref<string | null>(null);
@@ -26,15 +25,13 @@ const order = ref<string | null>(null);
 const parOptions = ['0-50', '50-100'];
 const potenciaOptions = ['0-1 kW', '1-5 kW'];
 const velocidadOptions = ['500 rpm', '1500 rpm'];
+const technologyOptions = ['Continua (C.C.)', 'Alterna (C.A.)'];
 const orderOptions = ['Recientes', 'Precio asc', 'Precio desc'];
 
 const itemsPerPage = ref(9);
 const page = ref(1);
 
 // -- Data Fetching --
-const { data: categoriesData } = await useApi<Term[]>(createUrl('/wp-json/motorlan/v1/motor-categories'));
-const categories = computed(() => categoriesData.value || []);
-
 const { data: brandsData } = await useApi<Term[]>(createUrl('/wp-json/motorlan/v1/marcas'));
 const marcas = computed(() => brandsData.value || []);
 
@@ -51,13 +48,14 @@ const motorsApiUrl = computed(() => {
     page: page.value,
     status: 'publish',
     s: searchTerm.value,
-    category: selectedCategory.value,
+    category: productTypes.value.join(','),
     marca: selectedBrand.value,
-    pais: selectedCountry.value,
     estado_del_articulo: selectedState.value,
     potencia: selectedPotencia.value,
     velocidad: selectedVelocidad.value,
     par_nominal: selectedPar.value,
+    tipo_de_alimentacion: selectedTechnology.value,
+    tipo_o_referencia: typeModel.value,
     ...(order.value ? sortOptions[order.value] : {}),
   };
 
@@ -102,10 +100,11 @@ const search = () => {
       <VTextField v-model="typeModel" label="Tipo / modelo" variant="outlined" density="comfortable" class="mb-6" />
 
       <p class="text-body-2 mb-2">Tipo de producto</p>
-      <VCheckbox v-model="productTypes" label="Motor" value="Motor" density="compact" hide-details />
-      <VCheckbox v-model="productTypes" label="Regulador" value="Regulador" density="compact" hide-details />
-      <VCheckbox v-model="productTypes" label="Otros repuestos" value="Otros repuestos" density="compact" hide-details class="mb-6" />
+      <VCheckbox v-model="productTypes" label="Motor" value="motor" density="compact" hide-details />
+      <VCheckbox v-model="productTypes" label="Regulador" value="regulador" density="compact" hide-details />
+      <VCheckbox v-model="productTypes" label="Otros repuestos" value="otros-repuestos" density="compact" hide-details class="mb-6" />
 
+      <AppSelect v-model="selectedTechnology" label="Tecnología" :items="technologyOptions" class="mb-4" clearable />
       <AppSelect v-model="selectedPar" label="PAR (Nm)" :items="parOptions" class="mb-4" clearable />
       <AppSelect v-model="selectedPotencia" label="Potencia" :items="potenciaOptions" class="mb-4" clearable />
       <AppSelect v-model="selectedVelocidad" label="Velocidad" :items="velocidadOptions" class="mb-4" clearable />
