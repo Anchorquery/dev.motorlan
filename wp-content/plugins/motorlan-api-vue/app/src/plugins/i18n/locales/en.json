@@ -167,6 +167,29 @@
   "Preguntas": "Questions",
   "Opiniones": "Reviews",
   "Favoritos": "Favorites",
+  "tienda": {
+    "par_options": {
+      "range1": "0-50",
+      "range2": "50-100"
+    },
+    "potencia_options": {
+      "range1": "0-1 kW",
+      "range2": "1-5 kW"
+    },
+    "velocidad_options": {
+      "range1": "500 rpm",
+      "range2": "1500 rpm"
+    },
+    "technology_options": {
+      "dc": "Direct Current (D.C.)",
+      "ac": "Alternating Current (A.C.)"
+    },
+    "order_options": {
+      "recents": "Recents",
+      "price_asc": "Price asc",
+      "price_desc": "Price desc"
+    }
+  },
   "$vuetify": {
     "badge": "Badge",
     "noDataText": "No data available",

@@ -7,6 +7,9 @@ import TiendaFilters from './components/TiendaFilters.vue'
 import SearchBar from './components/SearchBar.vue'
 import MotorItems from './components/MotorItems.vue'
 import PaginationControls from './components/PaginationControls.vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 interface Term {
   id: number
@@ -26,11 +29,11 @@ const selectedVelocidad = ref<string | null>(null);
 const searchTerm = ref('');
 const order = ref<string | null>(null);
 
-const parOptions = ['0-50', '50-100'];
-const potenciaOptions = ['0-1 kW', '1-5 kW'];
-const velocidadOptions = ['500 rpm', '1500 rpm'];
-const technologyOptions = ['Continua (C.C.)', 'Alterna (C.A.)'];
-const orderOptions = ['Recientes', 'Precio asc', 'Precio desc'];
+const parOptions = computed(() => [t('tienda.par_options.range1'), t('tienda.par_options.range2')])
+const potenciaOptions = computed(() => [t('tienda.potencia_options.range1'), t('tienda.potencia_options.range2')])
+const velocidadOptions = computed(() => [t('tienda.velocidad_options.range1'), t('tienda.velocidad_options.range2')])
+const technologyOptions = computed(() => [t('tienda.technology_options.dc'), t('tienda.technology_options.ac')])
+const orderOptions = computed(() => [t('tienda.order_options.recents'), t('tienda.order_options.price_asc'), t('tienda.order_options.price_desc')])
 
 const itemsPerPage = ref(9);
 const page = ref(1);
@@ -43,9 +46,9 @@ const motorsApiUrl = computed(() => {
   const baseUrl = '/wp-json/motorlan/v1/motors'
 
   const sortOptions = {
-    'Recientes': { orderby: 'date', order: 'desc' },
-    'Precio asc': { orderby: 'price', order: 'asc' },
-    'Precio desc': { orderby: 'price', order: 'desc' },
+    [t('tienda.order_options.recents')]: { orderby: 'date', order: 'desc' },
+    [t('tienda.order_options.price_asc')]: { orderby: 'price', order: 'asc' },
+    [t('tienda.order_options.price_desc')]: { orderby: 'price', order: 'desc' },
   }
 
   const queryParams = {
