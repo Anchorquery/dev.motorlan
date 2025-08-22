@@ -29,6 +29,7 @@ require_once MOTORLAN_API_VUE_PATH . 'includes/api/motor-routes.php';
 require_once MOTORLAN_API_VUE_PATH . 'includes/api/garantia-routes.php';
 require_once MOTORLAN_API_VUE_PATH . 'includes/api/my-account-routes.php';
 require_once MOTORLAN_API_VUE_PATH . 'includes/api/questions-routes.php';
+require_once MOTORLAN_API_VUE_PATH . 'includes/api/offers-routes.php';
 
 require_once MOTORLAN_API_VUE_PATH . 'includes/admin-mods.php';
 require_once MOTORLAN_API_VUE_PATH . 'includes/vue-app-setup.php';
