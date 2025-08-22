@@ -5,24 +5,32 @@ defineProps<{ docs?: Doc[] }>()
 </script>
 
 <template>
-  <div
-    v-if="docs && docs.length"
-    class="product-docs"
-  >
-    <h3 class="text-error mb-4">
+  <div class="product-docs">
+    <h3 class="mb-4">
       Documentación adicional
     </h3>
-    <ul>
+    <ul v-if="docs && docs.length">
       <li
         v-for="doc in docs"
         :key="doc.url"
+        class="d-flex align-center gap-2"
       >
+        <VIcon
+          icon="mdi-file-document-outline"
+          color="error"
+        />
         <a
           :href="doc.url"
           target="_blank"
         >{{ doc.title }}</a>
       </li>
     </ul>
+    <p
+      v-else
+      class="text-body-2 text-medium-emphasis"
+    >
+      No se adjuntó documentación adicional
+    </p>
   </div>
 </template>
 
