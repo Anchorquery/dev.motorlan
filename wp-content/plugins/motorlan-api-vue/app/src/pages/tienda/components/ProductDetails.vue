@@ -26,6 +26,8 @@ const share = () => {
 
 const router = useRouter()
 
+const router = useRouter()
+
 const form = ref({
   message: '',
   name: '',
@@ -42,7 +44,7 @@ const buyMotor = async () => {
       method: 'POST',
       body: { motor_id: props.motor.id },
     })
-    router.push(`/tienda/compra/${res.id}`)
+    router.push(`/tienda/compra/${res.uuid}`)
   }
   catch (error) {
     console.error(error)
