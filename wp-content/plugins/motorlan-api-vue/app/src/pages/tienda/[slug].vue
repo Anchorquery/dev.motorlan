@@ -6,6 +6,7 @@ import ProductDetails from './components/ProductDetails.vue'
 import MotorInfo from './components/MotorInfo.vue'
 import ProductDocs from './components/ProductDocs.vue'
 import RelatedProducts from './components/RelatedProducts.vue'
+import MotorQuestions from './components/MotorQuestions.vue'
 import type { Motor } from '@/interfaces/motor'
 import { createUrl } from '@/@core/composable/createUrl'
 import { useApi } from '@/composables/useApi'
@@ -80,6 +81,7 @@ const title = computed(() => {
     </div>
 
     <RelatedProducts :current-id="motor.id" />
+    <MotorQuestions :motor-id="motor.id" />
   </VContainer>
 
   <div

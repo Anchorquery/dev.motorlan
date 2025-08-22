@@ -50,13 +50,6 @@ const share = () => {
 
 const router = useRouter()
 
-const form = ref({
-  message: '',
-  name: '',
-  email: '',
-  phone: '',
-})
-
 const buyMotor = async () => {
   if (!confirm('¿Confirmar compra?'))
     return
@@ -117,6 +110,7 @@ const buyMotor = async () => {
         Hacer una oferta
       </VBtn>
     </div>
+    <!--
     <div class="contact-card pa-4">
       <h3 class="mb-4">
         Contactar ahora
@@ -146,6 +140,14 @@ const buyMotor = async () => {
           Enviar
         </VBtn>
       </VForm>
+    </div>
+    -->
+
+    <div class="contact-card pa-4">
+      <h3 class="mb-4">
+        Descripción
+      </h3>
+      <p v-html="props.motor.acf.descripcion" />
     </div>
   </div>
 </template>
