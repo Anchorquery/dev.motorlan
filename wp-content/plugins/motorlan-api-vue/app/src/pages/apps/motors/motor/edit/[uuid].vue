@@ -32,6 +32,7 @@ const motorData = ref({
     regulacion_electronica_drivers: false,
     precio_de_venta: null,
     precio_negociable: 'No',
+    stock: null,
   },
 })
 
@@ -395,6 +396,17 @@ const formattedMarca = computed({
                     type="number"
                     placeholder="1000"
                     :rules="[requiredValidator]"
+                  />
+                </VCol>
+                <VCol
+                  cols="12"
+                  md="4"
+                >
+                  <AppTextField
+                    v-model="motorData.acf.stock"
+                    label="Stock"
+                    type="number"
+                    placeholder="1"
                   />
                 </VCol>
                 <VCol

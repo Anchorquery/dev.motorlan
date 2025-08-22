@@ -32,6 +32,7 @@ const motorData = ref({
     precio_negociable: 'No',
     documentacion_adjunta: null,
     publicar_acf: 'publish',
+    stock: 1,
   },
 })
 
@@ -366,6 +367,17 @@ const content = ref(
                   label="Precio de venta (€)"
                   type="number"
                   placeholder="1000"
+                />
+              </VCol>
+              <VCol
+                cols="12"
+                md="6"
+              >
+                <AppTextField
+                  v-model="motorData.acf.stock"
+                  label="Stock"
+                  type="number"
+                  placeholder="1"
                 />
               </VCol>
               <VCol
