@@ -17,6 +17,24 @@ const location = computed(() => {
   return pais || provincia || ''
 })
 
+
+const price = computed(() =>
+  props.motor.acf.precio_de_venta
+    ? `${props.motor.acf.precio_de_venta} €`
+    : 'Consultar precio',
+)
+
+const negotiableLabel = computed(() => {
+  const val = props.motor.acf.precio_negociable
+  if (typeof val === 'string')
+    return val.toLowerCase() === 'si' ? 'Negociable' : 'No negociable'
+  return val ? 'Negociable' : 'No negociable'
+})
+
+const categories = computed(() => props.motor.categories.map(c => c.name).join(', '))
+const brand = computed(() => props.motor.acf.marca?.name || props.motor.acf.marca)
+
+
 onMounted(async () => {
   try {
     const saved = JSON.parse(localStorage.getItem(FAVORITES_KEY) || '[]') as number[]
@@ -130,32 +148,43 @@ const handlePurchase = async (confirmed: boolean) => {
         Hacer una oferta
       </VBtn>
     </div>
+
     <VCard class="mb-6 detail-card">
-      <VCardTitle class="px-4 pt-4 pb-2">Detalles del motor</VCardTitle>
-      <VCardText class="pt-0">
+      <VCardText>
+        <div class="mb-4">
+          <h3 class="text-h6 mb-1">{{ props.motor.title }}</h3>
+          <div class="text-h5 font-weight-bold">{{ price }}</div>
+        </div>
         <VRow class="motor-details" dense>
           <VCol cols="12" sm="6">
-            <div class="detail-item"><strong>Nombre:</strong> {{ props.motor.title }}</div>
-          </VCol>
-          <VCol cols="12" sm="6">
-            <div class="detail-item"><strong>Precio:</strong> {{ props.motor.acf.precio_de_venta ? `${props.motor.acf.precio_de_venta} €` : 'Consultar precio' }}</div>
-          </VCol>
-          <VCol cols="12" sm="6">
-            <div class="detail-item"><strong>Precio negociable:</strong> {{ props.motor.acf.precio_negociable || 'No' }}</div>
-          </VCol>
-          <VCol cols="12" sm="6">
-            <div class="detail-item"><strong>Categoría:</strong> {{ props.motor.categories.map(c => c.name).join(', ') }}</div>
-          </VCol>
-          <VCol cols="12" sm="6">
-            <div class="detail-item"><strong>Marca:</strong> {{ props.motor.acf.marca?.name || props.motor.acf.marca }}</div>
-          </VCol>
-          <VCol cols="12" sm="6">
-            <div class="detail-item"><strong>País / Provincia:</strong> {{ location }}</div>
+            <div class="detail-item d-flex align-center">
+              <VIcon icon="tabler-arrows-left-right" class="mr-1" />
+              <span>{{ negotiableLabel }}</span>
+            </div>
           </VCol>
           <VCol cols="12" sm="6">
             <div class="detail-item d-flex align-center">
-              <strong>Vendedor:</strong>
-              <span class="ml-1">{{ sellerName || 'N/A' }}</span>
+              <VIcon icon="tabler-category" class="mr-1" />
+              <span>{{ categories }}</span>
+            </div>
+          </VCol>
+          <VCol cols="12" sm="6">
+            <div class="detail-item d-flex align-center">
+              <VIcon icon="tabler-tag" class="mr-1" />
+              <span>{{ brand }}</span>
+            </div>
+          </VCol>
+          <VCol cols="12" sm="6">
+            <div class="detail-item d-flex align-center">
+              <VIcon icon="tabler-map-pin" class="mr-1" />
+              <span>{{ location }}</span>
+            </div>
+          </VCol>
+          <VCol cols="12" sm="6">
+            <div class="detail-item d-flex align-center">
+              <VIcon icon="tabler-user" class="mr-1" />
+              <span>{{ sellerName || 'N/A' }}</span>
+
               <VRating
                 v-if="sellerRating !== null"
                 class="ml-2"
@@ -167,20 +196,15 @@ const handlePurchase = async (confirmed: boolean) => {
               />
             </div>
           </VCol>
-          <VCol cols="12" sm="6">
+          <VCol v-if="props.motor.acf.garantia_motorlan" cols="12" sm="6">
             <div class="detail-item d-flex align-center">
-              <strong>Garantía Motorlan:</strong>
-              <template v-if="props.motor.acf.garantia_motorlan">
-                <VIcon icon="tabler-badge" color="success" class="mx-1" />
-                <span>Sí</span>
-              </template>
-              <span v-else>No</span>
+              <VIcon icon="tabler-shield-check" color="success" class="mr-1" />
+              <span class="text-success">Garantía Motorlan</span>
             </div>
           </VCol>
         </VRow>
       </VCardText>
     </VCard>
-
 
     <div class="contact-card pa-4">
       <h3 class="mb-4">
@@ -230,7 +254,6 @@ const handlePurchase = async (confirmed: boolean) => {
 }
 
 .detail-item {
-
   margin-bottom: 0.5rem;
 }
 </style>
