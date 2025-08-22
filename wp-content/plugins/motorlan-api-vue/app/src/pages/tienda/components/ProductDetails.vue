@@ -17,6 +17,7 @@ const location = computed(() => {
   return pais || provincia || ''
 })
 
+
 const price = computed(() =>
   props.motor.acf.precio_de_venta
     ? `${props.motor.acf.precio_de_venta} €`
@@ -32,6 +33,7 @@ const negotiableLabel = computed(() => {
 
 const categories = computed(() => props.motor.categories.map(c => c.name).join(', '))
 const brand = computed(() => props.motor.acf.marca?.name || props.motor.acf.marca)
+
 
 onMounted(async () => {
   try {
@@ -182,6 +184,7 @@ const handlePurchase = async (confirmed: boolean) => {
             <div class="detail-item d-flex align-center">
               <VIcon icon="tabler-user" class="mr-1" />
               <span>{{ sellerName || 'N/A' }}</span>
+
               <VRating
                 v-if="sellerRating !== null"
                 class="ml-2"

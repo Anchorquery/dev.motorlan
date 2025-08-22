@@ -142,7 +142,6 @@ const updateMotor = async () => {
     return
   }
 
-  const api = useApi()
   const url = `/wp-json/motorlan/v1/motors/uuid/${motorUuid}`
   const method = 'POST'
 
@@ -198,7 +197,7 @@ const updateMotor = async () => {
     }
 
     console.log('Data to send:', JSON.stringify(motorData.value, null, 2))
-    await api(url, {
+    await useApi(url, {
       method,
       body: motorData.value,
     })
