@@ -399,8 +399,8 @@ function motorlan_get_motors_callback( $request ) {
 
     // Define the list of fields that can be used for filtering.
     $filterable_fields = [
-        'marca', 'tipo_o_referencia', 'potencia', 'velocidad', 'par_nominal', 'voltaje', 'intensidad',
-        'pais', 'provincia', 'estado_del_articulo', 'posibilidad_de_alquiler', 'tipo_de_alimentacion',
+        'marca', 'tipo_o_referencia', 'potencia', 'velocidad', 'par_nominal', 'intensidad',
+        'pais', 'provincia', 'tipo_de_alimentacion',
         'servomotores', 'regulacion_electronica_drivers', 'precio_de_venta', 'precio_negociable', 'uuid'
     ];
 
@@ -410,7 +410,7 @@ function motorlan_get_motors_callback( $request ) {
             $meta_query[] = array(
                 'key'     => $field_name,
                 'value'   => sanitize_text_field($params[$field_name]),
-                'compare' => '=',
+                'compare' => $field_name === 'tipo_o_referencia' ? 'LIKE' : '=',
             );
         }
     }
@@ -426,10 +426,11 @@ function motorlan_get_motors_callback( $request ) {
 
     // Filter by category (categoria taxonomy)
     if ( !empty($params['category']) ) {
+        $terms = array_map( 'sanitize_text_field', explode( ',', $params['category'] ) );
         $tax_query[] = array(
             'taxonomy' => 'categoria',
             'field'    => 'slug',
-            'terms'    => sanitize_text_field($params['category']),
+            'terms'    => $terms,
         );
     }
 
