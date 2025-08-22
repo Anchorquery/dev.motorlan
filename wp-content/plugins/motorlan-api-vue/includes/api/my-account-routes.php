@@ -334,6 +334,7 @@ function motorlan_create_purchase_callback( WP_REST_Request $request ) {
         return new WP_Error( 'no_motor', 'Motor ID is required', array( 'status' => 400 ) );
     }
 
+
     $uuid = wp_generate_uuid4();
     $purchase_id = wp_insert_post( array(
         'post_type'   => 'compra',

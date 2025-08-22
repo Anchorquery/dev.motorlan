@@ -5,7 +5,26 @@ import type { Motor } from '@/interfaces/motor'
 
 const props = defineProps<{ motor: Motor }>()
 
+const isFavorite = ref(false)
 
+const toggleFavorite = () => {
+  isFavorite.value = !isFavorite.value
+}
+
+const share = () => {
+  const url = window.location.href
+  if (navigator.share) {
+    navigator.share({
+      title: props.motor.title,
+      url,
+    })
+  } else {
+    navigator.clipboard.writeText(url)
+    alert('Enlace copiado al portapapeles')
+  }
+}
+
+const router = useRouter()
 
 const router = useRouter()
 
@@ -36,6 +55,29 @@ const buyMotor = async () => {
 <template>
   <div class="product-details flex-grow-1">
 
+    <div class="d-flex align-center gap-6 mb-4">
+      <div
+        class="d-flex align-center gap-2 pointer"
+        @click="toggleFavorite"
+      >
+        <VIcon
+          :icon="isFavorite ? 'mdi-heart' : 'mdi-heart-outline'"
+          color="error"
+        />
+        <span class="text-body-2 font-weight-medium">Favorito</span>
+      </div>
+      <div
+        class="d-flex align-center gap-2 pointer"
+        @click="share"
+      >
+        <VIcon
+          icon="mdi-share-variant"
+          color="error"
+        />
+        <span class="text-body-2 font-weight-medium">Compartir</span>
+      </div>
+    </div>
+    <VDivider class="mb-6" />
     <div class="d-flex flex-wrap gap-4 mb-6">
       <VBtn
         color="error"
@@ -47,38 +89,19 @@ const buyMotor = async () => {
       <VBtn
         variant="outlined"
         color="error"
-        class="rounded-pill px-6 flex-grow-1"
-      >
-        Hacer una pregunta
-      </VBtn>
-      <VBtn
-        variant="outlined"
-        color="error"
-        class="rounded-pill px-6 flex-grow-1"
+        class="px-6 flex-grow-1 action-btn"
       >
         Hacer una oferta
       </VBtn>
-      <div class="d-flex align-center gap-2">
-        <VBtn
-          icon="mdi-facebook"
-          variant="text"
-          color="error"
-        />
-        <VBtn
-          icon="mdi-share-variant"
-          variant="text"
-          color="error"
-        />
-      </div>
     </div>
     <div class="contact-card pa-4">
-      <h3 class="text-error mb-4">
-        Hacer una pregunta
+      <h3 class="mb-4">
+        Contactar ahora
       </h3>
       <VForm class="d-flex flex-column gap-4">
         <VTextarea
           v-model="form.message"
-          label="Pregunta"
+          label="Mensaje"
           rows="3"
         />
         <VTextField
@@ -97,7 +120,7 @@ const buyMotor = async () => {
           color="error"
           class="rounded-pill align-self-start"
         >
-          Preguntar
+          Enviar
         </VBtn>
       </VForm>
     </div>
@@ -105,8 +128,11 @@ const buyMotor = async () => {
 </template>
 
 <style scoped>
-.product-details h1 {
-  font-size: 24px;
+.action-btn {
+  border-radius: 4px;
+}
+.pointer {
+  cursor: pointer;
 }
 .contact-card {
   border: 1px solid #E6E6E6;
