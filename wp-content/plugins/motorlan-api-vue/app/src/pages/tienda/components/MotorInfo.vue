@@ -6,7 +6,7 @@ defineProps<{ motor: Motor }>()
 
 <template>
   <div class="motor-info">
-    <h3 class="text-error mb-4">
+    <h3 class="mb-4">
       Información del motor
     </h3>
     <VTable>

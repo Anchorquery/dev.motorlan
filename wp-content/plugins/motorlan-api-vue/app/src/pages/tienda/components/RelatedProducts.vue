@@ -15,14 +15,14 @@ const products = computed(() => (data.value?.data || []).filter((m: Motor) => m.
 
 <template>
   <div class="related-products" v-if="products.length">
-    <h3 class="text-error mb-4">Productos relacionados</h3>
+    <h3 class="mb-4">Productos relacionados</h3>
     <VRow>
       <VCol v-for="motor in products" :key="motor.id" cols="12" sm="6" md="3">
         <div class="motor-card pa-4">
           <div class="motor-image mb-4">
             <img :src="motor.imagen_destacada?.url || '/placeholder.png'" alt="" />
           </div>
-          <div class="text-error text-body-1 mb-4">{{ motor.title }}</div>
+          <div class="text-body-1 mb-4">{{ motor.title }}</div>
           <VBtn color="error" class="rounded-pill px-6" :to="'/tienda/' + motor.slug">+ INFO</VBtn>
         </div>
       </VCol>
