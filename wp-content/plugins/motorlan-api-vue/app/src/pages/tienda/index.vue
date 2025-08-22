@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue';
-import { useApi } from '@/composables/useApi';
-import { createUrl } from '@/@core/composable/createUrl';
-import type { Motor } from '@/interfaces/motor';
+import { computed, onMounted, ref, watch } from 'vue'
+import { useApi } from '@/composables/useApi'
+import { createUrl } from '@/@core/composable/createUrl'
+import type { Motor } from '@/interfaces/motor'
 
 interface Term {
-  id: number;
-  name: string;
-  slug: string;
+  id: number
+  name: string
+  slug: string
 }
 
 // -- State Management --
@@ -36,12 +36,13 @@ const { data: brandsData } = await useApi<Term[]>(createUrl('/wp-json/motorlan/v
 const marcas = computed(() => brandsData.value || []);
 
 const motorsApiUrl = computed(() => {
-  const baseUrl = '/wp-json/motorlan/v1/motors';
+  const baseUrl = '/wp-json/motorlan/v1/motors'
+
   const sortOptions = {
     'Recientes': { orderby: 'date', order: 'desc' },
     'Precio asc': { orderby: 'price', order: 'asc' },
     'Precio desc': { orderby: 'price', order: 'desc' },
-  };
+  }
 
   const queryParams = {
     per_page: itemsPerPage.value,
@@ -57,47 +58,63 @@ const motorsApiUrl = computed(() => {
     tipo_de_alimentacion: selectedTechnology.value,
     tipo_o_referencia: typeModel.value,
     ...(order.value ? sortOptions[order.value] : {}),
-  };
+  }
 
   const filteredParams = Object.entries(queryParams)
     .filter(([_, value]) => value !== null && value !== undefined && value !== '')
     .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
-    .join('&');
+    .join('&')
 
-  return `${baseUrl}?${filteredParams}`;
-});
+  return `${baseUrl}?${filteredParams}`
+})
 
-const { data: motorsData, isFetching: loading, execute: fetchMotors } = useApi<any>(motorsApiUrl, { immediate: false }).get();
+const { data: motorsData, isFetching: loading, execute: fetchMotors } = useApi<any>(motorsApiUrl, { immediate: false }).get()
 
 watch(
   () => motorsApiUrl.value,
   () => {
-    fetchMotors();
-  }
-);
+    fetchMotors()
+  },
+)
 
-onMounted(fetchMotors);
+onMounted(fetchMotors)
 
-const motors = computed((): Motor[] => motorsData.value?.data || []);
-const totalMotors = computed(() => motorsData.value?.pagination.total || 0);
-const totalPages = computed(() => motorsData.value?.pagination.totalPages || 1);
+const motors = computed((): Motor[] => motorsData.value?.data || [])
+const totalMotors = computed(() => motorsData.value?.pagination.total || 0)
+const totalPages = computed(() => motorsData.value?.pagination.totalPages || 1)
 
 const search = () => {
-  page.value = 1;
-  fetchMotors();
-};
+  page.value = 1
+  fetchMotors()
+}
 </script>
 
 <template>
   <div class="tienda d-flex">
     <aside class="filters pa-4">
       <div class="d-flex align-center mb-2">
-        <VIcon size="18" class="me-2" color="error">mdi-checkbox-blank-outline</VIcon>
+        <VIcon
+          size="18"
+          class="me-2"
+          color="error"
+        >
+          mdi-checkbox-blank-outline
+        </VIcon>
         <span class="text-error font-weight-semibold">FILTROS</span>
       </div>
-      <VDivider thickness="3" class="mb-4" color="error" />
+      <VDivider
+        thickness="3"
+        class="mb-4"
+        color="error"
+      />
 
-      <VTextField v-model="typeModel" label="Tipo / modelo" variant="outlined" density="comfortable" class="mb-6" />
+      <VTextField
+        v-model="typeModel"
+        label="Tipo / modelo"
+        variant="outlined"
+        density="comfortable"
+        class="mb-6"
+      />
 
       <p class="text-body-2 mb-2">Tipo de producto</p>
       <VCheckbox v-model="productTypes" label="Motor" value="motor" density="compact" hide-details />
@@ -113,7 +130,7 @@ const search = () => {
     </aside>
 
     <section class="flex-grow-1 ps-6">
-      <div class="d-flex align-center mb-6 gap-4">
+      <div class="top-bar">
         <VTextField
           v-model="searchTerm"
           placeholder="Buscar..."
@@ -122,18 +139,43 @@ const search = () => {
           class="flex-grow-1"
           @keydown.enter="search"
         />
-        <VBtn icon color="error" :loading="loading" @click="search">
-          <VIcon>mdi-magnify</VIcon>
+        <VBtn
+          icon
+          color="error"
+          class="search-btn"
+          :loading="loading"
+          @click="search"
+        >
+          <VIcon color="white">
+            mdi-magnify
+          </VIcon>
         </VBtn>
-        <AppSelect v-model="order" :items="orderOptions" label="Ordenar" clearable style="max-width:220px" />
+        <AppSelect
+          v-model="order"
+          :items="orderOptions"
+          label="Ordenar"
+          clearable
+          style="max-width:220px"
+        />
       </div>
 
-      <div v-if="loading && !motors.length" class="text-center pa-12">
-        <VProgressCircular indeterminate size="64" />
-        <p class="mt-4">Cargando motores...</p>
+      <div
+        v-if="loading && !motors.length"
+        class="text-center pa-12"
+      >
+        <VProgressCircular
+          indeterminate
+          size="64"
+        />
+        <p class="mt-4">
+          Cargando motores...
+        </p>
       </div>
 
-      <VRow v-else-if="motors.length" class="motor-grid">
+      <VRow
+        v-else-if="motors.length"
+        class="motor-grid"
+      >
         <VCol
           v-for="motor in motors"
           :key="motor.id"
@@ -143,7 +185,10 @@ const search = () => {
         >
           <div class="motor-card pa-4">
             <div class="motor-image mb-6">
-              <img :src="motor.imagen_destacada?.url || '/placeholder.png'" alt="" />
+              <img
+                :src="motor.imagen_destacada?.url || '/placeholder.png'"
+                alt=""
+              >
             </div>
             <div class="text-error text-body-1 mb-4">
               {{ motor.title }}
@@ -152,7 +197,7 @@ const search = () => {
               <VBtn
                 color="error"
                 class="rounded-pill px-6"
-                :to="'/tienda/' + motor.slug"
+                :to="`/tienda/${motor.slug}`"
               >
                 + INFO
               </VBtn>
@@ -164,9 +209,14 @@ const search = () => {
         </VCol>
       </VRow>
 
-      <VCard v-else class="pa-8 text-center">
+      <VCard
+        v-else
+        class="pa-8 text-center"
+      >
         <VCardText>
-          <p class="text-h6">No se encontraron motores</p>
+          <p class="text-h6">
+            No se encontraron motores
+          </p>
           <p>Intenta ajustar los filtros de búsqueda.</p>
         </VCardText>
       </VCard>
@@ -208,5 +258,15 @@ const search = () => {
 }
 .price {
   font-size: 24px;
+}
+.top-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.search-btn {
+  height: 56px;
+  width: 56px;
 }
 </style>
