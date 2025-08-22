@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from '@/composables/useToast'
 import { useApi } from '@/composables/useApi'
@@ -9,10 +9,12 @@ const router = useRouter()
 
 // Stepper state
 const currentStep = ref(1)
-const newMotorId = ref<number | null>(null)
+const newPostId = ref<number | null>(null)
 
 // Form data
-const motorData = ref({
+const postType = ref('motor')
+
+const postData = ref({
   title: '',
   status: 'publish',
   categories: [],
@@ -57,6 +59,31 @@ const garantiaData = ref({
 const userData = ref<any>(null)
 const marcas = ref([])
 const categories = ref([])
+
+const postTypeOptions = [
+  { title: 'Motor', value: 'motor' },
+  { title: 'Regulador', value: 'regulador' },
+  { title: 'Otro Repuesto', value: 'otro_repuesto' },
+]
+
+const pageTitle = computed(() => {
+  const selectedType = postTypeOptions.find(o => o.value === postType.value)
+
+  return selectedType ? `Añadir Nuevo ${selectedType.title}` : 'Añadir Nuevo'
+})
+
+const apiEndpoint = computed(() => {
+  switch (postType.value) {
+    case 'motor':
+      return '/wp-json/wp/v2/motors'
+    case 'regulador':
+      return '/wp-json/wp/v2/regulador'
+    case 'otro_repuesto':
+      return '/wp-json/wp/v2/otro_repuesto'
+    default:
+      return ''
+  }
+})
 
 // Fetch initial data for selects
 onMounted(async () => {
@@ -118,18 +145,18 @@ const uploadMedia = async (file: File) => {
 const handleFeaturedImageUpload = async (file: File) => {
   const imageId = await uploadMedia(file)
   if (imageId)
-    motorData.value.acf.motor_image = imageId
+    postData.value.acf.motor_image = imageId
 }
 
 const handleGalleryImageUpload = async (file: File) => {
   const imageId = await uploadMedia(file)
   if (imageId)
-    motorData.value.acf.motor_gallery.push(imageId)
+    postData.value.acf.motor_gallery.push(imageId)
 }
 
 const addDocument = () => {
-  if (motorData.value.acf.documentacion_adicional.length < 5)
-    motorData.value.acf.documentacion_adicional.push({ nombre: '', archivo: null })
+  if (postData.value.acf.documentacion_adicional.length < 5)
+    postData.value.acf.documentacion_adicional.push({ nombre: '', archivo: null })
 }
 
 const handleFileUpload = async (event: Event, index: number) => {
@@ -137,41 +164,47 @@ const handleFileUpload = async (event: Event, index: number) => {
   if (file) {
     const fileId = await uploadMedia(file)
     if (fileId)
-      motorData.value.acf.documentacion_adicional[index].archivo = fileId
+      postData.value.acf.documentacion_adicional[index].archivo = fileId
   }
 }
 
-// Step 1: Create Motor and move to step 2
-const createMotorAndContinue = async () => {
+// Step 1: Create Post and move to step 2
+const createPostAndContinue = async () => {
   try {
     // Handle file uploads for additional documentation
-    for (const doc of motorData.value.acf.documentacion_adicional) {
+    for (const doc of postData.value.acf.documentacion_adicional) {
       if (doc.archivo instanceof File) {
         const fileId = await uploadMedia(doc.archivo)
         doc.archivo = fileId
       }
     }
 
-    const response = await useApi<any>('/wp-json/wp/v2/motors', {
+    const response = await useApi<any>(apiEndpoint.value, {
       method: 'POST',
-      body: motorData.value,
+      body: postData.value,
     })
 
-    newMotorId.value = response.data.value.id
-    showToast('Motor creado. Ahora decide sobre la garantía.', 'success')
-    currentStep.value = 2
+    newPostId.value = response.data.value.id
+    showToast('Publicación creada. Ahora decide sobre la garantía.', 'success')
+
+    if (postType.value === 'otro_repuesto') {
+      router.push('/apps/motors/motor/list')
+    }
+    else {
+      currentStep.value = 2
+    }
   }
   catch (error: any) {
-    showToast(`Error al crear el motor: ${error.message}`, 'error')
-    console.error('Failed to create motor:', error)
+    showToast(`Error al crear la publicación: ${error.message}`, 'error')
+    console.error('Failed to create post:', error)
   }
 }
 
 // Step 2: Skip warranty
 const skipGarantia = () => {
   // A simple confirm dialog
-  if (confirm('El motor se publicará sin la garantía Motorlan. ¿Estás seguro?')) {
-    showToast('Motor publicado sin garantía.', 'info')
+  if (confirm('La publicación se publicará sin la garantía Motorlan. ¿Estás seguro?')) {
+    showToast('Publicación sin garantía.', 'info')
     router.push('/apps/motors/motor/list')
   }
 }
@@ -186,20 +219,20 @@ const goToGarantiaForm = () => {
 
 // Step 3: Submit warranty
 const submitGarantia = async () => {
-  if (!newMotorId.value) {
-    showToast('Error: No se ha encontrado el ID del motor.', 'error')
+  if (!newPostId.value) {
+    showToast('Error: No se ha encontrado el ID de la publicación.', 'error')
 
     return
   }
 
-  garantiaData.value.motor_id = newMotorId.value
+  garantiaData.value.motor_id = newPostId.value
 
   try {
     await useApi('/wp-json/motorlan/v1/garantias', {
       method: 'POST',
       body: garantiaData.value,
     })
-    showToast('Garantía solicitada con éxito. Motor publicado.', 'success')
+    showToast('Garantía solicitada con éxito. Publicación realizada.', 'success')
     router.push('/apps/motors/motor/list')
   }
   catch (error: any) {
@@ -214,9 +247,12 @@ const submitGarantia = async () => {
     <div class="d-flex flex-wrap justify-start justify-sm-space-between gap-y-4 gap-x-6 mb-6">
       <div class="d-flex flex-column justify-center">
         <h4 class="text-h4 font-weight-medium">
-          Añadir Nuevo Motor
+          {{ pageTitle }}
         </h4>
-        <span class="text-body-1">Paso {{ currentStep }} de 3</span>
+        <span
+          v-if="postType !== 'otro_repuesto'"
+          class="text-body-1"
+        >Paso {{ currentStep }} de 3</span>
       </div>
       <div class="d-flex gap-4 align-center flex-wrap">
         <VBtn
@@ -228,19 +264,35 @@ const submitGarantia = async () => {
         </VBtn>
         <VBtn
           v-if="currentStep === 1"
-          @click="createMotorAndContinue"
+          @click="createPostAndContinue"
         >
           Guardar y Continuar
         </VBtn>
       </div>
     </div>
 
-    <!-- Step 1: Motor Details -->
+    <!-- Step 1: Post Details -->
     <VRow v-if="currentStep === 1">
       <VCol>
+        <VCard class="mb-6">
+          <VCardText>
+            <VRow>
+              <VCol
+                cols="12"
+                md="6"
+              >
+                <AppSelect
+                  v-model="postType"
+                  label="Tipo de Publicación"
+                  :items="postTypeOptions"
+                />
+              </VCol>
+            </VRow>
+          </VCardText>
+        </VCard>
         <VCard
           class="mb-6"
-          title="Detalles del Motor"
+          :title="`Detalles del ${postType}`"
         >
           <VCardText>
             <VRow>
@@ -249,7 +301,7 @@ const submitGarantia = async () => {
                 md="6"
               >
                 <AppTextField
-                  v-model="motorData.title"
+                  v-model="postData.title"
                   label="Título de la publicación"
                   placeholder="Título"
                 />
@@ -259,7 +311,7 @@ const submitGarantia = async () => {
                 md="6"
               >
                 <AppTextField
-                  v-model="motorData.acf.tipo_o_referencia"
+                  v-model="postData.acf.tipo_o_referencia"
                   label="Tipo o referencia"
                   placeholder="Referencia"
                 />
@@ -269,7 +321,7 @@ const submitGarantia = async () => {
                 md="6"
               >
                 <AppSelect
-                  v-model="motorData.acf.marca"
+                  v-model="postData.acf.marca"
                   label="Marca"
                   :items="marcas"
                 />
@@ -279,73 +331,75 @@ const submitGarantia = async () => {
                 md="6"
               >
                 <AppSelect
-                  v-model="motorData.categories"
+                  v-model="postData.categories"
                   label="Categoría"
                   :items="categories"
                   multiple
                 />
               </VCol>
-              <VCol
-                cols="12"
-                md="6"
-              >
-                <AppTextField
-                  v-model="motorData.acf.potencia"
-                  label="Potencia (kW)"
-                  type="number"
-                  placeholder="100"
-                />
-              </VCol>
-              <VCol
-                cols="12"
-                md="6"
-              >
-                <AppTextField
-                  v-model="motorData.acf.velocidad"
-                  label="Velocidad (rpm)"
-                  type="number"
-                  placeholder="3000"
-                />
-              </VCol>
-              <VCol
-                cols="12"
-                md="6"
-              >
-                <AppTextField
-                  v-model="motorData.acf.par_nominal"
-                  label="PAR Nominal (Nm)"
-                  type="number"
-                  placeholder="50"
-                />
-              </VCol>
-              <VCol
-                cols="12"
-                md="6"
-              >
-                <AppTextField
-                  v-model="motorData.acf.voltaje"
-                  label="Voltaje (V)"
-                  type="number"
-                  placeholder="220"
-                />
-              </VCol>
-              <VCol
-                cols="12"
-                md="6"
-              >
-                <AppTextField
-                  v-model="motorData.acf.intensidad"
-                  label="Intensidad (A)"
-                  type="number"
-                  placeholder="10"
-                />
-              </VCol>
+              <template v-if="postType === 'motor' || postType === 'regulador'">
+                <VCol
+                  cols="12"
+                  md="6"
+                >
+                  <AppTextField
+                    v-model="postData.acf.potencia"
+                    label="Potencia (kW)"
+                    type="number"
+                    placeholder="100"
+                  />
+                </VCol>
+                <VCol
+                  cols="12"
+                  md="6"
+                >
+                  <AppTextField
+                    v-model="postData.acf.velocidad"
+                    label="Velocidad (rpm)"
+                    type="number"
+                    placeholder="3000"
+                  />
+                </VCol>
+                <VCol
+                  cols="12"
+                  md="6"
+                >
+                  <AppTextField
+                    v-model="postData.acf.par_nominal"
+                    label="PAR Nominal (Nm)"
+                    type="number"
+                    placeholder="50"
+                  />
+                </VCol>
+                <VCol
+                  cols="12"
+                  md="6"
+                >
+                  <AppTextField
+                    v-model="postData.acf.voltaje"
+                    label="Voltaje (V)"
+                    type="number"
+                    placeholder="220"
+                  />
+                </VCol>
+                <VCol
+                  cols="12"
+                  md="6"
+                >
+                  <AppTextField
+                    v-model="postData.acf.intensidad"
+                    label="Intensidad (A)"
+                    type="number"
+                    placeholder="10"
+                  />
+                </VCol>
+              </template>
               <VCol
                 cols="12"
                 md="6"
               >
                 <AppSelect
-                  v-model="motorData.acf.pais"
+                  v-model="postData.acf.pais"
                   label="País (localización)"
                   :items="['España', 'Portugal', 'Francia']"
                 />
@@ -355,7 +409,7 @@ const submitGarantia = async () => {
                 md="6"
               >
                 <AppTextField
-                  v-model="motorData.acf.provincia"
+                  v-model="postData.acf.provincia"
                   label="Provincia"
                   placeholder="Madrid"
                 />
@@ -365,80 +419,82 @@ const submitGarantia = async () => {
                 md="6"
               >
                 <AppSelect
-                  v-model="motorData.acf.estado_del_articulo"
+                  v-model="postData.acf.estado_del_articulo"
                   label="Estado del artículo"
                   :items="['Nuevo', 'Usado', 'Restaurado']"
                 />
               </VCol>
               <VCol cols="12">
                 <VTextarea
-                  v-model="motorData.acf.descripcion"
+                  v-model="postData.acf.descripcion"
                   label="Descripción"
-                  placeholder="Descripción del motor"
+                  placeholder="Descripción del producto"
                 />
               </VCol>
-              <VCol
-                cols="12"
-                md="6"
-              >
-                <VRadioGroup
-                  v-model="motorData.acf.posibilidad_de_alquiler"
-                  inline
-                  label="Posibilidad de alquiler"
+              <template v-if="postType === 'motor' || postType === 'regulador'">
+                <VCol
+                  cols="12"
+                  md="6"
                 >
-                  <VRadio
-                    label="Sí"
-                    value="Sí"
-                  />
-                  <VRadio
-                    label="No"
-                    value="No"
-                  />
-                </VRadioGroup>
-              </VCol>
-              <VCol
-                cols="12"
-                md="6"
-              >
-                <VRadioGroup
-                  v-model="motorData.acf.tipo_de_alimentacion"
-                  inline
-                  label="Tipo de alimentación"
+                  <VRadioGroup
+                    v-model="postData.acf.posibilidad_de_alquiler"
+                    inline
+                    label="Posibilidad de alquiler"
+                  >
+                    <VRadio
+                      label="Sí"
+                      value="Sí"
+                    />
+                    <VRadio
+                      label="No"
+                      value="No"
+                    />
+                  </VRadioGroup>
+                </VCol>
+                <VCol
+                  cols="12"
+                  md="6"
                 >
-                  <VRadio
-                    label="Continua (C.C.)"
-                    value="Continua (C.C.)"
+                  <VRadioGroup
+                    v-model="postData.acf.tipo_de_alimentacion"
+                    inline
+                    label="Tipo de alimentación"
+                  >
+                    <VRadio
+                      label="Continua (C.C.)"
+                      value="Continua (C.C.)"
+                    />
+                    <VRadio
+                      label="Alterna (C.A.)"
+                      value="Alterna (C.A.)"
+                    />
+                  </VRadioGroup>
+                </VCol>
+                <VCol
+                  cols="12"
+                  md="6"
+                >
+                  <VCheckbox
+                    v-model="postData.acf.servomotores"
+                    label="Servomotores"
                   />
-                  <VRadio
-                    label="Alterna (C.A.)"
-                    value="Alterna (C.A.)"
+                </VCol>
+                <VCol
+                  cols="12"
+                  md="6"
+                >
+                  <VCheckbox
+                    v-model="postData.acf.regulacion_electronica_drivers"
+                    label="Regulación electrónica/Drivers"
                   />
-                </VRadioGroup>
-              </VCol>
-              <VCol
-                cols="12"
-                md="6"
-              >
-                <VCheckbox
-                  v-model="motorData.acf.servomotores"
-                  label="Servomotores"
-                />
-              </VCol>
-              <VCol
-                cols="12"
-                md="6"
-              >
-                <VCheckbox
-                  v-model="motorData.acf.regulacion_electronica_drivers"
-                  label="Regulación electrónica/Drivers"
-                />
-              </VCol>
+                </VCol>
+              </template>
               <VCol
                 cols="12"
                 md="6"
               >
                 <AppTextField
-                  v-model="motorData.acf.precio_de_venta"
+                  v-model="postData.acf.precio_de_venta"
                   label="Precio de venta (€)"
                   type="number"
                   placeholder="1000"
@@ -449,7 +505,7 @@ const submitGarantia = async () => {
                 md="6"
               >
                 <AppTextField
-                  v-model="motorData.acf.stock"
+                  v-model="postData.acf.stock"
                   label="Stock"
                   type="number"
                   placeholder="1"
@@ -460,7 +516,7 @@ const submitGarantia = async () => {
                 md="6"
               >
                 <VRadioGroup
-                  v-model="motorData.acf.precio_negociable"
+                  v-model="postData.acf.precio_negociable"
                   inline
                   label="Precio negociable"
                 >
@@ -476,7 +532,7 @@ const submitGarantia = async () => {
               </VCol>
               <VCol cols="12">
                 <VRadioGroup
-                  v-model="motorData.status"
+                  v-model="postData.status"
                   inline
                   label="Publicar (ACF)"
                 >
@@ -495,7 +551,7 @@ const submitGarantia = async () => {
         </VCard>
         <VCard
           class="mb-6"
-          title="Imagen del Motor"
+          title="Imagen Principal"
         >
           <VCardText>
             <DropZone @file-added="handleFeaturedImageUpload" />
@@ -515,7 +571,7 @@ const submitGarantia = async () => {
         >
           <VCardText>
             <div
-              v-for="(doc, index) in motorData.acf.documentacion_adicional"
+              v-for="(doc, index) in postData.acf.documentacion_adicional"
               :key="index"
               class="d-flex gap-4 mb-4"
             >
@@ -531,7 +587,7 @@ const submitGarantia = async () => {
               />
             </div>
             <VBtn
-              v-if="motorData.acf.documentacion_adicional.length < 5"
+              v-if="postData.acf.documentacion_adicional.length < 5"
               @click="addDocument"
             >
               Añadir Documento
@@ -549,10 +605,10 @@ const submitGarantia = async () => {
     >
       <VCardText>
         <p class="mb-4">
-          <strong>¡Solicita la Garantía Motorlan, tu motor se venderá mejor!</strong>
+          <strong>¡Solicita la Garantía Motorlan, tu producto se venderá mejor!</strong>
         </p>
         <p>
-          Envía el motor a Motorlan para su revisión y puesta a punto. El envío corre a cargo del solicitante.
+          Envía el producto a Motorlan para su revisión y puesta a punto. El envío corre a cargo del solicitante.
           Una vez inspeccionado, te enviaremos un presupuesto para su puesta a punto con garantía.
         </p>
         <p class="mt-2">
@@ -585,7 +641,7 @@ const submitGarantia = async () => {
             <VRadioGroup
               v-model="garantiaData.is_same_address"
               inline
-              label="¿El motor se encuentra en la misma dirección de tu empresa?"
+              label="¿El producto se encuentra en la misma dirección de tu empresa?"
             >
               <VRadio
                 label="Sí"
@@ -604,7 +660,7 @@ const submitGarantia = async () => {
             >
               <AppTextField
                 v-model="garantiaData.direccion_motor"
-                label="Dirección de recogida del motor"
+                label="Dirección de recogida del producto"
                 placeholder="Calle, número, piso"
               />
             </VCol>
