@@ -40,7 +40,8 @@ const onSearch = () => emit('search')
 <style scoped>
 .top-bar {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
+  width: 100%;
   gap: 16px;
   margin-bottom: 24px;
 }
