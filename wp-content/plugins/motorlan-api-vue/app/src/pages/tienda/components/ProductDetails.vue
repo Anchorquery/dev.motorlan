@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import type { Motor } from '@/interfaces/motor'
 
 const props = defineProps<{ motor: Motor }>()
-
 const FAVORITES_KEY = 'motor-favorites'
 
 const isFavorite = ref(false)
@@ -48,12 +48,30 @@ const share = () => {
   }
 }
 
+const router = useRouter()
+
 const form = ref({
   message: '',
   name: '',
   email: '',
   phone: '',
 })
+
+const buyMotor = async () => {
+  if (!confirm('¿Confirmar compra?'))
+    return
+
+  try {
+    const res = await $api('/wp-json/motorlan/v1/purchases', {
+      method: 'POST',
+      body: { motor_id: props.motor.id },
+    })
+    router.push(`/tienda/compra/${res.uuid}`)
+  }
+  catch (error) {
+    console.error(error)
+  }
+}
 </script>
 
 <template>
@@ -84,7 +102,10 @@ const form = ref({
     <div class="d-flex flex-wrap gap-4 mb-6">
       <VBtn
         color="error"
+
         class="px-6 flex-grow-1 action-btn"
+        @click="buyMotor"
+
       >
         Comprar
       </VBtn>
