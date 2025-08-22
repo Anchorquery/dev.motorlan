@@ -32,6 +32,8 @@ const motorData = ref({
     regulacion_electronica_drivers: false,
     precio_de_venta: null,
     precio_negociable: 'No',
+    stock: null,
+    documentacion_adicional: [],
   },
 })
 
@@ -98,6 +100,10 @@ onMounted(async () => {
           id: img.id,
         }))
       }
+
+      if (motorData.value.acf.stock === null || motorData.value.acf.stock === undefined) {
+        motorData.value.acf.stock = 1
+      }
     }
   }
   catch (error) {
@@ -105,7 +111,7 @@ onMounted(async () => {
   }
 })
 
-const uploadImage = async (file: File) => {
+const uploadMedia = async (file: File) => {
   const accessToken = useCookie('accessToken').value
   const formData = new FormData()
 
@@ -143,7 +149,7 @@ const updateMotor = async () => {
     if (motorImageFile.value.length > 0) {
       const image = motorImageFile.value[0]
       if (image.file) { // New file
-        const uploadedImage = await uploadImage(image.file)
+        const uploadedImage = await uploadMedia(image.file)
 
         motorData.value.acf.motor_image = uploadedImage.id
       }
@@ -160,7 +166,7 @@ const updateMotor = async () => {
       const newGalleryIds = []
       for (const image of motorGalleryFiles.value) {
         if (image.file) { // New file
-          const uploadedImage = await uploadImage(image.file)
+          const uploadedImage = await uploadMedia(image.file)
 
           newGalleryIds.push(uploadedImage.id)
         }
@@ -172,6 +178,18 @@ const updateMotor = async () => {
     }
     else {
       motorData.value.acf.motor_gallery = []
+    }
+
+    // Handle additional documentation
+    if (motorData.value.acf.documentacion_adicional) {
+      for (const doc of motorData.value.acf.documentacion_adicional) {
+        if (doc.archivo instanceof File) {
+          const uploadedFile = await uploadMedia(doc.archivo)
+          doc.archivo = uploadedFile.id
+        } else if (doc.archivo && doc.archivo.id) {
+          doc.archivo = doc.archivo.id
+        }
+      }
     }
 
     await api(url, {
@@ -209,6 +227,23 @@ const formattedMarca = computed({
     motorData.value.acf.marca = newValue
   },
 })
+
+const addDocument = () => {
+  if (motorData.value.acf.documentacion_adicional.length < 5) {
+    motorData.value.acf.documentacion_adicional.push({ nombre: '', archivo: null })
+  }
+}
+
+const removeDocument = (index) => {
+  motorData.value.acf.documentacion_adicional.splice(index, 1)
+}
+
+const handleFileUpload = (event, index) => {
+  const file = event.target.files[0]
+  if (file) {
+    motorData.value.acf.documentacion_adicional[index].archivo = file
+  }
+}
 </script>
 
 <template>
@@ -401,6 +436,17 @@ const formattedMarca = computed({
                   cols="12"
                   md="4"
                 >
+                  <AppTextField
+                    v-model="motorData.acf.stock"
+                    label="Stock"
+                    type="number"
+                    placeholder="1"
+                  />
+                </VCol>
+                <VCol
+                  cols="12"
+                  md="4"
+                >
                   <VRadioGroup
                     v-model="motorData.acf.precio_negociable"
                     inline
@@ -513,6 +559,74 @@ const formattedMarca = computed({
                   <DropZone v-model="motorGalleryFiles" />
                 </VCol>
               </VRow>
+            </VCardText>
+          </VCard>
+
+          <VCard
+            class="mb-6"
+            title="Documentación Adicional"
+          >
+            <VCardText>
+              <div
+                v-for="(doc, index) in motorData.acf.documentacion_adicional"
+                :key="index"
+                class="document-row d-flex gap-4 mb-4 align-center"
+              >
+                <AppTextField
+                  v-model="doc.nombre"
+                  label="Nombre del Documento"
+                  placeholder="Manual de usuario"
+                  style="width: 300px;"
+                />
+
+                <div v-if="doc.archivo">
+                  <a
+                    v-if="doc.archivo.url"
+                    :href="doc.archivo.url"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {{ doc.archivo.filename }}
+                  </a>
+                  <span v-else>{{ doc.archivo.name }}</span>
+                  <VBtn
+                    icon
+                    variant="text"
+                    size="small"
+                    @click="doc.archivo = null"
+                  >
+                    <VIcon
+                      icon="tabler-x"
+                      size="20"
+                    />
+                  </VBtn>
+                </div>
+
+                <VFileInput
+                  v-else
+                  label="Subir Archivo"
+                  @change="event => handleFileUpload(event, index)"
+                />
+
+                <VBtn
+                  icon
+                  variant="text"
+                  color="error"
+                  size="small"
+                  @click="removeDocument(index)"
+                >
+                  <VIcon
+                    icon="tabler-trash"
+                    size="20"
+                  />
+                </VBtn>
+              </div>
+              <VBtn
+                v-if="!motorData.acf.documentacion_adicional || motorData.acf.documentacion_adicional.length < 5"
+                @click="addDocument"
+              >
+                Añadir Documento
+              </VBtn>
             </VCardText>
           </VCard>
         </VCol>
