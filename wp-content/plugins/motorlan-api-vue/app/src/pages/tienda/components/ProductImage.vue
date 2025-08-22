@@ -7,6 +7,8 @@ const props = defineProps<{ motor: Motor }>()
 
 register()
 
+
+
 const images = computed(() => {
   const gallery = (props.motor.acf?.motor_gallery || []) as any[]
 
@@ -20,6 +22,7 @@ const images = computed(() => {
 
 <template>
   <div class="product-image">
+
     <swiper-container
       v-if="images.length"
       class="mainSwiper"

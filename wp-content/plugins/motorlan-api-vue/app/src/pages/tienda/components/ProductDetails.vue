@@ -4,16 +4,7 @@ import type { Motor } from '@/interfaces/motor'
 
 const props = defineProps<{ motor: Motor }>()
 
-const title = computed(() => {
-  const parts = [
-    props.motor.title,
-    props.motor.acf.tipo_o_referencia,
-    props.motor.acf.potencia ? `${props.motor.acf.potencia} kW` : null,
-    props.motor.acf.velocidad ? `${props.motor.acf.velocidad} rpm` : null,
-  ].filter(Boolean)
 
-  return parts.join(' ')
-})
 
 const form = ref({
   message: '',
@@ -25,14 +16,7 @@ const form = ref({
 
 <template>
   <div class="product-details flex-grow-1">
-    <div class="d-flex justify-space-between align-start mb-4">
-      <h1 class="text-error">
-        {{ title }}
-      </h1>
-      <div class="text-h5 text-error">
-        {{ motor.acf.precio_de_venta ? `${motor.acf.precio_de_venta} €` : 'Consultar precio' }}
-      </div>
-    </div>
+
     <div class="d-flex flex-wrap gap-4 mb-6">
       <VBtn
         color="error"

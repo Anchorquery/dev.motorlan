@@ -116,7 +116,6 @@ declare module 'vue-router/auto-routes' {
     'tables-data-table': RouteRecordInfo<'tables-data-table', '/tables/data-table', Record<never, never>, Record<never, never>>,
     'tables-simple-table': RouteRecordInfo<'tables-simple-table', '/tables/simple-table', Record<never, never>, Record<never, never>>,
     'tienda': RouteRecordInfo<'tienda', '/tienda', Record<never, never>, Record<never, never>>,
-    'tienda-id': RouteRecordInfo<'tienda-id', '/tienda/:id', { id: ParamValue<true> }, { id: ParamValue<false> }>,
     'tienda-slug': RouteRecordInfo<'tienda-slug', '/tienda/:slug', { slug: ParamValue<true> }, { slug: ParamValue<false> }>,
     'tienda-components-motor-info': RouteRecordInfo<'tienda-components-motor-info', '/tienda/components/MotorInfo', Record<never, never>, Record<never, never>>,
     'tienda-components-product-details': RouteRecordInfo<'tienda-components-product-details', '/tienda/components/ProductDetails', Record<never, never>, Record<never, never>>,

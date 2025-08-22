@@ -29,23 +29,59 @@ const docs = computed(() => {
     .filter((d: any) => d && d.url)
     .map((d: any) => ({ title: d.title || 'Documento', url: d.url }))
 })
+
+const title = computed(() => {
+  const parts = [
+    motor.value.title,
+    motor.value.acf.tipo_o_referencia,
+    motor.value.acf.potencia ? `${motor.value.acf.potencia} kW` : null,
+    motor.value.acf.velocidad ? `${motor.value.acf.velocidad} rpm` : null,
+  ].filter(Boolean)
+
+  return parts.join(' ')
+})
 </script>
 
 <template>
-  <div
+  <VContainer
     v-if="motor"
-    class="motor-detail"
+    fluid
   >
-    <div class="top-section mb-8">
-      <ProductImage :motor="motor" />
-      <ProductDetails :motor="motor" />
-    </div>
-    <div class="d-flex flex-wrap gap-6 mb-8">
+    <VRow>
+      <VCol cols="12">
+        <div class="d-flex justify-space-between align-start mb-4">
+          <h1 class="text-error">
+            {{ title }}
+          </h1>
+          <div class="text-h1 text-error">
+            {{ motor.acf.precio_de_venta ? `${motor.acf.precio_de_venta} €` : 'Consultar precio' }}
+          </div>
+        </div>
+      </VCol>
+    </VRow>
+    <VRow>
+      <VCol
+        cols="12"
+        md="7"
+      >
+        <ProductImage :motor="motor" />
+      </VCol>
+      <VCol
+        cols="12"
+        md="5"
+      >
+        <ProductDetails :motor="motor" />
+      </VCol>
+    </VRow>
+
+    <div class="d-flex flex-wrap gap-6 my-8">
       <MotorInfo :motor="motor" />
       <ProductDocs :docs="docs" />
     </div>
+
     <RelatedProducts :current-id="motor.id" />
-  </div>
+  </VContainer>
+
   <div
     v-else-if="isFetching"
     class="text-center pa-12"
@@ -55,6 +91,7 @@ const docs = computed(() => {
       size="64"
     />
   </div>
+
   <VCard
     v-else
     class="pa-8 text-center"
@@ -64,23 +101,5 @@ const docs = computed(() => {
 </template>
 
 <style scoped>
-.motor-detail {
-  max-width: 1200px;
-  margin-inline: auto;
-}
-
-.top-section {
-  display: flex;
-  gap: 24px;
-}
-
-.top-section > * {
-  flex: 1 1 50%;
-}
-
-@media (max-width: 960px) {
-  .top-section {
-    flex-direction: column;
-  }
-}
+/* Ya no se necesita el CSS personalizado para el layout */
 </style>
