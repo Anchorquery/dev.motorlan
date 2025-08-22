@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { createUrl } from '@/@core/composable/createUrl'
 import { useApi } from '@/composables/useApi'
@@ -18,21 +18,29 @@ const vendor = computed(() => vendorData.value)
 const opinion = ref({ valoracion: 0, comentario: '' })
 
 const sendOpinion = async () => {
-  try {
-    await $api(`/wp-json/motorlan/v1/purchases/${uuid}/opinion`, {
-      method: 'POST',
-      body: opinion.value,
-    })
-    opinion.value = { valoracion: 0, comentario: '' }
+  // Se construye la URL dinámicamente
+  const url = `/wp-json/motorlan/v1/purchases/${uuid.value}/opinion`
+
+  // Se ejecuta la petición POST con useApi
+  const { error } = await useApi(url).post(opinion.value)
+
+  // Se maneja el error si la petición falla
+  if (error.value) {
+    console.error('Error al enviar la opinión:', error.value)
+
+    return // Se detiene la ejecución si hay un error
   }
-  catch (error) {
-    console.error(error)
-  }
+
+  // Si la petición fue exitosa, se resetea el formulario
+  opinion.value = { valoracion: 0, comentario: '' }
 }
 </script>
 
 <template>
-  <VContainer v-if="purchase" fluid>
+  <VContainer
+    v-if="purchase"
+    fluid
+  >
     <VCard class="mb-6">
       <VCardTitle>Detalle de la compra</VCardTitle>
       <VCardText>
@@ -65,9 +73,22 @@ const sendOpinion = async () => {
     <VCard>
       <VCardTitle>¿Qué te pareció tu producto?</VCardTitle>
       <VCardText>
-        <VRating v-model="opinion.valoracion" class="mb-4" />
-        <VTextarea v-model="opinion.comentario" label="Comentario" rows="3" />
-        <VBtn color="error" class="mt-4" @click="sendOpinion">Enviar</VBtn>
+        <VRating
+          v-model="opinion.valoracion"
+          class="mb-4"
+        />
+        <VTextarea
+          v-model="opinion.comentario"
+          label="Comentario"
+          rows="3"
+        />
+        <VBtn
+          color="error"
+          class="mt-4"
+          @click="sendOpinion"
+        >
+          Enviar
+        </VBtn>
       </VCardText>
     </VCard>
   </VContainer>
