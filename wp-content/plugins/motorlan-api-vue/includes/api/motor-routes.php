@@ -214,7 +214,7 @@ function motorlan_get_motor_data($post_id) {
         'precio_de_venta', 'potencia', 'velocidad', 'par_nominal', 'voltaje',
         'intensidad', 'pais', 'provincia', 'posibilidad_de_alquiler',
         'tipo_de_alimentacion', 'servomotores', 'regulacion_electronica_drivers',
-        'precio_negociable', 'motor_image', 'motor_gallery', 'informe_de_reparacion'
+        'precio_negociable', 'motor_image', 'motor_gallery', 'informe_de_reparacion', 'stock'
     ];
 
     foreach ($essential_fields as $field) {
