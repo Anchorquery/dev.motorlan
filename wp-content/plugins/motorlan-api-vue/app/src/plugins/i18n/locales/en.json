@@ -190,8 +190,8 @@
       "price_desc": "Price desc"
     }
   },
-  "add_motor": {
-    "title": "Add New {postType}",
+  "add_publication": {
+    "title": "Add New Publication",
     "step": "Step {currentStep} of 3",
     "buttons": {
       "discard": "Discard",
@@ -203,8 +203,8 @@
       "request_warranty": "Request Warranty"
     },
     "post_details": {
-      "section_title": "{postType} Details",
-      "publication_type": "Publication Type",
+      "section_title": "Publication Details",
+      "type": "Publication Type",
       "title": "Publication Title",
       "title_placeholder": "Title",
       "reference": "Type or Reference",
@@ -236,32 +236,32 @@
       "stock": "Stock",
       "stock_placeholder": "1",
       "negotiable_price": "Negotiable Price",
-      "publish_acf": "Publish (ACF)",
+      "publish_acf": "Publication Status",
       "publish_status_publish": "Publish",
       "publish_status_draft": "Draft"
     },
     "post_type_options": {
-        "motor": "Motor",
-        "regulator": "Regulator",
-        "other_spare_part": "Other Spare Part"
+      "motor": "Motor",
+      "regulator": "Regulator",
+      "other_spare_part": "Other Spare Part"
     },
     "condition_options": {
-        "new": "New",
-        "used": "Used",
-        "restored": "Restored"
+      "new": "New",
+      "used": "Used",
+      "restored": "Restored"
     },
     "country_options": {
-        "spain": "Spain",
-        "portugal": "Portugal",
-        "france": "France"
+      "spain": "Spain",
+      "portugal": "Portugal",
+      "france": "France"
     },
     "boolean_options": {
-        "yes": "Yes",
-        "no": "No"
+      "yes": "Yes",
+      "no": "No"
     },
     "power_supply_options": {
-        "dc": "Direct Current (D.C.)",
-        "ac": "Alternating Current (A.C.)"
+      "dc": "Direct Current (D.C.)",
+      "ac": "Alternating Current (A.C.)"
     },
     "media": {
       "main_image": "Main Image",
@@ -303,6 +303,104 @@
       "warranty_request_success": "Warranty requested successfully. Publication made.",
       "warranty_request_error": "Error requesting warranty: {message}"
     }
+  },
+  "publication_list": {
+    "publication": "Publication",
+    "reference": "Reference",
+    "price": "Price",
+    "status": "Status",
+    "actions": "Actions",
+    "filters": "Filters",
+    "search_publication": "Search Publication",
+    "export": "Export",
+    "add_publication": "Add Publication",
+    "delete": "Delete",
+    "duplicate": "Duplicate",
+    "publish": "Publish",
+    "pause": "Pause",
+    "move_to_draft": "Move to Draft",
+    "deleting_publication": "Deleting publication...",
+    "duplicating_publication": "Duplicating publication...",
+    "publishing_publication": "Publishing publication...",
+    "pausing_publication": "Pausing publication...",
+    "moving_to_draft": "Moving to draft...",
+    "updating_status": "Updating status...",
+    "delete_dialog_title": "Confirm Deletion",
+    "delete_dialog_text": "Are you sure you want to delete this publication? This action cannot be undone.",
+    "cancel": "Cancel",
+    "confirm_delete": "Delete",
+    "duplicate_dialog_title": "Confirm Duplication",
+    "duplicate_dialog_text": "Are you sure you want to duplicate this publication?",
+    "confirm_duplicate": "Duplicate",
+    "status_dialog_title": "Confirm Status Change",
+    "status_dialog_text": "Are you sure you want to change the status of this publication?",
+    "confirm_status": "Accept",
+    "status_options": {
+      "published": "Published",
+      "draft": "Draft",
+      "paused": "Paused",
+      "sold": "Sold",
+      "unknown": "Unknown"
+    }
+  },
+  "select_publication_type": {
+    "title": "Select Publication Type",
+    "subtitle": "Choose what type of product you want to add to the store.",
+    "motor_title": "Motor",
+    "motor_description": "Publish an electric motor, with all its technical details such as power, speed, etc.",
+    "regulator_title": "Regulator",
+    "regulator_description": "Publish a regulator or driver, with its technical specifications.",
+    "other_spare_part_title": "Other Spare Part",
+    "other_spare_part_description": "Publish any other type of related spare part or component."
+  },
+  "edit_publication": {
+    "title": "Edit Publication",
+    "discard": "Discard",
+    "update_publication": "Update Publication",
+    "section_title": "Publication Details",
+    "publication_title": "Publication Title",
+    "publication_title_placeholder": "Title",
+    "reference": "Type or Reference",
+    "reference_placeholder": "Reference",
+    "brand": "Brand",
+    "category": "Category",
+    "type": "Type",
+    "power": "Power (kW)",
+    "power_placeholder": "100",
+    "speed": "Speed (rpm)",
+    "speed_placeholder": "3000",
+    "torque": "Nominal Torque (Nm)",
+    "torque_placeholder": "50",
+    "voltage": "Voltage (V)",
+    "voltage_placeholder": "220",
+    "intensity": "Intensity (A)",
+    "intensity_placeholder": "10",
+    "country": "Country (location)",
+    "province": "Province",
+    "province_placeholder": "Madrid",
+    "condition": "Item Condition",
+    "price": "Selling Price (€)",
+    "price_placeholder": "1000",
+    "stock": "Stock",
+    "stock_placeholder": "1",
+    "negotiable_price": "Negotiable Price",
+    "rent_option": "Rental Option",
+    "power_supply_type": "Power Supply Type",
+    "servomotors": "Servomotors",
+    "electronic_regulation": "Electronic Regulation/Drivers",
+    "description": "Description",
+    "description_placeholder": "Publication description",
+    "images_section_title": "Publication Images",
+    "main_image": "Main Image",
+    "image_gallery": "Image Gallery",
+    "additional_documentation_section_title": "Additional Documentation",
+    "document_name": "Document Name",
+    "document_name_placeholder": "User manual",
+    "upload_file": "Upload File",
+    "add_document": "Add Document",
+    "update_success": "Publication updated successfully.",
+    "update_error": "Error updating publication: {message}",
+    "required_fields_error": "Please fill in all required fields."
   },
   "$vuetify": {
     "badge": "Badge",

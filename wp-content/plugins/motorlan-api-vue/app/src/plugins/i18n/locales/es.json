@@ -191,8 +191,8 @@
       "price_desc": "Precio desc"
     }
   },
-  "add_motor": {
-    "title": "Añadir Nuevo {postType}",
+  "add_publication": {
+    "title": "Añadir Nueva Publicación",
     "step": "Paso {currentStep} de 3",
     "buttons": {
       "discard": "Descartar",
@@ -204,8 +204,8 @@
       "request_warranty": "Solicitar Garantía"
     },
     "post_details": {
-      "section_title": "Detalles del {postType}",
-      "publication_type": "Tipo de Publicación",
+      "section_title": "Detalles de la Publicación",
+      "type": "Tipo de Publicación",
       "title": "Título de la publicación",
       "title_placeholder": "Título",
       "reference": "Tipo o referencia",
@@ -237,32 +237,32 @@
       "stock": "Stock",
       "stock_placeholder": "1",
       "negotiable_price": "Precio negociable",
-      "publish_acf": "Publicar (ACF)",
+      "publish_acf": "Estado de la publicación",
       "publish_status_publish": "Publicar",
       "publish_status_draft": "Borrador"
     },
     "post_type_options": {
-        "motor": "Motor",
-        "regulator": "Regulador",
-        "other_spare_part": "Otro Repuesto"
+      "motor": "Motor",
+      "regulator": "Regulador",
+      "other_spare_part": "Otro Repuesto"
     },
     "condition_options": {
-        "new": "Nuevo",
-        "used": "Usado",
-        "restored": "Restaurado"
+      "new": "Nuevo",
+      "used": "Usado",
+      "restored": "Restaurado"
     },
     "country_options": {
-        "spain": "España",
-        "portugal": "Portugal",
-        "france": "Francia"
+      "spain": "España",
+      "portugal": "Portugal",
+      "france": "Francia"
     },
     "boolean_options": {
-        "yes": "Sí",
-        "no": "No"
+      "yes": "Sí",
+      "no": "No"
     },
     "power_supply_options": {
-        "dc": "Continua (C.C.)",
-        "ac": "Alterna (C.A.)"
+      "dc": "Continua (C.C.)",
+      "ac": "Alterna (C.A.)"
     },
     "media": {
       "main_image": "Imagen Principal",
@@ -304,6 +304,104 @@
       "warranty_request_success": "Garantía solicitada con éxito. Publicación realizada.",
       "warranty_request_error": "Error al solicitar la garantía: {message}"
     }
+  },
+  "publication_list": {
+    "publication": "Publicación",
+    "reference": "Referencia",
+    "price": "Precio",
+    "status": "Estado",
+    "actions": "Acciones",
+    "filters": "Filtros",
+    "search_publication": "Buscar Publicación",
+    "export": "Exportar",
+    "add_publication": "Añadir Publicación",
+    "delete": "Eliminar",
+    "duplicate": "Duplicar",
+    "publish": "Publicar",
+    "pause": "Pausar",
+    "move_to_draft": "Mover a Borrador",
+    "deleting_publication": "Borrando publicación...",
+    "duplicating_publication": "Duplicando publicación...",
+    "publishing_publication": "Publicando publicación...",
+    "pausing_publication": "Pausando publicación...",
+    "moving_to_draft": "Moviendo a borrador...",
+    "updating_status": "Actualizando estado...",
+    "delete_dialog_title": "Confirmar Eliminación",
+    "delete_dialog_text": "¿Estás seguro de que quieres eliminar esta publicación? Esta acción no se puede deshacer.",
+    "cancel": "Cancelar",
+    "confirm_delete": "Eliminar",
+    "duplicate_dialog_title": "Confirmar Duplicación",
+    "duplicate_dialog_text": "¿Estás seguro de que quieres duplicar esta publicación?",
+    "confirm_duplicate": "Duplicar",
+    "status_dialog_title": "Confirmar Cambio de Estado",
+    "status_dialog_text": "¿Estás seguro de que quieres cambiar el estado de esta publicación?",
+    "confirm_status": "Aceptar",
+    "status_options": {
+      "published": "Publicado",
+      "draft": "Borrador",
+      "paused": "Pausado",
+      "sold": "Vendido",
+      "unknown": "Desconocido"
+    }
+  },
+  "select_publication_type": {
+    "title": "Selecciona el Tipo de Publicación",
+    "subtitle": "Elige qué tipo de producto quieres añadir a la store.",
+    "motor_title": "Motor",
+    "motor_description": "Publica un motor eléctrico, con todos sus detalles técnicos como potencia, velocidad, etc.",
+    "regulator_title": "Regulador",
+    "regulator_description": "Publica un regulador o driver, con sus especificaciones técnicas.",
+    "other_spare_part_title": "Otro Repuesto",
+    "other_spare_part_description": "Publica cualquier otro tipo de repuesto o componente relacionado."
+  },
+  "edit_publication": {
+    "title": "Editar Publicación",
+    "discard": "Descartar",
+    "update_publication": "Actualizar Publicación",
+    "section_title": "Detalles de la Publicación",
+    "publication_title": "Título de la publicación",
+    "publication_title_placeholder": "Título",
+    "reference": "Tipo o referencia",
+    "reference_placeholder": "Referencia",
+    "brand": "Marca",
+    "category": "Categoría",
+    "type": "Tipo",
+    "power": "Potencia (kW)",
+    "power_placeholder": "100",
+    "speed": "Velocidad (rpm)",
+    "speed_placeholder": "3000",
+    "torque": "PAR Nominal (Nm)",
+    "torque_placeholder": "50",
+    "voltage": "Voltaje (V)",
+    "voltage_placeholder": "220",
+    "intensity": "Intensidad (A)",
+    "intensity_placeholder": "10",
+    "country": "País (localización)",
+    "province": "Provincia",
+    "province_placeholder": "Madrid",
+    "condition": "Estado del artículo",
+    "price": "Precio de venta (€)",
+    "price_placeholder": "1000",
+    "stock": "Stock",
+    "stock_placeholder": "1",
+    "negotiable_price": "Precio negociable",
+    "rent_option": "Posibilidad de alquiler",
+    "power_supply_type": "Tipo de alimentación",
+    "servomotors": "Servomotores",
+    "electronic_regulation": "Regulación electrónica/Drivers",
+    "description": "Descripción",
+    "description_placeholder": "Descripción de la publicación",
+    "images_section_title": "Imágenes de la Publicación",
+    "main_image": "Imagen Principal",
+    "image_gallery": "Galería de Imágenes",
+    "additional_documentation_section_title": "Documentación Adicional",
+    "document_name": "Nombre del Documento",
+    "document_name_placeholder": "Manual de usuario",
+    "upload_file": "Subir Archivo",
+    "add_document": "Añadir Documento",
+    "update_success": "Publicación actualizada correctamente.",
+    "update_error": "Error al actualizar la publicación: {message}",
+    "required_fields_error": "Por favor, rellene todos los campos obligatorios."
   },
   "$vuetify": {
     "badge": "Insignia",

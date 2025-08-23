@@ -1,5 +1,8 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import type { ImagenDestacada, Publicacion } from '../../../../../interfaces/publicacion'
+
+const { t } = useI18n()
 
 const widgetData = ref([
   { title: 'Sales', value: '$5,345', icon: 'tabler-smart-home', desc: '5k orders', change: 5.7 },
@@ -9,11 +12,11 @@ const widgetData = ref([
 ])
 
 const headers = [
-  { title: 'Publicacion', key: 'publicacion' },
-  { title: 'Referencia', key: 'referencia' },
-  { title: 'Precio', key: 'precio' },
-  { title: 'Status', key: 'status' },
-  { title: 'Actions', key: 'actions', sortable: false },
+  { title: t('publication_list.publication'), key: 'publicacion' },
+  { title: t('publication_list.reference'), key: 'referencia' },
+  { title: t('publication_list.price'), key: 'precio' },
+  { title: t('publication_list.status'), key: 'status' },
+  { title: t('publication_list.actions'), key: 'actions', sortable: false },
 ]
 
 const selectedStatus = ref()
@@ -22,11 +25,11 @@ const selectedTipo = ref()
 const searchQuery = ref('')
 const selectedRows = ref([])
 
-const status = ref([
-  { title: 'Publicado', value: 'publish' },
-  { title: 'Borrador', value: 'draft' },
-  { title: 'Pausado', value: 'paused' },
-  { title: 'Vendido', value: 'sold' },
+const status = computed(() => [
+  { title: t('publication_list.status_options.published'), value: 'publish' },
+  { title: t('publication_list.status_options.draft'), value: 'draft' },
+  { title: t('publication_list.status_options.paused'), value: 'paused' },
+  { title: t('publication_list.status_options.sold'), value: 'sold' },
 ])
 
 const categories = ref([])
@@ -64,15 +67,15 @@ const updateOptions = (options: any) => {
 
 const resolveStatus = (statusMsg: string) => {
   if (statusMsg === 'publish')
-    return { text: 'Publicado', color: 'success' }
+    return { text: t('publication_list.status_options.published'), color: 'success' }
   if (statusMsg === 'draft')
-    return { text: 'Borrador', color: 'secondary' }
+    return { text: t('publication_list.status_options.draft'), color: 'secondary' }
   if (statusMsg === 'paused')
-    return { text: 'Pausado', color: 'warning' }
+    return { text: t('publication_list.status_options.paused'), color: 'warning' }
   if (statusMsg === 'sold')
-    return { text: 'Vendido', color: 'error' }
+    return { text: t('publication_list.status_options.sold'), color: 'error' }
 
-  return { text: 'Unknown', color: 'info' }
+  return { text: t('publication_list.status_options.unknown'), color: 'info' }
 }
 
 const { data: publicacionesData, execute: fetchPublicaciones } = await useApi<any>(createUrl('/wp-json/motorlan/v1/publicaciones',
@@ -139,7 +142,7 @@ const deletePublicacion = () => {
     return
 
   isDeleteDialogVisible.value = false
-  handlePublicacionAction('Borrando publicacion...', async () => {
+  handlePublicacionAction(t('publication_list.deleting_publication'), async () => {
     if (publicacionToDelete.value === null)
       return
     await $api(`/wp-json/motorlan/v1/publicaciones/${publicacionToDelete.value}`, { method: 'DELETE' })
@@ -148,7 +151,6 @@ const deletePublicacion = () => {
     if (index !== -1)
       selectedRows.value.splice(index, 1)
   })
-
 }
 
 const duplicatePublicacion = () => {
@@ -156,7 +158,7 @@ const duplicatePublicacion = () => {
     return
 
   isDuplicateDialogVisible.value = false
-  handlePublicacionAction('Duplicando publicacion...', async () => {
+  handlePublicacionAction(t('publication_list.duplicating_publication'), async () => {
     if (publicacionToDuplicate.value === null)
       return
     await $api(`/wp-json/motorlan/v1/publicaciones/${publicacionToDuplicate.value}/duplicate`, { method: 'POST' })
@@ -171,12 +173,12 @@ const changeStatus = () => {
   isStatusDialogVisible.value = false
 
   const messages: { [key: string]: string } = {
-    publish: 'Publicando publicacion...',
-    paused: 'Pausando publicacion...',
-    draft: 'Moviendo a borrador...',
+    publish: t('publication_list.publishing_publication'),
+    paused: t('publication_list.pausing_publication'),
+    draft: t('publication_list.moving_to_draft'),
   }
 
-  handlePublicacionAction(messages[status] || 'Actualizando estado...', async () => {
+  handlePublicacionAction(messages[status] || t('publication_list.updating_status'), async () => {
     await $api(`/wp-json/motorlan/v1/publicaciones/${id}/status`, {
       method: 'POST',
       body: { status },
@@ -282,7 +284,7 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
 
     <!-- 👉 publicaciones -->
     <VCard
-      title="Filters"
+      :title="t('publication_list.filters')"
       class="mb-6"
     >
       <VCardText>
@@ -294,7 +296,7 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
           >
             <AppSelect
               v-model="selectedStatus"
-              placeholder="Status"
+              :placeholder="t('publication_list.status')"
               :items="status"
               clearable
               clear-icon="tabler-x"
@@ -308,7 +310,7 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
           >
             <AppSelect
               v-model="selectedCategory"
-              placeholder="Category"
+              :placeholder="t('Category')"
               :items="categories"
               clearable
               clear-icon="tabler-x"
@@ -321,7 +323,7 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
           >
             <AppSelect
               v-model="selectedTipo"
-              placeholder="Tipo"
+              :placeholder="t('Tipo')"
               :items="tipos"
               clearable
               clear-icon="tabler-x"
@@ -337,7 +339,7 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
           <!-- 👉 Search  -->
           <AppTextField
             v-model="searchQuery"
-            placeholder="Search Publicacion"
+            :placeholder="t('publication_list.search_publication')"
             style="inline-size: 200px;"
             class="me-3"
           />
@@ -355,7 +357,7 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
             color="secondary"
             prepend-icon="tabler-upload"
           >
-            Export
+            {{ t('publication_list.export') }}
           </VBtn>
 
           <VBtn
@@ -363,7 +365,7 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
             prepend-icon="tabler-plus"
             @click="$router.push({ path: '/apps/publicaciones/publicacion/add' })"
           >
-            Add Publicacion
+            {{ t('publication_list.add_publication') }}
           </VBtn>
         </div>
       </div>
@@ -434,7 +436,7 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
                   prepend-icon="tabler-trash"
                   @click="openDeleteDialog((item as any).id)"
                 >
-                  Delete
+                  {{ t('publication_list.delete') }}
                 </VListItem>
 
                 <VListItem
@@ -442,7 +444,7 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
                   prepend-icon="tabler-copy"
                   @click="openDuplicateDialog((item as any).id)"
                 >
-                  Duplicate
+                  {{ t('publication_list.duplicate') }}
                 </VListItem>
 
                 <VListItem
@@ -451,7 +453,7 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
                   prepend-icon="tabler-player-play"
                   @click="openStatusDialog((item as any).id, 'publish')"
                 >
-                  Publish
+                  {{ t('publication_list.publish') }}
                 </VListItem>
 
                 <VListItem
@@ -460,7 +462,7 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
                   prepend-icon="tabler-player-pause"
                   @click="openStatusDialog((item as any).id, 'paused')"
                 >
-                  Pause
+                  {{ t('publication_list.pause') }}
                 </VListItem>
 
                 <VListItem
@@ -469,7 +471,7 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
                   prepend-icon="tabler-file-text"
                   @click="openStatusDialog((item as any).id, 'draft')"
                 >
-                  Move to Draft
+                  {{ t('publication_list.move_to_draft') }}
                 </VListItem>
               </VList>
             </VMenu>
@@ -510,10 +512,10 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
     >
       <VCard>
         <VCardTitle>
-          Confirmar Eliminación
+          {{ t('publication_list.delete_dialog_title') }}
         </VCardTitle>
         <VCardText>
-          ¿Estás seguro de que quieres eliminar este publicacion? Esta acción no se puede deshacer.
+          {{ t('publication_list.delete_dialog_text') }}
         </VCardText>
         <VCardActions>
           <VSpacer />
@@ -521,13 +523,13 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
             color="error"
             @click="isDeleteDialogVisible = false"
           >
-            Cancelar
+            {{ t('publication_list.cancel') }}
           </VBtn>
           <VBtn
             color="primary"
             @click="deletePublicacion"
           >
-            Eliminar
+            {{ t('publication_list.confirm_delete') }}
           </VBtn>
         </VCardActions>
       </VCard>
@@ -541,10 +543,10 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
     >
       <VCard>
         <VCardTitle>
-          Confirmar Duplicación
+          {{ t('publication_list.duplicate_dialog_title') }}
         </VCardTitle>
         <VCardText>
-          ¿Estás seguro de que quieres duplicar este publicacion?
+          {{ t('publication_list.duplicate_dialog_text') }}
         </VCardText>
         <VCardActions>
           <VSpacer />
@@ -552,13 +554,13 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
             color="error"
             @click="isDuplicateDialogVisible = false"
           >
-            Cancelar
+            {{ t('publication_list.cancel') }}
           </VBtn>
           <VBtn
             color="primary"
             @click="duplicatePublicacion"
           >
-            Duplicar
+            {{ t('publication_list.confirm_duplicate') }}
           </VBtn>
         </VCardActions>
       </VCard>
@@ -572,10 +574,10 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
     >
       <VCard>
         <VCardTitle>
-          Confirmar Cambio de Estado
+          {{ t('publication_list.status_dialog_title') }}
         </VCardTitle>
         <VCardText>
-          ¿Estás seguro de que quieres cambiar el estado de este publicacion?
+          {{ t('publication_list.status_dialog_text') }}
         </VCardText>
         <VCardActions>
           <VSpacer />
@@ -583,13 +585,13 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
             color="error"
             @click="isStatusDialogVisible = false"
           >
-            Cancelar
+            {{ t('publication_list.cancel') }}
           </VBtn>
           <VBtn
             color="primary"
             @click="changeStatus"
           >
-            Aceptar
+            {{ t('publication_list.confirm_status') }}
           </VBtn>
         </VCardActions>
       </VCard>
