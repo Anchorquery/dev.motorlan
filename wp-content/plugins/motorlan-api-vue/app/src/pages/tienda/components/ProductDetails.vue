@@ -117,7 +117,7 @@ const handlePurchase = async (confirmed: boolean) => {
   try {
     const res = await $api('/wp-json/motorlan/v1/purchases', {
       method: 'POST',
-      body: { motor_id: props.publicacion.id },
+      body: { publicacion_id: props.publicacion.id },
     })
     router.push(`/tienda/compra/${res.uuid}`)
   }
