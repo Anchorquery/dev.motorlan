@@ -27,7 +27,7 @@ require_once MOTORLAN_API_VUE_PATH . 'includes/acf-setup.php';
 require_once MOTORLAN_API_VUE_PATH . 'includes/acf-setup-purchases.php';
 require_once MOTORLAN_API_VUE_PATH . 'includes/api/publicaciones-routes.php';
 require_once MOTORLAN_API_VUE_PATH . 'includes/api/garantia-routes.php';
-require_once MOTORLAN_API_VUE_PATH . 'includes/api/my-account-routes.php';
+require_once MOTORLAN_API_VUE_PATH . 'includes/api/purchases-routes.php';
 require_once MOTORLAN_API_VUE_PATH . 'includes/api/questions-routes.php';
 require_once MOTORLAN_API_VUE_PATH . 'includes/api/offers-routes.php';
 

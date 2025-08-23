@@ -6,8 +6,7 @@ const router = useRouter()
 
 const headers = [
   { title: 'Publicacion', key: 'motor' },
-  { title: 'Pregunta', key: 'pregunta' },
-  { title: 'Respuesta', key: 'respuesta' },
+  { title: 'Fecha de Compra', key: 'fecha_compra' },
   { title: 'Estado', key: 'estado' },
   { title: 'Acciones', key: 'actions', sortable: false },
 ]
@@ -27,7 +26,18 @@ const updateOptions = (options: any) => {
   orderBy.value = options.sortBy[0]?.order
 }
 
-const { data: questionsData } = await useApi<any>(createUrl('/wp-json/motorlan/v1/my-account/questions', {
+const resolveStatus = (status: string) => {
+  if (status === 'pendiente')
+    return { text: 'Pendiente', color: 'warning' }
+  if (status === 'completado')
+    return { text: 'Completado', color: 'success' }
+  if (status === 'cancelado')
+    return { text: 'Cancelado', color: 'error' }
+
+  return { text: 'Desconocido', color: 'info' }
+}
+
+const { data: purchasesData } = await useApi<any>(createUrl('/wp-json/motorlan/v1/purchases/purchases', {
   query: {
     page,
     per_page: itemsPerPage,
@@ -37,15 +47,8 @@ const { data: questionsData } = await useApi<any>(createUrl('/wp-json/motorlan/v
   },
 }))
 
-const questions = computed(() => questionsData.value?.data || [])
-const totalQuestions = computed(() => questionsData.value?.pagination.total || 0)
-
-const resolveStatus = (respuesta: string | null) => {
-  if (respuesta)
-    return { text: 'Respondida', color: 'success' }
-
-  return { text: 'Pendiente', color: 'warning' }
-}
+const purchases = computed(() => purchasesData.value?.data || [])
+const totalPurchases = computed(() => purchasesData.value?.pagination.total || 0)
 
 const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail'): string => {
   let imageObj: ImagenDestacada | null = null
@@ -67,8 +70,8 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
 
 <template>
   <VCard
-    id="question-list"
-    title="Mis Preguntas"
+    id="purchase-list"
+    title="Mis Compras"
   >
     <VCardText>
       <div class="d-flex flex-wrap gap-4">
@@ -76,7 +79,7 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
           <!-- 👉 Search  -->
           <AppTextField
             v-model="searchQuery"
-            placeholder="Buscar Pregunta"
+            placeholder="Buscar Compra"
             style="inline-size: 200px;"
             class="me-3"
           />
@@ -99,8 +102,8 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
       v-model:items-per-page="itemsPerPage"
       v-model:page="page"
       :headers="headers"
-      :items="questions"
-      :items-length="totalQuestions"
+      :items="purchases"
+      :items-length="totalPurchases"
       class="text-no-wrap"
       @update:options="updateOptions"
     >
@@ -127,20 +130,15 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
         </div>
       </template>
 
-      <!-- pregunta -->
-      <template #item.pregunta="{ item }">
-        <span class="text-body-1 text-high-emphasis">{{ item.pregunta }}</span>
-      </template>
-
-      <!-- respuesta -->
-      <template #item.respuesta="{ item }">
-        <span class="text-body-1 text-high-emphasis">{{ item.respuesta || 'Sin respuesta' }}</span>
+      <!-- fecha_compra -->
+      <template #item.fecha_compra="{ item }">
+        <span class="text-body-1 text-high-emphasis">{{ item.fecha_compra }}</span>
       </template>
 
       <!-- estado -->
       <template #item.estado="{ item }">
         <VChip
-          v-bind="resolveStatus(item.respuesta)"
+          v-bind="resolveStatus(item.estado)"
           density="default"
           label
           size="small"
@@ -149,10 +147,7 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
 
       <!-- Actions -->
       <template #item.actions="{ item }">
-        <IconBtn
-          v-if="item.motor"
-          @click="router.push(`/apps/motors/motor/edit/${item.motor.uuid}`)"
-        >
+        <IconBtn @click="router.push(`/apps/purchases/view/${item.uuid}`)">
           <VIcon icon="tabler-eye" />
         </IconBtn>
       </template>
@@ -162,7 +157,7 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
         <TablePagination
           v-model:page="page"
           :items-per-page="itemsPerPage"
-          :total-items="totalQuestions"
+          :total-items="totalPurchases"
         />
       </template>
     </VDataTableServer>
