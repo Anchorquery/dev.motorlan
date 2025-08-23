@@ -2,28 +2,28 @@
 import { computed } from 'vue'
 import { useApi } from '@/composables/useApi'
 import { createUrl } from '@/@core/composable/createUrl'
-import type { Motor } from '@/interfaces/motor'
+import type { Publicacion } from '@/interfaces/publicacion'
 
 const props = defineProps<{ currentId: number }>()
 
 const { data } = await useApi<any>(
-  createUrl('/wp-json/motorlan/v1/motors', { query: { per_page: 4 } })
+  createUrl('/wp-json/motorlan/v1/publicaciones', { query: { per_page: 4 } })
 ).get().json()
 
-const products = computed(() => (data.value?.data || []).filter((m: Motor) => m.id !== props.currentId))
+const products = computed(() => (data.value?.data || []).filter((m: Publicacion) => m.id !== props.currentId))
 </script>
 
 <template>
   <div class="related-products" v-if="products.length">
     <h3 class="mb-4">Productos relacionados</h3>
     <VRow>
-      <VCol v-for="motor in products" :key="motor.id" cols="12" sm="6" md="3">
+      <VCol v-for="publicacion in products" :key="publicacion.id" cols="12" sm="6" md="3">
         <div class="motor-card pa-4">
           <div class="motor-image mb-4">
-            <img :src="motor.imagen_destacada?.url || '/placeholder.png'" alt="" />
+            <img :src="publicacion.imagen_destacada?.url || '/placeholder.png'" alt="" />
           </div>
-          <div class="text-body-1 mb-4">{{ motor.title }}</div>
-          <VBtn color="error" class="rounded-pill px-6" :to="'/tienda/' + motor.slug">+ INFO</VBtn>
+          <div class="text-body-1 mb-4">{{ publicacion.title }}</div>
+          <VBtn color="error" class="rounded-pill px-6" :to="'/tienda/' + publicacion.slug">+ INFO</VBtn>
         </div>
       </VCol>
     </VRow>

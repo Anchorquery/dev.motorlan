@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { ImagenDestacada } from '../../../../../interfaces/motor'
+import type { ImagenDestacada } from '../../../../../interfaces/publicacion'
 
 const headers = [
-  { title: 'Motor', key: 'motor' },
+  { title: 'Publicacion', key: 'publicacion' },
   { title: 'Pregunta', key: 'pregunta' },
   { title: 'Respuesta', key: 'respuesta' },
 ]
@@ -92,21 +92,21 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
       class="text-no-wrap"
       @update:options="updateOptions"
     >
-      <!-- motor -->
-      <template #item.motor="{ item }">
+      <!-- publicacion -->
+      <template #item.publicacion="{ item }">
         <div class="d-flex align-center gap-x-4">
           <VAvatar
-            v-if="item.raw.motor?.imagen_destacada"
+            v-if="item.raw.publicacion?.imagen_destacada"
             size="38"
             variant="tonal"
             rounded
-            :image="getImageBySize(item.raw.motor.imagen_destacada, 'thumbnail')"
+            :image="getImageBySize(item.raw.publicacion.imagen_destacada, 'thumbnail')"
           />
           <div class="d-flex flex-column">
-            <NuxtLink :to="`/apps/motors/motor/edit/${item.raw.motor.uuid}`">
-              <span class="text-body-1 font-weight-medium text-high-emphasis">{{ item.raw.motor.title }}</span>
+            <NuxtLink :to="`/apps/publicaciones/publicacion/edit/${item.raw.publicacion.uuid}`">
+              <span class="text-body-1 font-weight-medium text-high-emphasis">{{ item.raw.publicacion.title }}</span>
             </NuxtLink>
-            <span class="text-body-2">{{ item.raw.motor.acf.marca.name }}</span>
+            <span class="text-body-2">{{ item.raw.publicacion.acf.marca.name }}</span>
           </div>
         </div>
       </template>

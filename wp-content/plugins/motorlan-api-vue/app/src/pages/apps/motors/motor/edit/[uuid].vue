@@ -258,26 +258,26 @@ const handleFileUpload = (event, index) => {
     <VForm
       ref="form"
       v-model="isFormValid"
-      @submit.prevent="updateMotor"
+      @submit.prevent="updatePublicacion"
     >
       <div class="d-flex flex-wrap justify-start justify-sm-space-between gap-y-4 gap-x-6 mb-6">
         <div class="d-flex flex-column justify-center">
           <h4 class="text-h4 font-weight-medium">
-            Edit motor
+            Edit publicacion
           </h4>
         </div>
         <div class="d-flex gap-4 align-center flex-wrap">
           <VBtn
             variant="tonal"
             color="secondary"
-            @click="router.push('/apps/motors/motor/list')"
+            @click="router.push('/apps/publicaciones/publicacion/list')"
           >
             Discard
           </VBtn>
           <VBtn
             type="submit"
           >
-            Update Motor
+            Update Publicacion
           </VBtn>
         </div>
       </div>
@@ -285,7 +285,7 @@ const handleFileUpload = (event, index) => {
         <VCol>
           <VCard
             class="mb-6"
-            title="Detalles del Motor"
+            title="Detalles de la Publicación"
           >
             <VCardText>
               <VRow>
@@ -295,7 +295,7 @@ const handleFileUpload = (event, index) => {
                   md="4"
                 >
                   <AppTextField
-                    v-model="motorData.title"
+                    v-model="publicacionData.title"
                     label="Título de la publicación"
                     placeholder="Título"
                     :rules="[requiredValidator]"
@@ -306,7 +306,7 @@ const handleFileUpload = (event, index) => {
                   md="4"
                 >
                   <AppTextField
-                    v-model="motorData.acf.tipo_o_referencia"
+                    v-model="publicacionData.acf.tipo_o_referencia"
                     label="Tipo o referencia"
                     placeholder="Referencia"
                     :rules="[requiredValidator]"
@@ -338,13 +338,25 @@ const handleFileUpload = (event, index) => {
                     multiple
                   />
                 </VCol>
+                <VCol
+                  cols="12"
+                  md="4"
+                >
+                  <AppSelect
+                    v-model="formattedTipo"
+                    label="Tipo"
+                    :items="tipos"
+                    item-title="name"
+                    item-value="id"
+                  />
+                </VCol>
 
                 <VCol
                   cols="12"
                   md="4"
                 >
                   <AppTextField
-                    v-model="motorData.acf.potencia"
+                    v-model="publicacionData.acf.potencia"
                     label="Potencia (kW)"
                     type="number"
                     placeholder="100"
@@ -355,7 +367,7 @@ const handleFileUpload = (event, index) => {
                   md="4"
                 >
                   <AppTextField
-                    v-model="motorData.acf.velocidad"
+                    v-model="publicacionData.acf.velocidad"
                     label="Velocidad (rpm)"
                     type="number"
                     placeholder="3000"
@@ -366,7 +378,7 @@ const handleFileUpload = (event, index) => {
                   md="4"
                 >
                   <AppTextField
-                    v-model="motorData.acf.par_nominal"
+                    v-model="publicacionData.acf.par_nominal"
                     label="PAR Nominal (Nm)"
                     type="number"
                     placeholder="50"
@@ -377,7 +389,7 @@ const handleFileUpload = (event, index) => {
                   md="4"
                 >
                   <AppTextField
-                    v-model="motorData.acf.voltaje"
+                    v-model="publicacionData.acf.voltaje"
                     label="Voltaje (V)"
                     type="number"
                     placeholder="220"
@@ -388,7 +400,7 @@ const handleFileUpload = (event, index) => {
                   md="4"
                 >
                   <AppTextField
-                    v-model="motorData.acf.intensidad"
+                    v-model="publicacionData.acf.intensidad"
                     label="Intensidad (A)"
                     type="number"
                     placeholder="10"
@@ -399,7 +411,7 @@ const handleFileUpload = (event, index) => {
                   md="4"
                 >
                   <AppSelect
-                    v-model="motorData.acf.pais"
+                    v-model="publicacionData.acf.pais"
                     label="País (localización)"
                     :items="['España', 'Portugal', 'Francia']"
                     :rules="[requiredValidator]"
@@ -410,7 +422,7 @@ const handleFileUpload = (event, index) => {
                   md="4"
                 >
                   <AppTextField
-                    v-model="motorData.acf.provincia"
+                    v-model="publicacionData.acf.provincia"
                     label="Provincia"
                     placeholder="Madrid"
                     :rules="[requiredValidator]"
@@ -421,7 +433,7 @@ const handleFileUpload = (event, index) => {
                   md="4"
                 >
                   <AppSelect
-                    v-model="motorData.acf.estado_del_articulo"
+                    v-model="publicacionData.acf.estado_del_articulo"
                     label="Estado del artículo"
                     :items="['Nuevo', 'Usado', 'Restaurado']"
                     :rules="[requiredValidator]"
@@ -432,7 +444,7 @@ const handleFileUpload = (event, index) => {
                   md="4"
                 >
                   <AppTextField
-                    v-model="motorData.acf.precio_de_venta"
+                    v-model="publicacionData.acf.precio_de_venta"
                     label="Precio de venta (€)"
                     type="number"
                     placeholder="1000"
@@ -444,7 +456,7 @@ const handleFileUpload = (event, index) => {
                   md="4"
                 >
                   <AppTextField
-                    v-model="motorData.acf.stock"
+                    v-model="publicacionData.acf.stock"
                     label="Stock"
                     type="number"
                     placeholder="1"
@@ -455,7 +467,7 @@ const handleFileUpload = (event, index) => {
                   md="4"
                 >
                   <VRadioGroup
-                    v-model="motorData.acf.precio_negociable"
+                    v-model="publicacionData.acf.precio_negociable"
                     inline
                     label="Precio negociable"
                   >
@@ -474,7 +486,7 @@ const handleFileUpload = (event, index) => {
                   md="4"
                 >
                   <VRadioGroup
-                    v-model="motorData.acf.posibilidad_de_alquiler"
+                    v-model="publicacionData.acf.posibilidad_de_alquiler"
                     inline
                     label="Posibilidad de alquiler"
                     :rules="[requiredValidator]"
@@ -494,7 +506,7 @@ const handleFileUpload = (event, index) => {
                   md="4"
                 >
                   <VRadioGroup
-                    v-model="motorData.acf.tipo_de_alimentacion"
+                    v-model="publicacionData.acf.tipo_de_alimentacion"
                     inline
                     label="Tipo de alimentación"
                     :rules="[requiredValidator]"
@@ -514,7 +526,7 @@ const handleFileUpload = (event, index) => {
                   md="4"
                 >
                   <VCheckbox
-                    v-model="motorData.acf.servomotores"
+                    v-model="publicacionData.acf.servomotores"
                     label="Servomotores"
                   />
                 </VCol>
@@ -523,15 +535,15 @@ const handleFileUpload = (event, index) => {
                   md="4"
                 >
                   <VCheckbox
-                    v-model="motorData.acf.regulacion_electronica_drivers"
+                    v-model="publicacionData.acf.regulacion_electronica_drivers"
                     label="Regulación electrónica/Drivers"
                   />
                 </VCol>
                 <VCol cols="12">
                   <VTextarea
-                    v-model="motorData.acf.descripcion"
+                    v-model="publicacionData.acf.descripcion"
                     label="Descripción"
-                    placeholder="Descripción del motor"
+                    placeholder="Descripción de la publicacion"
                     :rules="[requiredValidator]"
                   />
                 </VCol>
@@ -540,7 +552,7 @@ const handleFileUpload = (event, index) => {
           </VCard>
           <VCard
             class="mb-6"
-            title="Imágenes del Motor"
+            title="Imágenes de la Publicación"
           >
             <VCardText>
               <VRow>
@@ -575,7 +587,7 @@ const handleFileUpload = (event, index) => {
           >
             <VCardText>
               <div
-                v-for="(doc, index) in motorData.acf.documentacion_adicional"
+                v-for="(doc, index) in publicacionData.acf.documentacion_adicional"
                 :key="index"
                 class="document-row d-flex gap-4 mb-4 align-center"
               >
@@ -629,7 +641,7 @@ const handleFileUpload = (event, index) => {
                 </VBtn>
               </div>
               <VBtn
-                v-if="!motorData.acf.documentacion_adicional || motorData.acf.documentacion_adicional.length < 5"
+                v-if="!publicacionData.acf.documentacion_adicional || publicacionData.acf.documentacion_adicional.length < 5"
                 @click="addDocument"
               >
                 Añadir Documento

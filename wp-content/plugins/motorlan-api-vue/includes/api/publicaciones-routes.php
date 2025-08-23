@@ -1,6 +1,6 @@
 <?php
 /**
- * Setup for Motor REST API Routes.
+ * Setup for Publicaciones REST API Routes.
  *
  * @package motorlan-api-vue
  */
@@ -20,103 +20,109 @@ if ( ! defined( 'WPINC' ) ) {
 function motorlan_get_post_taxonomy_details( $post_id, $taxonomy ) {
     $terms_details = [];
     $terms = wp_get_post_terms( $post_id, $taxonomy );
-    foreach ( $terms as $term ) {
-        $terms_details[] = array(
-            'id'   => $term->term_id,
-            'name' => $term->name,
-            'slug' => $term->slug,
-        );
+    if ( ! is_wp_error( $terms ) && ! empty( $terms ) ) {
+        foreach ( $terms as $term ) {
+            $terms_details[] = array(
+                'id'   => $term->term_id,
+                'name' => $term->name,
+                'slug' => $term->slug,
+            );
+        }
     }
     return $terms_details;
 }
 
 /**
- * Register custom REST API routes for motors.
+ * Register custom REST API routes for publicaciones.
  */
-function motorlan_register_motor_rest_routes() {
+function motorlan_register_publicaciones_rest_routes() {
     $namespace = 'motorlan/v1';
 
-    // Route for getting a list of motors
-    register_rest_route( $namespace, '/motors', array(
+    // Route for getting a list of publicaciones
+    register_rest_route( $namespace, '/publicaciones', array(
         'methods'  => WP_REST_Server::READABLE,
-        'callback' => 'motorlan_get_motors_callback',
+        'callback' => 'motorlan_get_publicaciones_callback',
         'permission_callback' => '__return_true',
     ) );
 
-    // Route for getting and updating a single motor by UUID
-    register_rest_route($namespace, '/motors/uuid/(?P<uuid>[a-zA-Z0-9-]+)', array(
+    // Route for getting and updating a single publicacion by UUID
+    register_rest_route($namespace, '/publicaciones/uuid/(?P<uuid>[a-zA-Z0-9-]+)', array(
         array(
             'methods' => 'GET',
-            'callback' => 'motorlan_get_motor_by_uuid',
+            'callback' => 'motorlan_get_publicacion_by_uuid',
             'permission_callback' => '__return_true'
         ),
         array(
             'methods' => 'POST',
-            'callback' => 'motorlan_update_motor_by_uuid',
+            'callback' => 'motorlan_update_publicacion_by_uuid',
             'permission_callback' => function () {
                 return current_user_can('edit_posts');
             }
         ),
     ));
 
-    // Route for getting a single motor by slug
-    register_rest_route($namespace, '/motors/(?P<slug>[a-zA-Z0-9-]+)', array(
+    // Route for getting a single publicacion by slug
+    register_rest_route($namespace, '/publicaciones/(?P<slug>[a-zA-Z0-9-]+)', array(
         'methods'  =>  'GET',
-        'callback' => 'motorlan_get_motor_by_slug',
+        'callback' => 'motorlan_get_publicacion_by_slug',
         'permission_callback' => '__return_true',
     ) );
 
-    // Route for deleting a motor by ID
-    register_rest_route($namespace, '/motors/(?P<id>\\d+)', array(
+    // Route for deleting a publicacion by ID
+    register_rest_route($namespace, '/publicaciones/(?P<id>\\d+)', array(
         'methods' => 'DELETE',
-        'callback' => 'motorlan_delete_motor',
+        'callback' => 'motorlan_delete_publicacion',
         'permission_callback' => function () {
             return current_user_can('delete_posts');
         }
     ));
 
-    // Route for duplicating a motor by ID
-    register_rest_route($namespace, '/motors/duplicate/(?P<id>\\d+)', array(
+    // Route for duplicating a publicacion by ID
+    register_rest_route($namespace, '/publicaciones/duplicate/(?P<id>\\d+)', array(
         'methods' => 'GET',
-        'callback' => 'motorlan_duplicate_motor',
-        // 'permission_callback' => function () {
-        //     return current_user_can('edit_posts');
-        // }
+        'callback' => 'motorlan_duplicate_publicacion',
     ));
 
-    // Route for updating motor status by ID
-    register_rest_route($namespace, '/motors/(?P<id>\\d+)/status', array(
+    // Route for updating publicacion status by ID
+    register_rest_route($namespace, '/publicaciones/(?P<id>\\d+)/status', array(
         'methods' => 'POST',
-        'callback' => 'motorlan_update_motor_status',
+        'callback' => 'motorlan_update_publicacion_status',
         'permission_callback' => function () {
             return current_user_can('edit_posts');
         }
     ));
 
-    // Route for getting motor categories
-    register_rest_route( $namespace, '/motor-categories', array(
+    // Route for getting publicacion categories
+    register_rest_route( $namespace, '/publicacion-categories', array(
         'methods'  => WP_REST_Server::READABLE,
-        'callback' => 'motorlan_get_motor_categories_callback',
+        'callback' => 'motorlan_get_publicacion_categories_callback',
         'permission_callback' => '__return_true',
     ) );
 
-    // Route for getting motor brands
+    // Route for getting publicacion tipos
+    register_rest_route( $namespace, '/tipos', array(
+        'methods'  => WP_REST_Server::READABLE,
+        'callback' => 'motorlan_get_tipos_callback',
+        'permission_callback' => '__return_true',
+    ) );
+
+    // Route for getting brands
     register_rest_route( $namespace, '/marcas', array(
         'methods'  => WP_REST_Server::READABLE,
-        'callback' => 'motorlan_get_motor_marcas_callback',
+        'callback' => 'motorlan_get_marcas_callback',
         'permission_callback' => '__return_true',
     ) );
 }
-add_action( 'rest_api_init', 'motorlan_register_motor_rest_routes' );
+add_action( 'rest_api_init', 'motorlan_register_publicaciones_rest_routes' );
 
 
 /**
- * Get a single motor by UUID.
+ * Get a single publicacion by UUID.
  *
  * @param WP_REST_Request $request The request object.
  * @return WP_REST_Response|WP_Error The response object or error.
  */
-function motorlan_get_motor_by_uuid(WP_REST_Request $request) {
+function motorlan_get_publicacion_by_uuid(WP_REST_Request $request) {
     $uuid = $request->get_param('uuid');
 
     if (empty($uuid)) {
@@ -124,7 +130,7 @@ function motorlan_get_motor_by_uuid(WP_REST_Request $request) {
     }
 
     $args = array(
-        'post_type' => 'motor',
+        'post_type' => 'publicaciones',
         'meta_key' => 'uuid',
         'meta_value' => $uuid,
         'posts_per_page' => 1,
@@ -134,32 +140,32 @@ function motorlan_get_motor_by_uuid(WP_REST_Request $request) {
     $query = new WP_Query($args);
 
     if (!$query->have_posts()) {
-        return new WP_Error('not_found', 'Motor not found', array('status' => 404));
+        return new WP_Error('not_found', 'Publicación no encontrada', array('status' => 404));
     }
 
     $query->the_post();
     $post_id = get_the_ID();
-    $motor_data = motorlan_get_motor_data($post_id);
+    $publicacion_data = motorlan_get_publicacion_data($post_id);
 
     wp_reset_postdata();
 
-    return new WP_REST_Response($motor_data, 200);
+    return new WP_REST_Response($publicacion_data, 200);
 }
 
 /**
- * Get a single motor by slug.
+ * Get a single publicacion by slug.
  *
  * @param WP_REST_Request $request The request object.
  * @return WP_REST_Response|WP_Error The response object or error.
  */
-function motorlan_get_motor_by_slug(WP_REST_Request $request) {
+function motorlan_get_publicacion_by_slug(WP_REST_Request $request) {
     $slug = $request->get_param('slug');
 
     if (empty($slug)) {
         return new WP_Error('no_slug', 'Slug not provided', array('status' => 400));
     }
     $args = array(
-        'post_type' => 'motor',
+        'post_type' => 'publicaciones',
         'name' => $slug,
         'posts_per_page' => 1,
         'post_status' => 'any',
@@ -168,27 +174,27 @@ function motorlan_get_motor_by_slug(WP_REST_Request $request) {
     $query = new WP_Query($args);
 
     if (!$query->have_posts()) {
-        return new WP_Error('not_found', 'Motor not found', array('status' => 404));
+        return new WP_Error('not_found', 'Publicación no encontrada', array('status' => 404));
     }
 
     $query->the_post();
     $post_id = get_the_ID();
-    $motor_data = motorlan_get_motor_data($post_id);
+    $publicacion_data = motorlan_get_publicacion_data($post_id);
 
     wp_reset_postdata();
 
-    return new WP_REST_Response(array('data' => $motor_data), 200);
+    return new WP_REST_Response(array('data' => $publicacion_data), 200);
 }
 
 
 /**
- * Helper function to get all motor data.
+ * Helper function to get all publicacion data.
  *
  * @param int $post_id The post ID.
- * @return array The motor data.
+ * @return array The publicacion data.
  */
-function motorlan_get_motor_data($post_id) {
-    $motor_item = array(
+function motorlan_get_publicacion_data($post_id) {
+    $publicacion_item = array(
         'id'           => $post_id,
         'uuid'         => get_post_meta($post_id, 'uuid', true),
         'title'        => get_the_title($post_id),
@@ -196,16 +202,17 @@ function motorlan_get_motor_data($post_id) {
         'status'       => get_field('publicar_acf', $post_id),
         'author_id'    => get_post_field('post_author', $post_id),
         'categories'   => motorlan_get_post_taxonomy_details($post_id, 'categoria'),
+        'tipo'         => motorlan_get_post_taxonomy_details($post_id, 'tipo'),
         'acf'          => array(),
     );
 
     if (function_exists('get_fields')) {
         $fields = get_fields($post_id);
         if ($fields) {
-            $motor_item['acf'] = $fields;
+            $publicacion_item['acf'] = $fields;
         }
     } else {
-        $motor_item['acf_error'] = 'Advanced Custom Fields plugin is not active.';
+        $publicacion_item['acf_error'] = 'Advanced Custom Fields plugin is not active.';
     }
 
     // Ensure essential fields are present, even if they have no value, to avoid issues in the frontend
@@ -218,19 +225,18 @@ function motorlan_get_motor_data($post_id) {
     ];
 
     foreach ($essential_fields as $field) {
-        if (!isset($motor_item['acf'][$field])) {
-            $motor_item['acf'][$field] = null;
+        if (!isset($publicacion_item['acf'][$field])) {
+            $publicacion_item['acf'][$field] = null;
         }
     }
 
     // For 'marca' (brand), which is a taxonomy, return the full term object
-    if (!empty($motor_item['acf']['marca'])) {
-        $term_id = $motor_item['acf']['marca'];
-        // Check if it's an array (already processed) or a term ID
+    if (!empty($publicacion_item['acf']['marca'])) {
+        $term_id = $publicacion_item['acf']['marca'];
         if (is_numeric($term_id)) {
             $term = get_term($term_id, 'marca');
             if ($term && !is_wp_error($term)) {
-                $motor_item['acf']['marca'] = array(
+                $publicacion_item['acf']['marca'] = array(
                     'id' => $term->term_id,
                     'name' => $term->name,
                     'slug' => $term->slug,
@@ -239,24 +245,39 @@ function motorlan_get_motor_data($post_id) {
         }
     }
 
-    return $motor_item;
+    // For 'tipo', which is a taxonomy, return the full term object
+    if (!empty($publicacion_item['acf']['tipo'])) {
+        $term_id = $publicacion_item['acf']['tipo'];
+        if (is_numeric($term_id)) {
+            $term = get_term($term_id, 'tipo');
+            if ($term && !is_wp_error($term)) {
+                $publicacion_item['acf']['tipo'] = array(
+                    'id' => $term->term_id,
+                    'name' => $term->name,
+                    'slug' => $term->slug,
+                );
+            }
+        }
+    }
+
+    return $publicacion_item;
 }
 
 
 /**
- * Update a motor by UUID.
+ * Update a publicacion by UUID.
  *
  * @param WP_REST_Request $request The request object.
  * @return WP_REST_Response|WP_Error The response object or error.
  */
-function motorlan_update_motor_by_uuid(WP_REST_Request $request) {
+function motorlan_update_publicacion_by_uuid(WP_REST_Request $request) {
     $uuid = $request->get_param('uuid');
     if (empty($uuid)) {
         return new WP_Error('no_uuid', 'UUID not provided', array('status' => 400));
     }
 
     $args = array(
-        'post_type' => 'motor',
+        'post_type' => 'publicaciones',
         'meta_key' => 'uuid',
         'meta_value' => $uuid,
         'posts_per_page' => 1,
@@ -265,7 +286,7 @@ function motorlan_update_motor_by_uuid(WP_REST_Request $request) {
     $query = new WP_Query($args);
 
     if (!$query->have_posts()) {
-        return new WP_Error('not_found', 'Motor not found', array('status' => 404));
+        return new WP_Error('not_found', 'Publicación no encontrada', array('status' => 404));
     }
 
     $query->the_post();
@@ -284,10 +305,14 @@ function motorlan_update_motor_by_uuid(WP_REST_Request $request) {
         wp_set_post_terms($post_id, $params['categories'], 'categoria', false);
     }
 
+    // Update post tipo
+    if (isset($params['tipo'])) {
+        wp_set_post_terms($post_id, $params['tipo'], 'tipo', false);
+    }
+
     // Update ACF fields
     if (isset($params['acf']) && is_array($params['acf'])) {
         foreach ($params['acf'] as $key => $value) {
-            // A basic sanitization, you might need more specific sanitization based on the field type
             if (is_string($value)) {
                 $value = sanitize_text_field($value);
             }
@@ -295,40 +320,40 @@ function motorlan_update_motor_by_uuid(WP_REST_Request $request) {
         }
     }
 
-    return new WP_REST_Response(array('message' => 'Motor updated successfully'), 200);
+    return new WP_REST_Response(array('message' => 'Publicación actualizada correctamente'), 200);
 }
 
 
 /**
- * Delete a motor by ID.
+ * Delete a publicacion by ID.
  *
  * @param WP_REST_Request $request The request object.
  * @return WP_REST_Response|WP_Error The response object or error.
  */
-function motorlan_delete_motor(WP_REST_Request $request) {
+function motorlan_delete_publicacion(WP_REST_Request $request) {
     $post_id = $request->get_param('id');
     $result = wp_delete_post($post_id, true); // true to force delete
 
     if ($result === false) {
-        return new WP_Error('delete_failed', 'Failed to delete motor', array('status' => 500));
+        return new WP_Error('delete_failed', 'Failed to delete publicacion', array('status' => 500));
     }
 
-    return new WP_REST_Response(array('message' => 'Motor deleted successfully'), 200);
+    return new WP_REST_Response(array('message' => 'Publicacion deleted successfully'), 200);
 }
 
 
 /**
- * Duplicate a motor by ID.
+ * Duplicate a publicacion by ID.
  *
  * @param WP_REST_Request $request The request object.
  * @return WP_REST_Response|WP_Error The response object or error.
  */
-function motorlan_duplicate_motor(WP_REST_Request $request) {
+function motorlan_duplicate_publicacion(WP_REST_Request $request) {
     $original_post_id = $request->get_param('id');
     $original_post = get_post($original_post_id);
 
     if (!$original_post) {
-        return new WP_Error('not_found', 'Original motor not found', array('status' => 404));
+        return new WP_Error('not_found', 'Publicación original no encontrada', array('status' => 404));
     }
 
     $new_post_data = array(
@@ -357,17 +382,17 @@ function motorlan_duplicate_motor(WP_REST_Request $request) {
     update_field('publicar_acf', 'draft', $new_post_id);
 
 
-    return new WP_REST_Response(array('message' => 'Motor duplicated successfully', 'new_post_id' => $new_post_id), 200);
+    return new WP_REST_Response(array('message' => 'Publicación duplicada correctamente', 'new_post_id' => $new_post_id), 200);
 }
 
 
 /**
- * Update motor status by ID.
+ * Update publicacion status by ID.
  *
  * @param WP_REST_Request $request The request object.
  * @return WP_REST_Response|WP_Error The response object or error.
  */
-function motorlan_update_motor_status(WP_REST_Request $request) {
+function motorlan_update_publicacion_status(WP_REST_Request $request) {
     $post_id = $request->get_param('id');
     $params = $request->get_json_params();
     $new_status = isset($params['status']) ? sanitize_text_field($params['status']) : '';
@@ -378,16 +403,16 @@ function motorlan_update_motor_status(WP_REST_Request $request) {
 
     update_field('publicar_acf', $new_status, $post_id);
 
-    return new WP_REST_Response(array('message' => 'Motor status updated successfully'), 200);
+    return new WP_REST_Response(array('message' => 'Publicación status updated successfully'), 200);
 }
 
 /**
- * Callback function to get a list of motors with pagination and filtering, using ACF.
+ * Callback function to get a list of publicaciones with pagination and filtering, using ACF.
  *
  * @param WP_REST_Request $request The request object.
  * @return WP_REST_Response The response object.
  */
-function motorlan_get_motors_callback( $request ) {
+function motorlan_get_publicaciones_callback( $request ) {
     // Get pagination parameters from the request, with defaults.
     $page = $request->get_param( 'page' ) ? absint( $request->get_param( 'page' ) ) : 1;
     $per_page = $request->get_param( 'per_page' ) ? absint( $request->get_param( 'per_page' ) ) : 10;
@@ -395,7 +420,7 @@ function motorlan_get_motors_callback( $request ) {
     // --- FILTERING LOGIC ---
     $params = $request->get_params();
     $meta_query = array('relation' => 'AND');
-    $tax_query = array();
+    $tax_query = array('relation' => 'AND');
 
     // Define the list of fields that can be used for filtering.
     $filterable_fields = [
@@ -434,8 +459,18 @@ function motorlan_get_motors_callback( $request ) {
         );
     }
 
+    // Filter by tipo (tipo taxonomy)
+    if ( !empty($params['tipo']) ) {
+        $terms = array_map( 'sanitize_text_field', explode( ',', $params['tipo'] ) );
+        $tax_query[] = array(
+            'taxonomy' => 'tipo',
+            'field'    => 'slug',
+            'terms'    => $terms,
+        );
+    }
+
     $args = array(
-        'post_type'      => 'motor',
+        'post_type'      => 'publicaciones',
         'posts_per_page' => $per_page,
         'paged'          => $page,
         'post_status'    => 'any',
@@ -470,33 +505,31 @@ function motorlan_get_motors_callback( $request ) {
     }
 
     // Only add tax_query if there are filters.
-    if (!empty($tax_query)) {
+    if (count($tax_query) > 1) {
         $args['tax_query'] = $tax_query;
     }
 
     $query = new WP_Query( $args );
-    $motors_data = array();
+    $publicaciones_data = array();
 
     if ( $query->have_posts() ) {
         while ( $query->have_posts() ) {
             $query->the_post();
             $post_id = get_the_ID();
 
-            $motor_item = array(
+            $publicacion_item = array(
                 'id'           => $post_id,
                 'uuid'         => get_post_meta( $post_id, 'uuid', true ),
                 'title'        => get_the_title(),
                 'slug'         => get_post_field( 'post_name', $post_id ),
                 'status'       => get_field('publicar_acf', $post_id),
-                // saco de acf motor_image
                 'imagen_destacada' =>  get_field('motor_image', $post_id ,true ) ,
                 'author_id'    => get_post_field( 'post_author', $post_id ),
                 'categories'   => motorlan_get_post_taxonomy_details( $post_id, 'categoria' ),
-
+                'tipo'         => motorlan_get_post_taxonomy_details( $post_id, 'tipo' ),
                 'acf'          => array(),
             );
 
-            // Populate ACF fields if ACF is active
             if ( function_exists('get_field') ) {
                 $acf_fields = [
                     'marca', 'tipo_o_referencia','estado_del_articulo','descripcion',
@@ -508,29 +541,26 @@ function motorlan_get_motors_callback( $request ) {
                     if ($field_name === 'marca' && $value) {
                         $term = get_term($value, 'marca');
                         if ($term && !is_wp_error($term)) {
-                            $motor_item['acf'][$field_name] = array(
+                            $publicacion_item['acf'][$field_name] = array(
                                 'id' => $term->term_id,
                                 'name' => $term->name
                             );
-                            
-
                         } else {
-                            $motor_item['acf'][$field_name] = null;
+                            $publicacion_item['acf'][$field_name] = null;
                         }
                     } else {
-                        $motor_item['acf'][$field_name] = $value;
+                        $publicacion_item['acf'][$field_name] = $value;
                     }
                 }
             } else {
-                 $motor_item['acf_error'] = 'Advanced Custom Fields plugin is not active.';
+                 $publicacion_item['acf_error'] = 'Advanced Custom Fields plugin is not active.';
             }
 
-            $motors_data[] = $motor_item;
+            $publicaciones_data[] = $publicacion_item;
         }
         wp_reset_postdata();
     }
 
-    // Pagination data.
     $pagination = array(
         'total'     => (int) $query->found_posts,
         'totalPages' => (int) $query->max_num_pages,
@@ -538,16 +568,13 @@ function motorlan_get_motors_callback( $request ) {
         'perPage'   => (int) $per_page,
     );
 
-    // Prepare the data for the response.
     $response_data = array(
-        'data'      => $motors_data,
+        'data'      => $publicaciones_data,
         'pagination' => $pagination,
     );
 
-    // Create the response object.
     $response = new WP_REST_Response( $response_data, 200 );
 
-    // Add pagination headers for client-side rendering (optional, but good practice).
     $response->header( 'X-WP-Total', $query->found_posts );
     $response->header( 'X-WP-TotalPages', $query->max_num_pages );
 
@@ -555,11 +582,11 @@ function motorlan_get_motors_callback( $request ) {
 }
 
 /**
- * Callback function to get a list of motor categories.
+ * Callback function to get a list of publicacion categories.
  *
  * @return WP_REST_Response The response object.
  */
-function motorlan_get_motor_categories_callback() {
+function motorlan_get_publicacion_categories_callback() {
     $terms = get_terms( array(
         'taxonomy'   => 'categoria',
         'hide_empty' => false,
@@ -573,11 +600,29 @@ function motorlan_get_motor_categories_callback() {
 }
 
 /**
- * Callback function to get a list of motor brands.
+ * Callback function to get a list of tipos.
  *
  * @return WP_REST_Response The response object.
  */
-function motorlan_get_motor_marcas_callback() {
+function motorlan_get_tipos_callback() {
+    $terms = get_terms( array(
+        'taxonomy'   => 'tipo',
+        'hide_empty' => false,
+    ) );
+
+    if ( is_wp_error( $terms ) ) {
+        return new WP_REST_Response( array( 'message' => $terms->get_error_message() ), 500 );
+    }
+
+    return new WP_REST_Response( $terms, 200 );
+}
+
+/**
+ * Callback function to get a list of brands.
+ *
+ * @return WP_REST_Response The response object.
+ */
+function motorlan_get_marcas_callback() {
     $terms = get_terms( array(
         'taxonomy'   => 'marca',
         'hide_empty' => false,

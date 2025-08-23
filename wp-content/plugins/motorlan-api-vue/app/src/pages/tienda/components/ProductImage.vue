@@ -1,19 +1,19 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { register } from 'swiper/element/bundle'
-import type { Motor } from '@/interfaces/motor'
+import type { Publicacion } from '@/interfaces/publicacion'
 
-const props = defineProps<{ motor: Motor }>()
+const props = defineProps<{ publicacion: Publicacion }>()
 
 register()
 
 
 
 const images = computed(() => {
-  const gallery = (props.motor.acf?.motor_gallery || []) as any[]
+  const gallery = (props.publicacion.acf?.motor_gallery || []) as any[]
 
-  const featured = props.motor.imagen_destacada && !Array.isArray(props.motor.imagen_destacada)
-    ? [props.motor.imagen_destacada]
+  const featured = props.publicacion.imagen_destacada && !Array.isArray(props.publicacion.imagen_destacada)
+    ? [props.publicacion.imagen_destacada]
     : []
 
   return [...featured, ...gallery].filter(img => img && img.url)

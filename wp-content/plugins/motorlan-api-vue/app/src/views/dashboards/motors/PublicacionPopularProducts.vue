@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import amazonEchoDot from '@images/motors/amazon-echo-dot.png'
-import appleWatch from '@images/motors/apple-watch.png'
-import headphone from '@images/motors/headphone.png'
-import iphone from '@images/motors/iphone.png'
-import nike from '@images/motors/nike.png'
-import sonyDualsense from '@images/motors/sony-dualsense.png'
+import amazonEchoDot from '@images/publicaciones/amazon-echo-dot.png'
+import appleWatch from '@images/publicaciones/apple-watch.png'
+import headphone from '@images/publicaciones/headphone.png'
+import iphone from '@images/publicaciones/iphone.png'
+import nike from '@images/publicaciones/nike.png'
+import sonyDualsense from '@images/publicaciones/sony-dualsense.png'
 
-const popularMotors = [
+const popularPublicaciones = [
   {
     avatarImg: iphone,
     title: 'Apple iPhone 13',
@@ -54,7 +54,7 @@ const moreList = [
 
 <template>
   <VCard
-    title="Popular Motors"
+    title="Publicaciones Populares"
     subtitle="Total 10.4k Visitors"
   >
     <template #append>
@@ -69,28 +69,28 @@ const moreList = [
     <VCardText>
       <VList class="card-list">
         <VListItem
-          v-for="motor in popularMotors"
-          :key="motor.title"
+          v-for="publicacion in popularPublicaciones"
+          :key="publicacion.title"
         >
           <template #prepend>
             <VAvatar
               size="46"
               rounded
               class="me-1"
-              :image="motor.avatarImg"
+              :image="publicacion.avatarImg"
             />
           </template>
 
           <VListItemTitle class="font-weight-medium me-4">
-            {{ motor.title }}
+            {{ publicacion.title }}
           </VListItemTitle>
           <VListItemSubtitle class="me-4">
-            {{ motor.subtitle }}
+            {{ publicacion.subtitle }}
           </VListItemSubtitle>
 
           <template #append>
             <div class="d-flex align-center">
-              <span class="text-body-1">{{ motor.stats }}</span>
+              <span class="text-body-1">{{ publicacion.stats }}</span>
             </div>
           </template>
         </VListItem>

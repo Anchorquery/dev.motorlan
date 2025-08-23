@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { ImagenDestacada } from '../../../../../interfaces/motor'
+import type { ImagenDestacada } from '../../../../../interfaces/publicacion'
 
 const headers = [
-  { title: 'Motor', key: 'motor' },
+  { title: 'Publicacion', key: 'publicacion' },
   { title: 'Referencia', key: 'referencia' },
   { title: 'Precio', key: 'precio' },
 ]
@@ -92,8 +92,8 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
       class="text-no-wrap"
       @update:options="updateOptions"
     >
-      <!-- motor -->
-      <template #item.motor="{ item }">
+      <!-- publicacion -->
+      <template #item.publicacion="{ item }">
         <div class="d-flex align-center gap-x-4">
           <VAvatar
             v-if="item.raw.imagen_destacada"
@@ -103,7 +103,7 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
             :image="getImageBySize(item.raw.imagen_destacada, 'thumbnail')"
           />
           <div class="d-flex flex-column">
-            <NuxtLink :to="`/apps/motors/motor/edit/${item.raw.uuid}`">
+            <NuxtLink :to="`/apps/publicaciones/publicacion/edit/${item.raw.uuid}`">
               <span class="text-body-1 font-weight-medium text-high-emphasis">{{ item.raw.title }}</span>
             </NuxtLink>
             <span class="text-body-2">{{ item.raw.acf.marca.name }}</span>

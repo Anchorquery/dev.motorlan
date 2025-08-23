@@ -106,7 +106,7 @@
     "unplugin-vue-router": "0.8.8",
     "video.js": "7.21.5",
     "vite": "6.3.5",
-    "vite-plugin-vue-devtools": "7.3.7",
+    "vite-plugin-vue-devtools": "^8.0.0",
     "vite-plugin-vue-meta-layouts": "0.5.1",
     "vite-plugin-vuetify": "2.0.3",
     "vite-svg-loader": "5.1.0",
