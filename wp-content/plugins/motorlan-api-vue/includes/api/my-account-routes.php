@@ -20,60 +20,55 @@ function motorlan_register_my_account_rest_routes() {
     register_rest_route( $namespace, '/my-account/purchases', array(
         'methods'  => WP_REST_Server::READABLE,
         'callback' => 'motorlan_get_my_purchases_callback',
-        'permission_callback' => function () {
-            return is_user_logged_in();
-        }
+        'permission_callback' => 'motorlan_is_user_authenticated'
     ) );
 
     // Route for getting current user's questions
     register_rest_route( $namespace, '/my-account/questions', array(
         'methods'  => WP_REST_Server::READABLE,
         'callback' => 'motorlan_get_my_questions_callback',
-        'permission_callback' => function () {
-            return is_user_logged_in();
-        }
+        'permission_callback' => 'motorlan_is_user_authenticated'
     ) );
 
     // Route for getting current user's opinions
     register_rest_route( $namespace, '/my-account/opinions', array(
         'methods'  => WP_REST_Server::READABLE,
         'callback' => 'motorlan_get_my_opinions_callback',
-        'permission_callback' => function () {
-            return is_user_logged_in();
-        }
+        'permission_callback' => 'motorlan_is_user_authenticated'
     ) );
 
     // Route for getting current user's favorites
     register_rest_route( $namespace, '/my-account/favorites', array(
         'methods'  => WP_REST_Server::READABLE,
         'callback' => 'motorlan_get_my_favorites_callback',
-        'permission_callback' => function () {
-            return is_user_logged_in();
-        }
+        'permission_callback' => 'motorlan_is_user_authenticated'
     ) );
 
     // Route for creating a new purchase
     register_rest_route( $namespace, '/purchases', array(
         'methods'  => WP_REST_Server::CREATABLE,
         'callback' => 'motorlan_create_purchase_callback',
-        'permission_callback' => function () {
-            return is_user_logged_in();
-        }
+        'permission_callback' => 'motorlan_is_user_authenticated'
     ) );
 
     // Route for getting purchase details
     register_rest_route( $namespace, '/purchases/(?P<uuid>[\\w-]+)', array(
         'methods'  => WP_REST_Server::READABLE,
         'callback' => 'motorlan_get_purchase_callback',
-        'permission_callback' => function () {
-            return is_user_logged_in();
-        }
+        'permission_callback' => 'motorlan_is_user_authenticated'
     ) );
 
     // Route for adding an opinion to a purchase
     register_rest_route( $namespace, '/purchases/(?P<uuid>[\\w-]+)/opinion', array(
         'methods'  => WP_REST_Server::CREATABLE,
         'callback' => 'motorlan_add_purchase_opinion_callback',
+        'permission_callback' => 'motorlan_is_user_authenticated'
+    ) );
+
+    // Route for removing a favorite motor
+    register_rest_route( $namespace, '/my-account/favorites/(?P<motor_id>\\d+)', array(
+        'methods'  => WP_REST_Server::DELETABLE,
+        'callback' => 'motorlan_remove_my_favorite_callback',
         'permission_callback' => function () {
             return is_user_logged_in();
         }
@@ -441,4 +436,33 @@ function motorlan_add_purchase_opinion_callback( WP_REST_Request $request ) {
     update_field( 'comentario', $comentario, $opinion_id );
 
     return new WP_REST_Response( array( 'id' => $opinion_id ), 201 );
+}
+
+/**
+ * Callback function to remove a motor from the current user's favorites.
+ */
+function motorlan_remove_my_favorite_callback( WP_REST_Request $request ) {
+    $user_id = get_current_user_id();
+    $motor_id = absint( $request->get_param( 'motor_id' ) );
+
+    if ( ! $motor_id ) {
+        return new WP_Error( 'no_motor_id', 'Motor ID is required.', array( 'status' => 400 ) );
+    }
+
+    $favorite_ids = get_user_meta( $user_id, 'favorite_motors', true );
+
+    if ( ! is_array( $favorite_ids ) ) {
+        $favorite_ids = array();
+    }
+
+    $index = array_search( $motor_id, $favorite_ids, true );
+
+    if ( $index !== false ) {
+        unset( $favorite_ids[ $index ] );
+        // Re-index the array to prevent issues with JSON encoding if it becomes an object.
+        $favorite_ids = array_values( $favorite_ids );
+        update_user_meta( $user_id, 'favorite_motors', $favorite_ids );
+    }
+
+    return new WP_REST_Response( array( 'success' => true ), 200 );
 }

@@ -16,32 +16,19 @@ function motorlan_register_question_rest_routes() {
         array(
             'methods'  => WP_REST_Server::READABLE,
             'callback' => 'motorlan_get_questions_callback',
-            'permission_callback' => '__return_true',
+            'permission_callback' => 'motorlan_permission_callback_true',
         ),
         array(
             'methods'  => WP_REST_Server::CREATABLE,
             'callback' => 'motorlan_create_question_callback',
-            'permission_callback' => function () {
-                return is_user_logged_in();
-            },
+            'permission_callback' => 'motorlan_is_user_authenticated',
         ),
     ) );
 
     register_rest_route( $namespace, '/questions/(?P<id>\\d+)/answer', array(
         'methods'  => WP_REST_Server::CREATABLE,
         'callback' => 'motorlan_answer_question_callback',
-        'permission_callback' => function ( WP_REST_Request $request ) {
-            $question_id = (int) $request['id'];
-            $publicacion_id    = (int) get_field( 'publicacion', $question_id );
-            $publicacion_post  = get_post( $publicacion_id );
-            $current_user = get_current_user_id();
-
-            if ( ! $publicacion_post ) {
-                return false;
-            }
-
-            return (int) $publicacion_post->post_author === $current_user || current_user_can( 'edit_posts' );
-        },
+        'permission_callback' => 'motorlan_is_user_authenticated',
     ) );
 }
 add_action( 'rest_api_init', 'motorlan_register_question_rest_routes' );

@@ -61,9 +61,21 @@ function motorlan_enqueue_vue_app() {
     );
 
     // Localize script data
+    $user_data = array(
+        'is_logged_in' => is_user_logged_in(),
+    );
+    if (is_user_logged_in()) {
+        $current_user = wp_get_current_user();
+        $user_data['user'] = array(
+            'id' => $current_user->ID,
+            'email' => $current_user->user_email,
+            'display_name' => $current_user->display_name,
+        );
+    }
     wp_localize_script('motorlan-vue-app-js', 'wpData', array(
         'site_url' => get_site_url(),
         'rest_nonce' => wp_create_nonce('wp_rest'),
+        'user_data' => $user_data,
     ));
     }
 }

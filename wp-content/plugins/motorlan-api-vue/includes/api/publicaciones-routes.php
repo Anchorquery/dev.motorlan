@@ -42,7 +42,7 @@ function motorlan_register_publicaciones_rest_routes() {
     register_rest_route( $namespace, '/publicaciones', array(
         'methods'  => WP_REST_Server::READABLE,
         'callback' => 'motorlan_get_publicaciones_callback',
-        'permission_callback' => '__return_true',
+        'permission_callback' => 'motorlan_permission_callback_true',
     ) );
 
     // Route for getting and updating a single publicacion by UUID
@@ -50,14 +50,12 @@ function motorlan_register_publicaciones_rest_routes() {
         array(
             'methods' => 'GET',
             'callback' => 'motorlan_get_publicacion_by_uuid',
-            'permission_callback' => '__return_true'
+            'permission_callback' => 'motorlan_permission_callback_true'
         ),
         array(
             'methods' => 'POST',
             'callback' => 'motorlan_update_publicacion_by_uuid',
-            'permission_callback' => function () {
-                return current_user_can('edit_posts');
-            }
+            'permission_callback' => 'motorlan_is_user_authenticated'
         ),
     ));
 
@@ -65,52 +63,49 @@ function motorlan_register_publicaciones_rest_routes() {
     register_rest_route($namespace, '/publicaciones/(?P<slug>[a-zA-Z0-9-]+)', array(
         'methods'  =>  'GET',
         'callback' => 'motorlan_get_publicacion_by_slug',
-        'permission_callback' => '__return_true',
+        'permission_callback' => 'motorlan_permission_callback_true',
     ) );
 
     // Route for deleting a publicacion by ID
     register_rest_route($namespace, '/publicaciones/(?P<id>\\d+)', array(
         'methods' => 'DELETE',
         'callback' => 'motorlan_delete_publicacion',
-        'permission_callback' => function () {
-            return current_user_can('delete_posts');
-        }
+        'permission_callback' => 'motorlan_is_user_authenticated'
     ));
 
     // Route for duplicating a publicacion by ID
     register_rest_route($namespace, '/publicaciones/duplicate/(?P<id>\\d+)', array(
         'methods' => 'GET',
         'callback' => 'motorlan_duplicate_publicacion',
+        'permission_callback' => 'motorlan_is_user_authenticated'
     ));
 
     // Route for updating publicacion status by ID
     register_rest_route($namespace, '/publicaciones/(?P<id>\\d+)/status', array(
         'methods' => 'POST',
         'callback' => 'motorlan_update_publicacion_status',
-        'permission_callback' => function () {
-            return current_user_can('edit_posts');
-        }
+        'permission_callback' => 'motorlan_is_user_authenticated'
     ));
 
     // Route for getting publicacion categories
     register_rest_route( $namespace, '/publicacion-categories', array(
         'methods'  => WP_REST_Server::READABLE,
         'callback' => 'motorlan_get_publicacion_categories_callback',
-        'permission_callback' => '__return_true',
+        'permission_callback' => 'motorlan_permission_callback_true',
     ) );
 
     // Route for getting publicacion tipos
     register_rest_route( $namespace, '/tipos', array(
         'methods'  => WP_REST_Server::READABLE,
         'callback' => 'motorlan_get_tipos_callback',
-        'permission_callback' => '__return_true',
+        'permission_callback' => 'motorlan_permission_callback_true',
     ) );
 
     // Route for getting brands
     register_rest_route( $namespace, '/marcas', array(
         'methods'  => WP_REST_Server::READABLE,
         'callback' => 'motorlan_get_marcas_callback',
-        'permission_callback' => '__return_true',
+        'permission_callback' => 'motorlan_permission_callback_true',
     ) );
 }
 add_action( 'rest_api_init', 'motorlan_register_publicaciones_rest_routes' );
