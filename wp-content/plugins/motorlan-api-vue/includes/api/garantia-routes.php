@@ -20,9 +20,7 @@ function motorlan_register_garantia_rest_routes() {
         array(
             'methods'             => WP_REST_Server::CREATABLE,
             'callback'            => 'motorlan_create_garantia_item',
-            'permission_callback' => function () {
-                return current_user_can( 'edit_posts' );
-            },
+            'permission_callback' => 'motorlan_is_user_authenticated',
             'args' => array(
                 'motor_id' => array(
                     'required' => true,
