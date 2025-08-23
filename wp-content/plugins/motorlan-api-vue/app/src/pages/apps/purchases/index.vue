@@ -2,10 +2,10 @@
 const route = useRoute()
 
 const tabs = [
-  { title: 'Compras', to: { name: 'apps-my-account-purchases' } },
-  { title: 'Preguntas', to: { name: 'apps-my-account-questions' } },
-  { title: 'Opiniones', to: { name: 'apps-my-account-opinions' } },
-  { title: 'Favoritos', to: { name: 'apps-my-account-favorites' } },
+  { title: 'Compras', to: { name: 'apps-purchases-purchases' } },
+  { title: 'Preguntas', to: { name: 'apps-purchases-questions' } },
+  { title: 'Opiniones', to: { name: 'apps-purchases-opinions' } },
+  { title: 'Favoritos', to: { name: 'apps-purchases-favorites' } },
 ]
 
 const activeTab = computed({

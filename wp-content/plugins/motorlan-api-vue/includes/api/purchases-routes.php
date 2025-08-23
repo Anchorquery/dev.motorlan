@@ -11,34 +11,34 @@ if ( ! defined( 'WPINC' ) ) {
 }
 
 /**
- * Register custom REST API routes for my account.
+ * Register custom REST API routes for purchases.
  */
-function motorlan_register_my_account_rest_routes() {
+function motorlan_register_purchases_rest_routes() {
     $namespace = 'motorlan/v1';
 
     // Route for getting current user's purchases
-    register_rest_route( $namespace, '/my-account/purchases', array(
+    register_rest_route( $namespace, '/purchases/purchases', array(
         'methods'  => WP_REST_Server::READABLE,
         'callback' => 'motorlan_get_my_purchases_callback',
         'permission_callback' => 'motorlan_is_user_authenticated'
     ) );
 
     // Route for getting current user's questions
-    register_rest_route( $namespace, '/my-account/questions', array(
+    register_rest_route( $namespace, '/purchases/questions', array(
         'methods'  => WP_REST_Server::READABLE,
         'callback' => 'motorlan_get_my_questions_callback',
         'permission_callback' => 'motorlan_is_user_authenticated'
     ) );
 
     // Route for getting current user's opinions
-    register_rest_route( $namespace, '/my-account/opinions', array(
+    register_rest_route( $namespace, '/purchases/opinions', array(
         'methods'  => WP_REST_Server::READABLE,
         'callback' => 'motorlan_get_my_opinions_callback',
         'permission_callback' => 'motorlan_is_user_authenticated'
     ) );
 
     // Route for getting current user's favorites
-    register_rest_route( $namespace, '/my-account/favorites', array(
+    register_rest_route( $namespace, '/purchases/favorites', array(
         'methods'  => WP_REST_Server::READABLE,
         'callback' => 'motorlan_get_my_favorites_callback',
         'permission_callback' => 'motorlan_is_user_authenticated'
@@ -66,7 +66,7 @@ function motorlan_register_my_account_rest_routes() {
     ) );
 
     // Route for removing a favorite motor
-    register_rest_route( $namespace, '/my-account/favorites/(?P<motor_id>\\d+)', array(
+    register_rest_route( $namespace, '/purchases/favorites/(?P<motor_id>\\d+)', array(
         'methods'  => WP_REST_Server::DELETABLE,
         'callback' => 'motorlan_remove_my_favorite_callback',
         'permission_callback' => function () {
@@ -74,7 +74,7 @@ function motorlan_register_my_account_rest_routes() {
         }
     ) );
 }
-add_action( 'rest_api_init', 'motorlan_register_my_account_rest_routes' );
+add_action( 'rest_api_init', 'motorlan_register_purchases_rest_routes' );
 
 /**
  * Callback function to get a list of current user's purchases.
