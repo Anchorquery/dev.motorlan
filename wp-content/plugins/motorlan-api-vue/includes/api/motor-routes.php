@@ -276,22 +276,85 @@ function motorlan_update_motor_by_uuid(WP_REST_Request $request) {
 
     // Update post title
     if (isset($params['title'])) {
-        wp_update_post(array('ID' => $post_id, 'post_title' => sanitize_text_field($params['title'])));
+        $update_result = wp_update_post(array('ID' => $post_id, 'post_title' => sanitize_text_field($params['title'])), true);
+        if (is_wp_error($update_result)) {
+            return new WP_Error('update_failed', 'Failed to update post title', array('status' => 500));
+        }
     }
 
     // Update post categories
     if (isset($params['categories'])) {
-        wp_set_post_terms($post_id, $params['categories'], 'categoria', false);
+        $term_ids = array_map('intval', $params['categories']);
+        $term_result = wp_set_post_terms($post_id, $term_ids, 'categoria', false);
+        if (is_wp_error($term_result)) {
+            return new WP_Error('update_failed', 'Failed to update categories', array('status' => 500));
+        }
     }
 
     // Update ACF fields
     if (isset($params['acf']) && is_array($params['acf'])) {
-        foreach ($params['acf'] as $key => $value) {
-            // A basic sanitization, you might need more specific sanitization based on the field type
+        $acf_data = $params['acf'];
+
+        // Handle specific fields first
+        $special_fields = ['marca', 'motor_image', 'motor_gallery', 'documentacion_adicional'];
+
+        foreach ($special_fields as $field_name) {
+            if (isset($acf_data[$field_name])) {
+                $value = $acf_data[$field_name];
+                $field_key = $field_name;
+
+                // Special handling for 'marca'
+                if ($field_name === 'marca' && is_array($value) && isset($value['id'])) {
+                    $value = $value['id'];
+                }
+
+                // Special handling for 'motor_image'
+                if ($field_name === 'motor_image' && is_array($value) && isset($value['id'])) {
+                    $value = $value['id'];
+                }
+
+                // Special handling for 'motor_gallery'
+                if ($field_name === 'motor_gallery' && is_array($value)) {
+                    $gallery_ids = [];
+                    foreach ($value as $image) {
+                        if (is_array($image) && isset($image['id'])) {
+                            $gallery_ids[] = $image['id'];
+                        } else if (is_numeric($image)) {
+                            $gallery_ids[] = $image;
+                        }
+                    }
+                    $value = $gallery_ids;
+                }
+
+                // Special handling for 'documentacion_adicional'
+                if ($field_name === 'documentacion_adicional' && is_array($value)) {
+                    $docs = [];
+                    foreach ($value as $doc) {
+                        if (isset($doc['archivo']) && is_array($doc['archivo']) && isset($doc['archivo']['id'])) {
+                            $docs[] = ['nombre' => sanitize_text_field($doc['nombre']), 'archivo' => $doc['archivo']['id']];
+                        } else {
+                            $docs[] = ['nombre' => sanitize_text_field($doc['nombre']), 'archivo' => intval($doc['archivo'])];
+                        }
+                    }
+                    $value = $docs;
+                }
+
+
+                if (!update_field($field_key, $value, $post_id)) {
+                    // Optionally, you can log an error here for debugging
+                }
+                unset($acf_data[$field_name]); // Unset to avoid double processing
+            }
+        }
+
+        // Process remaining generic ACF fields
+        foreach ($acf_data as $key => $value) {
             if (is_string($value)) {
                 $value = sanitize_text_field($value);
             }
-            update_field($key, $value, $post_id);
+            if (!update_field($key, $value, $post_id)) {
+                 // Optionally, you can log an error here for debugging
+            }
         }
     }
 
