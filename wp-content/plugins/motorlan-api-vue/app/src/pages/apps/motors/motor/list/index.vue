@@ -337,7 +337,7 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
           <VBtn
             color="primary"
             prepend-icon="tabler-plus"
-            @click="$router.push('/apps/motors/motor/add/select-type')"
+            @click="$router.push({ path: '/apps/motors/motor/add/select-type' })"
           >
             Añadir Publicación
           </VBtn>
