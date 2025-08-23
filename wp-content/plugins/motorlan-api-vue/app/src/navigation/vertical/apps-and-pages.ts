@@ -39,7 +39,7 @@ export default [
     ],
   },
   {
-    title: 'Mis Compras',
+    title: 'Compras',
     icon: { icon: 'tabler-user-circle' },
     children: [
       { title: 'Compras', to: 'apps-my-account-purchases' },

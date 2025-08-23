@@ -1,14 +1,18 @@
 <script setup lang="ts">
+import { useRouter } from 'vue-router'
 import type { ImagenDestacada } from '../../../../../interfaces/publicacion'
 
+const router = useRouter()
+
 const headers = [
-  { title: 'Publicacion', key: 'publicacion' },
+  { title: 'Publicacion', key: 'motor' },
   { title: 'Pregunta', key: 'pregunta' },
   { title: 'Respuesta', key: 'respuesta' },
+  { title: 'Estado', key: 'estado' },
+  { title: 'Acciones', key: 'actions', sortable: false },
 ]
 
 const searchQuery = ref('')
-const selectedRows = ref([])
 
 // Data table options
 const itemsPerPage = ref(10)
@@ -23,7 +27,7 @@ const updateOptions = (options: any) => {
   orderBy.value = options.sortBy[0]?.order
 }
 
-const { data: questionsData, execute: fetchQuestions } = await useApi<any>(createUrl('/wp-json/motorlan/v1/my-account/questions', {
+const { data: questionsData } = await useApi<any>(createUrl('/wp-json/motorlan/v1/my-account/questions', {
   query: {
     page,
     per_page: itemsPerPage,
@@ -35,6 +39,13 @@ const { data: questionsData, execute: fetchQuestions } = await useApi<any>(creat
 
 const questions = computed(() => questionsData.value?.data || [])
 const totalQuestions = computed(() => questionsData.value?.pagination.total || 0)
+
+const resolveStatus = (respuesta: string | null) => {
+  if (respuesta)
+    return { text: 'Respondida', color: 'success' }
+
+  return { text: 'Pendiente', color: 'warning' }
+}
 
 const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail'): string => {
   let imageObj: ImagenDestacada | null = null
@@ -57,6 +68,7 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
 <template>
   <VCard
     id="question-list"
+    title="Mis Preguntas"
   >
     <VCardText>
       <div class="d-flex flex-wrap gap-4">
@@ -93,32 +105,56 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
       @update:options="updateOptions"
     >
       <!-- publicacion -->
-      <template #item.publicacion="{ item }">
-        <div class="d-flex align-center gap-x-4">
+      <template #item.motor="{ item }">
+        <div
+          v-if="item.motor"
+          class="d-flex align-center gap-x-4"
+        >
           <VAvatar
-            v-if="item.raw.publicacion?.imagen_destacada"
+            v-if="item.motor.imagen_destacada"
             size="38"
             variant="tonal"
             rounded
-            :image="getImageBySize(item.raw.publicacion.imagen_destacada, 'thumbnail')"
+            :image="getImageBySize(item.motor.imagen_destacada, 'thumbnail')"
           />
           <div class="d-flex flex-column">
-            <NuxtLink :to="`/apps/publicaciones/publicacion/edit/${item.raw.publicacion.uuid}`">
-              <span class="text-body-1 font-weight-medium text-high-emphasis">{{ item.raw.publicacion.title }}</span>
-            </NuxtLink>
-            <span class="text-body-2">{{ item.raw.publicacion.acf.marca.name }}</span>
+            <span
+              class="text-body-1 font-weight-medium text-high-emphasis cursor-pointer"
+              @click="router.push(`/apps/motors/motor/edit/${item.motor.uuid}`)"
+            >{{ item.motor.title }}</span>
+            <span class="text-body-2">{{ item.motor.acf.marca?.name }}</span>
           </div>
         </div>
       </template>
 
       <!-- pregunta -->
       <template #item.pregunta="{ item }">
-        <span class="text-body-1 text-high-emphasis">{{ item.raw.pregunta }}</span>
+        <span class="text-body-1 text-high-emphasis">{{ item.pregunta }}</span>
       </template>
 
       <!-- respuesta -->
       <template #item.respuesta="{ item }">
-        <span class="text-body-1 text-high-emphasis">{{ item.raw.respuesta || 'Sin respuesta' }}</span>
+        <span class="text-body-1 text-high-emphasis">{{ item.respuesta || 'Sin respuesta' }}</span>
+      </template>
+
+      <!-- estado -->
+      <template #item.estado="{ item }">
+        <VChip
+          v-bind="resolveStatus(item.respuesta)"
+          density="default"
+          label
+          size="small"
+        />
+      </template>
+
+      <!-- Actions -->
+      <template #item.actions="{ item }">
+        <IconBtn
+          v-if="item.motor"
+          @click="router.push(`/apps/motors/motor/edit/${item.motor.uuid}`)"
+        >
+          <VIcon icon="tabler-eye" />
+        </IconBtn>
       </template>
 
       <!-- pagination -->

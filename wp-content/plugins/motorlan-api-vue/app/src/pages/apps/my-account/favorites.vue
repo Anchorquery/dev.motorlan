@@ -1,14 +1,18 @@
 <script setup lang="ts">
-import type { ImagenDestacada } from '../../../../../interfaces/publicacion'
+import { useRouter } from 'vue-router'
+import type { ImagenDestacada, Publicacion } from '../../../../../interfaces/publicacion'
+
+const router = useRouter()
 
 const headers = [
-  { title: 'Publicacion', key: 'publicacion' },
+  { title: 'Publicacion', key: 'title' },
   { title: 'Referencia', key: 'referencia' },
   { title: 'Precio', key: 'precio' },
+  { title: 'Estado', key: 'status' },
+  { title: 'Acciones', key: 'actions', sortable: false },
 ]
 
 const searchQuery = ref('')
-const selectedRows = ref([])
 
 // Data table options
 const itemsPerPage = ref(10)
@@ -33,8 +37,31 @@ const { data: favoritesData, execute: fetchFavorites } = await useApi<any>(creat
   },
 }))
 
-const favorites = computed(() => favoritesData.value?.data || [])
+const favorites = computed((): Publicacion[] => favoritesData.value?.data || [])
 const totalFavorites = computed(() => favoritesData.value?.pagination.total || 0)
+
+const resolveStatus = (status: string) => {
+  if (status === 'publish')
+    return { text: 'Publicado', color: 'success' }
+  if (status === 'draft')
+    return { text: 'Borrador', color: 'secondary' }
+  if (status === 'paused')
+    return { text: 'Pausado', color: 'warning' }
+  if (status === 'sold')
+    return { text: 'Vendido', color: 'error' }
+
+  return { text: 'Desconocido', color: 'info' }
+}
+
+const removeFavorite = async (motorId: number) => {
+  try {
+    await $api(`/wp-json/motorlan/v1/my-account/favorites/${motorId}`, { method: 'DELETE' })
+    fetchFavorites()
+  }
+  catch (error) {
+    console.error('Error removing favorite:', error)
+  }
+}
 
 const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail'): string => {
   let imageObj: ImagenDestacada | null = null
@@ -57,6 +84,7 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
 <template>
   <VCard
     id="favorite-list"
+    title="Mis Favoritos"
   >
     <VCardText>
       <div class="d-flex flex-wrap gap-4">
@@ -93,32 +121,53 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
       @update:options="updateOptions"
     >
       <!-- publicacion -->
-      <template #item.publicacion="{ item }">
+      <template #item.title="{ item }">
         <div class="d-flex align-center gap-x-4">
           <VAvatar
-            v-if="item.raw.imagen_destacada"
+            v-if="item.imagen_destacada"
             size="38"
             variant="tonal"
             rounded
-            :image="getImageBySize(item.raw.imagen_destacada, 'thumbnail')"
+            :image="getImageBySize(item.imagen_destacada, 'thumbnail')"
           />
           <div class="d-flex flex-column">
-            <NuxtLink :to="`/apps/publicaciones/publicacion/edit/${item.raw.uuid}`">
-              <span class="text-body-1 font-weight-medium text-high-emphasis">{{ item.raw.title }}</span>
-            </NuxtLink>
-            <span class="text-body-2">{{ item.raw.acf.marca.name }}</span>
+            <span
+              class="text-body-1 font-weight-medium text-high-emphasis cursor-pointer"
+              @click="router.push(`/apps/motors/motor/edit/${item.uuid}`)"
+            >{{ item.title }}</span>
+            <span class="text-body-2">{{ item.acf.marca?.name }}</span>
           </div>
         </div>
       </template>
 
       <!-- referencia -->
       <template #item.referencia="{ item }">
-        <span class="text-body-1 text-high-emphasis">{{ item.raw.acf.tipo_o_referencia }}</span>
+        <span class="text-body-1 text-high-emphasis">{{ item.acf.tipo_o_referencia }}</span>
       </template>
 
       <!-- precio -->
       <template #item.precio="{ item }">
-        <span class="text-body-1 text-high-emphasis">{{ item.raw.acf.precio_de_venta }}</span>
+        <span class="text-body-1 text-high-emphasis">{{ item.acf.precio_de_venta }}</span>
+      </template>
+
+      <!-- status -->
+      <template #item.status="{ item }">
+        <VChip
+          v-bind="resolveStatus(item.status)"
+          density="default"
+          label
+          size="small"
+        />
+      </template>
+
+      <!-- Actions -->
+      <template #item.actions="{ item }">
+        <IconBtn @click="router.push(`/apps/motors/motor/edit/${item.uuid}`)">
+          <VIcon icon="tabler-eye" />
+        </IconBtn>
+        <IconBtn @click="removeFavorite(item.id)">
+          <VIcon icon="tabler-trash" />
+        </IconBtn>
       </template>
 
       <!-- pagination -->
