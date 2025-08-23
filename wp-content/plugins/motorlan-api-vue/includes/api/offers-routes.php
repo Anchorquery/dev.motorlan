@@ -12,7 +12,7 @@ if ( ! defined( 'WPINC' ) ) {
 function motorlan_register_offer_rest_routes() {
     $namespace = 'motorlan/v1';
 
-    register_rest_route( $namespace, '/motors/(?P<motor_id>\d+)/offers', array(
+    register_rest_route( $namespace, '/publicaciones/(?P<publicacion_id>\d+)/offers', array(
         array(
             'methods'  => WP_REST_Server::READABLE,
             'callback' => 'motorlan_get_offer_callback',
@@ -42,7 +42,7 @@ function motorlan_register_offer_rest_routes() {
 add_action( 'rest_api_init', 'motorlan_register_offer_rest_routes' );
 
 function motorlan_get_offer_callback( WP_REST_Request $request ) {
-    $motor_id = (int) $request['motor_id'];
+    $publicacion_id = (int) $request['publicacion_id'];
     $user_id  = get_current_user_id();
 
     $args = array(
@@ -50,8 +50,8 @@ function motorlan_get_offer_callback( WP_REST_Request $request ) {
         'posts_per_page' => 1,
         'meta_query'     => array(
             array(
-                'key'   => 'motor',
-                'value' => $motor_id,
+                'key'   => 'publicacion',
+                'value' => $publicacion_id,
             ),
             array(
                 'key'   => 'usuario',
@@ -78,7 +78,7 @@ function motorlan_get_offer_callback( WP_REST_Request $request ) {
 }
 
 function motorlan_create_offer_callback( WP_REST_Request $request ) {
-    $motor_id     = (int) $request['motor_id'];
+    $publicacion_id     = (int) $request['publicacion_id'];
     $user_id      = get_current_user_id();
     $monto        = floatval( $request->get_param( 'monto' ) );
     $justificacion= sanitize_text_field( $request->get_param( 'justificacion' ) );
@@ -99,7 +99,7 @@ function motorlan_create_offer_callback( WP_REST_Request $request ) {
     }
 
     update_field( 'usuario', $user_id, $offer_id );
-    update_field( 'motor', $motor_id, $offer_id );
+    update_field( 'publicacion', $publicacion_id, $offer_id );
     update_field( 'monto', $monto, $offer_id );
     update_field( 'justificacion', $justificacion, $offer_id );
 

@@ -1,6 +1,6 @@
 <?php
 /**
- * Setup for Custom Post Type "Motor".
+ * Setup for Custom Post Type "Publicacion".
  *
  * @package motorlan-api-vue
  */
@@ -11,26 +11,26 @@ if ( ! defined( 'WPINC' ) ) {
 }
 
 /**
- * Register a custom post type called "motor".
+ * Register a custom post type called "publicaciones".
  *
  * @see get_post_type_labels() for label keys.
  */
-function motorlan_register_motor_cpt() {
+function motorlan_register_publicaciones_cpt() {
     $labels = array(
-        'name'               => _x( 'Motores', 'post type general name', 'motorlan-api-vue' ),
-        'singular_name'      => _x( 'Motor', 'post type singular name', 'motorlan-api-vue' ),
-        'menu_name'          => _x( 'Motores', 'admin menu', 'motorlan-api-vue' ),
-        'name_admin_bar'     => _x( 'Motor', 'add new on admin bar', 'motorlan-api-vue' ),
-        'add_new'            => _x( 'Añadir Nuevo', 'motor', 'motorlan-api-vue' ),
-        'add_new_item'       => __( 'Añadir Nuevo Motor', 'motorlan-api-vue' ),
-        'new_item'           => __( 'Nuevo Motor', 'motorlan-api-vue' ),
-        'edit_item'          => __( 'Editar Motor', 'motorlan-api-vue' ),
-        'view_item'          => __( 'Ver Motor', 'motorlan-api-vue' ),
-        'all_items'          => __( 'Todos los Motores', 'motorlan-api-vue' ),
-        'search_items'       => __( 'Buscar Motores', 'motorlan-api-vue' ),
-        'parent_item_colon'  => __( 'Motores Padre:', 'motorlan-api-vue' ),
-        'not_found'          => __( 'No se encontraron motores.', 'motorlan-api-vue' ),
-        'not_found_in_trash' => __( 'No se encontraron motores en la papelera.', 'motorlan-api-vue' )
+        'name'               => _x( 'Publicaciones', 'post type general name', 'motorlan-api-vue' ),
+        'singular_name'      => _x( 'Publicación', 'post type singular name', 'motorlan-api-vue' ),
+        'menu_name'          => _x( 'Publicaciones', 'admin menu', 'motorlan-api-vue' ),
+        'name_admin_bar'     => _x( 'Publicación', 'add new on admin bar', 'motorlan-api-vue' ),
+        'add_new'            => _x( 'Añadir Nueva', 'publicacion', 'motorlan-api-vue' ),
+        'add_new_item'       => __( 'Añadir Nueva Publicación', 'motorlan-api-vue' ),
+        'new_item'           => __( 'Nueva Publicación', 'motorlan-api-vue' ),
+        'edit_item'          => __( 'Editar Publicación', 'motorlan-api-vue' ),
+        'view_item'          => __( 'Ver Publicación', 'motorlan-api-vue' ),
+        'all_items'          => __( 'Todas las Publicaciones', 'motorlan-api-vue' ),
+        'search_items'       => __( 'Buscar Publicaciones', 'motorlan-api-vue' ),
+        'parent_item_colon'  => __( 'Publicaciones Padre:', 'motorlan-api-vue' ),
+        'not_found'          => __( 'No se encontraron publicaciones.', 'motorlan-api-vue' ),
+        'not_found_in_trash' => __( 'No se encontraron publicaciones en la papelera.', 'motorlan-api-vue' )
     );
 
     $args = array(
@@ -40,7 +40,7 @@ function motorlan_register_motor_cpt() {
         'show_ui'            => true,
         'show_in_menu'       => true,
         'query_var'          => true,
-        'rewrite'            => array( 'slug' => 'motor' ),
+        'rewrite'            => array( 'slug' => 'publicaciones' ),
         'capability_type'    => 'post',
         'has_archive'        => true,
         'hierarchical'       => false,
@@ -49,99 +49,17 @@ function motorlan_register_motor_cpt() {
         'show_in_rest'       => true, // This is crucial for the REST API
     );
 
-    register_post_type( 'motor', $args );
+    register_post_type( 'publicaciones', $args );
 }
-add_action( 'init', 'motorlan_register_motor_cpt' );
-
-/**
- * Register a custom post type called "regulador".
- */
-function motorlan_register_regulador_cpt() {
-    $labels = array(
-        'name'               => _x( 'Reguladores', 'post type general name', 'motorlan-api-vue' ),
-        'singular_name'      => _x( 'Regulador', 'post type singular name', 'motorlan-api-vue' ),
-        'menu_name'          => _x( 'Reguladores', 'admin menu', 'motorlan-api-vue' ),
-        'name_admin_bar'     => _x( 'Regulador', 'add new on admin bar', 'motorlan-api-vue' ),
-        'add_new'            => _x( 'Añadir Nuevo', 'regulador', 'motorlan-api-vue' ),
-        'add_new_item'       => __( 'Añadir Nuevo Regulador', 'motorlan-api-vue' ),
-        'new_item'           => __( 'Nuevo Regulador', 'motorlan-api-vue' ),
-        'edit_item'          => __( 'Editar Regulador', 'motorlan-api-vue' ),
-        'view_item'          => __( 'Ver Regulador', 'motorlan-api-vue' ),
-        'all_items'          => __( 'Todos los Reguladores', 'motorlan-api-vue' ),
-        'search_items'       => __( 'Buscar Reguladores', 'motorlan-api-vue' ),
-        'parent_item_colon'  => __( 'Reguladores Padre:', 'motorlan-api-vue' ),
-        'not_found'          => __( 'No se encontraron reguladores.', 'motorlan-api-vue' ),
-        'not_found_in_trash' => __( 'No se encontraron reguladores en la papelera.', 'motorlan-api-vue' )
-    );
-
-    $args = array(
-        'labels'             => $labels,
-        'public'             => true,
-        'publicly_queryable' => true,
-        'show_ui'            => true,
-        'show_in_menu'       => true,
-        'query_var'          => true,
-        'rewrite'            => array( 'slug' => 'regulador' ),
-        'capability_type'    => 'post',
-        'has_archive'        => true,
-        'hierarchical'       => false,
-        'menu_position'      => 6,
-        'supports'           => array( 'title', 'editor', 'thumbnail', 'custom-fields' ),
-        'show_in_rest'       => true,
-    );
-
-    register_post_type( 'regulador', $args );
-}
-add_action( 'init', 'motorlan_register_regulador_cpt' );
-
-/**
- * Register a custom post type called "otro_repuesto".
- */
-function motorlan_register_otro_repuesto_cpt() {
-    $labels = array(
-        'name'               => _x( 'Otros Repuestos', 'post type general name', 'motorlan-api-vue' ),
-        'singular_name'      => _x( 'Otro Repuesto', 'post type singular name', 'motorlan-api-vue' ),
-        'menu_name'          => _x( 'Otros Repuestos', 'admin menu', 'motorlan-api-vue' ),
-        'name_admin_bar'     => _x( 'Otro Repuesto', 'add new on admin bar', 'motorlan-api-vue' ),
-        'add_new'            => _x( 'Añadir Nuevo', 'otro_repuesto', 'motorlan-api-vue' ),
-        'add_new_item'       => __( 'Añadir Nuevo Otro Repuesto', 'motorlan-api-vue' ),
-        'new_item'           => __( 'Nuevo Otro Repuesto', 'motorlan-api-vue' ),
-        'edit_item'          => __( 'Editar Otro Repuesto', 'motorlan-api-vue' ),
-        'view_item'          => __( 'Ver Otro Repuesto', 'motorlan-api-vue' ),
-        'all_items'          => __( 'Todos los Otros Repuestos', 'motorlan-api-vue' ),
-        'search_items'       => __( 'Buscar Otros Repuestos', 'motorlan-api-vue' ),
-        'parent_item_colon'  => __( 'Otros Repuestos Padre:', 'motorlan-api-vue' ),
-        'not_found'          => __( 'No se encontraron otros repuestos.', 'motorlan-api-vue' ),
-        'not_found_in_trash' => __( 'No se encontraron otros repuestos en la papelera.', 'motorlan-api-vue' )
-    );
-
-    $args = array(
-        'labels'             => $labels,
-        'public'             => true,
-        'publicly_queryable' => true,
-        'show_ui'            => true,
-        'show_in_menu'       => true,
-        'query_var'          => true,
-        'rewrite'            => array( 'slug' => 'otro-repuesto' ),
-        'capability_type'    => 'post',
-        'has_archive'        => true,
-        'hierarchical'       => false,
-        'menu_position'      => 7,
-        'supports'           => array( 'title', 'editor', 'thumbnail', 'custom-fields' ),
-        'show_in_rest'       => true,
-    );
-
-    register_post_type( 'otro_repuesto', $args );
-}
-add_action( 'init', 'motorlan_register_otro_repuesto_cpt' );
+add_action( 'init', 'motorlan_register_publicaciones_cpt' );
 
 
 /**
- * Create two taxonomies, 'categoria' and 'marca' for the post type 'motor'.
+ * Create two taxonomies, 'categoria' and 'marca' for the post type 'publicaciones'.
  */
 function motorlan_register_taxonomies() {
     // The post types to register the taxonomies for.
-    $post_types = array( 'motor', 'regulador', 'otro_repuesto' );
+    $post_types = array( 'publicaciones' );
 
     // Taxonomy: Categoria
     $labels_categoria = array(
@@ -196,6 +114,33 @@ function motorlan_register_taxonomies() {
     );
 
     register_taxonomy( 'marca', $post_types, $args_marca );
+
+    // Taxonomy: Tipo
+    $labels_tipo = array(
+        'name'              => _x( 'Tipos', 'taxonomy general name', 'motorlan-api-vue' ),
+        'singular_name'     => _x( 'Tipo', 'taxonomy singular name', 'motorlan-api-vue' ),
+        'search_items'      => __( 'Buscar Tipos', 'motorlan-api-vue' ),
+        'all_items'         => __( 'Todos los Tipos', 'motorlan-api-vue' ),
+        'parent_item'       => __( 'Tipo Padre', 'motorlan-api-vue' ),
+        'parent_item_colon' => __( 'Tipo Padre:', 'motorlan-api-vue' ),
+        'edit_item'         => __( 'Editar Tipo', 'motorlan-api-vue' ),
+        'update_item'       => __( 'Actualizar Tipo', 'motorlan-api-vue' ),
+        'add_new_item'      => __( 'Añadir Nuevo Tipo', 'motorlan-api-vue' ),
+        'new_item_name'     => __( 'Nuevo Nombre de Tipo', 'motorlan-api-vue' ),
+        'menu_name'         => __( 'Tipos', 'motorlan-api-vue' ),
+    );
+
+    $args_tipo = array(
+        'hierarchical'      => true,
+        'labels'            => $labels_tipo,
+        'show_ui'           => true,
+        'show_admin_column' => true,
+        'query_var'         => true,
+        'rewrite'           => array( 'slug' => 'tipo' ),
+        'show_in_rest'      => true,
+    );
+
+    register_taxonomy( 'tipo', $post_types, $args_tipo );
 }
 add_action( 'init', 'motorlan_register_taxonomies', 0 );
 
@@ -220,6 +165,4 @@ function motorlan_add_uuid_to_post( $post_id, $post ) {
         update_post_meta( $post_id, 'uuid', $uuid );
     }
 }
-add_action( 'save_post_motor', 'motorlan_add_uuid_to_post', 10, 2 );
-add_action( 'save_post_regulador', 'motorlan_add_uuid_to_post', 10, 2 );
-add_action( 'save_post_otro_repuesto', 'motorlan_add_uuid_to_post', 10, 2 );
+add_action( 'save_post_publicaciones', 'motorlan_add_uuid_to_post', 10, 2 );

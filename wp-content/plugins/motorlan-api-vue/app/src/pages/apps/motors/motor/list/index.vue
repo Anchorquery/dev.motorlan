@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { ImagenDestacada, Motor } from '../../../../../interfaces/motor'
+import type { ImagenDestacada, Publicacion } from '../../../../../interfaces/publicacion'
 
 const widgetData = ref([
   { title: 'Sales', value: '$5,345', icon: 'tabler-smart-home', desc: '5k orders', change: 5.7 },
@@ -9,7 +9,7 @@ const widgetData = ref([
 ])
 
 const headers = [
-  { title: 'Motor', key: 'motor' },
+  { title: 'Publicacion', key: 'publicacion' },
   { title: 'Referencia', key: 'referencia' },
   { title: 'Precio', key: 'precio' },
   { title: 'Status', key: 'status' },
@@ -18,6 +18,7 @@ const headers = [
 
 const selectedStatus = ref()
 const selectedCategory = ref()
+const selectedTipo = ref()
 const searchQuery = ref('')
 const selectedRows = ref([])
 
@@ -29,13 +30,23 @@ const status = ref([
 ])
 
 const categories = ref([])
+const tipos = ref([])
 
 // Fetch categories from the new endpoint
-const { data: categoriesData } = await useApi<any>(createUrl('/wp-json/motorlan/v1/motor-categories'))
+const { data: categoriesData } = await useApi<any>(createUrl('/wp-json/motorlan/v1/publicacion-categories'))
 if (categoriesData.value) {
   categories.value = categoriesData.value.map((cat: any) => ({
     title: cat.name,
     value: cat.slug,
+  }))
+}
+
+// Fetch tipos from the new endpoint
+const { data: tiposData } = await useApi<any>(createUrl('/wp-json/motorlan/v1/tipos'))
+if (tiposData.value) {
+  tipos.value = tiposData.value.map((tipo: any) => ({
+    title: tipo.name,
+    value: tipo.slug,
   }))
 }
 
@@ -64,11 +75,12 @@ const resolveStatus = (statusMsg: string) => {
   return { text: 'Unknown', color: 'info' }
 }
 
-const { data: motorsData, execute: fetchMotors } = await useApi<any>(createUrl('/wp-json/motorlan/v1/motors',
+const { data: publicacionesData, execute: fetchPublicaciones } = await useApi<any>(createUrl('/wp-json/motorlan/v1/publicaciones',
   {
     query: {
       search: searchQuery,
       category: selectedCategory,
+      tipo: selectedTipo,
       status: selectedStatus,
       page,
       per_page: itemsPerPage,
@@ -79,39 +91,39 @@ const { data: motorsData, execute: fetchMotors } = await useApi<any>(createUrl('
 
 ))
 
-const motors = computed((): Motor[] => (motorsData.value?.data || []).filter(Boolean))
-const totalMotors = computed(() => motorsData.value?.pagination.total || 0)
+const publicaciones = computed((): Publicacion[] => (publicacionesData.value?.data || []).filter(Boolean))
+const totalPublicaciones = computed(() => publicacionesData.value?.pagination.total || 0)
 
 const isLoading = ref(false)
 const loadingMessage = ref('')
 const isDeleteDialogVisible = ref(false)
-const motorToDelete = ref<number | null>(null)
+const publicacionToDelete = ref<number | null>(null)
 const isDuplicateDialogVisible = ref(false)
-const motorToDuplicate = ref<number | null>(null)
+const publicacionToDuplicate = ref<number | null>(null)
 const isStatusDialogVisible = ref(false)
-const motorToChangeStatus = ref<{ id: number; status: string } | null>(null)
+const publicacionToChangeStatus = ref<{ id: number; status: string } | null>(null)
 
 const openDeleteDialog = (id: number) => {
-  motorToDelete.value = id
+  publicacionToDelete.value = id
   isDeleteDialogVisible.value = true
 }
 
 const openDuplicateDialog = (id: number) => {
-  motorToDuplicate.value = id
+  publicacionToDuplicate.value = id
   isDuplicateDialogVisible.value = true
 }
 
 const openStatusDialog = (id: number, status: string) => {
-  motorToChangeStatus.value = { id, status }
+  publicacionToChangeStatus.value = { id, status }
   isStatusDialogVisible.value = true
 }
 
-const handleMotorAction = async (message: string, action: () => Promise<void>) => {
+const handlePublicacionAction = async (message: string, action: () => Promise<void>) => {
   isLoading.value = true
   loadingMessage.value = message
   try {
     await action()
-    await fetchMotors()
+    await fetchPublicaciones()
   }
   catch (error) {
     console.error(error)
@@ -122,50 +134,50 @@ const handleMotorAction = async (message: string, action: () => Promise<void>) =
 }
 
 
-const deleteMotor = () => {
-  if (motorToDelete.value === null)
+const deletePublicacion = () => {
+  if (publicacionToDelete.value === null)
     return
 
   isDeleteDialogVisible.value = false
-  handleMotorAction('Borrando motor...', async () => {
-    if (motorToDelete.value === null)
+  handlePublicacionAction('Borrando publicacion...', async () => {
+    if (publicacionToDelete.value === null)
       return
-    await $api(`/wp-json/motorlan/v1/motors/${motorToDelete.value}`, { method: 'DELETE' })
+    await $api(`/wp-json/motorlan/v1/publicaciones/${publicacionToDelete.value}`, { method: 'DELETE' })
 
-    const index = selectedRows.value.findIndex(row => row === motorToDelete.value)
+    const index = selectedRows.value.findIndex(row => row === publicacionToDelete.value)
     if (index !== -1)
       selectedRows.value.splice(index, 1)
   })
 
 }
 
-const duplicateMotor = () => {
-  if (motorToDuplicate.value === null)
+const duplicatePublicacion = () => {
+  if (publicacionToDuplicate.value === null)
     return
 
   isDuplicateDialogVisible.value = false
-  handleMotorAction('Duplicando motor...', async () => {
-    if (motorToDuplicate.value === null)
+  handlePublicacionAction('Duplicando publicacion...', async () => {
+    if (publicacionToDuplicate.value === null)
       return
-    await $api(`/wp-json/motorlan/v1/motors/${motorToDuplicate.value}/duplicate`, { method: 'POST' })
+    await $api(`/wp-json/motorlan/v1/publicaciones/${publicacionToDuplicate.value}/duplicate`, { method: 'POST' })
   })
 }
 
 const changeStatus = () => {
-  if (!motorToChangeStatus.value)
+  if (!publicacionToChangeStatus.value)
     return
 
-  const { id, status } = motorToChangeStatus.value
+  const { id, status } = publicacionToChangeStatus.value
   isStatusDialogVisible.value = false
 
   const messages: { [key: string]: string } = {
-    publish: 'Publicando motor...',
-    paused: 'Pausando motor...',
+    publish: 'Publicando publicacion...',
+    paused: 'Pausando publicacion...',
     draft: 'Moviendo a borrador...',
   }
 
-  handleMotorAction(messages[status] || 'Actualizando estado...', async () => {
-    await $api(`/wp-json/motorlan/v1/motors/${id}/status`, {
+  handlePublicacionAction(messages[status] || 'Actualizando estado...', async () => {
+    await $api(`/wp-json/motorlan/v1/publicaciones/${id}/status`, {
       method: 'POST',
       body: { status },
     })
@@ -268,7 +280,7 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
       </VCard>
     -->
 
-    <!-- 👉 motors -->
+    <!-- 👉 publicaciones -->
     <VCard
       title="Filters"
       class="mb-6"
@@ -278,7 +290,7 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
           <!-- 👉 Select Status -->
           <VCol
             cols="12"
-            sm="6"
+            sm="4"
           >
             <AppSelect
               v-model="selectedStatus"
@@ -292,13 +304,25 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
           <!-- 👉 Select Category -->
           <VCol
             cols="12"
-            sm="6"
+            sm="4"
           >
             <AppSelect
               v-model="selectedCategory"
               placeholder="Category"
               :items="categories"
-
+              clearable
+              clear-icon="tabler-x"
+            />
+          </VCol>
+          <!-- 👉 Select Tipo -->
+          <VCol
+            cols="12"
+            sm="4"
+          >
+            <AppSelect
+              v-model="selectedTipo"
+              placeholder="Tipo"
+              :items="tipos"
               clearable
               clear-icon="tabler-x"
             />
@@ -313,7 +337,7 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
           <!-- 👉 Search  -->
           <AppTextField
             v-model="searchQuery"
-            placeholder="Search Motor"
+            placeholder="Search Publicacion"
             style="inline-size: 200px;"
             class="me-3"
           />
@@ -337,9 +361,9 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
           <VBtn
             color="primary"
             prepend-icon="tabler-plus"
-            @click="$router.push({ path: '/apps/motors/motor/add/select-type' })"
+            @click="$router.push({ path: '/apps/publicaciones/publicacion/add' })"
           >
-            Add Motor
+            Add Publicacion
           </VBtn>
         </div>
       </div>
@@ -353,13 +377,13 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
         v-model:page="page"
         :headers="headers"
         show-select
-        :items="motors"
-        :items-length="totalMotors"
+        :items="publicaciones"
+        :items-length="totalPublicaciones"
         class="text-no-wrap"
         @update:options="updateOptions"
       >
-        <!-- motor  -->
-        <template #item.motor="{ item }">
+        <!-- publicacion  -->
+        <template #item.publicacion="{ item }">
           <div class="d-flex align-center gap-x-4">
             <VAvatar
               v-if="(item as any).imagen_destacada"
@@ -397,7 +421,7 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
 
         <!-- Actions -->
         <template #item.actions="{ item }">
-          <IconBtn @click="$router.push(`/apps/motors/motor/edit/${(item as any).uuid}`)">
+          <IconBtn @click="$router.push(`/apps/publicaciones/publicacion/edit/${(item as any).uuid}`)">
             <VIcon icon="tabler-edit" />
           </IconBtn>
 
@@ -457,7 +481,7 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
           <TablePagination
             v-model:page="page"
             :items-per-page="itemsPerPage"
-            :total-items="totalMotors"
+            :total-items="totalPublicaciones"
           />
         </template>
       </VDataTableServer>
@@ -489,7 +513,7 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
           Confirmar Eliminación
         </VCardTitle>
         <VCardText>
-          ¿Estás seguro de que quieres eliminar este motor? Esta acción no se puede deshacer.
+          ¿Estás seguro de que quieres eliminar este publicacion? Esta acción no se puede deshacer.
         </VCardText>
         <VCardActions>
           <VSpacer />
@@ -501,7 +525,7 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
           </VBtn>
           <VBtn
             color="primary"
-            @click="deleteMotor"
+            @click="deletePublicacion"
           >
             Eliminar
           </VBtn>
@@ -520,7 +544,7 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
           Confirmar Duplicación
         </VCardTitle>
         <VCardText>
-          ¿Estás seguro de que quieres duplicar este motor?
+          ¿Estás seguro de que quieres duplicar este publicacion?
         </VCardText>
         <VCardActions>
           <VSpacer />
@@ -532,7 +556,7 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
           </VBtn>
           <VBtn
             color="primary"
-            @click="duplicateMotor"
+            @click="duplicatePublicacion"
           >
             Duplicar
           </VBtn>
@@ -551,7 +575,7 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
           Confirmar Cambio de Estado
         </VCardTitle>
         <VCardText>
-          ¿Estás seguro de que quieres cambiar el estado de este motor?
+          ¿Estás seguro de que quieres cambiar el estado de este publicacion?
         </VCardText>
         <VCardActions>
           <VSpacer />

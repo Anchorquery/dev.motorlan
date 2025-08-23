@@ -12,7 +12,7 @@ if ( ! defined( 'WPINC' ) ) {
 function motorlan_register_question_rest_routes() {
     $namespace = 'motorlan/v1';
 
-    register_rest_route( $namespace, '/motors/(?P<motor_id>\\d+)/questions', array(
+    register_rest_route( $namespace, '/publicaciones/(?P<publicacion_id>\d+)/questions', array(
         array(
             'methods'  => WP_REST_Server::READABLE,
             'callback' => 'motorlan_get_questions_callback',
@@ -32,30 +32,30 @@ function motorlan_register_question_rest_routes() {
         'callback' => 'motorlan_answer_question_callback',
         'permission_callback' => function ( WP_REST_Request $request ) {
             $question_id = (int) $request['id'];
-            $motor_id    = (int) get_field( 'motor', $question_id );
-            $motor_post  = get_post( $motor_id );
+            $publicacion_id    = (int) get_field( 'publicacion', $question_id );
+            $publicacion_post  = get_post( $publicacion_id );
             $current_user = get_current_user_id();
 
-            if ( ! $motor_post ) {
+            if ( ! $publicacion_post ) {
                 return false;
             }
 
-            return (int) $motor_post->post_author === $current_user || current_user_can( 'edit_posts' );
+            return (int) $publicacion_post->post_author === $current_user || current_user_can( 'edit_posts' );
         },
     ) );
 }
 add_action( 'rest_api_init', 'motorlan_register_question_rest_routes' );
 
 function motorlan_get_questions_callback( WP_REST_Request $request ) {
-    $motor_id = (int) $request['motor_id'];
+    $publicacion_id = (int) $request['publicacion_id'];
 
     $args = array(
         'post_type'      => 'pregunta',
         'posts_per_page' => -1,
         'meta_query'     => array(
             array(
-                'key'   => 'motor',
-                'value' => $motor_id,
+                'key'   => 'publicacion',
+                'value' => $publicacion_id,
             ),
         ),
     );
@@ -80,7 +80,7 @@ function motorlan_get_questions_callback( WP_REST_Request $request ) {
 }
 
 function motorlan_create_question_callback( WP_REST_Request $request ) {
-    $motor_id = (int) $request['motor_id'];
+    $publicacion_id = (int) $request['publicacion_id'];
     $user_id  = get_current_user_id();
     $pregunta = sanitize_text_field( $request->get_param( 'pregunta' ) );
 
@@ -95,7 +95,7 @@ function motorlan_create_question_callback( WP_REST_Request $request ) {
     }
 
     update_field( 'usuario', $user_id, $post_id );
-    update_field( 'motor', $motor_id, $post_id );
+    update_field( 'publicacion', $publicacion_id, $post_id );
     update_field( 'pregunta', $pregunta, $post_id );
 
     return new WP_REST_Response( array( 'success' => true, 'id' => $post_id ), 201 );

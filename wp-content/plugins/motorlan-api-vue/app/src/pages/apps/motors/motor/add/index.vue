@@ -14,12 +14,11 @@ const currentStep = ref(1)
 const newPostId = ref<number | null>(null)
 
 // Form data
-const postType = ref('motor')
-
 const postData = ref({
   title: '',
   status: 'publish',
   categories: [],
+  tipo: [],
   acf: {
     marca: null,
     tipo_o_referencia: '',
@@ -61,44 +60,25 @@ const garantiaData = ref({
 const userData = ref<any>(null)
 const marcas = ref([])
 const categories = ref([])
-
-const postTypeOptions = computed(() => [
-  { title: t('add_motor.post_type_options.motor'), value: 'motor' },
-  { title: t('add_motor.post_type_options.regulator'), value: 'regulador' },
-  { title: t('add_motor.post_type_options.other_spare_part'), value: 'otro_repuesto' },
-])
+const tipos = ref([])
 
 const conditionOptions = computed(() => [
-  { title: t('add_motor.condition_options.new'), value: 'Nuevo' },
-  { title: t('add_motor.condition_options.used'), value: 'Usado' },
-  { title: t('add_motor.condition_options.restored'), value: 'Restaurado' },
+  { title: t('add_publication.condition_options.new'), value: 'Nuevo' },
+  { title: t('add_publication.condition_options.used'), value: 'Usado' },
+  { title: t('add_publication.condition_options.restored'), value: 'Restaurado' },
 ])
 
 const countryOptions = computed(() => [
-  { title: t('add_motor.country_options.spain'), value: 'España' },
-  { title: t('add_motor.country_options.portugal'), value: 'Portugal' },
-  { title: t('add_motor.country_options.france'), value: 'Francia' },
+  { title: t('add_publication.country_options.spain'), value: 'España' },
+  { title: t('add_publication.country_options.portugal'), value: 'Portugal' },
+  { title: t('add_publication.country_options.france'), value: 'Francia' },
 ])
 
 const pageTitle = computed(() => {
-  const selectedType = postTypeOptions.value.find(o => o.value === postType.value)
-  const postTypeTitle = selectedType ? selectedType.title : ''
-
-  return t('add_motor.title', { postType: postTypeTitle })
+  return t('add_publication.title')
 })
 
-const apiEndpoint = computed(() => {
-  switch (postType.value) {
-    case 'motor':
-      return '/wp-json/wp/v2/motors'
-    case 'regulador':
-      return '/wp-json/wp/v2/regulador'
-    case 'otro_repuesto':
-      return '/wp-json/wp/v2/otro_repuesto'
-    default:
-      return ''
-  }
-})
+const apiEndpoint = '/wp-json/wp/v2/publicaciones'
 
 // Fetch initial data for selects
 onMounted(async () => {
@@ -106,10 +86,12 @@ onMounted(async () => {
     const [
       marcasResponse,
       categoriesResponse,
+      tiposResponse,
       userResponse,
     ] = await Promise.all([
       useApi('/wp-json/motorlan/v1/marcas'),
-      useApi('/wp-json/motorlan/v1/motor-categories'),
+      useApi('/wp-json/motorlan/v1/publicacion-categories'),
+      useApi('/wp-json/motorlan/v1/tipos'),
       useApi('/wp-json/wp/v2/users/me?context=edit'),
     ])
 
@@ -124,6 +106,13 @@ onMounted(async () => {
       categories.value = categoriesResponse.data.value.map((category: { name: any; term_id: any }) => ({
         title: category.name,
         value: category.term_id,
+      }))
+    }
+
+    if (tiposResponse && tiposResponse.data.value) {
+      tipos.value = tiposResponse.data.value.map((tipo: { name: any; term_id: any }) => ({
+        title: tipo.name,
+        value: tipo.term_id,
       }))
     }
 
@@ -194,23 +183,24 @@ const createPostAndContinue = async () => {
       }
     }
 
-    const response = await useApi<any>(apiEndpoint.value, {
+    const response = await useApi<any>(apiEndpoint, {
       method: 'POST',
       body: postData.value,
     })
 
     newPostId.value = response.data.value.id
-    showToast(t('add_motor.toasts.post_created_success'), 'success')
+    showToast(t('add_publication.toasts.post_created_success'), 'success')
 
-    if (postType.value === 'otro_repuesto') {
-      router.push('/apps/motors/motor/list')
+    const tipoTerm = tipos.value.find(t => t.value === postData.value.tipo[0])
+    if (tipoTerm && tipoTerm.title === 'Otro Repuesto') {
+      router.push('/apps/publicaciones/publicacion/list')
     }
     else {
       currentStep.value = 2
     }
   }
   catch (error: any) {
-    showToast(t('add_motor.toasts.post_created_error', { message: error.message }), 'error')
+    showToast(t('add_publication.toasts.post_created_error', { message: error.message }), 'error')
     console.error('Failed to create post:', error)
   }
 }
@@ -218,9 +208,9 @@ const createPostAndContinue = async () => {
 // Step 2: Skip warranty
 const skipGarantia = () => {
   // A simple confirm dialog
-  if (confirm(t('add_motor.toasts.warranty_skipped_confirmation'))) {
-    showToast(t('add_motor.toasts.warranty_skipped_info'), 'info')
-    router.push('/apps/motors/motor/list')
+  if (confirm(t('add_publication.toasts.warranty_skipped_confirmation'))) {
+    showToast(t('add_publication.toasts.warranty_skipped_info'), 'info')
+    router.push('/apps/publicaciones/publicacion/list')
   }
 }
 
@@ -235,7 +225,7 @@ const goToGarantiaForm = () => {
 // Step 3: Submit warranty
 const submitGarantia = async () => {
   if (!newPostId.value) {
-    showToast(t('add_motor.toasts.post_id_not_found_error'), 'error')
+    showToast(t('add_publication.toasts.post_id_not_found_error'), 'error')
 
     return
   }
@@ -247,11 +237,11 @@ const submitGarantia = async () => {
       method: 'POST',
       body: garantiaData.value,
     })
-    showToast(t('add_motor.toasts.warranty_request_success'), 'success')
-    router.push('/apps/motors/motor/list')
+    showToast(t('add_publication.toasts.warranty_request_success'), 'success')
+    router.push('/apps/publicaciones/publicacion/list')
   }
   catch (error: any) {
-    showToast(t('add_motor.toasts.warranty_request_error', { message: error.message }), 'error')
+    showToast(t('add_publication.toasts.warranty_request_error', { message: error.message }), 'error')
     console.error('Failed to submit garantia:', error)
   }
 }
@@ -265,23 +255,23 @@ const submitGarantia = async () => {
           {{ pageTitle }}
         </h4>
         <span
-          v-if="postType !== 'otro_repuesto'"
+          v-if="postData.tipo[0] !== 'otro_repuesto'"
           class="text-body-1"
-        >{{ t('add_motor.step', { currentStep }) }}</span>
+        >{{ t('add_publication.step', { currentStep }) }}</span>
       </div>
       <div class="d-flex gap-4 align-center flex-wrap">
         <VBtn
           variant="tonal"
           color="secondary"
-          @click="router.push('/apps/motors/motor/list')"
+          @click="router.push('/apps/publicaciones/publicacion/list')"
         >
-          {{ t('add_motor.buttons.discard') }}
+          {{ t('add_publication.buttons.discard') }}
         </VBtn>
         <VBtn
           v-if="currentStep === 1"
           @click="createPostAndContinue"
         >
-          {{ t('add_motor.buttons.save_and_continue') }}
+          {{ t('add_publication.buttons.save_and_continue') }}
         </VBtn>
       </div>
     </div>
@@ -289,25 +279,9 @@ const submitGarantia = async () => {
     <!-- Step 1: Post Details -->
     <VRow v-if="currentStep === 1">
       <VCol>
-        <VCard class="mb-6">
-          <VCardText>
-            <VRow>
-              <VCol
-                cols="12"
-                md="6"
-              >
-                <AppSelect
-                  v-model="postType"
-                  :label="t('add_motor.post_details.publication_type')"
-                  :items="postTypeOptions"
-                />
-              </VCol>
-            </VRow>
-          </VCardText>
-        </VCard>
         <VCard
           class="mb-6"
-          :title="t('add_motor.post_details.section_title', { postType })"
+          :title="t('add_publication.post_details.section_title')"
         >
           <VCardText>
             <VRow>
@@ -315,10 +289,20 @@ const submitGarantia = async () => {
                 cols="12"
                 md="6"
               >
+                <AppSelect
+                  v-model="postData.tipo"
+                  :label="t('add_publication.post_details.type')"
+                  :items="tipos"
+                />
+              </VCol>
+              <VCol
+                cols="12"
+                md="6"
+              >
                 <AppTextField
                   v-model="postData.title"
-                  :label="t('add_motor.post_details.title')"
-                  :placeholder="t('add_motor.post_details.title_placeholder')"
+                  :label="t('add_publication.post_details.title')"
+                  :placeholder="t('add_publication.post_details.title_placeholder')"
                 />
               </VCol>
               <VCol
@@ -327,8 +311,8 @@ const submitGarantia = async () => {
               >
                 <AppTextField
                   v-model="postData.acf.tipo_o_referencia"
-                  :label="t('add_motor.post_details.reference')"
-                  :placeholder="t('add_motor.post_details.reference_placeholder')"
+                  :label="t('add_publication.post_details.reference')"
+                  :placeholder="t('add_publication.post_details.reference_placeholder')"
                 />
               </VCol>
               <VCol
@@ -337,7 +321,7 @@ const submitGarantia = async () => {
               >
                 <AppSelect
                   v-model="postData.acf.marca"
-                  :label="t('add_motor.post_details.brand')"
+                  :label="t('add_publication.post_details.brand')"
                   :items="marcas"
                 />
               </VCol>
@@ -347,21 +331,21 @@ const submitGarantia = async () => {
               >
                 <AppSelect
                   v-model="postData.categories"
-                  :label="t('add_motor.post_details.category')"
+                  :label="t('add_publication.post_details.category')"
                   :items="categories"
                   multiple
                 />
               </VCol>
-              <template v-if="postType === 'motor' || postType === 'regulador'">
+              <template v-if="postData.tipo[0] !== 3">
                 <VCol
                   cols="12"
                   md="6"
                 >
                   <AppTextField
                     v-model="postData.acf.potencia"
-                    :label="t('add_motor.post_details.power')"
+                    :label="t('add_publication.post_details.power')"
                     type="number"
-                    :placeholder="t('add_motor.post_details.power_placeholder')"
+                    :placeholder="t('add_publication.post_details.power_placeholder')"
                   />
                 </VCol>
                 <VCol
@@ -370,9 +354,9 @@ const submitGarantia = async () => {
                 >
                   <AppTextField
                     v-model="postData.acf.velocidad"
-                    :label="t('add_motor.post_details.speed')"
+                    :label="t('add_publication.post_details.speed')"
                     type="number"
-                    :placeholder="t('add_motor.post_details.speed_placeholder')"
+                    :placeholder="t('add_publication.post_details.speed_placeholder')"
                   />
                 </VCol>
                 <VCol
@@ -381,9 +365,9 @@ const submitGarantia = async () => {
                 >
                   <AppTextField
                     v-model="postData.acf.par_nominal"
-                    :label="t('add_motor.post_details.torque')"
+                    :label="t('add_publication.post_details.torque')"
                     type="number"
-                    :placeholder="t('add_motor.post_details.torque_placeholder')"
+                    :placeholder="t('add_publication.post_details.torque_placeholder')"
                   />
                 </VCol>
                 <VCol
@@ -392,9 +376,9 @@ const submitGarantia = async () => {
                 >
                   <AppTextField
                     v-model="postData.acf.voltaje"
-                    :label="t('add_motor.post_details.voltage')"
+                    :label="t('add_publication.post_details.voltage')"
                     type="number"
-                    :placeholder="t('add_motor.post_details.voltage_placeholder')"
+                    :placeholder="t('add_publication.post_details.voltage_placeholder')"
                   />
                 </VCol>
                 <VCol
@@ -403,9 +387,9 @@ const submitGarantia = async () => {
                 >
                   <AppTextField
                     v-model="postData.acf.intensidad"
-                    :label="t('add_motor.post_details.intensity')"
+                    :label="t('add_publication.post_details.intensity')"
                     type="number"
-                    :placeholder="t('add_motor.post_details.intensity_placeholder')"
+                    :placeholder="t('add_publication.post_details.intensity_placeholder')"
                   />
                 </VCol>
               </template>
@@ -415,7 +399,7 @@ const submitGarantia = async () => {
               >
                 <AppSelect
                   v-model="postData.acf.pais"
-                  :label="t('add_motor.post_details.country')"
+                  :label="t('add_publication.post_details.country')"
                   :items="countryOptions"
                 />
               </VCol>
@@ -425,8 +409,8 @@ const submitGarantia = async () => {
               >
                 <AppTextField
                   v-model="postData.acf.provincia"
-                  :label="t('add_motor.post_details.province')"
-                  :placeholder="t('add_motor.post_details.province_placeholder')"
+                  :label="t('add_publication.post_details.province')"
+                  :placeholder="t('add_publication.post_details.province_placeholder')"
                 />
               </VCol>
               <VCol
@@ -435,18 +419,18 @@ const submitGarantia = async () => {
               >
                 <AppSelect
                   v-model="postData.acf.estado_del_articulo"
-                  :label="t('add_motor.post_details.condition')"
+                  :label="t('add_publication.post_details.condition')"
                   :items="conditionOptions"
                 />
               </VCol>
               <VCol cols="12">
                 <VTextarea
                   v-model="postData.acf.descripcion"
-                  :label="t('add_motor.post_details.description')"
-                  :placeholder="t('add_motor.post_details.description_placeholder')"
+                  :label="t('add_publication.post_details.description')"
+                  :placeholder="t('add_publication.post_details.description_placeholder')"
                 />
               </VCol>
-              <template v-if="postType === 'motor' || postType === 'regulador'">
+              <template v-if="postData.tipo[0] !== 3">
                 <VCol
                   cols="12"
                   md="6"
@@ -454,14 +438,14 @@ const submitGarantia = async () => {
                   <VRadioGroup
                     v-model="postData.acf.posibilidad_de_alquiler"
                     inline
-                    :label="t('add_motor.post_details.rent_option')"
+                    :label="t('add_publication.post_details.rent_option')"
                   >
                     <VRadio
-                      :label="t('add_motor.boolean_options.yes')"
+                      :label="t('add_publication.boolean_options.yes')"
                       value="Sí"
                     />
                     <VRadio
-                      :label="t('add_motor.boolean_options.no')"
+                      :label="t('add_publication.boolean_options.no')"
                       value="No"
                     />
                   </VRadioGroup>
@@ -473,14 +457,14 @@ const submitGarantia = async () => {
                   <VRadioGroup
                     v-model="postData.acf.tipo_de_alimentacion"
                     inline
-                    :label="t('add_motor.post_details.power_supply_type')"
+                    :label="t('add_publication.post_details.power_supply_type')"
                   >
                     <VRadio
-                      :label="t('add_motor.power_supply_options.dc')"
+                      :label="t('add_publication.power_supply_options.dc')"
                       value="Continua (C.C.)"
                     />
                     <VRadio
-                      :label="t('add_motor.power_supply_options.ac')"
+                      :label="t('add_publication.power_supply_options.ac')"
                       value="Alterna (C.A.)"
                     />
                   </VRadioGroup>
@@ -491,7 +475,7 @@ const submitGarantia = async () => {
                 >
                   <VCheckbox
                     v-model="postData.acf.servomotores"
-                    :label="t('add_motor.post_details.servomotors')"
+                    :label="t('add_publication.post_details.servomotors')"
                   />
                 </VCol>
                 <VCol
@@ -500,7 +484,7 @@ const submitGarantia = async () => {
                 >
                   <VCheckbox
                     v-model="postData.acf.regulacion_electronica_drivers"
-                    :label="t('add_motor.post_details.electronic_regulation')"
+                    :label="t('add_publication.post_details.electronic_regulation')"
                   />
                 </VCol>
               </template>
@@ -510,9 +494,9 @@ const submitGarantia = async () => {
               >
                 <AppTextField
                   v-model="postData.acf.precio_de_venta"
-                  :label="t('add_motor.post_details.price')"
+                  :label="t('add_publication.post_details.price')"
                   type="number"
-                  :placeholder="t('add_motor.post_details.price_placeholder')"
+                  :placeholder="t('add_publication.post_details.price_placeholder')"
                 />
               </VCol>
               <VCol
@@ -521,9 +505,9 @@ const submitGarantia = async () => {
               >
                 <AppTextField
                   v-model="postData.acf.stock"
-                  :label="t('add_motor.post_details.stock')"
+                  :label="t('add_publication.post_details.stock')"
                   type="number"
-                  :placeholder="t('add_motor.post_details.stock_placeholder')"
+                  :placeholder="t('add_publication.post_details.stock_placeholder')"
                 />
               </VCol>
               <VCol
@@ -533,14 +517,14 @@ const submitGarantia = async () => {
                 <VRadioGroup
                   v-model="postData.acf.precio_negociable"
                   inline
-                  :label="t('add_motor.post_details.negotiable_price')"
+                  :label="t('add_publication.post_details.negotiable_price')"
                 >
                   <VRadio
-                    :label="t('add_motor.boolean_options.yes')"
+                    :label="t('add_publication.boolean_options.yes')"
                     value="Sí"
                   />
                   <VRadio
-                    :label="t('add_motor.boolean_options.no')"
+                    :label="t('add_publication.boolean_options.no')"
                     value="No"
                   />
                 </VRadioGroup>
@@ -549,14 +533,14 @@ const submitGarantia = async () => {
                 <VRadioGroup
                   v-model="postData.status"
                   inline
-                  :label="t('add_motor.post_details.publish_acf')"
+                  :label="t('add_publication.post_details.publish_acf')"
                 >
                   <VRadio
-                    :label="t('add_motor.post_details.publish_status_publish')"
+                    :label="t('add_publication.post_details.publish_status_publish')"
                     value="publish"
                   />
                   <VRadio
-                    :label="t('add_motor.post_details.publish_status_draft')"
+                    :label="t('add_publication.post_details.publish_status_draft')"
                     value="draft"
                   />
                 </VRadioGroup>
@@ -566,7 +550,7 @@ const submitGarantia = async () => {
         </VCard>
         <VCard
           class="mb-6"
-          :title="t('add_motor.media.main_image')"
+          :title="t('add_publication.media.main_image')"
         >
           <VCardText>
             <DropZone @file-added="handleFeaturedImageUpload" />
@@ -574,7 +558,7 @@ const submitGarantia = async () => {
         </VCard>
         <VCard
           class="mb-6"
-          :title="t('add_motor.media.image_gallery')"
+          :title="t('add_publication.media.image_gallery')"
         >
           <VCardText>
             <DropZone @file-added="handleGalleryImageUpload" />
@@ -582,7 +566,7 @@ const submitGarantia = async () => {
         </VCard>
         <VCard
           class="mb-6"
-          :title="t('add_motor.media.additional_documentation')"
+          :title="t('add_publication.media.additional_documentation')"
         >
           <VCardText>
             <div
@@ -592,12 +576,12 @@ const submitGarantia = async () => {
             >
               <AppTextField
                 v-model="doc.nombre"
-                :label="t('add_motor.media.document_name')"
-                :placeholder="t('add_motor.media.document_name_placeholder')"
+                :label="t('add_publication.media.document_name')"
+                :placeholder="t('add_publication.media.document_name_placeholder')"
                 style="width: 300px;"
               />
               <VFileInput
-                :label="t('add_motor.media.upload_file')"
+                :label="t('add_publication.media.upload_file')"
                 @change="event => handleFileUpload(event, index)"
               />
             </div>
@@ -605,7 +589,7 @@ const submitGarantia = async () => {
               v-if="postData.acf.documentacion_adicional.length < 5"
               @click="addDocument"
             >
-              {{ t('add_motor.buttons.add_document') }}
+              {{ t('add_publication.buttons.add_document') }}
             </VBtn>
           </VCardText>
         </VCard>
@@ -615,19 +599,19 @@ const submitGarantia = async () => {
     <!-- Step 2: Warranty Offer -->
     <VCard
       v-if="currentStep === 2"
-      :title="t('add_motor.warranty.add_warranty_title')"
+      :title="t('add_publication.warranty.add_warranty_title')"
       class="mb-6"
     >
       <VCardText>
         <p class="mb-4">
-          <strong>{{ t('add_motor.warranty.add_warranty_subtitle') }}</strong>
+          <strong>{{ t('add_publication.warranty.add_warranty_subtitle') }}</strong>
         </p>
         <p>
-          {{ t('add_motor.warranty.add_warranty_text1') }}
-          {{ t('add_motor.warranty.add_warranty_text2') }}
+          {{ t('add_publication.warranty.add_warranty_text1') }}
+          {{ t('add_publication.warranty.add_warranty_text2') }}
         </p>
         <p class="mt-2">
-          {{ t('add_motor.warranty.add_warranty_text3') }}
+          {{ t('add_publication.warranty.add_warranty_text3') }}
         </p>
       </VCardText>
       <VCardActions>
@@ -636,10 +620,10 @@ const submitGarantia = async () => {
           color="secondary"
           @click="skipGarantia"
         >
-          {{ t('add_motor.buttons.skip') }}
+          {{ t('add_publication.buttons.skip') }}
         </VBtn>
         <VBtn @click="goToGarantiaForm">
-          {{ t('add_motor.buttons.accept_and_add_warranty') }}
+          {{ t('add_publication.buttons.accept_and_add_warranty') }}
         </VBtn>
       </VCardActions>
     </VCard>
@@ -647,7 +631,7 @@ const submitGarantia = async () => {
     <!-- Step 3: Warranty Form -->
     <VCard
       v-if="currentStep === 3"
-      :title="t('add_motor.warranty.form_title')"
+      :title="t('add_publication.warranty.form_title')"
       class="mb-6"
     >
       <VCardText>
@@ -656,14 +640,14 @@ const submitGarantia = async () => {
             <VRadioGroup
               v-model="garantiaData.is_same_address"
               inline
-              :label="t('add_motor.warranty.same_address_question')"
+              :label="t('add_publication.warranty.same_address_question')"
             >
               <VRadio
-                :label="t('add_motor.boolean_options.yes')"
+                :label="t('add_publication.boolean_options.yes')"
                 value="SÍ"
               />
               <VRadio
-                :label="t('add_motor.boolean_options.no')"
+                :label="t('add_publication.boolean_options.no')"
                 value="NO"
               />
             </VRadioGroup>
@@ -675,8 +659,8 @@ const submitGarantia = async () => {
             >
               <AppTextField
                 v-model="garantiaData.direccion_motor"
-                :label="t('add_motor.warranty.pickup_address')"
-                :placeholder="t('add_motor.warranty.pickup_address_placeholder')"
+                :label="t('add_publication.warranty.pickup_address')"
+                :placeholder="t('add_publication.warranty.pickup_address_placeholder')"
               />
             </VCol>
             <VCol
@@ -685,43 +669,43 @@ const submitGarantia = async () => {
             >
               <AppTextField
                 v-model="garantiaData.cp_motor"
-                :label="t('add_motor.warranty.postal_code')"
-                :placeholder="t('add_motor.warranty.postal_code_placeholder')"
+                :label="t('add_publication.warranty.postal_code')"
+                :placeholder="t('add_publication.warranty.postal_code_placeholder')"
               />
             </VCol>
           </template>
           <VCol cols="12">
             <p class="text-body-1 font-weight-medium">
-              {{ t('add_motor.warranty.shipping_title') }}
+              {{ t('add_publication.warranty.shipping_title') }}
             </p>
             <p class="text-caption">
-              {{ t('add_motor.warranty.shipping_text') }}
+              {{ t('add_publication.warranty.shipping_text') }}
             </p>
             <AppTextField
               v-model="garantiaData.agencia_transporte"
-              :label="t('add_motor.warranty.shipping_agency')"
-              :placeholder="t('add_motor.warranty.shipping_agency_placeholder')"
+              :label="t('add_publication.warranty.shipping_agency')"
+              :placeholder="t('add_publication.warranty.shipping_agency_placeholder')"
               class="mt-4"
             />
           </VCol>
 
           <VCol cols="12">
             <p class="text-body-1 font-weight-medium">
-              {{ t('add_motor.warranty.payment_method_title') }}
+              {{ t('add_publication.warranty.payment_method_title') }}
             </p>
             <p class="text-caption">
-              {{ t('add_motor.warranty.payment_method_text') }}
+              {{ t('add_publication.warranty.payment_method_text') }}
             </p>
             <VRadioGroup
               v-model="garantiaData.modalidad_pago"
               class="mt-4"
             >
               <VRadio
-                :label="t('add_motor.warranty.payment_method_cod')"
+                :label="t('add_publication.warranty.payment_method_cod')"
                 value="Contra reembolso"
               />
               <VRadio
-                :label="t('add_motor.warranty.payment_method_transfer')"
+                :label="t('add_publication.warranty.payment_method_transfer')"
                 value="Transferencia"
               />
             </VRadioGroup>
@@ -730,8 +714,8 @@ const submitGarantia = async () => {
           <VCol cols="12">
             <VTextarea
               v-model="garantiaData.comentarios"
-              :label="t('add_motor.warranty.comments')"
-              :placeholder="t('add_motor.warranty.comments_placeholder')"
+              :label="t('add_publication.warranty.comments')"
+              :placeholder="t('add_publication.warranty.comments_placeholder')"
             />
           </VCol>
         </VRow>
@@ -742,10 +726,10 @@ const submitGarantia = async () => {
           variant="tonal"
           @click="currentStep = 2"
         >
-          {{ t('add_motor.buttons.go_back') }}
+          {{ t('add_publication.buttons.go_back') }}
         </VBtn>
         <VBtn @click="submitGarantia">
-          {{ t('add_motor.buttons.request_warranty') }}
+          {{ t('add_publication.buttons.request_warranty') }}
         </VBtn>
       </VCardActions>
     </VCard>

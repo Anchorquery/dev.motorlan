@@ -3,7 +3,7 @@ import { onMounted, ref } from 'vue'
 import { createUrl } from '@/@core/composable/createUrl'
 import { useApi } from '@/composables/useApi'
 
-const props = defineProps<{ motorId: number }>()
+const props = defineProps<{ publicacionId: number }>()
 
 const newQuestion = ref('')
 const questions = ref<any[]>([])
@@ -14,7 +14,7 @@ const snackbar = ref({ show: false, text: '', color: 'success' as 'success' | 'e
 const fetchQuestions = async () => {
   try {
     const { data } = await useApi<any>(
-      createUrl(`/wp-json/motorlan/v1/motors/${props.motorId}/questions`),
+      createUrl(`/wp-json/motorlan/v1/publicaciones/${props.publicacionId}/questions`),
     ).get().json()
 
     questions.value = data.value?.data || []
@@ -30,7 +30,7 @@ const submitQuestion = async () => {
   loading.value = true
   try {
     await useApi(
-      createUrl(`/wp-json/motorlan/v1/motors/${props.motorId}/questions`),
+      createUrl(`/wp-json/motorlan/v1/publicaciones/${props.publicacionId}/questions`),
     ).post({ body: { pregunta: newQuestion.value } })
     newQuestion.value = ''
     snackbar.value = { show: true, text: 'Pregunta enviada', color: 'success' }
@@ -49,7 +49,7 @@ onMounted(fetchQuestions)
 </script>
 
 <template>
-  <div class="motor-questions mt-8">
+  <div class="publicacion-questions mt-8">
     <h2 class="text-h5 mb-4">
       Preguntas y respuestas
     </h2>
@@ -105,7 +105,7 @@ onMounted(fetchQuestions)
 </template>
 
 <style scoped>
-.motor-questions {
+.publicacion-questions {
   border-top: 1px solid #E6E6E6;
   padding-top: 1rem;
 }

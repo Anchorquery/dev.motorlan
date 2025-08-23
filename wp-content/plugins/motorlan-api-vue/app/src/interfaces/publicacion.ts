@@ -41,7 +41,7 @@ export interface ImagenDestacada {
   sizes: ImageSizes
 }
 
-export interface Motor {
+export interface Publicacion {
   id: number
   title: string
   slug: string
@@ -54,4 +54,5 @@ export interface Motor {
   }
   status: string
   categories: { name: string }[]
+  tipo: { name: string }[]
 }

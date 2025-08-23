@@ -7,6 +7,7 @@ interface Term {
 
 defineProps<{
   marcas: Term[]
+  tipos: Term[]
   technologyOptions: string[]
   parOptions: string[]
   potenciaOptions: string[]
@@ -14,13 +15,13 @@ defineProps<{
 }>()
 
 const typeModel = defineModel<string>('typeModel')
-const productTypes = defineModel<string[]>('productTypes')
 const selectedTechnology = defineModel<string | null>('selectedTechnology')
 const selectedPar = defineModel<string | null>('selectedPar')
 const selectedPotencia = defineModel<string | null>('selectedPotencia')
 const selectedVelocidad = defineModel<string | null>('selectedVelocidad')
 const selectedBrand = defineModel<number | null>('selectedBrand')
 const selectedState = defineModel<string | null>('selectedState')
+const selectedTipo = defineModel<string | null>('selectedTipo')
 </script>
 
 <template>
@@ -41,11 +42,7 @@ const selectedState = defineModel<string | null>('selectedState')
       class="mb-6"
     />
 
-    <p class="text-body-2 mb-2">Tipo de producto</p>
-    <VCheckbox v-model="productTypes" label="Motor" value="motor" density="compact" hide-details />
-    <VCheckbox v-model="productTypes" label="Regulador" value="regulador" density="compact" hide-details />
-    <VCheckbox v-model="productTypes" label="Otros repuestos" value="otros-repuestos" density="compact" hide-details class="mb-6" />
-
+    <AppSelect v-model="selectedTipo" label="Tipo de producto" :items="tipos" item-title="name" item-value="slug" class="mb-4" clearable />
     <AppSelect v-model="selectedTechnology" label="Tecnología" :items="technologyOptions" class="mb-4" clearable />
     <AppSelect v-model="selectedPar" label="PAR (Nm)" :items="parOptions" class="mb-4" clearable />
     <AppSelect v-model="selectedPotencia" label="Potencia" :items="potenciaOptions" class="mb-4" clearable />

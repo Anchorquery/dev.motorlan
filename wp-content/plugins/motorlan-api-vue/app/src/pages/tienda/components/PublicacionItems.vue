@@ -1,32 +1,32 @@
 <script setup lang="ts">
-import type { Motor } from '@/interfaces/motor'
+import type { Publicacion } from '@/interfaces/publicacion'
 
-defineProps<{ motors: Motor[]; loading: boolean }>()
+defineProps<{ publicaciones: Publicacion[]; loading: boolean }>()
 </script>
 
 <template>
-  <div v-if="loading && !motors.length" class="text-center pa-12">
+  <div v-if="loading && !publicaciones.length" class="text-center pa-12">
     <VProgressCircular indeterminate size="64" />
-    <p class="mt-4">Cargando motores...</p>
+    <p class="mt-4">Cargando publicaciones...</p>
   </div>
 
-  <VRow v-else-if="motors.length" class="motor-grid">
-    <VCol v-for="motor in motors" :key="motor.id" cols="12" sm="6" md="4">
+  <VRow v-else-if="publicaciones.length" class="motor-grid">
+    <VCol v-for="publicacion in publicaciones" :key="publicacion.id" cols="12" sm="6" md="4">
       <div class="motor-card pa-4">
         <div class="motor-image mb-6">
-          <img :src="motor.imagen_destacada?.url || '/placeholder.png'" alt="" />
+          <img :src="publicacion.imagen_destacada?.url || '/placeholder.png'" alt="" />
         </div>
-        <div class="text-error text-body-1 mb-4">{{ motor.title }}</div>
+        <div class="text-error text-body-1 mb-4">{{ publicacion.title }}</div>
         <div class="d-flex justify-space-between align-center">
           <VBtn
             color="error"
             class="rounded-pill px-6"
-            :to="`/tienda/${motor.slug}`"
+            :to="`/tienda/${publicacion.slug}`"
           >
             + INFO
           </VBtn>
           <div class="price text-error font-weight-bold">
-            {{ motor.acf.precio_de_venta ? `${motor.acf.precio_de_venta} €` : 'Consultar precio' }}
+            {{ publicacion.acf.precio_de_venta ? `${publicacion.acf.precio_de_venta} €` : 'Consultar precio' }}
           </div>
         </div>
       </div>
@@ -35,7 +35,7 @@ defineProps<{ motors: Motor[]; loading: boolean }>()
 
   <VCard v-else class="pa-8 text-center">
     <VCardText>
-      <p class="text-h6">No se encontraron motores</p>
+      <p class="text-h6">No se encontraron publicaciones</p>
       <p>Intenta ajustar los filtros de búsqueda.</p>
     </VCardText>
   </VCard>

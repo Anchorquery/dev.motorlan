@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import type { Motor } from '@/interfaces/motor'
+import type { Publicacion } from '@/interfaces/publicacion'
 
-defineProps<{ motor: Motor }>()
+defineProps<{ publicacion: Publicacion }>()
 </script>
 
 <template>
-  <div class="motor-info">
+  <div class="publicacion-info">
     <h3 class="mb-4">
-      Información del motor
+      Información de la publicacion
     </h3>
     <VTable>
       <tbody>
@@ -15,37 +15,37 @@ defineProps<{ motor: Motor }>()
           <td class="font-weight-medium">
             Marca
           </td>
-          <td>{{ motor.acf.marca?.name || motor.acf.marca || '-' }}</td>
+          <td>{{ publicacion.acf.marca?.name || publicacion.acf.marca || '-' }}</td>
         </tr>
         <tr>
           <td class="font-weight-medium">
             Potencia
           </td>
-          <td>{{ motor.acf.potencia ? `${motor.acf.potencia} kW` : '-' }}</td>
+          <td>{{ publicacion.acf.potencia ? `${publicacion.acf.potencia} kW` : '-' }}</td>
         </tr>
         <tr>
           <td class="font-weight-medium">
             Velocidad
           </td>
-          <td>{{ motor.acf.velocidad ? `${motor.acf.velocidad} rpm` : '-' }}</td>
+          <td>{{ publicacion.acf.velocidad ? `${publicacion.acf.velocidad} rpm` : '-' }}</td>
         </tr>
         <tr>
           <td class="font-weight-medium">
             Par nominal
           </td>
-          <td>{{ motor.acf.par_nominal ? `${motor.acf.par_nominal} Nm` : '-' }}</td>
+          <td>{{ publicacion.acf.par_nominal ? `${publicacion.acf.par_nominal} Nm` : '-' }}</td>
         </tr>
         <tr>
           <td class="font-weight-medium">
             Voltaje
           </td>
-          <td>{{ motor.acf.voltaje ? `${motor.acf.voltaje} V` : '-' }}</td>
+          <td>{{ publicacion.acf.voltaje ? `${publicacion.acf.voltaje} V` : '-' }}</td>
         </tr>
         <tr>
           <td class="font-weight-medium">
             Intensidad
           </td>
-          <td>{{ motor.acf.intensidad ? `${motor.acf.intensidad} A` : '-' }}</td>
+          <td>{{ publicacion.acf.intensidad ? `${publicacion.acf.intensidad} A` : '-' }}</td>
         </tr>
       </tbody>
     </VTable>
@@ -53,7 +53,7 @@ defineProps<{ motor: Motor }>()
 </template>
 
 <style scoped>
-.motor-info {
+.publicacion-info {
   flex: 1 1 300px;
 }
 </style>

@@ -7,7 +7,7 @@ import MotorInfo from './components/MotorInfo.vue'
 import ProductDocs from './components/ProductDocs.vue'
 import RelatedProducts from './components/RelatedProducts.vue'
 import MotorQuestions from './components/MotorQuestions.vue'
-import type { Motor } from '@/interfaces/motor'
+import type { Publicacion } from '@/interfaces/publicacion'
 import { createUrl } from '@/@core/composable/createUrl'
 import { useApi } from '@/composables/useApi'
 
@@ -15,13 +15,13 @@ const route = useRoute()
 const slug = route.params.slug as string
 
 const { data, isFetching } = await useApi<any>(
-  createUrl(`/wp-json/motorlan/v1/motors/${slug}`),
+  createUrl(`/wp-json/motorlan/v1/publicaciones/${slug}`),
 ).get().json()
 
-const motor = computed(() => data.value?.data as Motor | undefined)
+const publicacion = computed(() => data.value?.data as Publicacion | undefined)
 
 const docs = computed(() => {
-  const raw = motor.value?.acf?.documentacion || motor.value?.acf?.documentacion_adjunta
+  const raw = publicacion.value?.acf?.documentacion || publicacion.value?.acf?.documentacion_adjunta
   if (!raw)
     return []
   const arr = Array.isArray(raw) ? raw : [raw]
@@ -33,10 +33,10 @@ const docs = computed(() => {
 
 const title = computed(() => {
   const parts = [
-    motor.value.title,
-    motor.value.acf.tipo_o_referencia,
-    motor.value.acf.potencia ? `${motor.value.acf.potencia} kW` : null,
-    motor.value.acf.velocidad ? `${motor.value.acf.velocidad} rpm` : null,
+    publicacion.value.title,
+    publicacion.value.acf.tipo_o_referencia,
+    publicacion.value.acf.potencia ? `${publicacion.value.acf.potencia} kW` : null,
+    publicacion.value.acf.velocidad ? `${publicacion.value.acf.velocidad} rpm` : null,
   ].filter(Boolean)
 
   return parts.join(' ')
@@ -45,7 +45,7 @@ const title = computed(() => {
 
 <template>
   <VContainer
-    v-if="motor"
+    v-if="publicacion"
     fluid
   >
     <VRow>
@@ -55,7 +55,7 @@ const title = computed(() => {
             {{ title }}
           </h1>
           <div class="text-h4 text-error font-weight-bold">
-            {{ motor.acf.precio_de_venta ? `${motor.acf.precio_de_venta}€` : 'Consultar precio' }}
+            {{ publicacion.acf.precio_de_venta ? `${publicacion.acf.precio_de_venta}€` : 'Consultar precio' }}
           </div>
         </div>
       </VCol>
@@ -65,23 +65,23 @@ const title = computed(() => {
         cols="12"
         md="7"
       >
-        <ProductImage :motor="motor" />
+        <ProductImage :motor="publicacion" />
       </VCol>
       <VCol
         cols="12"
         md="5"
       >
-        <ProductDetails :motor="motor" />
+        <ProductDetails :motor="publicacion" />
       </VCol>
     </VRow>
 
     <div class="d-flex flex-wrap gap-6 my-8">
-      <MotorInfo :motor="motor" />
+      <MotorInfo :motor="publicacion" />
       <ProductDocs :docs="docs" />
     </div>
 
-    <RelatedProducts :current-id="motor.id" />
-    <MotorQuestions :motor-id="motor.id" />
+    <RelatedProducts :current-id="publicacion.id" />
+    <MotorQuestions :motor-id="publicacion.id" />
   </VContainer>
 
   <div
@@ -98,7 +98,7 @@ const title = computed(() => {
     v-else
     class="pa-8 text-center"
   >
-    <VCardText>Motor no encontrado</VCardText>
+    <VCardText>Publicación no encontrada</VCardText>
   </VCard>
 </template>
 

@@ -3,11 +3,11 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import TiendaFilters from './components/TiendaFilters.vue'
 import SearchBar from './components/SearchBar.vue'
-import MotorItems from './components/MotorItems.vue'
+import PublicacionItems from './components/PublicacionItems.vue'
 import PaginationControls from './components/PaginationControls.vue'
 import { useApi } from '@/composables/useApi'
 import { createUrl } from '@/@core/composable/createUrl'
-import type { Motor } from '@/interfaces/motor'
+import type { Publicacion } from '@/interfaces/publicacion'
 
 const { t } = useI18n()
 
@@ -28,6 +28,7 @@ const selectedPotencia = ref<string | null>(null)
 const selectedVelocidad = ref<string | null>(null)
 const searchTerm = ref('')
 const order = ref<string | null>(t('tienda.order_options.recents'))
+const selectedTipo = ref<string | null>(null)
 
 const parOptions = computed(() => [t('tienda.par_options.range1'), t('tienda.par_options.range2')])
 const potenciaOptions = computed(() => [t('tienda.potencia_options.range1'), t('tienda.potencia_options.range2')])
@@ -42,8 +43,8 @@ const page = ref(1)
 const { data: brandsData } = await useApi<Term[]>(createUrl('/wp-json/motorlan/v1/marcas'))
 const marcas = computed(() => brandsData.value || [])
 
-const motorsApiUrl = computed(() => {
-  const baseUrl = '/wp-json/motorlan/v1/motors'
+const publicacionesApiUrl = computed(() => {
+  const baseUrl = '/wp-json/motorlan/v1/publicaciones'
 
   const sortOptions = {
     [t('tienda.order_options.recents')]: { orderby: 'date', order: 'desc' },
@@ -57,6 +58,7 @@ const motorsApiUrl = computed(() => {
     status: 'publish',
     s: searchTerm.value,
     category: productTypes.value.join(','),
+    tipo: selectedTipo.value,
     marca: selectedBrand.value,
     estado_del_articulo: selectedState.value,
     potencia: selectedPotencia.value,
@@ -75,24 +77,24 @@ const motorsApiUrl = computed(() => {
   return `${baseUrl}?${filteredParams}`
 })
 
-const { data: motorsData, isFetching: loading, execute: fetchMotors } = useApi<any>(motorsApiUrl, { immediate: false }).get()
+const { data: publicacionesData, isFetching: loading, execute: fetchPublicaciones } = useApi<any>(publicacionesApiUrl, { immediate: false }).get()
 
 watch(
-  () => motorsApiUrl.value,
+  () => publicacionesApiUrl.value,
   () => {
-    fetchMotors()
+    fetchPublicaciones()
   },
 )
 
-onMounted(fetchMotors)
+onMounted(fetchPublicaciones)
 
-const motors = computed((): Motor[] => motorsData.value?.data || [])
-const totalMotors = computed(() => motorsData.value?.pagination.total || 0)
-const totalPages = computed(() => motorsData.value?.pagination.totalPages || 1)
+const publicaciones = computed((): Publicacion[] => publicacionesData.value?.data || [])
+const totalPublicaciones = computed(() => publicacionesData.value?.pagination.total || 0)
+const totalPages = computed(() => publicacionesData.value?.pagination.totalPages || 1)
 
 const search = () => {
   page.value = 1
-  fetchMotors()
+  fetchPublicaciones()
 }
 </script>
 
@@ -107,6 +109,7 @@ const search = () => {
       v-model:selected-velocidad="selectedVelocidad"
       v-model:selected-brand="selectedBrand"
       v-model:selected-state="selectedState"
+      v-model:selected-tipo="selectedTipo"
       :marcas="marcas"
       :technology-options="technologyOptions"
       :par-options="parOptions"
@@ -123,8 +126,8 @@ const search = () => {
         @search="search"
       />
 
-      <MotorItems
-        :motors="motors"
+      <PublicacionItems
+        :publicaciones="publicaciones"
         :loading="loading"
       />
 
