@@ -9,19 +9,19 @@ const { t } = useI18n()
 const postTypes = computed(() => [
   {
     title: t('select_publication_type.motor_title'),
-    value: 'motor',
+    slug: 'motor',
     description: t('select_publication_type.motor_description'),
     icon: 'mdi-engine-outline',
   },
   {
     title: t('select_publication_type.regulator_title'),
-    value: 'regulador',
+    slug: 'regulador',
     description: t('select_publication_type.regulator_description'),
     icon: 'mdi-cog-outline',
   },
   {
     title: t('select_publication_type.other_spare_part_title'),
-    value: 'otro_repuesto',
+    slug: 'otro-repuesto',
     description: t('select_publication_type.other_spare_part_description'),
     icon: 'mdi-cogs',
   },
@@ -51,13 +51,13 @@ const selectPostType = (type: string) => {
     <VRow>
       <VCol
         v-for="type in postTypes"
-        :key="type.value"
+        :key="type.slug"
         cols="12"
         md="4"
       >
         <VCard
           class="d-flex flex-column align-center text-center"
-          @click="selectPostType(type.value)"
+          @click="selectPostType(type.slug)"
         >
           <VCardText>
             <VIcon
