@@ -88,6 +88,20 @@ const pageTitle = computed(() => {
   return baseTitle
 })
 
+const cardTitle = computed(() => {
+  const slug = publicationType.value
+  if (slug === 'motor') {
+    return t('add_publication.post_details.motor_section_title', 'Detalles del Motor')
+  }
+  if (slug === 'regulador') {
+    return t('add_publication.post_details.regulator_section_title', 'Detalles del Regulador')
+  }
+  if (slug === 'otro-repuesto') {
+    return t('add_publication.post_details.spare_part_section_title', 'Detalles del Repuesto')
+  }
+  return t('add_publication.post_details.section_title', 'Detalles de la Publicación')
+})
+
 const apiEndpoint = '/wp-json/wp/v2/publicaciones'
 
 // Fetch initial data for selects
@@ -301,7 +315,7 @@ const submitGarantia = async () => {
       <VCol>
         <VCard
           class="mb-6"
-          :title="t('add_publication.post_details.section_title')"
+          :title="cardTitle"
         >
           <VCardText>
             <VRow>
