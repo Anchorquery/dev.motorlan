@@ -168,7 +168,7 @@
   "Preguntas": "Galderak",
   "Opiniones": "Iritziak",
   "Favoritos": "Gogokoak",
-  "tienda": {
+  "store": {
     "par_options": {
       "range1": "0-50",
       "range2": "50-100"

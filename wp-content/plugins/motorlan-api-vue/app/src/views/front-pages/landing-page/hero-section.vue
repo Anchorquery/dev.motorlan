@@ -76,7 +76,7 @@ const translateMouse = computed(() => {
         <div class="blank-section" />
         <div class="hero-animation-img position-absolute">
           <RouterLink
-            :to="{ name: 'dashboards-publicaciones' }"
+            :to="{ name: 'dashboards-publications' }"
             target="_blank"
           >
             <div

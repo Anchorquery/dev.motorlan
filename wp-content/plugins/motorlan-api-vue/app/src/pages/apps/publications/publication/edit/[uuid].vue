@@ -57,7 +57,7 @@ onMounted(async () => {
 
     // Añadir la promesa del motor solo si existe el UUID
     if (motorUuid)
-      promises.push(useApi(`/wp-json/motorlan/v1/motors/uuid/${motorUuid}`))
+      promises.push(useApi(`/wp-json/motorlan/v1/publications/uuid/${motorUuid}`))
 
     // 2. Ejecutar todas las promesas en paralelo
     const [marcasResponse, categoriesResponse, motorResponse] = await Promise.all(promises)
@@ -142,7 +142,7 @@ const updateMotor = async () => {
     return
   }
 
-  const url = `/wp-json/motorlan/v1/motors/uuid/${motorUuid}`
+  const url = `/wp-json/motorlan/v1/publications/uuid/${motorUuid}`
   const method = 'POST'
 
   try {
@@ -202,7 +202,7 @@ const updateMotor = async () => {
       body: motorData.value,
     })
     showToast('Motor actualizado correctamente.', 'success')
-    router.push('/apps/motors/motor/list')
+    router.push('/apps/publications/publication/list')
   }
   catch (error) {
     showToast(`Error al actualizar el motor: ${error.message}`, 'error')

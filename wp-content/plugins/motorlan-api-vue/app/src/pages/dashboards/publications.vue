@@ -1,15 +1,15 @@
 <script lang="ts" setup>
-import PublicacionCongratulationsJohn from '@/views/dashboards/motors/PublicacionCongratulationsJohn.vue'
-import PublicacionEarningReports from '@/views/dashboards/motors/PublicacionEarningReports.vue'
-import PublicacionExpensesRadialBarCharts from '@/views/dashboards/motors/PublicacionExpensesRadialBarCharts.vue'
-import PublicacionGeneratedLeads from '@/views/dashboards/motors/PublicacionGeneratedLeads.vue'
-import PublicacionInvoiceTable from '@/views/dashboards/motors/PublicacionInvoiceTable.vue'
-import PublicacionOrder from '@/views/dashboards/motors/PublicacionOrder.vue'
-import PublicacionPopularProducts from '@/views/dashboards/motors/PublicacionPopularProducts.vue'
-import PublicacionRevenueReport from '@/views/dashboards/motors/PublicacionRevenueReport.vue'
-import PublicacionStatistics from '@/views/dashboards/motors/PublicacionStatistics.vue'
-import PublicacionTotalProfitLineCharts from '@/views/dashboards/motors/PublicacionTotalProfitLineCharts.vue'
-import PublicacionTransactions from '@/views/dashboards/motors/PublicacionTransactions.vue'
+import PublicacionCongratulationsJohn from '@/views/dashboards/publications/PublicacionCongratulationsJohn.vue'
+import PublicacionEarningReports from '@/views/dashboards/publications/PublicacionEarningReports.vue'
+import PublicacionExpensesRadialBarCharts from '@/views/dashboards/publications/PublicacionExpensesRadialBarCharts.vue'
+import PublicacionGeneratedLeads from '@/views/dashboards/publications/PublicacionGeneratedLeads.vue'
+import PublicacionInvoiceTable from '@/views/dashboards/publications/PublicacionInvoiceTable.vue'
+import PublicacionOrder from '@/views/dashboards/publications/PublicacionOrder.vue'
+import PublicacionPopularProducts from '@/views/dashboards/publications/PublicacionPopularProducts.vue'
+import PublicacionRevenueReport from '@/views/dashboards/publications/PublicacionRevenueReport.vue'
+import PublicacionStatistics from '@/views/dashboards/publications/PublicacionStatistics.vue'
+import PublicacionTotalProfitLineCharts from '@/views/dashboards/publications/PublicacionTotalProfitLineCharts.vue'
+import PublicacionTransactions from '@/views/dashboards/publications/PublicacionTransactions.vue'
 </script>
 
 <template>

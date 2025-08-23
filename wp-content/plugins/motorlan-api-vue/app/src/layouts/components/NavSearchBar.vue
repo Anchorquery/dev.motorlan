@@ -32,7 +32,7 @@ const suggestionGroups: SuggestionGroup[] = [
   {
     title: 'Popular Searches',
     content: [
-      // { icon: 'tabler-file-text', title: 'Publicaciones', url: { name: 'dashboards-publicaciones' } }
+      // { icon: 'tabler-file-text', title: 'Publicaciones', url: { name: 'dashboards-publications' } }
     ],
   },
 
@@ -62,7 +62,7 @@ const noDataSuggestions: Suggestion[] = [
   {
     title: 'Publicaciones',
     icon: 'tabler-file-text',
-    url: { name: 'dashboards-publicaciones' },
+    url: { name: 'dashboards-publications' },
   },
 ]
 

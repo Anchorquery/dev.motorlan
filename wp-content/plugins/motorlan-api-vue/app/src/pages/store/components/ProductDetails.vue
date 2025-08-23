@@ -119,7 +119,7 @@ const handlePurchase = async (confirmed: boolean) => {
       method: 'POST',
       body: { publicacion_id: props.publicacion.id },
     })
-    router.push(`/tienda/compra/${res.uuid}`)
+    router.push(`/store/compra/${res.uuid}`)
   }
   catch (error) {
     console.error(error)

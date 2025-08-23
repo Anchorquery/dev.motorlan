@@ -23,7 +23,7 @@ const products = computed(() => (data.value?.data || []).filter((m: Publicacion)
             <img :src="publicacion.imagen_destacada?.url || '/placeholder.png'" alt="" />
           </div>
           <div class="text-body-1 mb-4">{{ publicacion.title }}</div>
-          <VBtn color="error" class="rounded-pill px-6" :to="'/tienda/' + publicacion.slug">+ INFO</VBtn>
+          <VBtn color="error" class="rounded-pill px-6" :to="'/store/' + publicacion.slug">+ INFO</VBtn>
         </div>
       </VCol>
     </VRow>

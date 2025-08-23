@@ -1,7 +1,7 @@
 export default [
   {
     title: 'Motors Shop',
-    to: { name: 'tienda' },
+    to: { name: 'store' },
     icon: { icon: 'tabler-shopping-cart' },
   },
   { heading: 'Apps & Pages' },
@@ -9,8 +9,8 @@ export default [
     title: 'Publicaciones',
     icon: { icon: 'tabler-file-text' },
     children: [
-      { title: 'List', to: 'apps-publicaciones-publicacion-list' },
-      { title: 'Add', to: 'apps-publicaciones-publicacion-add' },
+      { title: 'List', to: 'apps-publications-publication-list' },
+      { title: 'Add', to: 'apps-publications-publication-add' },
     ],
   },
   {

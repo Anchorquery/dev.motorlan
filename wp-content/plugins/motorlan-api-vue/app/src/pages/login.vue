@@ -97,7 +97,7 @@ const login = async () => {
 
         router.replace(String(route.query.to))
       else
-        router.push({ name: 'dashboards-publicaciones' })
+        router.push({ name: 'dashboards-publications' })
     })
   }
   catch (err: any) {

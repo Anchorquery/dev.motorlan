@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import amazonEchoDot from '@images/motors/amazon-echo-dot.png'
-import appleWatch from '@images/motors/apple-watch.png'
-import headphone from '@images/motors/headphone.png'
-import iphone from '@images/motors/iphone.png'
-import nike from '@images/motors/nike.png'
-import sonyDualsense from '@images/motors/sony-dualsense.png'
+import amazonEchoDot from '@images/publications/amazon-echo-dot.png'
+import appleWatch from '@images/publications/apple-watch.png'
+import headphone from '@images/publications/headphone.png'
+import iphone from '@images/publications/iphone.png'
+import nike from '@images/publications/nike.png'
+import sonyDualsense from '@images/publications/sony-dualsense.png'
 
 const popularPublicaciones = [
   {

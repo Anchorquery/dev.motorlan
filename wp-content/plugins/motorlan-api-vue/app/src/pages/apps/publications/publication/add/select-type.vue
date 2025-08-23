@@ -25,7 +25,7 @@ const postTypes = [
 ]
 
 const selectPostType = (type: string) => {
-  router.push({ path: '/apps/motors/motor/add', query: { type } })
+  router.push({ path: '/apps/publications/publication/add', query: { type } })
 }
 </script>
 
@@ -40,7 +40,7 @@ const selectPostType = (type: string) => {
           Selecciona el Tipo de Publicación
         </h4>
         <p class="text-body-1">
-          Elige qué tipo de producto quieres añadir a la tienda.
+          Elige qué tipo de producto quieres añadir a la store.
         </p>
       </VCol>
     </VRow>

@@ -5,7 +5,7 @@ export default [
     children: [
       {
         title: 'Ecommerce',
-        to: 'dashboards-publicaciones',
+        to: 'dashboards-publications',
       },
     ],
     badgeContent: '5',

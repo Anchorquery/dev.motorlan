@@ -21,7 +21,7 @@ defineProps<{ publicaciones: Publicacion[]; loading: boolean }>()
           <VBtn
             color="error"
             class="rounded-pill px-6"
-            :to="`/tienda/${publicacion.slug}`"
+            :to="`/store/${publicacion.slug}`"
           >
             + INFO
           </VBtn>

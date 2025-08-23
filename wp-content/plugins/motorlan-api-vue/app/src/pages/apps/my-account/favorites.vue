@@ -133,7 +133,7 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
           <div class="d-flex flex-column">
             <span
               class="text-body-1 font-weight-medium text-high-emphasis cursor-pointer"
-              @click="router.push(`/apps/motors/motor/edit/${item.uuid}`)"
+              @click="router.push(`/apps/publications/publication/edit/${item.uuid}`)"
             >{{ item.title }}</span>
             <span class="text-body-2">{{ item.acf.marca?.name }}</span>
           </div>
@@ -162,7 +162,7 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
 
       <!-- Actions -->
       <template #item.actions="{ item }">
-        <IconBtn @click="router.push(`/apps/motors/motor/edit/${item.uuid}`)">
+        <IconBtn @click="router.push(`/apps/publications/publication/edit/${item.uuid}`)">
           <VIcon icon="tabler-eye" />
         </IconBtn>
         <IconBtn @click="removeFavorite(item.id)">

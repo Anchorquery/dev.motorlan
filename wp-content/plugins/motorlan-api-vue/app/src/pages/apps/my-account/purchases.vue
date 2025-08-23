@@ -123,7 +123,7 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
           <div class="d-flex flex-column">
             <span
               class="text-body-1 font-weight-medium text-high-emphasis cursor-pointer"
-              @click="router.push(`/apps/motors/motor/edit/${item.motor.uuid}`)"
+              @click="router.push(`/apps/publications/publication/edit/${item.motor.uuid}`)"
             >{{ item.motor.title }}</span>
             <span class="text-body-2">{{ item.motor.acf.marca?.name }}</span>
           </div>

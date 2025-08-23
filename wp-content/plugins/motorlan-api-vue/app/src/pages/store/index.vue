@@ -27,14 +27,14 @@ const selectedPar = ref<string | null>(null)
 const selectedPotencia = ref<string | null>(null)
 const selectedVelocidad = ref<string | null>(null)
 const searchTerm = ref('')
-const order = ref<string | null>(t('tienda.order_options.recents'))
+const order = ref<string | null>(t('store.order_options.recents'))
 const selectedTipo = ref<string | null>(null)
 
-const parOptions = computed(() => [t('tienda.par_options.range1'), t('tienda.par_options.range2')])
-const potenciaOptions = computed(() => [t('tienda.potencia_options.range1'), t('tienda.potencia_options.range2')])
-const velocidadOptions = computed(() => [t('tienda.velocidad_options.range1'), t('tienda.velocidad_options.range2')])
-const technologyOptions = computed(() => [t('tienda.technology_options.dc'), t('tienda.technology_options.ac')])
-const orderOptions = computed(() => [t('tienda.order_options.recents'), t('tienda.order_options.price_asc'), t('tienda.order_options.price_desc')])
+const parOptions = computed(() => [t('store.par_options.range1'), t('store.par_options.range2')])
+const potenciaOptions = computed(() => [t('store.potencia_options.range1'), t('store.potencia_options.range2')])
+const velocidadOptions = computed(() => [t('store.velocidad_options.range1'), t('store.velocidad_options.range2')])
+const technologyOptions = computed(() => [t('store.technology_options.dc'), t('store.technology_options.ac')])
+const orderOptions = computed(() => [t('store.order_options.recents'), t('store.order_options.price_asc'), t('store.order_options.price_desc')])
 
 const itemsPerPage = ref(9)
 const page = ref(1)
@@ -47,9 +47,9 @@ const publicacionesApiUrl = computed(() => {
   const baseUrl = '/wp-json/motorlan/v1/publicaciones'
 
   const sortOptions = {
-    [t('tienda.order_options.recents')]: { orderby: 'date', order: 'desc' },
-    [t('tienda.order_options.price_asc')]: { orderby: 'price', order: 'asc' },
-    [t('tienda.order_options.price_desc')]: { orderby: 'price', order: 'desc' },
+    [t('store.order_options.recents')]: { orderby: 'date', order: 'desc' },
+    [t('store.order_options.price_asc')]: { orderby: 'price', order: 'asc' },
+    [t('store.order_options.price_desc')]: { orderby: 'price', order: 'desc' },
   }
 
   const queryParams = {
@@ -99,7 +99,7 @@ const search = () => {
 </script>
 
 <template>
-  <div class="tienda d-flex">
+  <div class="store d-flex">
     <TiendaFilters
       v-model:type-model="typeModel"
       v-model:product-types="productTypes"
@@ -140,7 +140,7 @@ const search = () => {
 </template>
 
 <style scoped>
-.tienda {
+.store {
   align-items: flex-start;
 }
 </style>
