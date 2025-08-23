@@ -78,7 +78,14 @@ const countryOptions = computed(() => [
 ])
 
 const pageTitle = computed(() => {
-  return t('add_publication.title')
+  const baseTitle = t('add_publication.title')
+  if (publicationType.value && tipos.value.length) {
+    const selectedType = tipos.value.find((t: any) => t.slug === publicationType.value)
+    if (selectedType) {
+      return `${baseTitle}: ${selectedType.title}`
+    }
+  }
+  return baseTitle
 })
 
 const apiEndpoint = '/wp-json/wp/v2/publicaciones'
