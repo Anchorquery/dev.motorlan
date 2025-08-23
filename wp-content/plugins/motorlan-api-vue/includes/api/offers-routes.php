@@ -16,27 +16,19 @@ function motorlan_register_offer_rest_routes() {
         array(
             'methods'  => WP_REST_Server::READABLE,
             'callback' => 'motorlan_get_offer_callback',
-            'permission_callback' => function () {
-                return is_user_logged_in();
-            },
+            'permission_callback' => 'motorlan_is_user_authenticated',
         ),
         array(
             'methods'  => WP_REST_Server::CREATABLE,
             'callback' => 'motorlan_create_offer_callback',
-            'permission_callback' => function () {
-                return is_user_logged_in();
-            },
+            'permission_callback' => 'motorlan_is_user_authenticated',
         ),
     ) );
 
     register_rest_route( $namespace, '/offers/(?P<id>\d+)', array(
         'methods'  => WP_REST_Server::DELETABLE,
         'callback' => 'motorlan_delete_offer_callback',
-        'permission_callback' => function ( WP_REST_Request $request ) {
-            $offer_id = (int) $request['id'];
-            $author   = (int) get_field( 'usuario', $offer_id );
-            return get_current_user_id() === $author || current_user_can( 'delete_posts' );
-        },
+        'permission_callback' => 'motorlan_is_user_authenticated',
     ) );
 }
 add_action( 'rest_api_init', 'motorlan_register_offer_rest_routes' );

@@ -20,63 +20,49 @@ function motorlan_register_my_account_rest_routes() {
     register_rest_route( $namespace, '/my-account/purchases', array(
         'methods'  => WP_REST_Server::READABLE,
         'callback' => 'motorlan_get_my_purchases_callback',
-        'permission_callback' => function () {
-            return is_user_logged_in();
-        }
+        'permission_callback' => 'motorlan_is_user_authenticated'
     ) );
 
     // Route for getting current user's questions
     register_rest_route( $namespace, '/my-account/questions', array(
         'methods'  => WP_REST_Server::READABLE,
         'callback' => 'motorlan_get_my_questions_callback',
-        'permission_callback' => function () {
-            return is_user_logged_in();
-        }
+        'permission_callback' => 'motorlan_is_user_authenticated'
     ) );
 
     // Route for getting current user's opinions
     register_rest_route( $namespace, '/my-account/opinions', array(
         'methods'  => WP_REST_Server::READABLE,
         'callback' => 'motorlan_get_my_opinions_callback',
-        'permission_callback' => function () {
-            return is_user_logged_in();
-        }
+        'permission_callback' => 'motorlan_is_user_authenticated'
     ) );
 
     // Route for getting current user's favorites
     register_rest_route( $namespace, '/my-account/favorites', array(
         'methods'  => WP_REST_Server::READABLE,
         'callback' => 'motorlan_get_my_favorites_callback',
-        'permission_callback' => function () {
-            return is_user_logged_in();
-        }
+        'permission_callback' => 'motorlan_is_user_authenticated'
     ) );
 
     // Route for creating a new purchase
     register_rest_route( $namespace, '/purchases', array(
         'methods'  => WP_REST_Server::CREATABLE,
         'callback' => 'motorlan_create_purchase_callback',
-        'permission_callback' => function () {
-            return is_user_logged_in();
-        }
+        'permission_callback' => 'motorlan_is_user_authenticated'
     ) );
 
     // Route for getting purchase details
     register_rest_route( $namespace, '/purchases/(?P<uuid>[\\w-]+)', array(
         'methods'  => WP_REST_Server::READABLE,
         'callback' => 'motorlan_get_purchase_callback',
-        'permission_callback' => function () {
-            return is_user_logged_in();
-        }
+        'permission_callback' => 'motorlan_is_user_authenticated'
     ) );
 
     // Route for adding an opinion to a purchase
     register_rest_route( $namespace, '/purchases/(?P<uuid>[\\w-]+)/opinion', array(
         'methods'  => WP_REST_Server::CREATABLE,
         'callback' => 'motorlan_add_purchase_opinion_callback',
-        'permission_callback' => function () {
-            return is_user_logged_in();
-        }
+        'permission_callback' => 'motorlan_is_user_authenticated'
     ) );
 
     // Route for removing a favorite motor

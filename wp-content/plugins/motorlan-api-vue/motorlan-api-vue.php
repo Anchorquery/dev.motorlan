@@ -49,3 +49,21 @@ function motorlan_add_cors_headers() {
     }
 }
 add_action( 'rest_api_init', 'motorlan_add_cors_headers', 15 );
+
+/**
+ * Permission callback to check if the user is authenticated.
+ *
+ * @return bool
+ */
+function motorlan_is_user_authenticated() {
+    return is_user_logged_in();
+}
+
+/**
+ * Permission callback that always returns true.
+ *
+ * @return bool
+ */
+function motorlan_permission_callback_true() {
+    return true;
+}
