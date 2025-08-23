@@ -129,3 +129,43 @@ function motorlan_register_opinion_cpt() {
     register_post_type( 'opinion', $args );
 }
 add_action( 'init', 'motorlan_register_opinion_cpt' );
+
+/**
+ * Register a custom post type called "oferta".
+ */
+function motorlan_register_oferta_cpt() {
+    $labels = array(
+        'name'               => _x( 'Ofertas', 'post type general name', 'motorlan-api-vue' ),
+        'singular_name'      => _x( 'Oferta', 'post type singular name', 'motorlan-api-vue' ),
+        'menu_name'          => _x( 'Ofertas', 'admin menu', 'motorlan-api-vue' ),
+        'name_admin_bar'     => _x( 'Oferta', 'add new on admin bar', 'motorlan-api-vue' ),
+        'add_new'            => _x( 'Añadir Nueva', 'oferta', 'motorlan-api-vue' ),
+        'add_new_item'       => __( 'Añadir Nueva Oferta', 'motorlan-api-vue' ),
+        'new_item'           => __( 'Nueva Oferta', 'motorlan-api-vue' ),
+        'edit_item'          => __( 'Editar Oferta', 'motorlan-api-vue' ),
+        'view_item'          => __( 'Ver Oferta', 'motorlan-api-vue' ),
+        'all_items'          => __( 'Todas las Ofertas', 'motorlan-api-vue' ),
+        'search_items'       => __( 'Buscar Ofertas', 'motorlan-api-vue' ),
+        'not_found'          => __( 'No se encontraron ofertas.', 'motorlan-api-vue' ),
+        'not_found_in_trash' => __( 'No se encontraron ofertas en la papelera.', 'motorlan-api-vue' )
+    );
+
+    $args = array(
+        'labels'             => $labels,
+        'public'             => true,
+        'publicly_queryable' => true,
+        'show_ui'            => true,
+        'show_in_menu'       => true,
+        'query_var'          => true,
+        'rewrite'            => array( 'slug' => 'oferta' ),
+        'capability_type'    => 'post',
+        'has_archive'        => true,
+        'hierarchical'       => false,
+        'menu_position'      => 9,
+        'supports'           => array( 'title', 'editor', 'custom-fields' ),
+        'show_in_rest'       => true,
+    );
+
+    register_post_type( 'oferta', $args );
+}
+add_action( 'init', 'motorlan_register_oferta_cpt' );
