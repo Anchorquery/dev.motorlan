@@ -31,15 +31,15 @@ const postData = ref({
     intensidad: null,
     pais: null,
     provincia: '',
-    estado_del_articulo: 'Nuevo',
+    estado_del_articulo: 'new',
     informe_de_reparacion: null,
     descripcion: '',
-    posibilidad_de_alquiler: 'No',
-    tipo_de_alimentacion: 'Alterna (C.A.)',
+    posibilidad_de_alquiler: 'no',
+    tipo_de_alimentacion: 'ac',
     servomotores: false,
     regulacion_electronica_drivers: false,
     precio_de_venta: null,
-    precio_negociable: 'No',
+    precio_negociable: 'no',
     documentacion_adjunta: null,
     publicar_acf: 'publish',
     stock: 1,
@@ -49,11 +49,11 @@ const postData = ref({
 
 const garantiaData = ref({
   motor_id: null,
-  is_same_address: 'SÍ',
+  is_same_address: 'yes',
   direccion_motor: '',
   cp_motor: '',
   agencia_transporte: '',
-  modalidad_pago: 'Contra reembolso',
+  modalidad_pago: 'cod',
   comentarios: '',
 })
 
@@ -63,15 +63,15 @@ const categories = ref([])
 const tipos = ref([])
 
 const conditionOptions = computed(() => [
-  { title: t('add_publication.condition_options.new'), value: 'Nuevo' },
-  { title: t('add_publication.condition_options.used'), value: 'Usado' },
-  { title: t('add_publication.condition_options.restored'), value: 'Restaurado' },
+  { title: t('add_publication.condition_options.new'), value: 'new' },
+  { title: t('add_publication.condition_options.used'), value: 'used' },
+  { title: t('add_publication.condition_options.restored'), value: 'restored' },
 ])
 
 const countryOptions = computed(() => [
-  { title: t('add_publication.country_options.spain'), value: 'España' },
-  { title: t('add_publication.country_options.portugal'), value: 'Portugal' },
-  { title: t('add_publication.country_options.france'), value: 'Francia' },
+  { title: t('add_publication.country_options.spain'), value: 'spain' },
+  { title: t('add_publication.country_options.portugal'), value: 'portugal' },
+  { title: t('add_publication.country_options.france'), value: 'france' },
 ])
 
 const pageTitle = computed(() => {
@@ -442,11 +442,11 @@ const submitGarantia = async () => {
                   >
                     <VRadio
                       :label="t('add_publication.boolean_options.yes')"
-                      value="Sí"
+                      value="yes"
                     />
                     <VRadio
                       :label="t('add_publication.boolean_options.no')"
-                      value="No"
+                      value="no"
                     />
                   </VRadioGroup>
                 </VCol>
@@ -461,11 +461,11 @@ const submitGarantia = async () => {
                   >
                     <VRadio
                       :label="t('add_publication.power_supply_options.dc')"
-                      value="Continua (C.C.)"
+                      value="dc"
                     />
                     <VRadio
                       :label="t('add_publication.power_supply_options.ac')"
-                      value="Alterna (C.A.)"
+                      value="ac"
                     />
                   </VRadioGroup>
                 </VCol>
@@ -521,11 +521,11 @@ const submitGarantia = async () => {
                 >
                   <VRadio
                     :label="t('add_publication.boolean_options.yes')"
-                    value="Sí"
+                    value="yes"
                   />
                   <VRadio
                     :label="t('add_publication.boolean_options.no')"
-                    value="No"
+                    value="no"
                   />
                 </VRadioGroup>
               </VCol>
@@ -644,15 +644,15 @@ const submitGarantia = async () => {
             >
               <VRadio
                 :label="t('add_publication.boolean_options.yes')"
-                value="SÍ"
+                value="yes"
               />
               <VRadio
                 :label="t('add_publication.boolean_options.no')"
-                value="NO"
+                value="no"
               />
             </VRadioGroup>
           </VCol>
-          <template v-if="garantiaData.is_same_address === 'NO'">
+          <template v-if="garantiaData.is_same_address === 'no'">
             <VCol
               cols="12"
               md="8"
@@ -702,11 +702,11 @@ const submitGarantia = async () => {
             >
               <VRadio
                 :label="t('add_publication.warranty.payment_method_cod')"
-                value="Contra reembolso"
+                value="cod"
               />
               <VRadio
                 :label="t('add_publication.warranty.payment_method_transfer')"
-                value="Transferencia"
+                value="transfer"
               />
             </VRadioGroup>
           </VCol>

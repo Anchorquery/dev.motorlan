@@ -1,28 +1,31 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
+const { t } = useI18n()
 
-const postTypes = [
+const postTypes = computed(() => [
   {
-    title: 'Motor',
+    title: t('select_publication_type.motor_title'),
     value: 'motor',
-    description: 'Publica un motor eléctrico, con todos sus detalles técnicos como potencia, velocidad, etc.',
+    description: t('select_publication_type.motor_description'),
     icon: 'mdi-engine-outline',
   },
   {
-    title: 'Regulador',
+    title: t('select_publication_type.regulator_title'),
     value: 'regulador',
-    description: 'Publica un regulador o driver, con sus especificaciones técnicas.',
+    description: t('select_publication_type.regulator_description'),
     icon: 'mdi-cog-outline',
   },
   {
-    title: 'Otro Repuesto',
+    title: t('select_publication_type.other_spare_part_title'),
     value: 'otro_repuesto',
-    description: 'Publica cualquier otro tipo de repuesto o componente relacionado.',
+    description: t('select_publication_type.other_spare_part_description'),
     icon: 'mdi-cogs',
   },
-]
+])
 
 const selectPostType = (type: string) => {
   router.push({ path: '/apps/publications/publication/add', query: { type } })
@@ -37,10 +40,10 @@ const selectPostType = (type: string) => {
         class="text-center"
       >
         <h4 class="text-h4 font-weight-medium mb-2">
-          Selecciona el Tipo de Publicación
+          {{ t('select_publication_type.title') }}
         </h4>
         <p class="text-body-1">
-          Elige qué tipo de producto quieres añadir a la store.
+          {{ t('select_publication_type.subtitle') }}
         </p>
       </VCol>
     </VRow>
