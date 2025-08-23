@@ -6,11 +6,11 @@ export default [
   },
   { heading: 'Apps & Pages' },
   {
-    title: 'Motors',
-    icon: { icon: 'tabler-car' },
+    title: 'Publicaciones',
+    icon: { icon: 'tabler-file-text' },
     children: [
-      { title: 'List', to: 'apps-motors-motor-list' },
-      { title: 'Add', to: 'apps-motors-motor-add' },
+      { title: 'List', to: 'apps-publicaciones-publicacion-list' },
+      { title: 'Add', to: 'apps-publicaciones-publicacion-add' },
     ],
   },
   {
