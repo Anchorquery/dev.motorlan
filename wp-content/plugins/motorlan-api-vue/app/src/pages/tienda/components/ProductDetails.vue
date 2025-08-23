@@ -50,6 +50,20 @@ onMounted(async () => {
   catch {
     // ignore
   }
+
+  if (isLoggedIn.value && isNegotiable.value) {
+    try {
+      const res = await $api(`/wp-json/motorlan/v1/motors/${props.motor.id}/offers`)
+      if (res) {
+        offer.value = res
+        offerAmount.value = Number(res.monto)
+        offerMessage.value = res.justificacion || ''
+      }
+    }
+    catch {
+      // ignore
+    }
+  }
 })
 
 const toggleFavorite = () => {
@@ -68,6 +82,16 @@ const toggleFavorite = () => {
 }
 
 const shareSnackbar = ref(false)
+const loginSnackbar = ref(false)
+const isOfferDialogOpen = ref(false)
+const offerAmount = ref<number | null>(null)
+const offerMessage = ref('')
+const offer = ref<any | null>(null)
+const isLoggedIn = computed(() => !!useCookie('userData').value)
+const isNegotiable = computed(() => {
+  const val = props.motor.acf.precio_negociable
+  return typeof val === 'string' ? val.toLowerCase() === 'si' : !!val
+})
 
 const share = () => {
   const url = window.location.href
@@ -101,6 +125,48 @@ const handlePurchase = async (confirmed: boolean) => {
     console.error(error)
   }
 }
+
+const openOfferDialog = () => {
+  if (!isLoggedIn.value) {
+    loginSnackbar.value = true
+    return
+  }
+  isOfferDialogOpen.value = true
+}
+
+const submitOffer = async () => {
+  if (offerAmount.value === null || offerAmount.value >= Number(props.motor.acf.precio_de_venta || Infinity))
+    return
+
+  try {
+    const res = await $api(`/wp-json/motorlan/v1/motors/${props.motor.id}/offers`, {
+      method: 'POST',
+      body: {
+        monto: offerAmount.value,
+        justificacion: offerMessage.value,
+      },
+    })
+    offer.value = res
+    isOfferDialogOpen.value = false
+  }
+  catch (error) {
+    console.error(error)
+  }
+}
+
+const removeOffer = async () => {
+  if (!offer.value)
+    return
+  try {
+    await $api(`/wp-json/motorlan/v1/offers/${offer.value.id}`, { method: 'DELETE' })
+    offer.value = null
+    offerAmount.value = null
+    offerMessage.value = ''
+  }
+  catch (error) {
+    console.error(error)
+  }
+}
 </script>
 
 <template>
@@ -128,22 +194,6 @@ const handlePurchase = async (confirmed: boolean) => {
       </div>
     </div>
     <VDivider class="mb-6" />
-    <div class="d-flex flex-wrap gap-4 mb-6">
-      <VBtn
-        color="error"
-        class="px-6 flex-grow-1 action-btn"
-        @click="isConfirmDialogOpen = true"
-      >
-        Comprar
-      </VBtn>
-      <VBtn
-        variant="outlined"
-        color="error"
-        class="px-6 flex-grow-1 action-btn"
-      >
-        Hacer una oferta
-      </VBtn>
-    </div>
 
     <VCard class="mb-6 detail-card">
       <VCardText>
@@ -201,12 +251,78 @@ const handlePurchase = async (confirmed: boolean) => {
       </VCardText>
     </VCard>
 
-    <div class="contact-card pa-4">
-      <h3 class="mb-4">
-        Descripción
-      </h3>
+    <div
+      v-if="props.motor.acf.descripcion"
+      class="contact-card pa-4 mb-6"
+    >
       <p v-html="props.motor.acf.descripcion" />
     </div>
+
+    <div class="d-flex flex-wrap gap-4 mb-6">
+      <VBtn
+        color="error"
+        class="px-6 flex-grow-1 action-btn"
+        @click="isConfirmDialogOpen = true"
+      >
+        Comprar
+      </VBtn>
+      <VBtn
+        v-if="isNegotiable"
+        variant="outlined"
+        color="error"
+        class="px-6 flex-grow-1 action-btn"
+        @click="openOfferDialog"
+      >
+        {{ offer ? 'Editar oferta' : 'Hacer una oferta' }}
+      </VBtn>
+      <VBtn
+        v-if="offer && isNegotiable"
+        variant="text"
+        color="error"
+        class="px-6 flex-grow-1 action-btn"
+        @click="removeOffer"
+      >
+        Quitar oferta
+      </VBtn>
+    </div>
+
+    <VDialog
+      v-model="isOfferDialogOpen"
+      width="400"
+    >
+      <VCard>
+        <VCardTitle>{{ offer ? 'Editar oferta' : 'Hacer una oferta' }}</VCardTitle>
+        <VCardText>
+          <VTextField
+            v-model.number="offerAmount"
+            label="Monto"
+            type="number"
+            :rules="[v => !v || v < Number(props.motor.acf.precio_de_venta) || 'Debe ser menor al precio']"
+          />
+          <VTextarea
+            v-model="offerMessage"
+            label="Justificación"
+            class="mt-4"
+          />
+        </VCardText>
+        <VCardActions>
+          <VSpacer />
+          <VBtn
+            color="primary"
+            @click="submitOffer"
+          >
+            Enviar
+          </VBtn>
+          <VBtn
+            variant="text"
+            @click="isOfferDialogOpen = false"
+          >
+            Cancelar
+          </VBtn>
+        </VCardActions>
+      </VCard>
+    </VDialog>
+
     <ConfirmDialog
       v-model:is-dialog-visible="isConfirmDialogOpen"
       confirmation-question="¿Confirmar compra?"
@@ -223,6 +339,13 @@ const handlePurchase = async (confirmed: boolean) => {
       location="top right"
     >
       Enlace copiado al portapapeles
+    </VSnackbar>
+    <VSnackbar
+      v-model="loginSnackbar"
+      color="error"
+      location="top right"
+    >
+      Debes registrarte para hacer una oferta
     </VSnackbar>
   </div>
 </template>

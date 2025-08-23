@@ -339,7 +339,7 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
             prepend-icon="tabler-plus"
             @click="$router.push({ path: '/apps/motors/motor/add/select-type' })"
           >
-            Añadir Publicación
+            Add Motor
           </VBtn>
         </div>
       </div>
