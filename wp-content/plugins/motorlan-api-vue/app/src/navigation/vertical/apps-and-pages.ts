@@ -42,10 +42,10 @@ export default [
     title: 'Compras',
     icon: { icon: 'tabler-user-circle' },
     children: [
-      { title: 'Compras', to: 'apps-my-account-purchases' },
-      { title: 'Preguntas', to: 'apps-my-account-questions' },
-      { title: 'Opiniones', to: 'apps-my-account-opinions' },
-      { title: 'Favoritos', to: 'apps-my-account-favorites' },
+      { title: 'Compras', to: 'apps-purchases-purchases' },
+      { title: 'Preguntas', to: 'apps-purchases-questions' },
+      { title: 'Opiniones', to: 'apps-purchases-opinions' },
+      { title: 'Favoritos', to: 'apps-purchases-favorites' },
     ],
   },
 ]

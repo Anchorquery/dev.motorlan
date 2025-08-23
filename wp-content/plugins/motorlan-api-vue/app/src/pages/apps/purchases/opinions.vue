@@ -1,17 +1,14 @@
 <script setup lang="ts">
-import { useRouter } from 'vue-router'
 import type { ImagenDestacada } from '../../../../../interfaces/publicacion'
 
-const router = useRouter()
-
 const headers = [
-  { title: 'Publicacion', key: 'motor' },
-  { title: 'Fecha de Compra', key: 'fecha_compra' },
-  { title: 'Estado', key: 'estado' },
-  { title: 'Acciones', key: 'actions', sortable: false },
+  { title: 'Publicacion', key: 'publicacion' },
+  { title: 'Valoración', key: 'valoracion' },
+  { title: 'Comentario', key: 'comentario' },
 ]
 
 const searchQuery = ref('')
+const selectedRows = ref([])
 
 // Data table options
 const itemsPerPage = ref(10)
@@ -26,18 +23,7 @@ const updateOptions = (options: any) => {
   orderBy.value = options.sortBy[0]?.order
 }
 
-const resolveStatus = (status: string) => {
-  if (status === 'pendiente')
-    return { text: 'Pendiente', color: 'warning' }
-  if (status === 'completado')
-    return { text: 'Completado', color: 'success' }
-  if (status === 'cancelado')
-    return { text: 'Cancelado', color: 'error' }
-
-  return { text: 'Desconocido', color: 'info' }
-}
-
-const { data: purchasesData } = await useApi<any>(createUrl('/wp-json/motorlan/v1/my-account/purchases', {
+const { data: opinionsData, execute: fetchOpinions } = await useApi<any>(createUrl('/wp-json/motorlan/v1/purchases/opinions', {
   query: {
     page,
     per_page: itemsPerPage,
@@ -47,8 +33,8 @@ const { data: purchasesData } = await useApi<any>(createUrl('/wp-json/motorlan/v
   },
 }))
 
-const purchases = computed(() => purchasesData.value?.data || [])
-const totalPurchases = computed(() => purchasesData.value?.pagination.total || 0)
+const opinions = computed(() => opinionsData.value?.data || [])
+const totalOpinions = computed(() => opinionsData.value?.pagination.total || 0)
 
 const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail'): string => {
   let imageObj: ImagenDestacada | null = null
@@ -70,8 +56,7 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
 
 <template>
   <VCard
-    id="purchase-list"
-    title="Mis Compras"
+    id="opinion-list"
   >
     <VCardText>
       <div class="d-flex flex-wrap gap-4">
@@ -79,7 +64,7 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
           <!-- 👉 Search  -->
           <AppTextField
             v-model="searchQuery"
-            placeholder="Buscar Compra"
+            placeholder="Buscar Opinión"
             style="inline-size: 200px;"
             class="me-3"
           />
@@ -102,54 +87,43 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
       v-model:items-per-page="itemsPerPage"
       v-model:page="page"
       :headers="headers"
-      :items="purchases"
-      :items-length="totalPurchases"
+      :items="opinions"
+      :items-length="totalOpinions"
       class="text-no-wrap"
       @update:options="updateOptions"
     >
       <!-- publicacion -->
-      <template #item.motor="{ item }">
-        <div
-          v-if="item.motor"
-          class="d-flex align-center gap-x-4"
-        >
+      <template #item.publicacion="{ item }">
+        <div class="d-flex align-center gap-x-4">
           <VAvatar
-            v-if="item.motor.imagen_destacada"
+            v-if="item.raw.publicacion?.imagen_destacada"
             size="38"
             variant="tonal"
             rounded
-            :image="getImageBySize(item.motor.imagen_destacada, 'thumbnail')"
+            :image="getImageBySize(item.raw.publicacion.imagen_destacada, 'thumbnail')"
           />
           <div class="d-flex flex-column">
-            <span
-              class="text-body-1 font-weight-medium text-high-emphasis cursor-pointer"
-              @click="router.push(`/apps/publications/publication/edit/${item.motor.uuid}`)"
-            >{{ item.motor.title }}</span>
-            <span class="text-body-2">{{ item.motor.acf.marca?.name }}</span>
+            <NuxtLink :to="`/apps/publicaciones/publicacion/edit/${item.raw.publicacion.uuid}`">
+              <span class="text-body-1 font-weight-medium text-high-emphasis">{{ item.raw.publicacion.title }}</span>
+            </NuxtLink>
+            <span class="text-body-2">{{ item.raw.publicacion.acf.marca.name }}</span>
           </div>
         </div>
       </template>
 
-      <!-- fecha_compra -->
-      <template #item.fecha_compra="{ item }">
-        <span class="text-body-1 text-high-emphasis">{{ item.fecha_compra }}</span>
-      </template>
-
-      <!-- estado -->
-      <template #item.estado="{ item }">
-        <VChip
-          v-bind="resolveStatus(item.estado)"
-          density="default"
-          label
+      <!-- valoracion -->
+      <template #item.valoracion="{ item }">
+        <VRating
+          :model-value="item.raw.valoracion"
+          readonly
+          dense
           size="small"
         />
       </template>
 
-      <!-- Actions -->
-      <template #item.actions="{ item }">
-        <IconBtn @click="router.push(`/apps/purchases/view/${item.uuid}`)">
-          <VIcon icon="tabler-eye" />
-        </IconBtn>
+      <!-- comentario -->
+      <template #item.comentario="{ item }">
+        <span class="text-body-1 text-high-emphasis">{{ item.raw.comentario }}</span>
       </template>
 
       <!-- pagination -->
@@ -157,7 +131,7 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
         <TablePagination
           v-model:page="page"
           :items-per-page="itemsPerPage"
-          :total-items="totalPurchases"
+          :total-items="totalOpinions"
         />
       </template>
     </VDataTableServer>
