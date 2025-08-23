@@ -27,6 +27,7 @@ declare module 'vue-router/auto-routes' {
     'apps-invoice-list': RouteRecordInfo<'apps-invoice-list', '/apps/invoice/list', Record<never, never>, Record<never, never>>,
     'apps-invoice-preview-id': RouteRecordInfo<'apps-invoice-preview-id', '/apps/invoice/preview/:id', { id: ParamValue<true> }, { id: ParamValue<false> }>,
     'apps-publications-publication-add': RouteRecordInfo<'apps-publications-publication-add', '/apps/publications/publication/add', Record<never, never>, Record<never, never>>,
+    'apps-publications-publication-add-form': RouteRecordInfo<'apps-publications-publication-add-form', '/apps/publications/publication/add/form', Record<never, never>, Record<never, never>>,
     'apps-publications-publication-add-select-type': RouteRecordInfo<'apps-publications-publication-add-select-type', '/apps/publications/publication/add/select-type', Record<never, never>, Record<never, never>>,
     'apps-publications-publication-edit-uuid': RouteRecordInfo<'apps-publications-publication-edit-uuid', '/apps/publications/publication/edit/:uuid', { uuid: ParamValue<true> }, { uuid: ParamValue<false> }>,
     'apps-publications-publication-list': RouteRecordInfo<'apps-publications-publication-list', '/apps/publications/publication/list', Record<never, never>, Record<never, never>>,
