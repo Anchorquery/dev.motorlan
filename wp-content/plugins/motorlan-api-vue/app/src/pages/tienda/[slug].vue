@@ -3,10 +3,10 @@ import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import ProductImage from './components/ProductImage.vue'
 import ProductDetails from './components/ProductDetails.vue'
-import MotorInfo from './components/MotorInfo.vue'
+import PublicacionInfo from './components/PublicacionInfo.vue'
 import ProductDocs from './components/ProductDocs.vue'
 import RelatedProducts from './components/RelatedProducts.vue'
-import MotorQuestions from './components/MotorQuestions.vue'
+import PublicacionQuestions from './components/PublicacionQuestions.vue'
 import type { Publicacion } from '@/interfaces/publicacion'
 import { createUrl } from '@/@core/composable/createUrl'
 import { useApi } from '@/composables/useApi'
@@ -65,23 +65,23 @@ const title = computed(() => {
         cols="12"
         md="7"
       >
-        <ProductImage :motor="publicacion" />
+        <ProductImage :publicacion="publicacion" />
       </VCol>
       <VCol
         cols="12"
         md="5"
       >
-        <ProductDetails :motor="publicacion" />
+        <ProductDetails :publicacion="publicacion" />
       </VCol>
     </VRow>
 
     <div class="d-flex flex-wrap gap-6 my-8">
-      <MotorInfo :motor="publicacion" />
+      <PublicacionInfo :publicacion="publicacion" />
       <ProductDocs :docs="docs" />
     </div>
 
     <RelatedProducts :current-id="publicacion.id" />
-    <MotorQuestions :motor-id="publicacion.id" />
+    <PublicacionQuestions :publicacion-id="publicacion.id" />
   </VContainer>
 
   <div
