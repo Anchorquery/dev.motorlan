@@ -37,16 +37,16 @@ define( 'DB_CHARSET', 'utf8mb4' );
 /** The database collate type. Don't change this if in doubt. */
 define( 'DB_COLLATE', '' );
 
-define('WP_ENVIRONMENT_TYPE', getenv('WP_ENVIRONMENT_TYPE') ?: 'production');
+// define('WP_ENVIRONMENT_TYPE', getenv('WP_ENVIRONMENT_TYPE') ?: 'production');
 
-$home = getenv('WP_HOME') ?: 'https://x484kcogok0g00ssc8os4og4.213.130.147.89.sslip.io';
-if ($home) {
-    define('WP_HOME', rtrim($home, '/'));
-    define('WP_SITEURL', rtrim(getenv('WP_SITEURL') ?: $home, '/'));
-}
+// $home = getenv('WP_HOME') ?: 'https://x484kcogok0g00ssc8os4og4.213.130.147.89.sslip.io';
+// if ($home) {
+//     define('WP_HOME', rtrim($home, '/'));
+//     define('WP_SITEURL', rtrim(getenv('WP_SITEURL') ?: $home, '/'));
+// }
 
 // Forzar admin sobre HTTPS solo si lo pides por env
-define('FORCE_SSL_ADMIN', getenv('FORCE_SSL_ADMIN') === '1');
+// define('FORCE_SSL_ADMIN', getenv('FORCE_SSL_ADMIN') === '1');
 
 /**#@+
  * Authentication unique keys and salts.
@@ -97,10 +97,10 @@ $table_prefix = 'wp_';
  * @link https://developer.wordpress.org/advanced-administration/debug/debug-wordpress/
  */
 define('JWT_AUTH_SECRET_KEY', '|)yLz~k;4ba)#vu^f79K4cc0_+{2`vK4T@?%Pw$/3LyT>m=2SrXf!C+^N,K6opi]');
-define( 'WP_DEBUG', true );
+// define( 'WP_DEBUG', true );
 
-define( 'WP_DEBUG_LOG', true);
-define( 'WP_DEBUG_DISPLAY', true );
+// define( 'WP_DEBUG_LOG', true);
+// define( 'WP_DEBUG_DISPLAY', true );
 /* Add any custom values between this line and the "stop editing" line. */
 
 // if (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') {
