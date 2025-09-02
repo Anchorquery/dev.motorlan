@@ -1,7 +1,7 @@
 # WordPress core (no versionamos)
 wp-admin/
 wp-includes/
-index.php
+/index.php
 license.txt
 readme.html
 
