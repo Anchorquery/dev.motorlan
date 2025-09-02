@@ -1,5 +1,5 @@
-# Usar la última imagen de WordPress con PHP 8.2 y Apache
-FROM wordpress:php8.2-apache
+# Use the official WordPress image with PHP 8.2 and Apache
+FROM wordpress:6.6.1-php8.2-apache
 
 # Permalinks
 RUN set -eux; a2enmod rewrite; \
