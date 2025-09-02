@@ -39,7 +39,7 @@ define( 'DB_COLLATE', '' );
 
 define('WP_ENVIRONMENT_TYPE', getenv('WP_ENVIRONMENT_TYPE') ?: 'production');
 
-$home = getenv('WP_HOME') ?: 'https://dev.motorlan.test';
+$home = getenv('WP_HOME') ?: 'https://x484kcogok0g00ssc8os4og4.213.130.147.89.sslip.io';
 if ($home) {
     define('WP_HOME', rtrim($home, '/'));
     define('WP_SITEURL', rtrim(getenv('WP_SITEURL') ?: $home, '/'));
@@ -103,9 +103,9 @@ define( 'WP_DEBUG_LOG', true);
 define( 'WP_DEBUG_DISPLAY', true );
 /* Add any custom values between this line and the "stop editing" line. */
 
-if (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') {
-    $_SERVER['HTTPS'] = 'on';
-}
+// if (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') {
+//     $_SERVER['HTTPS'] = 'on';
+// }
 
 /* That's all, stop editing! Happy publishing. */
 define( 'WP_MEMORY_LIMIT', '1536M' );
