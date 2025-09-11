@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
+import { useUserStore } from '@/stores/user'
 import ProductImage from './components/ProductImage.vue'
 import ProductDetails from './components/ProductDetails.vue'
 import PublicacionInfo from './components/PublicacionInfo.vue'
@@ -13,10 +14,18 @@ import { useApi } from '@/composables/useApi'
 
 const route = useRoute()
 const slug = route.params.slug as string
+const userStore = useUserStore()
 
 const { data, isFetching } = await useApi<any>(
   createUrl(`/wp-json/motorlan/v1/publicaciones/${slug}`),
 ).get().json()
+
+const isOwner = computed(() => {
+  if (!userStore.user || !publicacion.value)
+    return false
+
+  return Number(userStore.user.id) === Number(publicacion.value.post_author)
+})
 
 const publicacion = computed(() => {
   if (!data.value?.data)
@@ -88,7 +97,10 @@ const title = computed(() => {
     </div>
 
     <RelatedProducts :current-id="publicacion.id" />
-    <PublicacionQuestions :publicacion-id="publicacion.id" />
+    <PublicacionQuestions
+      v-if="!isOwner"
+      :publicacion-id="publicacion.id"
+    />
   </VContainer>
 
   <div
