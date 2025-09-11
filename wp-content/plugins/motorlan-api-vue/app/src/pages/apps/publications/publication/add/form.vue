@@ -137,10 +137,10 @@ onMounted(async () => {
       tiposResponse,
       userResponse,
     ] = await Promise.all([
-      useApi('/wp-json/motorlan/v1/marcas'),
-      useApi('/wp-json/motorlan/v1/publicacion-categories'),
-      useApi('/wp-json/motorlan/v1/tipos'),
-      useApi('/wp-json/wp/v2/users/me?context=edit'),
+      api('/wp-json/motorlan/v1/marcas'),
+      api('/wp-json/motorlan/v1/publicacion-categories'),
+      api('/wp-json/motorlan/v1/tipos'),
+      api('/wp-json/wp/v2/users/me?context=edit'),
     ])
 
     if (marcasResponse && marcasResponse.data.value) {
@@ -265,9 +265,6 @@ const createPostAndContinue = async () => {
 
     const response = await useApi<any>(apiEndpoint, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
       body: JSON.stringify(postData.value),
     })
 
@@ -317,7 +314,7 @@ const submitGarantia = async () => {
   garantiaData.value.motor_id = newPostId.value
 
   try {
-    await useApi('/wp-json/motorlan/v1/garantias', {
+    await api('/wp-json/motorlan/v1/garantias', {
       method: 'POST',
       body: garantiaData.value,
     })

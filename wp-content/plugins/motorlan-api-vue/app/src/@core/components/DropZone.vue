@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useDropZone, useFileDialog, useObjectUrl } from '@vueuse/core'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 
 const props = defineProps({
   modelValue: {
@@ -84,6 +84,10 @@ const removeFile = (index: number) => {
 const viewImage = (url: string) => {
   window.open(url, '_blank')
 }
+
+defineExpose({
+  open,
+})
 </script>
 
 <template>

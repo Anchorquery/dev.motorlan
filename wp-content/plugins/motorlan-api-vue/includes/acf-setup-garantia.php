@@ -219,3 +219,53 @@ add_filter('acf/load_value/name=motor_link', 'motorlan_populate_garantia_readonl
 add_filter('acf/load_value/name=user_name', 'motorlan_populate_garantia_readonly_fields', 10, 3);
 add_filter('acf/load_value/name=user_email', 'motorlan_populate_garantia_readonly_fields', 10, 3);
 add_filter('acf/load_value/name=user_phone', 'motorlan_populate_garantia_readonly_fields', 10, 3);
+
+/**
+ * Populate warranty fields on save.
+ *
+ * @param int $post_id The post ID.
+ */
+function motorlan_populate_garantia_fields_on_save( $post_id ) {
+    // Check if the post type is 'garantia'
+    if ( get_post_type( $post_id ) !== 'garantia' ) {
+        return;
+    }
+
+    // Check if we have an action and it is the correct one.
+    if ( ! isset( $_POST['action'] ) || $_POST['action'] !== 'editpost' ) {
+        return;
+    }
+
+    // Get motor and user IDs
+    $motor_id = get_field( 'motor_id', $post_id );
+    $user_id  = get_post_field( 'post_author', $post_id );
+
+    if ( $motor_id ) {
+        // Populate motor info if not already set
+        $motor_info = get_field( 'motor_info', $post_id );
+        if ( empty( $motor_info['motor_title'] ) ) {
+            update_field( 'field_motor_title', get_the_title( $motor_id ), $post_id );
+        }
+        if ( empty( $motor_info['motor_reference'] ) ) {
+            update_field( 'field_motor_reference', get_field( 'tipo_o_referencia', $motor_id ), $post_id );
+        }
+    }
+
+    if ( $user_id ) {
+        // Populate user info if not already set
+        $user_info = get_field( 'user_info', $post_id );
+        $user_data = get_userdata( $user_id );
+        if ( $user_data ) {
+            if ( empty( $user_info['user_name'] ) ) {
+                update_field( 'field_user_name', $user_data->display_name, $post_id );
+            }
+            if ( empty( $user_info['user_email'] ) ) {
+                update_field( 'field_user_email', $user_data->user_email, $post_id );
+            }
+            if ( empty( $user_info['user_phone'] ) ) {
+                update_field( 'field_user_phone', get_user_meta( $user_id, 'billing_phone', true ), $post_id );
+            }
+        }
+    }
+}
+add_action( 'acf/save_post', 'motorlan_populate_garantia_fields_on_save', 20 );

@@ -151,10 +151,32 @@ function motorlan_create_garantia_item( WP_REST_Request $request ) {
         update_field( 'comentarios', $params['comentarios'], $garantia_id );
     }
 
-    $response_data = array(
-        'message'     => 'Solicitud de garantía creada con éxito.',
-        'garantia_id' => $garantia_id,
-    );
+    // Populate motor and user info
+    $user_id = get_current_user_id();
+    if ( $motor_id ) {
+        $motor_info = array(
+            'field_motor_title'     => get_the_title( $motor_id ),
+            'field_motor_reference' => get_field( 'tipo_o_referencia', $motor_id ),
+        );
+        update_field( 'field_garantia_motor_info', $motor_info, $garantia_id );
+    }
 
-    return new WP_REST_Response( $response_data, 201 );
+    if ( $user_id ) {
+        $user_data = get_userdata( $user_id );
+        if ( $user_data ) {
+            $user_info = array(
+                'field_user_name'  => $user_data->display_name,
+                'field_user_email' => $user_data->user_email,
+                'field_user_phone' => get_user_meta( $user_id, 'billing_phone', true ),
+            );
+            update_field( 'field_garantia_user_info', $user_info, $garantia_id );
+        }
+    }
+ 
+     $response_data = array(
+         'message'     => 'Solicitud de garantía creada con éxito.',
+         'garantia_id' => $garantia_id,
+     );
+ 
+     return new WP_REST_Response( $response_data, 201 );
 }

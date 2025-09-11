@@ -112,6 +112,13 @@ export default defineConfig({
     hmr: {
       host: 'localhost',
     },
+    proxy: {
+      '/wp-json': {
+        target: 'https://dev.motorlan.test',
+        changeOrigin: true,
+        secure: false,
+      },
+    },
   },
   build: {
     // 2. Directorio de salida, que en tu caso es 'dist'.

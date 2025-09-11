@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { ImagenDestacada, Publicacion } from '../../../../../interfaces/publicacion'
+import { useApi } from '@/composables/useApi'
 
 const { t } = useI18n()
 
@@ -29,24 +30,6 @@ const status = computed(() => [
 const categories = ref([])
 const tipos = ref([])
 
-// Fetch categories from the new endpoint
-const { data: categoriesData } = await useApi<any>(createUrl('/wp-json/motorlan/v1/publicacion-categories'))
-if (categoriesData.value) {
-  categories.value = categoriesData.value.map((cat: any) => ({
-    title: cat.name,
-    value: cat.slug,
-  }))
-}
-
-// Fetch tipos from the new endpoint
-const { data: tiposData } = await useApi<any>(createUrl('/wp-json/motorlan/v1/tipos'))
-if (tiposData.value) {
-  tipos.value = tiposData.value.map((tipo: any) => ({
-    title: tipo.name,
-    value: tipo.slug,
-  }))
-}
-
 // Data table options
 const itemsPerPage = ref(10)
 const page = ref(1)
@@ -72,24 +55,47 @@ const resolveStatus = (statusMsg: string) => {
   return { text: t('custom.unknown'), color: 'info' }
 }
 
-const { data: publicacionesData, execute: fetchPublicaciones } = await useApi<any>(createUrl('/wp-json/motorlan/v1/publicaciones',
-  {
-    query: {
-      search: searchQuery,
-      category: selectedCategory,
-      tipo: selectedTipo,
-      status: selectedStatus,
-      page,
-      per_page: itemsPerPage,
-      orderby: sortBy,
-      order: orderBy,
-    },
+const { data: publicacionesData, execute: fetchPublicaciones } = useApi<any>('/wp-json/motorlan/v1/publicaciones', {
+  params: {
+    search: searchQuery,
+    category: selectedCategory,
+    tipo: selectedTipo,
+    status: selectedStatus,
+    page,
+    per_page: itemsPerPage,
+    orderby: sortBy,
+    order: orderBy,
   },
+})
 
-))
+onMounted(async () => {
+  // Fetch categories from the new endpoint
+  const { data: categoriesData } = await useApi<any>('/wp-json/motorlan/v1/publicacion-categories')
+  const cats = Array.isArray(categoriesData.value)
+    ? categoriesData.value
+    : (categoriesData.value?.data ?? [])
+  if (cats && Array.isArray(cats)) {
+    categories.value = cats.map((cat: any) => ({
+      title: cat.name,
+      value: cat.slug,
+    }))
+  }
 
-const publicaciones = computed((): Publicacion[] => (publicacionesData.value?.data || []).filter(Boolean))
-const totalPublicaciones = computed(() => publicacionesData.value?.pagination.total || 0)
+  // Fetch tipos from the new endpoint
+  const { data: tiposData } = await useApi<any>('/wp-json/motorlan/v1/tipos')
+  const tiposArr = Array.isArray(tiposData.value)
+    ? tiposData.value
+    : (tiposData.value?.data ?? [])
+  if (tiposArr && Array.isArray(tiposArr)) {
+    tipos.value = tiposArr.map((tipo: any) => ({
+      title: tipo.name,
+      value: tipo.slug,
+    }))
+  }
+})
+
+const publicaciones = computed((): Publicacion[] => (publicacionesData.value?.data || publicacionesData.value || []).filter(Boolean))
+const totalPublicaciones = computed(() => (publicacionesData.value?.pagination?.total) || 0)
 
 const isLoading = ref(false)
 const loadingMessage = ref('')
@@ -136,7 +142,7 @@ const deleteSelectedPublicaciones = () => {
   handlePublicacionAction(t('publication_list.deleting_selected_publications'), async () => {
     await useApi('/wp-json/motorlan/v1/publicaciones/bulk-delete', {
       method: 'POST',
-      body: JSON.stringify({ ids: selectedRows.value }),
+      body: { ids: selectedRows.value },
     })
     selectedRows.value = []
   })

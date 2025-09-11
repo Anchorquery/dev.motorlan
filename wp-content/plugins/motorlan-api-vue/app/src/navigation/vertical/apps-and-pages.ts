@@ -31,11 +31,12 @@ export default [
     ],
   },
   {
-    title: 'User',
+    title: 'Perfil',
     icon: { icon: 'tabler-user' },
     children: [
-      { title: 'List', to: 'apps-user-list' },
-      { title: 'View', to: { name: 'apps-user-view-id', params: { id: 21 } } },
+      { title: 'Cuenta', to: { name: 'apps-user-account' } },
+      { title: 'Empresa', to: { name: 'apps-user-company' } },
+      { title: 'Estadísticas', to: { name: 'apps-user-stats' } },
     ],
   },
   {

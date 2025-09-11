@@ -30,6 +30,7 @@ function motorlan_enqueue_vue_app() {
 
     wp_localize_script('wp-data-bridge', 'wpData', [
         'site_url' => get_site_url(),
+        'nonce' => wp_create_nonce('wp_rest'),
         'rest_nonce' => wp_create_nonce('wp_rest'),
         'user_data' => $user_data,
     ]);

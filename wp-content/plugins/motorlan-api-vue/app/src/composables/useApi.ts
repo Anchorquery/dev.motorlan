@@ -1,41 +1,42 @@
 import { createFetch } from '@vueuse/core'
-import { destr } from 'destr'
+import { parse } from 'cookie-es'
+
+const baseURL = import.meta.env.VITE_API_BASE_URL
+
+const getToken = () => {
+  if (typeof document === 'undefined') return null
+  const cookies = parse(document.cookie)
+  return cookies.accessToken || null
+}
+
+const clearCookie = (name: string) => {
+  document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`
+}
 
 export const useApi = createFetch({
-  baseUrl: import.meta.env.VITE_API_BASE_URL || '/api',
-  fetchOptions: {
-    headers: {
-      Accept: 'application/json',
-    },
-  },
+  baseUrl: baseURL,
   options: {
-    refetch: true,
     async beforeFetch({ options }) {
-      const accessToken = useCookie('accessToken').value
-
-      if (accessToken) {
-        options.headers = {
-          ...options.headers,
-          Authorization: `Bearer ${accessToken}`,
-        }
-      }
-
-      return { options }
+      const token = getToken()
+      const headers = new Headers(options.headers as any)
+      const isFormData = options.body instanceof FormData
+      if (!isFormData)
+        headers.set('Content-Type', 'application/json')
+      if (token)
+        headers.set('Authorization', `Bearer ${token}`)
+      const nonce = (window as any)?.wpData?.nonce
+      if (nonce)
+        headers.set('X-WP-Nonce', nonce)
+      return { options: { ...options, headers } }
     },
-    afterFetch(ctx) {
-      const { data, response } = ctx
-
-      // Parse data if it's JSON
-
-      let parsedData = null
-      try {
-        parsedData = destr(data)
+    async onFetchError({ response }) {
+      if (response && response.status === 401) {
+        clearCookie('userData')
+        clearCookie('accessToken')
+        clearCookie('userAbilityRules')
+        window.location.href = '/login'
       }
-      catch (error) {
-        console.error(error)
-      }
-
-      return { data: parsedData, response }
+      return {}
     },
   },
 })

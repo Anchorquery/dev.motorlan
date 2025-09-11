@@ -299,9 +299,6 @@ const updateMotor = async () => {
     await useApi(url, {
       method,
       body: JSON.stringify(payload),
-      headers: {
-        'Content-Type': 'application/json',
-      },
     })
     showToast(t('edit_publication.update_success'), 'success')
     router.push('/apps/publications/publication/list')
@@ -438,7 +435,7 @@ const submitGarantia = async () => {
 
   try {
     isLoading.value = true
-    await useApi('/wp-json/motorlan/v1/garantias', {
+    await api('/wp-json/motorlan/v1/garantias', {
       method: 'POST',
       body: JSON.stringify(newGarantiaData.value),
       headers: {
@@ -449,7 +446,7 @@ const submitGarantia = async () => {
     isWarrantyModalVisible.value = false
 
     // Refresh warranty data
-    const garantiaResponse = await useApi(`/wp-json/motorlan/v1/garantias/publicacion/${motorUuid}`)
+    const garantiaResponse = await api(`/wp-json/motorlan/v1/garantias/publicacion/${motorUuid}`)
     if (garantiaResponse && garantiaResponse.data.value)
       garantiaData.value = garantiaResponse.data.value
   }
