@@ -342,7 +342,11 @@
       "paused": "Pausado",
       "sold": "Vendido",
       "unknown": "Desconocido"
-    }
+    },
+    "delete_selected": "Eliminar Seleccionados",
+    "deleting_selected_publications": "Eliminando publicaciones seleccionadas...",
+    "delete_selected_dialog_title": "Confirmar Eliminación",
+    "delete_selected_dialog_text": "¿Estás seguro de que quieres eliminar las {count} publicaciones seleccionadas? Esta acción no se puede deshacer."
   },
   "select_publication_type": {
     "title": "Selecciona el Tipo de Publicación",

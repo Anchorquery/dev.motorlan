@@ -13,7 +13,7 @@ const props = defineProps({
   },
 })
 
-const emit = defineEmits(['update:modelValue'])
+const emit = defineEmits(['update:modelValue', 'file-added'])
 
 const dropZoneRef = ref<HTMLDivElement>()
 
@@ -36,7 +36,6 @@ function onDrop(DroppedFiles: File[] | null) {
   if (!props.multiple && DroppedFiles.length > 1) {
     // eslint-disable-next-line no-alert
     alert('Only one file is allowed')
-
     return
   }
 
@@ -44,6 +43,9 @@ function onDrop(DroppedFiles: File[] | null) {
     file,
     url: useObjectUrl(file).value ?? '',
   }))
+
+  // Emitir evento file-added por cada archivo
+  DroppedFiles.forEach(file => emit('file-added', file))
 
   if (props.multiple)
     fileData.value = [...fileData.value, ...newFiles]
@@ -55,10 +57,14 @@ onChange((selectedFiles: any) => {
   if (!selectedFiles)
     return
 
-  const newFiles = Array.from(selectedFiles).map((file: any) => ({
+  const filesArray = Array.from(selectedFiles)
+  const newFiles = filesArray.map((file: any) => ({
     file,
     url: useObjectUrl(file).value ?? '',
   }))
+
+  // Emitir evento file-added por cada archivo seleccionado
+  filesArray.forEach(file => emit('file-added', file))
 
   if (props.multiple)
     fileData.value = [...fileData.value, ...newFiles]

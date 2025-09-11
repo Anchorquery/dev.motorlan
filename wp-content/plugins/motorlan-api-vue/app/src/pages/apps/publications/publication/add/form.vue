@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { onMounted, ref, computed, watch } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+import { computed, onMounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useToast } from '@/composables/useToast'
 import { useApi } from '@/composables/useApi'
-import { useI18n } from 'vue-i18n'
+import { requiredValidator } from '@/@core/utils/validators'
 
 const { showToast } = useToast()
 const router = useRouter()
@@ -15,6 +16,10 @@ const publicationType = computed(() => route.query.type as string)
 // Stepper state
 const currentStep = ref(1)
 const newPostId = ref<number | null>(null)
+
+const isLoading = ref(false)
+const form = ref(null)
+const isFormValid = ref(false)
 
 // Form data
 const postData = ref({
@@ -64,6 +69,8 @@ const userData = ref<any>(null)
 const marcas = ref([])
 const categories = ref([])
 const tipos = ref([])
+const motorImageFile = ref([])
+const motorGalleryFiles = ref([])
 
 const conditionOptions = computed(() => [
   { title: t('add_publication.condition_options.new'), value: 'new' },
@@ -81,28 +88,28 @@ const pageTitle = computed(() => {
   const baseTitle = t('add_publication.title')
   if (publicationType.value && tipos.value.length) {
     const selectedType = tipos.value.find((t: any) => t.slug === publicationType.value)
-    if (selectedType) {
+    if (selectedType)
       return `${baseTitle}: ${selectedType.title}`
-    }
   }
+
   return baseTitle
 })
 
 const cardTitle = computed(() => {
   const slug = publicationType.value
-  if (slug === 'motor') {
+  if (slug === 'motor')
     return t('add_publication.post_details.motor_section_title', 'Detalles del Motor')
-  }
-  if (slug === 'regulador') {
+
+  if (slug === 'regulador')
     return t('add_publication.post_details.regulator_section_title', 'Detalles del Regulador')
-  }
-  if (slug === 'otro-repuesto') {
+
+  if (slug === 'otro-repuesto')
     return t('add_publication.post_details.spare_part_section_title', 'Detalles del Repuesto')
-  }
+
   return t('add_publication.post_details.section_title', 'Detalles de la Publicación')
 })
 
-const apiEndpoint = '/wp-json/wp/v2/publicaciones'
+const apiEndpoint = '/wp-json/motorlan/v1/publicaciones'
 
 // Fetch initial data for selects
 onMounted(async () => {
@@ -141,21 +148,19 @@ onMounted(async () => {
       }))
     }
 
-    if (userResponse && userResponse.data.value) {
+    if (userResponse && userResponse.data.value)
       userData.value = userResponse.data.value
-    }
   }
   catch (error) {
     console.error('Error al obtener los datos iniciales:', error)
   }
 })
 
-watch(tipos, (newTipos) => {
+watch(tipos, newTipos => {
   if (newTipos.length && publicationType.value) {
     const selectedType = newTipos.find((t: any) => t.slug === publicationType.value)
-    if (selectedType) {
+    if (selectedType)
       postData.value.tipo = [selectedType.value]
-    }
   }
 }, { immediate: true })
 
@@ -164,7 +169,6 @@ const uploadMedia = async (file: File) => {
   const formData = new FormData()
 
   formData.append('file', file)
-
   try {
     const { data } = await useApi<any>('/wp-json/wp/v2/media', {
       method: 'POST',
@@ -180,71 +184,97 @@ const uploadMedia = async (file: File) => {
   }
 }
 
-const handleFeaturedImageUpload = async (file: File) => {
-  const imageId = await uploadMedia(file)
-  if (imageId)
-    postData.value.acf.motor_image = imageId
-}
-
-const handleGalleryImageUpload = async (file: File) => {
-  const imageId = await uploadMedia(file)
-  if (imageId)
-    postData.value.acf.motor_gallery.push(imageId)
-}
 
 const addDocument = () => {
   if (postData.value.acf.documentacion_adicional.length < 5)
     postData.value.acf.documentacion_adicional.push({ nombre: '', archivo: null })
 }
 
-const handleFileUpload = async (event: Event, index: number) => {
-  const file = (event.target as HTMLInputElement).files?.[0]
-  if (file) {
-    const fileId = await uploadMedia(file)
-    if (fileId)
-      postData.value.acf.documentacion_adicional[index].archivo = fileId
-  }
+const removeDocument = (index: number) => {
+  postData.value.acf.documentacion_adicional.splice(index, 1)
 }
 
-// Step 1: Create Post and move to step 2
+const handleFileUpload = (event: Event, index: number) => {
+  const file = (event.target as HTMLInputElement).files?.[0]
+  if (file)
+    postData.value.acf.documentacion_adicional[index].archivo = file
+}
+
 const createPostAndContinue = async () => {
+  const { valid } = await form.value.validate()
+  if (!valid) {
+    showToast(t('add_publication.toasts.required_fields_error'), 'error')
+
+    return
+  }
+
+  isLoading.value = true
   try {
+    // Handle main image upload
+    if (motorImageFile.value.length > 0) {
+      const image = motorImageFile.value[0]
+      if (image.file) {
+        const uploadedImageId = await uploadMedia(image.file)
+
+        postData.value.acf.motor_image = uploadedImageId
+      }
+    }
+
+    // Handle gallery images upload
+    if (motorGalleryFiles.value.length > 0) {
+      const newGalleryIds = []
+      for (const image of motorGalleryFiles.value) {
+        if (image.file) {
+          const uploadedImageId = await uploadMedia(image.file)
+
+          newGalleryIds.push(uploadedImageId)
+        }
+      }
+      postData.value.acf.motor_gallery = newGalleryIds
+    }
+
     // Handle file uploads for additional documentation
     for (const doc of postData.value.acf.documentacion_adicional) {
       if (doc.archivo instanceof File) {
         const fileId = await uploadMedia(doc.archivo)
+
         doc.archivo = fileId
       }
     }
+    console.log('postData.value', postData.value)
 
     const response = await useApi<any>(apiEndpoint, {
       method: 'POST',
-      body: postData.value,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(postData.value),
     })
 
     newPostId.value = response.data.value.id
     showToast(t('add_publication.toasts.post_created_success'), 'success')
 
     const tipoTerm = tipos.value.find(t => t.value === postData.value.tipo[0])
-    if (tipoTerm && tipoTerm.title === 'Otro Repuesto') {
-      router.push('/apps/publicaciones/publicacion/list')
-    }
-    else {
+    if (tipoTerm && tipoTerm.title === 'Otro Repuesto')
+      router.push('/apps/publications/publication/list')
+
+    else
       currentStep.value = 2
-    }
   }
   catch (error: any) {
     showToast(t('add_publication.toasts.post_created_error', { message: error.message }), 'error')
     console.error('Failed to create post:', error)
   }
+  finally {
+    isLoading.value = false
+  }
 }
 
 // Step 2: Skip warranty
 const skipGarantia = () => {
-  // A simple confirm dialog
   if (confirm(t('add_publication.toasts.warranty_skipped_confirmation'))) {
     showToast(t('add_publication.toasts.warranty_skipped_info'), 'info')
-    router.push('/apps/publicaciones/publicacion/list')
+    router.push('/apps/publications/publication/list')
   }
 }
 
@@ -272,7 +302,7 @@ const submitGarantia = async () => {
       body: garantiaData.value,
     })
     showToast(t('add_publication.toasts.warranty_request_success'), 'success')
-    router.push('/apps/publicaciones/publicacion/list')
+    router.push('/apps/publications/publication/list')
   }
   catch (error: any) {
     showToast(t('add_publication.toasts.warranty_request_error', { message: error.message }), 'error')
@@ -297,7 +327,7 @@ const submitGarantia = async () => {
         <VBtn
           variant="tonal"
           color="secondary"
-          @click="router.push('/apps/publicaciones/publicacion/list')"
+          @click="router.push('/apps/publications/publication/list')"
         >
           {{ t('add_publication.buttons.discard') }}
         </VBtn>
@@ -311,65 +341,28 @@ const submitGarantia = async () => {
     </div>
 
     <!-- Step 1: Post Details -->
-    <VRow v-if="currentStep === 1">
-      <VCol>
-        <VCard
-          class="mb-6"
-          :title="cardTitle"
-        >
-          <VCardText>
-            <VRow>
-              <VCol
-                cols="12"
-                md="6"
-              >
-                <AppTextField
-                  v-model="postData.title"
-                  :label="t('add_publication.post_details.title')"
-                  :placeholder="t('add_publication.post_details.title_placeholder')"
-                />
-              </VCol>
-              <VCol
-                cols="12"
-                md="6"
-              >
-                <AppTextField
-                  v-model="postData.acf.tipo_o_referencia"
-                  :label="t('add_publication.post_details.reference')"
-                  :placeholder="t('add_publication.post_details.reference_placeholder')"
-                />
-              </VCol>
-              <VCol
-                cols="12"
-                md="6"
-              >
-                <AppSelect
-                  v-model="postData.acf.marca"
-                  :label="t('add_publication.post_details.brand')"
-                  :items="marcas"
-                />
-              </VCol>
-              <VCol
-                cols="12"
-                md="6"
-              >
-                <AppSelect
-                  v-model="postData.categories"
-                  :label="t('add_publication.post_details.category')"
-                  :items="categories"
-                  multiple
-                />
-              </VCol>
-              <template v-if="postData.tipo[0] !== 3">
+    <VForm
+      ref="form"
+      v-model="isFormValid"
+      @submit.prevent="createPostAndContinue"
+    >
+      <VRow v-if="currentStep === 1">
+        <VCol>
+          <VCard
+            class="mb-6"
+            :title="cardTitle"
+          >
+            <VCardText>
+              <VRow>
                 <VCol
                   cols="12"
                   md="6"
                 >
                   <AppTextField
-                    v-model="postData.acf.potencia"
-                    :label="t('add_publication.post_details.power')"
-                    type="number"
-                    :placeholder="t('add_publication.post_details.power_placeholder')"
+                    v-model="postData.title"
+                    :label="t('add_publication.post_details.title')"
+                    :placeholder="t('add_publication.post_details.title_placeholder')"
+                    :rules="[requiredValidator]"
                   />
                 </VCol>
                 <VCol
@@ -377,10 +370,102 @@ const submitGarantia = async () => {
                   md="6"
                 >
                   <AppTextField
-                    v-model="postData.acf.velocidad"
-                    :label="t('add_publication.post_details.speed')"
-                    type="number"
-                    :placeholder="t('add_publication.post_details.speed_placeholder')"
+                    v-model="postData.acf.tipo_o_referencia"
+                    :label="t('add_publication.post_details.reference')"
+                    :placeholder="t('add_publication.post_details.reference_placeholder')"
+                    :rules="[requiredValidator]"
+                  />
+                </VCol>
+                <VCol
+                  cols="12"
+                  md="6"
+                >
+                  <AppSelect
+                    v-model="postData.acf.marca"
+                    :label="t('add_publication.post_details.brand')"
+                    :items="marcas"
+                    item-title="title"
+                    item-value="value"
+                    :rules="[requiredValidator]"
+                  />
+                </VCol>
+                <VCol
+                  cols="12"
+                  md="6"
+                >
+                  <AppSelect
+                    v-model="postData.categories"
+                    :label="t('add_publication.post_details.category')"
+                    :items="categories"
+                    multiple
+                  />
+                </VCol>
+                <template v-if="postData.tipo[0] !== 3">
+                  <VCol
+                    cols="12"
+                    md="6"
+                  >
+                    <AppTextField
+                      v-model="postData.acf.potencia"
+                      :label="t('add_publication.post_details.power')"
+                      type="number"
+                      :placeholder="t('add_publication.post_details.power_placeholder')"
+                    />
+                  </VCol>
+                  <VCol
+                    cols="12"
+                    md="6"
+                  >
+                    <AppTextField
+                      v-model="postData.acf.velocidad"
+                      :label="t('add_publication.post_details.speed')"
+                      type="number"
+                      :placeholder="t('add_publication.post_details.speed_placeholder')"
+                    />
+                  </VCol>
+                  <VCol
+                    cols="12"
+                    md="6"
+                  >
+                    <AppTextField
+                      v-model="postData.acf.par_nominal"
+                      :label="t('add_publication.post_details.torque')"
+                      type="number"
+                      :placeholder="t('add_publication.post_details.torque_placeholder')"
+                    />
+                  </VCol>
+                  <VCol
+                    cols="12"
+                    md="6"
+                  >
+                    <AppTextField
+                      v-model="postData.acf.voltaje"
+                      :label="t('add_publication.post_details.voltage')"
+                      type="number"
+                      :placeholder="t('add_publication.post_details.voltage_placeholder')"
+                    />
+                  </VCol>
+                  <VCol
+                    cols="12"
+                    md="6"
+                  >
+                    <AppTextField
+                      v-model="postData.acf.intensidad"
+                      :label="t('add_publication.post_details.intensity')"
+                      type="number"
+                      :placeholder="t('add_publication.post_details.intensity_placeholder')"
+                    />
+                  </VCol>
+                </template>
+                <VCol
+                  cols="12"
+                  md="6"
+                >
+                  <AppSelect
+                    v-model="postData.acf.pais"
+                    :label="t('add_publication.post_details.country')"
+                    :items="countryOptions"
+                    :rules="[requiredValidator]"
                   />
                 </VCol>
                 <VCol
@@ -388,10 +473,99 @@ const submitGarantia = async () => {
                   md="6"
                 >
                   <AppTextField
-                    v-model="postData.acf.par_nominal"
-                    :label="t('add_publication.post_details.torque')"
+                    v-model="postData.acf.provincia"
+                    :label="t('add_publication.post_details.province')"
+                    :placeholder="t('add_publication.post_details.province_placeholder')"
+                    :rules="[requiredValidator]"
+                  />
+                </VCol>
+                <VCol
+                  cols="12"
+                  md="6"
+                >
+                  <AppSelect
+                    v-model="postData.acf.estado_del_articulo"
+                    :label="t('add_publication.post_details.condition')"
+                    :items="conditionOptions"
+                    :rules="[requiredValidator]"
+                  />
+                </VCol>
+                <VCol cols="12">
+                  <VTextarea
+                    v-model="postData.acf.descripcion"
+                    :label="t('add_publication.post_details.description')"
+                    :placeholder="t('add_publication.post_details.description_placeholder')"
+                    :rules="[requiredValidator]"
+                  />
+                </VCol>
+                <template v-if="postData.tipo[0] !== 3">
+                  <VCol
+                    cols="12"
+                    md="6"
+                  >
+                    <VRadioGroup
+                      v-model="postData.acf.posibilidad_de_alquiler"
+                      inline
+                      :label="t('add_publication.post_details.rent_option')"
+                    >
+                      <VRadio
+                        :label="t('add_publication.boolean_options.yes')"
+                        value="yes"
+                      />
+                      <VRadio
+                        :label="t('add_publication.boolean_options.no')"
+                        value="no"
+                      />
+                    </VRadioGroup>
+                  </VCol>
+                  <VCol
+                    cols="12"
+                    md="6"
+                  >
+                    <VRadioGroup
+                      v-model="postData.acf.tipo_de_alimentacion"
+                      inline
+                      :label="t('add_publication.post_details.power_supply_type')"
+                    >
+                      <VRadio
+                        :label="t('add_publication.power_supply_options.dc')"
+                        value="dc"
+                      />
+                      <VRadio
+                        :label="t('add_publication.power_supply_options.ac')"
+                        value="ac"
+                      />
+                    </VRadioGroup>
+                  </VCol>
+                  <VCol
+                    cols="12"
+                    md="6"
+                  >
+                    <VCheckbox
+                      v-model="postData.acf.servomotores"
+                      :label="t('add_publication.post_details.servomotors')"
+                    />
+                  </VCol>
+                  <VCol
+                    cols="12"
+                    md="6"
+                  >
+                    <VCheckbox
+                      v-model="postData.acf.regulacion_electronica_drivers"
+                      :label="t('add_publication.post_details.electronic_regulation')"
+                    />
+                  </VCol>
+                </template>
+                <VCol
+                  cols="12"
+                  md="6"
+                >
+                  <AppTextField
+                    v-model="postData.acf.precio_de_venta"
+                    :label="t('add_publication.post_details.price')"
                     type="number"
-                    :placeholder="t('add_publication.post_details.torque_placeholder')"
+                    :placeholder="t('add_publication.post_details.price_placeholder')"
+                    :rules="[requiredValidator]"
                   />
                 </VCol>
                 <VCol
@@ -399,70 +573,20 @@ const submitGarantia = async () => {
                   md="6"
                 >
                   <AppTextField
-                    v-model="postData.acf.voltaje"
-                    :label="t('add_publication.post_details.voltage')"
+                    v-model="postData.acf.stock"
+                    :label="t('add_publication.post_details.stock')"
                     type="number"
-                    :placeholder="t('add_publication.post_details.voltage_placeholder')"
+                    :placeholder="t('add_publication.post_details.stock_placeholder')"
                   />
                 </VCol>
-                <VCol
-                  cols="12"
-                  md="6"
-                >
-                  <AppTextField
-                    v-model="postData.acf.intensidad"
-                    :label="t('add_publication.post_details.intensity')"
-                    type="number"
-                    :placeholder="t('add_publication.post_details.intensity_placeholder')"
-                  />
-                </VCol>
-              </template>
-              <VCol
-                cols="12"
-                md="6"
-              >
-                <AppSelect
-                  v-model="postData.acf.pais"
-                  :label="t('add_publication.post_details.country')"
-                  :items="countryOptions"
-                />
-              </VCol>
-              <VCol
-                cols="12"
-                md="6"
-              >
-                <AppTextField
-                  v-model="postData.acf.provincia"
-                  :label="t('add_publication.post_details.province')"
-                  :placeholder="t('add_publication.post_details.province_placeholder')"
-                />
-              </VCol>
-              <VCol
-                cols="12"
-                md="6"
-              >
-                <AppSelect
-                  v-model="postData.acf.estado_del_articulo"
-                  :label="t('add_publication.post_details.condition')"
-                  :items="conditionOptions"
-                />
-              </VCol>
-              <VCol cols="12">
-                <VTextarea
-                  v-model="postData.acf.descripcion"
-                  :label="t('add_publication.post_details.description')"
-                  :placeholder="t('add_publication.post_details.description_placeholder')"
-                />
-              </VCol>
-              <template v-if="postData.tipo[0] !== 3">
                 <VCol
                   cols="12"
                   md="6"
                 >
                   <VRadioGroup
-                    v-model="postData.acf.posibilidad_de_alquiler"
+                    v-model="postData.acf.precio_negociable"
                     inline
-                    :label="t('add_publication.post_details.rent_option')"
+                    :label="t('add_publication.post_details.negotiable_price')"
                   >
                     <VRadio
                       :label="t('add_publication.boolean_options.yes')"
@@ -474,151 +598,88 @@ const submitGarantia = async () => {
                     />
                   </VRadioGroup>
                 </VCol>
-                <VCol
-                  cols="12"
-                  md="6"
-                >
+                <VCol cols="12">
                   <VRadioGroup
-                    v-model="postData.acf.tipo_de_alimentacion"
+                    v-model="postData.status"
                     inline
-                    :label="t('add_publication.post_details.power_supply_type')"
+                    :label="t('add_publication.post_details.publish_acf')"
                   >
                     <VRadio
-                      :label="t('add_publication.power_supply_options.dc')"
-                      value="dc"
+                      :label="t('add_publication.post_details.publish_status_publish')"
+                      value="publish"
                     />
                     <VRadio
-                      :label="t('add_publication.power_supply_options.ac')"
-                      value="ac"
+                      :label="t('add_publication.post_details.publish_status_draft')"
+                      value="draft"
                     />
                   </VRadioGroup>
                 </VCol>
-                <VCol
-                  cols="12"
-                  md="6"
-                >
-                  <VCheckbox
-                    v-model="postData.acf.servomotores"
-                    :label="t('add_publication.post_details.servomotors')"
-                  />
-                </VCol>
-                <VCol
-                  cols="12"
-                  md="6"
-                >
-                  <VCheckbox
-                    v-model="postData.acf.regulacion_electronica_drivers"
-                    :label="t('add_publication.post_details.electronic_regulation')"
-                  />
-                </VCol>
-              </template>
-              <VCol
-                cols="12"
-                md="6"
+              </VRow>
+            </VCardText>
+          </VCard>
+          <VCard
+            class="mb-6"
+            :title="t('add_publication.media.main_image')"
+          >
+            <VCardText>
+              <DropZone
+                v-model="motorImageFile"
+                :multiple="false"
+              />
+            </VCardText>
+          </VCard>
+          <VCard
+            class="mb-6"
+            :title="t('add_publication.media.image_gallery')"
+          >
+            <VCardText>
+              <DropZone v-model="motorGalleryFiles" />
+            </VCardText>
+          </VCard>
+          <VCard
+            class="mb-6"
+            :title="t('add_publication.media.additional_documentation')"
+          >
+            <VCardText>
+              <div
+                v-for="(doc, index) in postData.acf.documentacion_adicional"
+                :key="index"
+                class="d-flex gap-4 mb-4 align-center"
               >
                 <AppTextField
-                  v-model="postData.acf.precio_de_venta"
-                  :label="t('add_publication.post_details.price')"
-                  type="number"
-                  :placeholder="t('add_publication.post_details.price_placeholder')"
+                  v-model="doc.nombre"
+                  :label="t('add_publication.media.document_name')"
+                  :placeholder="t('add_publication.media.document_name_placeholder')"
+                  style="width: 300px;"
                 />
-              </VCol>
-              <VCol
-                cols="12"
-                md="6"
-              >
-                <AppTextField
-                  v-model="postData.acf.stock"
-                  :label="t('add_publication.post_details.stock')"
-                  type="number"
-                  :placeholder="t('add_publication.post_details.stock_placeholder')"
+                <VFileInput
+                  :label="t('add_publication.media.upload_file')"
+                  @change="event => handleFileUpload(event, index)"
                 />
-              </VCol>
-              <VCol
-                cols="12"
-                md="6"
+                <VBtn
+                  icon
+                  variant="text"
+                  color="error"
+                  size="small"
+                  @click="removeDocument(index)"
+                >
+                  <VIcon
+                    icon="tabler-trash"
+                    size="20"
+                  />
+                </VBtn>
+              </div>
+              <VBtn
+                v-if="postData.acf.documentacion_adicional.length < 5"
+                @click="addDocument"
               >
-                <VRadioGroup
-                  v-model="postData.acf.precio_negociable"
-                  inline
-                  :label="t('add_publication.post_details.negotiable_price')"
-                >
-                  <VRadio
-                    :label="t('add_publication.boolean_options.yes')"
-                    value="yes"
-                  />
-                  <VRadio
-                    :label="t('add_publication.boolean_options.no')"
-                    value="no"
-                  />
-                </VRadioGroup>
-              </VCol>
-              <VCol cols="12">
-                <VRadioGroup
-                  v-model="postData.status"
-                  inline
-                  :label="t('add_publication.post_details.publish_acf')"
-                >
-                  <VRadio
-                    :label="t('add_publication.post_details.publish_status_publish')"
-                    value="publish"
-                  />
-                  <VRadio
-                    :label="t('add_publication.post_details.publish_status_draft')"
-                    value="draft"
-                  />
-                </VRadioGroup>
-              </VCol>
-            </VRow>
-          </VCardText>
-        </VCard>
-        <VCard
-          class="mb-6"
-          :title="t('add_publication.media.main_image')"
-        >
-          <VCardText>
-            <DropZone @file-added="handleFeaturedImageUpload" />
-          </VCardText>
-        </VCard>
-        <VCard
-          class="mb-6"
-          :title="t('add_publication.media.image_gallery')"
-        >
-          <VCardText>
-            <DropZone @file-added="handleGalleryImageUpload" />
-          </VCardText>
-        </VCard>
-        <VCard
-          class="mb-6"
-          :title="t('add_publication.media.additional_documentation')"
-        >
-          <VCardText>
-            <div
-              v-for="(doc, index) in postData.acf.documentacion_adicional"
-              :key="index"
-              class="d-flex gap-4 mb-4"
-            >
-              <AppTextField
-                v-model="doc.nombre"
-                :label="t('add_publication.media.document_name')"
-                :placeholder="t('add_publication.media.document_name_placeholder')"
-                style="width: 300px;"
-              />
-              <VFileInput
-                :label="t('add_publication.media.upload_file')"
-                @change="event => handleFileUpload(event, index)"
-              />
-            </div>
-            <VBtn
-              v-if="postData.acf.documentacion_adicional.length < 5"
-              @click="addDocument"
-            >
-              {{ t('add_publication.buttons.add_document') }}
-            </VBtn>
-          </VCardText>
-        </VCard>
-      </VCol>
-    </VRow>
+                {{ t('add_publication.buttons.add_document') }}
+              </VBtn>
+            </VCardText>
+          </VCard>
+        </VCol>
+      </VRow>
+    </VForm>
 
     <!-- Step 2: Warranty Offer -->
     <VCard
@@ -758,6 +819,18 @@ const submitGarantia = async () => {
       </VCardActions>
     </VCard>
   </div>
+  <!-- 👉 Loading overlay -->
+  <VOverlay
+    v-model="isLoading"
+    class="d-flex align-center justify-center"
+    persistent
+  >
+    <VProgressCircular
+      indeterminate
+      size="64"
+      color="primary"
+    />
+  </VOverlay>
 </template>
 
 <style lang="scss" scoped>

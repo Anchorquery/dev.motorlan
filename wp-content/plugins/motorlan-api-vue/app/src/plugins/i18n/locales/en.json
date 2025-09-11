@@ -341,7 +341,11 @@
       "paused": "Paused",
       "sold": "Sold",
       "unknown": "Unknown"
-    }
+    },
+    "delete_selected": "Delete Selected",
+    "deleting_selected_publications": "Deleting selected publications...",
+    "delete_selected_dialog_title": "Confirm Deletion",
+    "delete_selected_dialog_text": "Are you sure you want to delete the {count} selected publications? This action cannot be undone."
   },
   "select_publication_type": {
     "title": "Select Publication Type",

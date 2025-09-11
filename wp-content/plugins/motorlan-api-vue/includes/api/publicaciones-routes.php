@@ -45,6 +45,13 @@ function motorlan_register_publicaciones_rest_routes() {
         'permission_callback' => 'motorlan_permission_callback_true',
     ) );
 
+    // Route for creating a new publicacion
+    register_rest_route( $namespace, '/publicaciones', array(
+        'methods'  => WP_REST_Server::CREATABLE,
+        'callback' => 'motorlan_create_publicacion_callback',
+        //'permission_callback' => 'motorlan_is_user_authenticated',
+    ) );
+
     // Route for getting and updating a single publicacion by UUID
     register_rest_route($namespace, '/publicaciones/uuid/(?P<uuid>[a-zA-Z0-9-]+)', array(
         array(
@@ -75,7 +82,7 @@ function motorlan_register_publicaciones_rest_routes() {
 
     // Route for duplicating a publicacion by ID
     register_rest_route($namespace, '/publicaciones/duplicate/(?P<id>\\d+)', array(
-        'methods' => 'GET',
+        'methods' => 'POST',
         'callback' => 'motorlan_duplicate_publicacion',
         'permission_callback' => 'motorlan_is_user_authenticated'
     ));
@@ -85,6 +92,13 @@ function motorlan_register_publicaciones_rest_routes() {
         'methods' => 'POST',
         'callback' => 'motorlan_update_publicacion_status',
         'permission_callback' => 'motorlan_is_user_authenticated'
+    ));
+
+    // Route for bulk deleting publicaciones
+    register_rest_route($namespace, '/publicaciones/bulk-delete', array(
+        'methods' => 'POST',
+        'callback' => 'motorlan_bulk_delete_publicaciones',
+        'permission_callback' => 'motorlan_is_user_authenticated',
     ));
 
     // Route for getting publicacion categories
@@ -334,6 +348,36 @@ function motorlan_delete_publicacion(WP_REST_Request $request) {
     }
 
     return new WP_REST_Response(array('message' => 'Publicacion deleted successfully'), 200);
+}
+
+
+/**
+ * Bulk delete publicaciones by ID.
+ *
+ * @param WP_REST_Request $request The request object.
+ * @return WP_REST_Response|WP_Error The response object or error.
+ */
+function motorlan_bulk_delete_publicaciones(WP_REST_Request $request) {
+    $params = $request->get_json_params();
+    $ids = isset($params['ids']) ? $params['ids'] : array();
+
+    if (empty($ids)) {
+        return new WP_Error('no_ids', 'No IDs provided', array('status' => 400));
+    }
+
+    $deleted_count = 0;
+    foreach ($ids as $id) {
+        $result = wp_delete_post(intval($id), true);
+        if ($result !== false) {
+            $deleted_count++;
+        }
+    }
+
+    if ($deleted_count === 0) {
+        return new WP_Error('delete_failed', 'Failed to delete any publicacion', array('status' => 500));
+    }
+
+    return new WP_REST_Response(array('message' => $deleted_count . ' publicaciones deleted successfully'), 200);
 }
 
 
@@ -628,4 +672,161 @@ function motorlan_get_marcas_callback() {
     }
 
     return new WP_REST_Response( $terms, 200 );
+}
+
+/**
+ * Callback to create a new publicacion item.
+ *
+ * @param WP_REST_Request $request The request object.
+ * @return WP_REST_Response|WP_Error
+ */
+function motorlan_create_publicacion_callback(WP_REST_Request $request) {
+    $params = $request->get_json_params();
+
+    // Fallback si vienen como form-data o urlencoded
+    if (empty($params)) {
+        $params = $request->get_params();
+    }
+
+    if (empty($params)) {
+        return new WP_Error('no_params', 'No se recibieron parámetros válidos', ['status' => 400]);
+    }
+
+    // Validaciones básicas
+    if (empty($params['title'])) {
+        return new WP_Error('missing_title', 'El título es obligatorio', ['status' => 400]);
+    }
+    if (empty($params['acf']['marca'])) {
+        return new WP_Error('missing_brand', 'La marca es obligatoria', ['status' => 400]);
+    }
+    if (empty($params['acf']['tipo_o_referencia'])) {
+        return new WP_Error('missing_reference', 'La referencia es obligatoria', ['status' => 400]);
+    }
+    if (empty($params['acf']['descripcion'])) {
+        return new WP_Error('missing_description', 'La descripción es obligatoria', ['status' => 400]);
+    }
+
+    $post_data = array(
+        'post_title'  => sanitize_text_field($params['title']),
+        'post_status' => sanitize_text_field($params['status']),
+        'post_type'   => 'publicaciones',
+        'post_author' => get_current_user_id(),
+    );
+
+    $post_id = wp_insert_post($post_data);
+
+    if (is_wp_error($post_id)) {
+        return $post_id;
+    }
+
+    // Assign a UUID
+    $uuid = wp_generate_uuid4();
+    update_post_meta($post_id, 'uuid', $uuid);
+
+    // Set categories
+    if (!empty($params['categories'])) {
+        wp_set_post_terms($post_id, $params['categories'], 'categoria');
+    }
+
+    // Set tipo
+    if (!empty($params['tipo'])) {
+        wp_set_post_terms($post_id, $params['tipo'], 'tipo');
+    }
+
+    // Update ACF fields
+    if (isset($params['acf']) && is_array($params['acf'])) {
+        foreach ($params['acf'] as $key => $value) {
+            // Si el campo es 'marca' y es string, busca el ID
+            if ($key === 'marca' && !empty($value) && !is_numeric($value)) {
+                // Buscar por nombre
+                $term = get_term_by('name', $value, 'marca');
+                // Si no se encuentra por nombre, intentar por slug
+                if (!$term) {
+                    $term = get_term_by('slug', sanitize_title($value), 'marca');
+                }
+                if ($term) {
+                    $value = $term->term_id;
+                }
+            }
+            // Si el campo es 'tipo' y es string, busca el ID
+            if ($key === 'tipo' && !empty($value) && !is_numeric($value)) {
+                $term = get_term_by('name', $value, 'tipo');
+                if (!$term) {
+                    $term = get_term_by('slug', sanitize_title($value), 'tipo');
+                }
+                if ($term) {
+                    $value = $term->term_id;
+                }
+            }
+            // Sanitización de strings / números
+            if (is_string($value)) {
+                $value = sanitize_text_field($value);
+            }
+            if (in_array($key, ['potencia','velocidad','par_nominal','voltaje','intensidad','precio_de_venta','stock'])) {
+                $value = is_numeric($value) ? floatval($value) : null;
+            }
+            // Normalizar campo 'pais'
+            if ($key === 'pais' && !empty($value)) {
+                $value = sanitize_text_field(strtolower($value));
+            }
+            update_field($key, $value, $post_id);
+        }
+    }
+
+    $response_data = array(
+        'message' => 'Publicación creada con éxito.',
+        'id'      => $post_id,
+        'uuid'    => $uuid,
+    );
+
+    return new WP_REST_Response($response_data, 201);
+}
+
+/**
+ * Crear una garantía asociada a un motor y al usuario actual.
+ */
+function motorlan_create_garantia_callback(WP_REST_Request $request) {
+    $params = $request->get_json_params();
+    if (empty($params)) {
+        $params = $request->get_params();
+    }
+
+    if (empty($params['motor_id'])) {
+        return new WP_Error('missing_motor', 'El ID de motor es obligatorio', ['status' => 400]);
+    }
+
+    $current_user = get_current_user_id();
+    if (!$current_user) {
+        return new WP_Error('not_logged_in', 'Debes iniciar sesión para crear la garantía', ['status' => 401]);
+    }
+
+    // Crear post de tipo "garantia"
+    $post_data = [
+        'post_type'   => 'garantia',
+        'post_status' => 'publish',
+        'post_author' => $current_user,
+        'post_title'  => 'Garantía Motor #' . intval($params['motor_id']),
+    ];
+
+    $garantia_id = wp_insert_post($post_data);
+    if (is_wp_error($garantia_id)) {
+        return $garantia_id;
+    }
+
+    // Guardar relación con motor y usuario + demás campos
+    update_field('motor_id', intval($params['motor_id']), $garantia_id);
+    update_field('usuario_id', $current_user, $garantia_id);
+    update_field('is_same_address', sanitize_text_field($params['is_same_address'] ?? 'yes'), $garantia_id);
+    update_field('direccion_motor', sanitize_text_field($params['direccion_motor'] ?? ''), $garantia_id);
+    update_field('cp_motor', sanitize_text_field($params['cp_motor'] ?? ''), $garantia_id);
+    update_field('agencia_transporte', sanitize_text_field($params['agencia_transporte'] ?? ''), $garantia_id);
+    update_field('modalidad_pago', sanitize_text_field($params['modalidad_pago'] ?? ''), $garantia_id);
+    update_field('comentarios', sanitize_textarea_field($params['comentarios'] ?? ''), $garantia_id);
+
+    return new WP_REST_Response([
+        'message' => 'Garantía creada con éxito',
+        'garantia_id' => $garantia_id,
+        'motor_id' => intval($params['motor_id']),
+        'usuario_id' => $current_user,
+    ], 201);
 }

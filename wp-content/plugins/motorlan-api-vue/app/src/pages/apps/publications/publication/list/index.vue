@@ -1,15 +1,9 @@
 <script setup lang="ts">
+import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { ImagenDestacada, Publicacion } from '../../../../../interfaces/publicacion'
 
 const { t } = useI18n()
-
-const widgetData = ref([
-  { title: 'Sales', value: '$5,345', icon: 'tabler-smart-home', desc: '5k orders', change: 5.7 },
-  { title: 'Website Sales', value: '$674,347', icon: 'tabler-device-laptop', desc: '21k orders', change: 12.4 },
-  { title: 'Discount', value: '$14,235', icon: 'tabler-gift', desc: '6k orders' },
-  { title: 'Affiliate', value: '$8,345', icon: 'tabler-wallet', desc: '150 orders', change: -3.5 },
-])
 
 const headers = [
   { title: t('publication_list.publication'), key: 'publicacion' },
@@ -67,15 +61,15 @@ const updateOptions = (options: any) => {
 
 const resolveStatus = (statusMsg: string) => {
   if (statusMsg === 'publish')
-    return { text: t('publication_list.status_options.published'), color: 'success' }
+    return { text: t('custom.published'), color: 'success' }
   if (statusMsg === 'draft')
-    return { text: t('publication_list.status_options.draft'), color: 'secondary' }
+    return { text: t('custom.draft'), color: 'secondary' }
   if (statusMsg === 'paused')
-    return { text: t('publication_list.status_options.paused'), color: 'warning' }
+    return { text: t('custom.paused'), color: 'warning' }
   if (statusMsg === 'sold')
-    return { text: t('publication_list.status_options.sold'), color: 'error' }
+    return { text: t('custom.sold'), color: 'error' }
 
-  return { text: t('publication_list.status_options.unknown'), color: 'info' }
+  return { text: t('custom.unknown'), color: 'info' }
 }
 
 const { data: publicacionesData, execute: fetchPublicaciones } = await useApi<any>(createUrl('/wp-json/motorlan/v1/publicaciones',
@@ -137,20 +131,35 @@ const handlePublicacionAction = async (message: string, action: () => Promise<vo
 }
 
 
-const deletePublicacion = () => {
-  if (publicacionToDelete.value === null)
-    return
-
+const deleteSelectedPublicaciones = () => {
   isDeleteDialogVisible.value = false
-  handlePublicacionAction(t('publication_list.deleting_publication'), async () => {
-    if (publicacionToDelete.value === null)
-      return
-    await $api(`/wp-json/motorlan/v1/publicaciones/${publicacionToDelete.value}`, { method: 'DELETE' })
-
-    const index = selectedRows.value.findIndex(row => row === publicacionToDelete.value)
-    if (index !== -1)
-      selectedRows.value.splice(index, 1)
+  handlePublicacionAction(t('publication_list.deleting_selected_publications'), async () => {
+    await useApi('/wp-json/motorlan/v1/publicaciones/bulk-delete', {
+      method: 'POST',
+      body: JSON.stringify({ ids: selectedRows.value }),
+    })
+    selectedRows.value = []
   })
+}
+
+const deletePublicacion = () => {
+  if (publicacionToDelete.value !== null && publicacionToDelete.value !== 0) {
+    // Single publication deletion
+    isDeleteDialogVisible.value = false
+    handlePublicacionAction(t('publication_list.deleting_publication'), async () => {
+      if (publicacionToDelete.value === null)
+        return
+      await useApi(`/wp-json/motorlan/v1/publicaciones/${publicacionToDelete.value}`, { method: 'DELETE' })
+
+      const index = selectedRows.value.findIndex(row => row === publicacionToDelete.value)
+      if (index !== -1)
+        selectedRows.value.splice(index, 1)
+    })
+  }
+  else {
+    // Bulk deletion
+    deleteSelectedPublicaciones()
+  }
 }
 
 const duplicatePublicacion = () => {
@@ -161,7 +170,7 @@ const duplicatePublicacion = () => {
   handlePublicacionAction(t('publication_list.duplicating_publication'), async () => {
     if (publicacionToDuplicate.value === null)
       return
-    await $api(`/wp-json/motorlan/v1/publicaciones/${publicacionToDuplicate.value}/duplicate`, { method: 'POST' })
+    await useApi(`/wp-json/motorlan/v1/publicaciones/duplicate/${publicacionToDuplicate.value}`, { method: 'POST' })
   })
 }
 
@@ -179,7 +188,7 @@ const changeStatus = () => {
   }
 
   handlePublicacionAction(messages[status] || t('publication_list.updating_status'), async () => {
-    await $api(`/wp-json/motorlan/v1/publicaciones/${id}/status`, {
+    await useApi(`/wp-json/motorlan/v1/publicaciones/${id}/status`, {
       method: 'POST',
       body: { status },
     })
@@ -360,10 +369,20 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
             {{ t('publication_list.export') }}
           </VBtn>
 
+          <!-- 👉 Delete button -->
+          <VBtn
+            v-if="selectedRows.length > 0"
+            color="error"
+            prepend-icon="tabler-trash"
+            @click="openDeleteDialog(0)"
+          >
+            {{ t('publication_list.delete_selected') }} ({{ selectedRows.length }})
+          </VBtn>
+
           <VBtn
             color="primary"
             prepend-icon="tabler-plus"
-            @click="$router.push({ path: '/apps/publicaciones/publicacion/add' })"
+            @click="$router.push({ path: '/apps/publications/publication/add' })"
           >
             {{ t('publication_list.add_publication') }}
           </VBtn>
@@ -382,6 +401,8 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
         :items="publicaciones"
         :items-length="totalPublicaciones"
         class="text-no-wrap"
+        item-value="id"
+        :return-object="false"
         @update:options="updateOptions"
       >
         <!-- publicacion  -->
@@ -396,7 +417,7 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
             />
             <div class="d-flex flex-column">
               <span class="text-body-1 font-weight-medium text-high-emphasis">{{ (item as any).title }}</span>
-              <span class="text-body-2">{{ (item as any).acf.marca.name }}</span>
+              <span class="text-body-2">{{ (item as any).acf.marca?.name }}</span>
             </div>
           </div>
         </template>
@@ -423,8 +444,8 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
 
         <!-- Actions -->
         <template #item.actions="{ item }">
-          <IconBtn @click="$router.push(`/apps/publicaciones/publicacion/edit/${(item as any).uuid}`)">
-            <VIcon icon="tabler-edit" />
+          <IconBtn @click="$router.push(`/apps/publications/publication/edit/${(item as any).uuid}`)">
+            <VIcon icon="tabler-eye" />
           </IconBtn>
 
           <IconBtn>
@@ -512,10 +533,10 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
     >
       <VCard>
         <VCardTitle>
-          {{ t('publication_list.delete_dialog_title') }}
+          {{ publicacionToDelete === 0 ? t('publication_list.delete_selected_dialog_title') : t('publication_list.delete_dialog_title') }}
         </VCardTitle>
         <VCardText>
-          {{ t('publication_list.delete_dialog_text') }}
+          {{ publicacionToDelete === 0 ? t('publication_list.delete_selected_dialog_text', { count: selectedRows.length }) : t('publication_list.delete_dialog_text') }}
         </VCardText>
         <VCardActions>
           <VSpacer />
