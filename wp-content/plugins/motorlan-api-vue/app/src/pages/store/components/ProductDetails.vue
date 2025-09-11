@@ -1,15 +1,42 @@
 <script setup lang="ts">
 import { onMounted, ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
+// Ajustes correctos de imports según la estructura del proyecto
+// Ajuste final de imports según la estructura real del proyecto
 import ConfirmDialog from '@/components/dialogs/ConfirmDialog.vue'
 import type { Publicacion } from '@/interfaces/publicacion'
+import api from '@/services/api'
+
+import { useUserStore } from '@/@core/stores/user'
 
 const props = defineProps<{ publicacion: Publicacion }>()
-const FAVORITES_KEY = 'motor-favorites'
 
+
+// Estado de favorito
 const isFavorite = ref(false)
-const sellerName = ref('')
-const sellerRating = ref<number | null>(null)
+const isLoadingFavorite = ref(false)
+
+onMounted(async () => {
+  if (userStore.getIsLoggedIn) {
+    try {
+      const favorites = await api('/wp-json/motorlan/v1/favorites')
+      if (favorites.data && Array.isArray(favorites.data)) {
+        isFavorite.value = favorites.data.some((f: any) => f.id === props.publicacion.id)
+      }
+    } catch (e) {
+      console.error('Error cargando favoritos', e)
+    }
+  }
+})
+const sellerName = computed(() => props.publicacion.author?.name || 'N/A')
+const sellerRating = computed(() => {
+  const val = Number((props.publicacion as any).author?.acf?.calificacion)
+  return Number.isFinite(val) ? val : null
+})
+const sellerSales = computed(() => {
+  const val = Number((props.publicacion as any).author?.acf?.ventas)
+  return Number.isFinite(val) ? val : null
+})
 const location = computed(() => {
   const { pais, provincia } = props.publicacion.acf
   if (pais && provincia)
@@ -29,56 +56,36 @@ const negotiableLabel = computed(() => {
   return val ? 'Negociable' : 'No negociable'
 })
 
-const categories = computed(() => props.publicacion.categories.map(c => c.name).join(', '))
-const brand = computed(() => props.publicacion.acf.marca?.name || props.publicacion.acf.marca)
-onMounted(async () => {
+const categories = computed(() => props.publicacion.categories.map((c: any) => c.name).join(', '))
+const brand = computed(() =>
+  typeof props.publicacion.acf.marca === 'object'
+    // @ts-ignore
+    ? (props.publicacion.acf.marca as any)?.name
+    : props.publicacion.acf.marca || ''
+)
+
+const productTitleUpper = computed(() => (props.publicacion.title ? props.publicacion.title.toUpperCase() : ''))
+
+const toggleFavorite = async () => {
+  if (!userStore.getIsLoggedIn || isLoadingFavorite.value) {
+    if (!userStore.getIsLoggedIn) loginSnackbar.value = true
+    return
+  }
+
+  isLoadingFavorite.value = true
   try {
-    const saved = JSON.parse(localStorage.getItem(FAVORITES_KEY) || '[]') as number[]
-
-    isFavorite.value = saved.includes(props.publicacion.id)
-  }
-  catch {
-    // ignore
-  }
-
-  try {
-    const user = await $api(`/wp-json/wp/v2/users/${props.publicacion.author_id}`)
-    sellerName.value = user.name
-    const rating = Number(user.acf?.calificacion)
-    sellerRating.value = Number.isFinite(rating) ? rating : null
-  }
-  catch {
-    // ignore
-  }
-
-  if (isLoggedIn.value && isNegotiable.value) {
-    try {
-      const res = await $api(`/wp-json/motorlan/v1/publicaciones/${props.publicacion.id}/offers`)
-      if (res) {
-        offer.value = res
-        offerAmount.value = Number(res.monto)
-        offerMessage.value = res.justificacion || ''
-      }
+    if (isFavorite.value) {
+      await api(`/wp-json/motorlan/v1/favorites/${props.publicacion.id}`, { method: 'DELETE' })
+      isFavorite.value = false
+    } else {
+      await api(`/wp-json/motorlan/v1/favorites`, { method: 'POST', body: { publicacion_id: props.publicacion.id } })
+      isFavorite.value = true
     }
-    catch {
-      // ignore
-    }
+  } catch (e) {
+    console.error('Error al cambiar favorito', e)
+  } finally {
+    isLoadingFavorite.value = false
   }
-})
-
-const toggleFavorite = () => {
-  try {
-    const saved = JSON.parse(localStorage.getItem(FAVORITES_KEY) || '[]') as number[]
-    if (isFavorite.value)
-      localStorage.setItem(FAVORITES_KEY, JSON.stringify(saved.filter(id => id !== props.publicacion.id)))
-    else
-      localStorage.setItem(FAVORITES_KEY, JSON.stringify([...saved, props.publicacion.id]))
-  }
-  catch {
-    // ignore
-  }
-
-  isFavorite.value = !isFavorite.value
 }
 
 const shareSnackbar = ref(false)
@@ -87,7 +94,14 @@ const isOfferDialogOpen = ref(false)
 const offerAmount = ref<number | null>(null)
 const offerMessage = ref('')
 const offer = ref<any | null>(null)
-const isLoggedIn = computed(() => !!useCookie('userData').value)
+
+const userStore = useUserStore()
+const isLoggedIn = computed(() => userStore.getIsLoggedIn)
+const isOwner = computed(() => {
+  if (!userStore.getUser?.id) return false
+  return (props.publicacion as any).author === userStore.getUser.id
+})
+
 const isNegotiable = computed(() => {
   const val = props.publicacion.acf.precio_negociable
   return typeof val === 'string' ? val.toLowerCase() === 'si' : !!val
@@ -115,7 +129,7 @@ const handlePurchase = async (confirmed: boolean) => {
     return
 
   try {
-    const res = await $api('/wp-json/motorlan/v1/purchases', {
+    const res = await api('/wp-json/motorlan/v1/purchases', {
       method: 'POST',
       body: { publicacion_id: props.publicacion.id },
     })
@@ -139,7 +153,7 @@ const submitOffer = async () => {
     return
 
   try {
-    const res = await $api(`/wp-json/motorlan/v1/publicaciones/${props.publicacion.id}/offers`, {
+    const res = await api(`/wp-json/motorlan/v1/publicaciones/${props.publicacion.id}/offers`, {
       method: 'POST',
       body: {
         monto: offerAmount.value,
@@ -158,7 +172,7 @@ const removeOffer = async () => {
   if (!offer.value)
     return
   try {
-    await $api(`/wp-json/motorlan/v1/offers/${offer.value.id}`, { method: 'DELETE' })
+    await api(`/wp-json/motorlan/v1/offers/${offer.value.id}`, { method: 'DELETE' })
     offer.value = null
     offerAmount.value = null
     offerMessage.value = ''
@@ -173,10 +187,18 @@ const removeOffer = async () => {
   <div class="product-details flex-grow-1">
     <div class="d-flex align-center gap-6 mb-4">
       <div
+        v-if="isLoggedIn"
         class="d-flex align-center gap-2 pointer"
         @click="toggleFavorite"
       >
+        <VProgressCircular
+          v-if="isLoadingFavorite"
+          indeterminate
+          size="24"
+          color="error"
+        />
         <VIcon
+          v-else
           :icon="isFavorite ? 'tabler-heart-filled' : 'tabler-heart'"
           color="error"
         />
@@ -198,7 +220,7 @@ const removeOffer = async () => {
     <VCard class="mb-6 detail-card">
       <VCardText>
         <div class="mb-4">
-          <h3 class="text-h6 mb-1">{{ props.publicacion.title }}</h3>
+          <h3 class="text-h6 mb-1">{{ productTitleUpper }}</h3>
           <div class="text-h5 font-weight-bold">{{ price }}</div>
         </div>
         <VRow class="motor-details" dense>
@@ -206,6 +228,12 @@ const removeOffer = async () => {
             <div class="detail-item d-flex align-center">
               <VIcon icon="tabler-arrows-left-right" class="mr-1" />
               <span>{{ negotiableLabel }}</span>
+            </div>
+          </VCol>
+          <VCol cols="12" sm="6">
+            <div class="detail-item d-flex align-center">
+              <VIcon icon="tabler-cube" class="mr-1" />
+              <span>{{ props.publicacion.tipo[0].name || 'N/A' }}</span>
             </div>
           </VCol>
           <VCol cols="12" sm="6">
@@ -241,13 +269,31 @@ const removeOffer = async () => {
               />
             </div>
           </VCol>
-          <VCol v-if="props.publicacion.acf.garantia_motorlan" cols="12" sm="6">
+          <VCol cols="12" sm="6">
             <div class="detail-item d-flex align-center">
-              <VIcon icon="tabler-shield-check" color="success" class="mr-1" />
-              <span class="text-success">Garantía Motorlan</span>
+              <VIcon icon="tabler-box" class="mr-1" />
+              <span>Stock: {{ props.publicacion.acf.stock ?? 'N/A' }}</span>
             </div>
           </VCol>
-        </VRow>
+          <VCol cols="12" sm="6">
+            <div class="detail-item d-flex align-center">
+              <VIcon icon="tabler-calendar-clock" class="mr-1" />
+              <span>Alquiler: {{ props.publicacion.acf.posibilidad_de_alquiler || 'No' }}</span>
+            </div>
+          </VCol>
+          <VCol v-if="sellerSales !== null" cols="12" sm="6">
+            <div class="detail-item d-flex align-center">
+              <VIcon icon="tabler-chart-bar" class="mr-1" />
+              <span>Ventas: {{ sellerSales }}</span>
+            </div>
+          </VCol>
+        <VCol v-if="props.publicacion.acf.garantia_motorlan" cols="12" sm="6">
+          <div class="detail-item d-flex align-center">
+            <VIcon icon="tabler-shield-check" color="success" class="mr-1" />
+            <span class="text-success">Garantía Motorlan</span>
+          </div>
+        </VCol>
+      </VRow>
       </VCardText>
     </VCard>
 
@@ -260,6 +306,7 @@ const removeOffer = async () => {
 
     <div class="d-flex flex-wrap gap-4 mb-6">
       <VBtn
+        v-if="!isOwner"
         color="error"
         class="px-6 flex-grow-1 action-btn"
         @click="isConfirmDialogOpen = true"
@@ -267,7 +314,7 @@ const removeOffer = async () => {
         Comprar
       </VBtn>
       <VBtn
-        v-if="isNegotiable"
+        v-if="isNegotiable && !isOwner"
         variant="outlined"
         color="error"
         class="px-6 flex-grow-1 action-btn"
@@ -276,7 +323,7 @@ const removeOffer = async () => {
         {{ offer ? 'Editar oferta' : 'Hacer una oferta' }}
       </VBtn>
       <VBtn
-        v-if="offer && isNegotiable"
+        v-if="offer && isNegotiable && !isOwner"
         variant="text"
         color="error"
         class="px-6 flex-grow-1 action-btn"

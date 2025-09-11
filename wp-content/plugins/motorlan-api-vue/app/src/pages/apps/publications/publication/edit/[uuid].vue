@@ -860,7 +860,7 @@ const submitGarantia = async () => {
             :title="t('edit_publication.warranty_section_title', 'Garantía')"
           >
             <VCardText v-if="garantiaData && garantiaData.id">
-              <p><strong>{{ t('edit_publication.warranty_status', 'Estado') }}:</strong> {{ garantiaData.status }}</p>
+              <p><strong>{{ t('edit_publication.warranty_status', 'Estado') }}:</strong> {{ garantiaData.garantia_status }}</p>
               <p><strong>{{ t('edit_publication.warranty_pickup_address', 'Dirección de recogida') }}:</strong> {{ garantiaData.direccion_motor }}</p>
               <p><strong>{{ t('edit_publication.warranty_postal_code', 'Código Postal') }}:</strong> {{ garantiaData.cp_motor }}</p>
               <p><strong>{{ t('edit_publication.warranty_transport_agency', 'Agencia de transporte') }}:</strong> {{ garantiaData.agencia_transporte }}</p>

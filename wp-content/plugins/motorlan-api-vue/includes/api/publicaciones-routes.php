@@ -33,6 +33,35 @@ function motorlan_get_post_taxonomy_details( $post_id, $taxonomy ) {
 }
 
 /**
+ * Get post ID by UUID.
+ *
+ * @param string $uuid The UUID.
+ * @return int|null The post ID or null if not found.
+ */
+function motorlan_get_post_id_by_uuid( $uuid ) {
+    if ( empty( $uuid ) ) {
+        return null;
+    }
+
+    $args = array(
+        'post_type'      => 'publicaciones',
+        'meta_key'       => 'uuid',
+        'meta_value'     => $uuid,
+        'posts_per_page' => 1,
+        'post_status'    => 'any',
+        'fields'         => 'ids',
+    );
+
+    $query = new WP_Query( $args );
+
+    if ( ! $query->have_posts() ) {
+        return null;
+    }
+
+    return $query->posts[0];
+}
+
+/**
  * Register custom REST API routes for publicaciones.
  */
 function motorlan_register_publicaciones_rest_routes() {
@@ -121,8 +150,105 @@ function motorlan_register_publicaciones_rest_routes() {
         'callback' => 'motorlan_get_marcas_callback',
         'permission_callback' => 'motorlan_permission_callback_true',
     ) );
+    // -----------------------------
+    // Favoritos endpoints
+    // -----------------------------
+    register_rest_route( $namespace, '/favorites', array(
+        'methods'  => WP_REST_Server::READABLE,
+        'callback' => 'motorlan_get_user_favorites',
+        'permission_callback' => 'motorlan_is_user_authenticated'
+    ) );
+
+    register_rest_route( $namespace, '/favorites', array(
+        'methods'  => WP_REST_Server::CREATABLE,
+        'callback' => 'motorlan_add_user_favorite',
+        'permission_callback' => 'motorlan_is_user_authenticated'
+    ) );
+
+    register_rest_route( $namespace, '/favorites/(?P<id>\\d+)', array(
+        'methods'  => 'DELETE',
+        'callback' => 'motorlan_remove_user_favorite',
+        'permission_callback' => 'motorlan_is_user_authenticated'
+    ) );
 }
 add_action( 'rest_api_init', 'motorlan_register_publicaciones_rest_routes' );
+
+/**
+ * Obtener favoritos del usuario autenticado
+ */
+function motorlan_get_user_favorites(WP_REST_Request $request) {
+    $user_id = get_current_user_id();
+    if (!$user_id) {
+        return new WP_Error('not_logged_in', 'Debes iniciar sesión', ['status' => 401]);
+    }
+
+    $favorites = get_user_meta($user_id, 'motorlan_favorites', true);
+    if (!is_array($favorites)) {
+        $favorites = [];
+    }
+
+    $data = [];
+    foreach ($favorites as $post_id) {
+        $post = get_post($post_id);
+        if ($post && $post->post_type === 'publicaciones') {
+            $data[] = motorlan_get_publicacion_data($post_id);
+        }
+    }
+
+    return new WP_REST_Response(['data' => $data], 200);
+}
+
+/**
+ * Agregar favorito
+ */
+function motorlan_add_user_favorite(WP_REST_Request $request) {
+    $user_id = get_current_user_id();
+    if (!$user_id) {
+        return new WP_Error('not_logged_in', 'Debes iniciar sesión', ['status' => 401]);
+    }
+
+    $params = $request->get_json_params();
+    $post_id = intval($params['publicacion_id'] ?? 0);
+    if (!$post_id || get_post_type($post_id) !== 'publicaciones') {
+        return new WP_Error('invalid_post', 'Publicación inválida', ['status' => 400]);
+    }
+
+    $favorites = get_user_meta($user_id, 'motorlan_favorites', true);
+    if (!is_array($favorites)) {
+        $favorites = [];
+    }
+
+    if (!in_array($post_id, $favorites)) {
+        $favorites[] = $post_id;
+        update_user_meta($user_id, 'motorlan_favorites', $favorites);
+    }
+
+    return new WP_REST_Response(['message' => 'Agregado a favoritos'], 201);
+}
+
+/**
+ * Eliminar favorito
+ */
+function motorlan_remove_user_favorite(WP_REST_Request $request) {
+    $user_id = get_current_user_id();
+    if (!$user_id) {
+        return new WP_Error('not_logged_in', 'Debes iniciar sesión', ['status' => 401]);
+    }
+
+    $post_id = intval($request->get_param('id'));
+    $favorites = get_user_meta($user_id, 'motorlan_favorites', true);
+    if (!is_array($favorites)) {
+        $favorites = [];
+    }
+
+    $favorites = array_filter($favorites, function($fav) use ($post_id) {
+        return intval($fav) !== $post_id;
+    });
+
+    update_user_meta($user_id, 'motorlan_favorites', $favorites);
+
+    return new WP_REST_Response(['message' => 'Eliminado de favoritos'], 200);
+}
 
 
 /**
@@ -210,6 +336,18 @@ function motorlan_get_publicacion_data($post_id) {
         'slug'         => get_post_field('post_name', $post_id),
         'status'       => get_field('publicar_acf', $post_id),
         'author_id'    => get_post_field('post_author', $post_id),
+        'author'       => (function() use ($post_id) {
+            $author_id = get_post_field('post_author', $post_id);
+            $user = get_userdata($author_id);
+            if($user) {
+                return [
+                    'id' => $author_id,
+                    'name' => $user->display_name,
+                    'email' => $user->user_email,
+                ];
+            }
+            return null;
+        })(),
         'categories'   => motorlan_get_post_taxonomy_details($post_id, 'categoria'),
         'tipo'         => motorlan_get_post_taxonomy_details($post_id, 'tipo'),
         'acf'          => array(),
@@ -230,7 +368,7 @@ function motorlan_get_publicacion_data($post_id) {
         'precio_de_venta', 'potencia', 'velocidad', 'par_nominal', 'voltaje',
         'intensidad', 'pais', 'provincia', 'posibilidad_de_alquiler',
         'tipo_de_alimentacion', 'servomotores', 'regulacion_electronica_drivers',
-        'precio_negociable', 'motor_image', 'motor_gallery', 'informe_de_reparacion', 'stock', 'documentacion_adicional'
+        'precio_negociable', 'motor_image', 'motor_gallery', 'informe_de_reparacion', 'stock', 'documentacion', 'documentacion_adjunta'
     ];
 
     foreach ($essential_fields as $field) {
@@ -268,6 +406,11 @@ function motorlan_get_publicacion_data($post_id) {
             }
         }
     }
+
+    $publicacion_item['imagen_destacada'] = get_field('motor_image', $post_id, true);
+    $publicacion_item['acf']['motor_gallery'] = get_field('motor_gallery', $post_id, true);
+    $publicacion_item['acf']['documentacion'] = get_field('documentacion', $post_id, true);
+    $publicacion_item['acf']['documentacion_adjunta'] = get_field('documentacion_adjunta', $post_id, true);
 
     return $publicacion_item;
 }

@@ -18,7 +18,9 @@ const currentStep = ref(1)
 const newPostId = ref<number | null>(null)
 
 const isLoading = ref(false)
-const form = ref(null)
+import type { VForm } from 'vuetify/components'
+
+const form = ref<VForm | null>(null)
 const isFormValid = ref(false)
 
 // Form data
@@ -53,6 +55,7 @@ const postData = ref({
     stock: 1,
     documentacion_adicional: [],
   },
+  author_id: null,
 })
 
 const garantiaData = ref({
@@ -66,9 +69,23 @@ const garantiaData = ref({
 })
 
 const userData = ref<any>(null)
-const marcas = ref([])
-const categories = ref([])
-const tipos = ref([])
+interface Marca { id: number; name: string }
+interface Categoria { term_id: number; name: string }
+interface Tipo { term_id: number; name: string; slug: string }
+interface Documento { nombre: string; archivo: File | number | null }
+interface Imagen { file: File | null; id?: number }
+interface PostData {
+  tipo: string[]
+  acf: {
+    documentacion_adicional: Documento[]
+    motor_gallery: (number | string)[]
+  }
+  [key: string]: any
+}
+
+const marcas = ref<Marca[]>([])
+const categories = ref<Categoria[]>([])
+const tipos = ref<Tipo[]>([])
 const motorImageFile = ref([])
 const motorGalleryFiles = ref([])
 
@@ -201,7 +218,7 @@ const handleFileUpload = (event: Event, index: number) => {
 }
 
 const createPostAndContinue = async () => {
-  const { valid } = await form.value.validate()
+  const { valid } = await form.value?.validate() ?? { valid: false }
   if (!valid) {
     showToast(t('add_publication.toasts.required_fields_error'), 'error')
 
@@ -241,7 +258,10 @@ const createPostAndContinue = async () => {
         doc.archivo = fileId
       }
     }
-    console.log('postData.value', postData.value)
+    // Insertar id de usuario como autor
+    if (userData.value?.id) {
+      postData.value.author_id = userData.value.id
+    }
 
     const response = await useApi<any>(apiEndpoint, {
       method: 'POST',

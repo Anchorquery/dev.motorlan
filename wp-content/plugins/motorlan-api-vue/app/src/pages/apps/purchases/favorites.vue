@@ -27,7 +27,7 @@ const updateOptions = (options: any) => {
   orderBy.value = options.sortBy[0]?.order
 }
 
-const { data: favoritesData, execute: fetchFavorites } = await useApi<any>(createUrl('/wp-json/motorlan/v1/purchases/favorites', {
+const { data: favoritesData, execute: fetchFavorites } = await useApi<any>(createUrl('/wp-json/motorlan/v1/favorites', {
   query: {
     page,
     per_page: itemsPerPage,
@@ -38,7 +38,7 @@ const { data: favoritesData, execute: fetchFavorites } = await useApi<any>(creat
 }))
 
 const favorites = computed((): Publicacion[] => favoritesData.value?.data || [])
-const totalFavorites = computed(() => favoritesData.value?.pagination.total || 0)
+const totalFavorites = computed(() => favoritesData.value?.data?.length || 0)
 
 const resolveStatus = (status: string) => {
   if (status === 'publish')
@@ -55,7 +55,7 @@ const resolveStatus = (status: string) => {
 
 const removeFavorite = async (motorId: number) => {
   try {
-    await $api(`/wp-json/motorlan/v1/purchases/favorites/${motorId}`, { method: 'DELETE' })
+    await $api(`/wp-json/motorlan/v1/favorites/${motorId}`, { method: 'DELETE' })
     fetchFavorites()
   }
   catch (error) {

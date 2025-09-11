@@ -18,17 +18,24 @@ const { data, isFetching } = await useApi<any>(
   createUrl(`/wp-json/motorlan/v1/publicaciones/${slug}`),
 ).get().json()
 
-const publicacion = computed(() => data.value?.data as Publicacion | undefined)
+const publicacion = computed(() => {
+  if (!data.value?.data)
+    return undefined
+
+  return {
+    ...data.value.data,
+    imagen_destacada: data.value.imagen_destacada,
+  } as Publicacion
+})
 
 const docs = computed(() => {
-  const raw = publicacion.value?.acf?.documentacion || publicacion.value?.acf?.documentacion_adjunta
-  if (!raw)
+  const raw = publicacion.value?.acf?.documentacion_adicional
+  if (!raw || !Array.isArray(raw))
     return []
-  const arr = Array.isArray(raw) ? raw : [raw]
 
-  return arr
-    .filter((d: any) => d && d.url)
-    .map((d: any) => ({ title: d.title || 'Documento', url: d.url }))
+  return raw
+    .filter((d: any) => d && d.archivo && d.archivo.url)
+    .map((d: any) => ({ title: d.nombre || d.archivo.title || 'Documento', url: d.archivo.url }))
 })
 
 const title = computed(() => {
@@ -39,7 +46,7 @@ const title = computed(() => {
     publicacion.value.acf.velocidad ? `${publicacion.value.acf.velocidad} rpm` : null,
   ].filter(Boolean)
 
-  return parts.join(' ')
+  return parts.join(' ').toUpperCase()
 })
 </script>
 

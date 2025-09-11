@@ -51,8 +51,54 @@ function motorlan_register_garantia_rest_routes() {
             ),
         ),
     ) );
+
+    register_rest_route( $namespace, '/garantias/publicacion/(?P<uuid>[a-zA-Z0-9-]+)', array(
+        'methods'             => WP_REST_Server::READABLE,
+        'callback'            => 'motorlan_get_garantia_by_publicacion_uuid',
+        'permission_callback' => 'motorlan_permission_callback_true',
+    ) );
 }
 add_action( 'rest_api_init', 'motorlan_register_garantia_rest_routes' );
+
+function motorlan_get_garantia_by_publicacion_uuid( WP_REST_Request $request ) {
+    $uuid = $request->get_param('uuid');
+    $post_id = motorlan_get_post_id_by_uuid($uuid);
+
+    if ( ! $post_id ) {
+        return new WP_Error( 'not_found', 'Publicación no encontrada', array( 'status' => 404 ) );
+    }
+
+    $args = array(
+        'post_type' => 'garantia',
+        'meta_key' => 'motor_id',
+        'meta_value' => $post_id,
+        'posts_per_page' => 1,
+        'post_status' => 'publish',
+    );
+
+    $query = new WP_Query( $args );
+
+    if ( ! $query->have_posts() ) {
+        return new WP_REST_Response( null, 200 );
+    }
+
+    $query->the_post();
+    $garantia_id = get_the_ID();
+    
+    $garantia_data = array(
+        'id' => $garantia_id,
+        'garantia_status' => get_field('garantia_status', $garantia_id),
+        'direccion_motor' => get_field('direccion_motor', $garantia_id),
+        'cp_motor' => get_field('cp_motor', $garantia_id),
+        'agencia_transporte' => get_field('agencia_transporte', $garantia_id),
+        'modalidad_pago' => get_field('modalidad_pago', $garantia_id),
+        'comentarios' => get_field('comentarios', $garantia_id),
+    );
+
+    wp_reset_postdata();
+
+    return new WP_REST_Response( $garantia_data, 200 );
+}
 
 /**
  * Callback to create a new garantia item.
@@ -86,22 +132,23 @@ function motorlan_create_garantia_item( WP_REST_Request $request ) {
     }
 
     // Update meta fields
-    update_post_meta( $garantia_id, 'motor_id', $motor_id );
+    update_field( 'motor_id', $motor_id, $garantia_id );
+    update_field( 'garantia_status', 'pendiente', $garantia_id );
 
     if ( isset( $params['agencia_transporte'] ) ) {
-        update_post_meta( $garantia_id, 'agencia_transporte', $params['agencia_transporte'] );
+        update_field( 'agencia_transporte', $params['agencia_transporte'], $garantia_id );
     }
     if ( isset( $params['modalidad_pago'] ) ) {
-        update_post_meta( $garantia_id, 'modalidad_pago', $params['modalidad_pago'] );
+        update_field( 'modalidad_pago', $params['modalidad_pago'], $garantia_id );
     }
     if ( isset( $params['direccion_motor'] ) ) {
-        update_post_meta( $garantia_id, 'direccion_motor', $params['direccion_motor'] );
+        update_field( 'direccion_motor', $params['direccion_motor'], $garantia_id );
     }
     if ( isset( $params['cp_motor'] ) ) {
-        update_post_meta( $garantia_id, 'cp_motor', $params['cp_motor'] );
+        update_field( 'cp_motor', $params['cp_motor'], $garantia_id );
     }
     if ( isset( $params['comentarios'] ) ) {
-        update_post_meta( $garantia_id, 'comentarios', $params['comentarios'] );
+        update_field( 'comentarios', $params['comentarios'], $garantia_id );
     }
 
     $response_data = array(
