@@ -35,7 +35,6 @@ export default [
     icon: { icon: 'tabler-user' },
     children: [
       { title: 'Cuenta', to: { name: 'apps-user-account' } },
-      { title: 'Empresa', to: { name: 'apps-user-company' } },
       { title: 'Estadísticas', to: { name: 'apps-user-stats' } },
     ],
   },

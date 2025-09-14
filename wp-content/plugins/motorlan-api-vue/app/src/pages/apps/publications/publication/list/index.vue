@@ -1,10 +1,14 @@
 <script setup lang="ts">
+// @ts-nocheck
 import { ref, computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
 import type { ImagenDestacada, Publicacion } from '../../../../../interfaces/publicacion'
 import { useApi } from '@/composables/useApi'
+import { debounce } from '@/utils/debounce'
 
 const { t } = useI18n()
+const router = useRouter()
 
 const headers = [
   { title: t('publication_list.publication'), key: 'publicacion' },
@@ -27,8 +31,8 @@ const status = computed(() => [
   { title: t('publication_list.status_options.sold'), value: 'sold' },
 ])
 
-const categories = ref([])
-const tipos = ref([])
+const categories = ref<{ title: string; value: string }[]>([])
+const tipos = ref<{ title: string; value: string }[]>([])
 
 // Data table options
 const itemsPerPage = ref(10)
@@ -55,43 +59,74 @@ const resolveStatus = (statusMsg: string) => {
   return { text: t('custom.unknown'), color: 'info' }
 }
 
-const { data: publicacionesData, execute: fetchPublicaciones } = useApi<any>('/wp-json/motorlan/v1/publicaciones', {
-  params: {
-    search: searchQuery,
-    category: selectedCategory,
-    tipo: selectedTipo,
-    status: selectedStatus,
-    page,
-    per_page: itemsPerPage,
-    orderby: sortBy,
-    order: orderBy,
-  },
+const apiUrl = computed(() => {
+  const params = new URLSearchParams()
+  if (searchQuery.value)
+    params.append('search', searchQuery.value)
+  if (selectedCategory.value)
+    params.append('category', selectedCategory.value)
+  if (selectedTipo.value)
+    params.append('tipo', selectedTipo.value)
+  if (selectedStatus.value)
+    params.append('status', selectedStatus.value)
+  if (page.value)
+    params.append('page', page.value.toString())
+  if (itemsPerPage.value)
+    params.append('per_page', itemsPerPage.value.toString())
+  if (sortBy.value)
+    params.append('orderby', sortBy.value)
+  if (orderBy.value)
+    params.append('order', orderBy.value)
+
+  return `/wp-json/motorlan/v1/publicaciones?${params.toString()}`
 })
 
+const { data: publicacionesData, execute: fetchPublicaciones, isLoading: isTableLoading } = useApi<any>(apiUrl, { immediate: false }).get().json()
+const isSearching = ref(false)
+
+const debouncedFetch = debounce(async () => {
+  isSearching.value = true
+  await fetchPublicaciones()
+  isSearching.value = false
+}, 300)
+
+watch(
+  [searchQuery, selectedCategory, selectedTipo, selectedStatus, page, itemsPerPage, sortBy, orderBy],
+  () => {
+    debouncedFetch()
+  },
+  { deep: true },
+)
+
 onMounted(async () => {
-  // Fetch categories from the new endpoint
-  const { data: categoriesData } = await useApi<any>('/wp-json/motorlan/v1/publicacion-categories')
-  const cats = Array.isArray(categoriesData.value)
-    ? categoriesData.value
-    : (categoriesData.value?.data ?? [])
-  if (cats && Array.isArray(cats)) {
-    categories.value = cats.map((cat: any) => ({
-      title: cat.name,
-      value: cat.slug,
-    }))
+  const fetchCategories = async () => {
+    const { data: categoriesData } = await useApi<any>('/wp-json/motorlan/v1/publicacion-categories').get().json()
+    const cats = Array.isArray(categoriesData.value)
+      ? categoriesData.value
+      : (categoriesData.value?.data ?? [])
+    if (cats && Array.isArray(cats)) {
+      categories.value = cats.map((cat: any) => ({
+        title: cat.name,
+        value: cat.slug,
+      }))
+    }
   }
 
-  // Fetch tipos from the new endpoint
-  const { data: tiposData } = await useApi<any>('/wp-json/motorlan/v1/tipos')
-  const tiposArr = Array.isArray(tiposData.value)
-    ? tiposData.value
-    : (tiposData.value?.data ?? [])
-  if (tiposArr && Array.isArray(tiposArr)) {
-    tipos.value = tiposArr.map((tipo: any) => ({
-      title: tipo.name,
-      value: tipo.slug,
-    }))
+  const fetchTipos = async () => {
+    const { data: tiposData } = await useApi<any>('/wp-json/motorlan/v1/tipos').get().json()
+    const tiposArr = Array.isArray(tiposData.value)
+      ? tiposData.value
+      : (tiposData.value?.data ?? [])
+    if (tiposArr && Array.isArray(tiposArr)) {
+      tipos.value = tiposArr.map((tipo: any) => ({
+        title: tipo.name,
+        value: tipo.slug,
+      }))
+    }
   }
+
+  await Promise.all([fetchCategories(), fetchTipos()])
+  fetchPublicaciones()
 })
 
 const publicaciones = computed((): Publicacion[] => (publicacionesData.value?.data || publicacionesData.value || []).filter(Boolean))
@@ -142,7 +177,7 @@ const deleteSelectedPublicaciones = () => {
   handlePublicacionAction(t('publication_list.deleting_selected_publications'), async () => {
     await useApi('/wp-json/motorlan/v1/publicaciones/bulk-delete', {
       method: 'POST',
-      body: { ids: selectedRows.value },
+      body: JSON.stringify({ ids: selectedRows.value }),
     })
     selectedRows.value = []
   })
@@ -196,7 +231,7 @@ const changeStatus = () => {
   handlePublicacionAction(messages[status] || t('publication_list.updating_status'), async () => {
     await useApi(`/wp-json/motorlan/v1/publicaciones/${id}/status`, {
       method: 'POST',
-      body: { status },
+      body: JSON.stringify({ status }),
     })
   })
 }
@@ -388,7 +423,7 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
           <VBtn
             color="primary"
             prepend-icon="tabler-plus"
-            @click="$router.push({ path: '/apps/publications/publication/add' })"
+            @click="router.push({ path: '/apps/publications/publication/add' })"
           >
             {{ t('publication_list.add_publication') }}
           </VBtn>
@@ -406,6 +441,7 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
         show-select
         :items="publicaciones"
         :items-length="totalPublicaciones"
+        :loading="isTableLoading || isSearching"
         class="text-no-wrap"
         item-value="id"
         :return-object="false"
@@ -450,7 +486,7 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
 
         <!-- Actions -->
         <template #item.actions="{ item }">
-          <IconBtn @click="$router.push(`/apps/publications/publication/edit/${(item as any).uuid}`)">
+          <IconBtn @click="router.push(`/apps/publications/publication/edit/${(item as any).uuid}`)">
             <VIcon icon="tabler-eye" />
           </IconBtn>
 

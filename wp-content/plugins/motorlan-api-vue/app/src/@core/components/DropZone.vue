@@ -53,12 +53,12 @@ function onDrop(DroppedFiles: File[] | null) {
     fileData.value = newFiles
 }
 
-onChange((selectedFiles: any) => {
+onChange((selectedFiles: FileList | null) => {
   if (!selectedFiles)
     return
 
   const filesArray = Array.from(selectedFiles)
-  const newFiles = filesArray.map((file: any) => ({
+  const newFiles = filesArray.map((file: File) => ({
     file,
     url: useObjectUrl(file).value ?? '',
   }))
@@ -119,7 +119,7 @@ defineExpose({
         >
           <VRow class="match-height w-100">
             <template
-              v-for="(item, index) in fileData"
+              v-for="(item, index) in fileData as FileData[]"
               :key="index"
             >
               <VCol

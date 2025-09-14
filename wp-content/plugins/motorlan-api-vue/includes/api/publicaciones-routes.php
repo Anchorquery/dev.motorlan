@@ -559,6 +559,13 @@ function motorlan_duplicate_publicacion(WP_REST_Request $request) {
         }
     }
 
+    // Duplicate taxonomies
+    $taxonomies = get_object_taxonomies($original_post->post_type);
+    foreach ($taxonomies as $taxonomy) {
+        $post_terms = wp_get_object_terms($original_post_id, $taxonomy, array('fields' => 'slugs'));
+        wp_set_object_terms($new_post_id, $post_terms, $taxonomy, false);
+    }
+
     // Assign a new UUID and set the status to draft
     update_field('uuid', wp_generate_uuid4(), $new_post_id);
     update_field('publicar_acf', 'draft', $new_post_id);
@@ -659,8 +666,8 @@ function motorlan_get_publicaciones_callback( $request ) {
     );
 
     // Add search parameter
-    if ( ! empty( $params['s'] ) ) {
-        $args['s'] = sanitize_text_field( $params['s'] );
+    if ( ! empty( $params['search'] ) ) {
+        $args['s'] = sanitize_text_field( $params['search'] );
     }
 
     // Add sorting parameters

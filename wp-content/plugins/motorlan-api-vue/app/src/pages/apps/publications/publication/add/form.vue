@@ -2,9 +2,10 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { useToast } from '@/composables/useToast'
-import { useApi } from '@/composables/useApi'
-import { requiredValidator } from '@/@core/utils/validators'
+import { useToast } from '../../../../../composables/useToast'
+import { useApi } from '../../../../../composables/useApi'
+import api from '../../../../../services/api'
+import { requiredValidator } from '../../../../../@core/utils/validators'
 
 const { showToast } = useToast()
 const router = useRouter()
@@ -24,7 +25,40 @@ const form = ref<VForm | null>(null)
 const isFormValid = ref(false)
 
 // Form data
-const postData = ref({
+const postData = ref<{
+  title: string
+  status: string
+  categories: number[]
+  tipo: number[]
+  acf: {
+    [key: string]: any
+    marca: null | number
+    tipo_o_referencia: string
+    motor_image: null | number
+    motor_gallery: (number | string)[]
+    potencia: null | number
+    velocidad: null | number
+    par_nominal: null | number
+    voltaje: null | number
+    intensidad: null | number
+    pais: null | string
+    provincia: string
+    estado_del_articulo: string
+    informe_de_reparacion: null | number
+    descripcion: string
+    posibilidad_de_alquiler: string
+    tipo_de_alimentacion: string
+    servomotores: boolean
+    regulacion_electronica_drivers: boolean
+    precio_de_venta: null | number
+    precio_negociable: string
+    documentacion_adjunta: null | number
+    publicar_acf: string
+    stock: number
+    documentacion_adicional: Documento[]
+  }
+  author_id: null | number
+}>({
   title: '',
   status: 'publish',
   categories: [],
@@ -58,7 +92,15 @@ const postData = ref({
   author_id: null,
 })
 
-const garantiaData = ref({
+const garantiaData = ref<{
+  motor_id: number | null
+  is_same_address: string
+  direccion_motor: string
+  cp_motor: string
+  agencia_transporte: string
+  modalidad_pago: string
+  comentarios: string
+}>({
   motor_id: null,
   is_same_address: 'yes',
   direccion_motor: '',
@@ -69,25 +111,21 @@ const garantiaData = ref({
 })
 
 const userData = ref<any>(null)
-interface Marca { id: number; name: string }
-interface Categoria { term_id: number; name: string }
-interface Tipo { term_id: number; name: string; slug: string }
-interface Documento { nombre: string; archivo: File | number | null }
-interface Imagen { file: File | null; id?: number }
-interface PostData {
-  tipo: string[]
-  acf: {
-    documentacion_adicional: Documento[]
-    motor_gallery: (number | string)[]
-  }
-  [key: string]: any
+
+interface FileData {
+  file: File
+  url: string
 }
+interface Marca { id: number; name: string; title: string; value: number }
+interface Categoria { term_id: number; name: string; title: string; value: number }
+interface Tipo { term_id: number; name: string; slug: string; title: string; value: number }
+interface Documento { nombre: string; archivo: File | number | null }
 
 const marcas = ref<Marca[]>([])
 const categories = ref<Categoria[]>([])
 const tipos = ref<Tipo[]>([])
-const motorImageFile = ref([])
-const motorGalleryFiles = ref([])
+const motorImageFile = ref<FileData[]>([])
+const motorGalleryFiles = ref<FileData[]>([])
 
 const conditionOptions = computed(() => [
   { title: t('add_publication.condition_options.new'), value: 'new' },
@@ -104,9 +142,9 @@ const countryOptions = computed(() => [
 const pageTitle = computed(() => {
   const baseTitle = t('add_publication.title')
   if (publicationType.value && tipos.value.length) {
-    const selectedType = tipos.value.find((t: any) => t.slug === publicationType.value)
+    const selectedType = tipos.value.find(t => t.slug === publicationType.value)
     if (selectedType)
-      return `${baseTitle}: ${selectedType.title}`
+      return `${baseTitle}: ${selectedType.name}`
   }
 
   return baseTitle
@@ -137,35 +175,41 @@ onMounted(async () => {
       tiposResponse,
       userResponse,
     ] = await Promise.all([
-      api('/wp-json/motorlan/v1/marcas'),
-      api('/wp-json/motorlan/v1/publicacion-categories'),
-      api('/wp-json/motorlan/v1/tipos'),
-      api('/wp-json/wp/v2/users/me?context=edit'),
+      useApi<Marca[]>('/wp-json/motorlan/v1/marcas'),
+      useApi<Categoria[]>('/wp-json/motorlan/v1/publicacion-categories'),
+      useApi<Tipo[]>('/wp-json/motorlan/v1/tipos'),
+      useApi<any>('/wp-json/wp/v2/users/me?context=edit'),
     ])
 
     if (marcasResponse && marcasResponse.data.value) {
-      marcas.value = marcasResponse.data.value.map((marca: { name: any; id: any }) => ({
+      marcas.value = marcasResponse.data.value.map(marca => ({
+        id: marca.id,
+        name: marca.name,
         title: marca.name,
         value: marca.id,
       }))
     }
 
     if (categoriesResponse && categoriesResponse.data.value) {
-      categories.value = categoriesResponse.data.value.map((category: { name: any; term_id: any }) => ({
+      categories.value = categoriesResponse.data.value.map(category => ({
+        term_id: category.term_id,
+        name: category.name,
         title: category.name,
         value: category.term_id,
       }))
     }
 
     if (tiposResponse && tiposResponse.data.value) {
-      tipos.value = tiposResponse.data.value.map((tipo: { name: any; term_id: any; slug: string }) => ({
+      tipos.value = tiposResponse.data.value.map(tipo => ({
+        term_id: tipo.term_id,
+        name: tipo.name,
+        slug: tipo.slug,
         title: tipo.name,
         value: tipo.term_id,
-        slug: tipo.slug,
       }))
     }
 
-    if (userResponse && userResponse.data.value)
+    if (userResponse && userResponse.data)
       userData.value = userResponse.data.value
   }
   catch (error) {
@@ -175,7 +219,7 @@ onMounted(async () => {
 
 watch(tipos, newTipos => {
   if (newTipos.length && publicationType.value) {
-    const selectedType = newTipos.find((t: any) => t.slug === publicationType.value)
+    const selectedType = newTipos.find(t => t.slug === publicationType.value)
     if (selectedType)
       postData.value.tipo = [selectedType.value]
   }
@@ -212,9 +256,11 @@ const removeDocument = (index: number) => {
 }
 
 const handleFileUpload = (event: Event, index: number) => {
-  const file = (event.target as HTMLInputElement).files?.[0]
-  if (file)
+  const target = event.target as HTMLInputElement
+  if (target.files && target.files[0]) {
+    const file = target.files[0]
     postData.value.acf.documentacion_adicional[index].archivo = file
+  }
 }
 
 const createPostAndContinue = async () => {
@@ -272,7 +318,7 @@ const createPostAndContinue = async () => {
     showToast(t('add_publication.toasts.post_created_success'), 'success')
 
     const tipoTerm = tipos.value.find(t => t.value === postData.value.tipo[0])
-    if (tipoTerm && tipoTerm.title === 'Otro Repuesto')
+    if (tipoTerm && tipoTerm.name === 'Otro Repuesto')
       router.push('/apps/publications/publication/list')
 
     else
@@ -336,7 +382,7 @@ const submitGarantia = async () => {
           {{ pageTitle }}
         </h4>
         <span
-          v-if="postData.tipo[0] !== 'otro_repuesto'"
+          v-if="postData.tipo[0] !== 3"
           class="text-body-1"
         >{{ t('add_publication.step', { currentStep }) }}</span>
       </div>
@@ -671,7 +717,7 @@ const submitGarantia = async () => {
                 />
                 <VFileInput
                   :label="t('add_publication.media.upload_file')"
-                  @change="event => handleFileUpload(event, index)"
+                  @change="(event: Event) => handleFileUpload(event, index)"
                 />
                 <VBtn
                   icon

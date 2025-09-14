@@ -47,11 +47,34 @@ function get_user_profile_data() {
 
 function update_user_profile_data(WP_REST_Request $request) {
     $user_id = get_current_user_id();
-    $params = $request->get_json_params();
+
+    // WordPress handles multipart/form-data by default with REST API.
+    // We can get text fields from get_param and files from get_file_params.
+    $params = $request->get_params();
+    $files = $request->get_file_params();
+
+    // Handle avatar upload
+    if (!empty($files['avatar'])) {
+        require_once(ABSPATH . 'wp-admin/includes/image.php');
+        require_once(ABSPATH . 'wp-admin/includes/file.php');
+        require_once(ABSPATH . 'wp-admin/includes/media.php');
+
+        $attachment_id = media_handle_upload('avatar', 0);
+
+        if (is_wp_error($attachment_id)) {
+            return new WP_REST_Response(['message' => $attachment_id->get_error_message()], 400);
+        }
+        
+        // Save avatar URL in user meta (or use a dedicated avatar plugin's function)
+        update_user_meta($user_id, 'avatar_attachment_id', $attachment_id);
+    }
+
+    // The parameters might be sent as JSON strings inside the form data, so we decode them.
+    $personal_data = isset($params['personal_data']) ? json_decode($params['personal_data'], true) : null;
+    $company_data = isset($params['company_data']) ? json_decode($params['company_data'], true) : null;
 
     // Update personal data
-    if (isset($params['personal_data'])) {
-        $personal_data = $params['personal_data'];
+    if ($personal_data) {
         wp_update_user([
             'ID' => $user_id,
             'first_name' => sanitize_text_field($personal_data['nombre']),
@@ -62,12 +85,16 @@ function update_user_profile_data(WP_REST_Request $request) {
     }
 
     // Update company data
-    if (isset($params['company_data'])) {
-        $company_data = $params['company_data'];
+    if ($company_data) {
         foreach ($company_data as $key => $value) {
             update_user_meta($user_id, 'company_' . $key, sanitize_text_field($value));
         }
     }
+    
+    $response_data = [
+        'message' => 'Profile updated successfully',
+        'avatar' => get_avatar_url($user_id)
+    ];
 
-    return new WP_REST_Response(['message' => 'Profile updated successfully'], 200);
+    return new WP_REST_Response($response_data, 200);
 }

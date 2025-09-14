@@ -46,6 +46,33 @@ acf_add_local_field_group(array(
             'return_format' => 'd/m/Y',
             'first_day' => 1,
         ),
+        array(
+            'key' => 'field_compra_vendedor',
+            'label' => 'Vendedor',
+            'name' => 'vendedor',
+            'type' => 'user',
+            'required' => 1,
+        ),
+        array(
+            'key' => 'field_compra_precio',
+            'label' => 'Precio de Compra',
+            'name' => 'precio_compra',
+            'type' => 'number',
+            'required' => 1,
+        ),
+        array(
+            'key' => 'field_compra_estado',
+            'label' => 'Estado',
+            'name' => 'estado',
+            'type' => 'select',
+            'choices' => array(
+                'pending' => 'Pendiente',
+                'completed' => 'Completada',
+                'cancelled' => 'Cancelada',
+            ),
+            'default_value' => 'pending',
+            'required' => 1,
+        ),
     ),
     'location' => array(
         array(
