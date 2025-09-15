@@ -111,7 +111,7 @@ acf_add_local_field_group(array(
             'name' => 'publicacion',
             'type' => 'post_object',
             'post_type' => array(
-                0 => 'publicaciones',
+                0 => 'publicacion',
             ),
             'allow_null' => 0,
             'multiple' => 0,

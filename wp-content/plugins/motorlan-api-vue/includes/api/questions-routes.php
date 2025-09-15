@@ -75,11 +75,43 @@ function motorlan_register_question_rest_routes() {
 
     register_rest_route( $namespace, '/user/questions', array(
         'methods'  => WP_REST_Server::READABLE,
-        'callback' => 'motorlan_get_user_questions_callback',
+        'callback' => 'motorlan_get_received_questions_callback',
+        'permission_callback' => 'motorlan_is_user_authenticated',
+    ) );
+
+    register_rest_route( $namespace, '/user/publications-list', array(
+        'methods'  => WP_REST_Server::READABLE,
+        'callback' => 'motorlan_get_user_publications_list_callback',
         'permission_callback' => 'motorlan_is_user_authenticated',
     ) );
 }
 add_action( 'rest_api_init', 'motorlan_register_question_rest_routes' );
+
+function motorlan_get_user_publications_list_callback( WP_REST_Request $request ) {
+    $user_id = get_current_user_id();
+    if ( ! $user_id ) {
+        return new WP_Error( 'rest_not_logged_in', 'Sorry, you are not allowed to do that.', array( 'status' => 401 ) );
+    }
+
+    $args = array(
+        'post_type'      => 'publicacion',
+        'posts_per_page' => -1,
+        'author'         => $user_id,
+        'fields'         => 'ids',
+    );
+
+    $user_publications = get_posts( $args );
+
+    $publications_list = array();
+    foreach ( $user_publications as $pub_id ) {
+        $publications_list[] = array(
+            'value' => $pub_id,
+            'title' => get_the_title( $pub_id ),
+        );
+    }
+
+    return new WP_REST_Response( $publications_list, 200 );
+}
 
 function motorlan_get_questions_callback( WP_REST_Request $request ) {
     $publicacion_id = (int) $request['publicacion_id'];
@@ -156,6 +188,7 @@ function motorlan_answer_question_callback( WP_REST_Request $request ) {
     $respuesta   = sanitize_text_field( $request->get_param( 'respuesta' ) );
 
     update_field( 'respuesta', $respuesta, $question_id );
+    update_field( 'answer_date', current_time( 'mysql' ), $question_id );
 
     return new WP_REST_Response( array( 'success' => true ), 200 );
 }
@@ -178,7 +211,7 @@ function motorlan_can_user_answer_question( WP_REST_Request $request ) {
     return $user_id == $publication_author_id;
 }
 
-function motorlan_get_user_questions_callback( WP_REST_Request $request ) {
+function motorlan_get_received_questions_callback( WP_REST_Request $request ) {
     $user_id = get_current_user_id();
     if ( ! $user_id ) {
         return new WP_Error( 'rest_not_logged_in', 'Sorry, you are not allowed to do that.', array( 'status' => 401 ) );
@@ -188,19 +221,6 @@ function motorlan_get_user_questions_callback( WP_REST_Request $request ) {
     $per_page = isset( $params['per_page'] ) ? (int) $params['per_page'] : 10;
     $page = isset( $params['page'] ) ? (int) $params['page'] : 1;
 
-    $args = array(
-        'post_type'      => 'publicacion',
-        'posts_per_page' => -1,
-        'author'         => $user_id,
-        'fields'         => 'ids',
-    );
-
-    $user_publications = get_posts( $args );
-
-    if ( empty( $user_publications ) ) {
-        return new WP_REST_Response( array( 'data' => [], 'pagination' => array( 'total' => 0 ) ), 200 );
-    }
-
     $questions_args = array(
         'post_type'      => 'pregunta',
         'posts_per_page' => $per_page,
@@ -208,15 +228,22 @@ function motorlan_get_user_questions_callback( WP_REST_Request $request ) {
         'meta_query'     => array(
             'relation' => 'AND',
             array(
-                'key'     => 'publicacion',
-                'value'   => $user_publications,
-                'compare' => 'IN',
+                'key'     => 'publication_owner',
+                'value'   => $user_id,
+                'compare' => '=',
             ),
         ),
     );
 
     if ( ! empty( $params['search'] ) ) {
         $questions_args['s'] = sanitize_text_field( $params['search'] );
+    }
+
+    if ( ! empty( $params['publication_id'] ) ) {
+        $questions_args['meta_query'][] = array(
+            'key'   => 'publicacion',
+            'value' => (int) $params['publication_id'],
+        );
     }
 
     if ( ! empty( $params['status'] ) ) {
@@ -253,15 +280,26 @@ function motorlan_get_user_questions_callback( WP_REST_Request $request ) {
         while ( $query->have_posts() ) {
             $query->the_post();
             $qid = get_the_ID();
+            $question_post = get_post( $qid );
             $publicacion_id = get_field( 'publicacion', $qid );
             $publicacion = get_post( $publicacion_id );
             $formateada = format_publication_response( $publicacion );
+            $respuesta = get_field( 'respuesta', $qid );
+            $user_field = get_field( 'usuario', $qid );
+            $user_id = is_array($user_field) ? $user_field['ID'] : $user_field;
+            $user_data = get_userdata( $user_id );
+            $user_display_name = $user_data ? $user_data->display_name : 'Usuario desconocido';
+
+            $answer_date = get_field( 'answer_date', $qid );
 
             $questions[] = array(
-                'id'          => $qid,
-                'pregunta'    => get_field( 'pregunta', $qid ),
-                'respuesta'   => get_field( 'respuesta', $qid ),
-                'publicacion' => $formateada,
+                'id'            => $qid,
+                'pregunta'      => get_field( 'pregunta', $qid ),
+                'respuesta'     => $respuesta,
+                'motor'         => $formateada,
+                'question_date' => $question_post->post_date,
+                'user_name'     => $user_display_name,
+                'answer_date'   => $answer_date,
             );
         }
         wp_reset_postdata();

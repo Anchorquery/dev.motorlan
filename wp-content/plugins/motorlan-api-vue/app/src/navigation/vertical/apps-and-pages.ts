@@ -4,7 +4,7 @@ export default [
     to: { name: 'store' },
     icon: { icon: 'tabler-shopping-cart' },
   },
-  { heading: 'Apps & Pages' },
+  // { heading: 'Apps & Pages' },
   {
     title: 'Publicaciones',
     icon: { icon: 'tabler-file-text' },

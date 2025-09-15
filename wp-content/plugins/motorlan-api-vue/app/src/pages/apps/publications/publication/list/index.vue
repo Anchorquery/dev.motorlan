@@ -81,7 +81,7 @@ const apiUrl = computed(() => {
   return `/wp-json/motorlan/v1/publicaciones?${params.toString()}`
 })
 
-const { data: publicacionesData, execute: fetchPublicaciones, isLoading: isTableLoading } = useApi<any>(apiUrl, { immediate: false }).get().json()
+const { data: publicacionesData, execute: fetchPublicaciones, isFetching: isTableLoading } = useApi<any>(apiUrl, { immediate: false }).get().json()
 const isSearching = ref(false)
 
 const debouncedFetch = debounce(async () => {
@@ -447,13 +447,6 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
         :return-object="false"
         @update:options="updateOptions"
       >
-       <template #loading>
-         <VProgressLinear
-           height="6"
-           indeterminate
-           color="primary"
-         />
-       </template>
        <!-- publicacion  -->
        <template #item.publicacion="{ item }">
          <div class="d-flex align-center gap-x-4">

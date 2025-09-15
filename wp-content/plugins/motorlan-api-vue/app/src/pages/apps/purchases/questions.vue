@@ -1,15 +1,28 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+import { ref, computed, onMounted, unref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import type { ImagenDestacada } from '../../../../../interfaces/publicacion'
+import type { ImagenDestacada } from '@/interfaces/publicacion'
+import type { Question } from '@/interfaces/question'
+import type { Pagination } from '@/interfaces/pagination'
+import { useApi } from '@/composables/useApi'
 
 const router = useRouter()
+const { t } = useI18n()
+
+interface QuestionsData {
+  data: Question[]
+  pagination: Pagination
+}
 
 const headers = [
-  { title: 'Publicacion', key: 'motor' },
-  { title: 'Pregunta', key: 'pregunta' },
-  { title: 'Respuesta', key: 'respuesta' },
-  { title: 'Estado', key: 'estado' },
-  { title: 'Acciones', key: 'actions', sortable: false },
+  { title: t('questions.publication'), key: 'motor' },
+  { title: t('questions.question'), key: 'pregunta' },
+  { title: t('User'), key: 'user_name' },
+  { title: t('questions.question_date'), key: 'question_date' },
+  { title: t('questions.answer_date'), key: 'answer_date' },
+  { title: t('questions.status'), key: 'estado' },
+  { title: t('questions.actions'), key: 'actions', sortable: false },
 ]
 
 const searchQuery = ref('')
@@ -27,15 +40,30 @@ const updateOptions = (options: any) => {
   orderBy.value = options.sortBy[0]?.order
 }
 
-const { data: questionsData } = await useApi<any>(createUrl('/wp-json/motorlan/v1/purchases/questions', {
-  query: {
-    page,
-    per_page: itemsPerPage,
-    orderby: sortBy,
-    order: orderBy,
-    search: searchQuery,
-  },
-}))
+let questionsData = ref<QuestionsData | null>(null)
+
+const fetchUrl = computed(() => {
+  const params = new URLSearchParams()
+  params.append('page', String(unref(page)))
+  params.append('per_page', String(unref(itemsPerPage)))
+  if (unref(sortBy))
+    params.append('orderby', unref(sortBy))
+  if (unref(orderBy))
+    params.append('order', unref(orderBy))
+  if (unref(searchQuery))
+    params.append('search', unref(searchQuery))
+
+  return `/wp-json/motorlan/v1/user/questions?${params.toString()}`
+})
+
+const fetchData = async () => {
+  const { data } = await useApi<QuestionsData>(fetchUrl).get()
+  questionsData.value = data.value
+}
+
+watch(fetchUrl, fetchData)
+
+onMounted(fetchData)
 
 const questions = computed(() => questionsData.value?.data || [])
 const totalQuestions = computed(() => questionsData.value?.pagination.total || 0)
@@ -105,7 +133,7 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
       @update:options="updateOptions"
     >
       <!-- publicacion -->
-      <template #item.motor="{ item }">
+      <template #item.motor="{ item }: { item: Question }">
         <div
           v-if="item.motor"
           class="d-flex align-center gap-x-4"
@@ -128,17 +156,25 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
       </template>
 
       <!-- pregunta -->
-      <template #item.pregunta="{ item }">
+      <template #item.pregunta="{ item }: { item: Question }">
         <span class="text-body-1 text-high-emphasis">{{ item.pregunta }}</span>
       </template>
 
       <!-- respuesta -->
-      <template #item.respuesta="{ item }">
+      <template #item.respuesta="{ item }: { item: Question }">
         <span class="text-body-1 text-high-emphasis">{{ item.respuesta || 'Sin respuesta' }}</span>
       </template>
 
+      <template #item.question_date="{ item }:{ item: any }">
+        {{ new Date(item.question_date).toLocaleDateString() }}
+      </template>
+
+      <template #item.answer_date="{ item }:{ item: any }">
+        <span v-if="item.answer_date">{{ new Date(item.answer_date).toLocaleDateString() }}</span>
+      </template>
+
       <!-- estado -->
-      <template #item.estado="{ item }">
+      <template #item.estado="{ item }: { item: Question }">
         <VChip
           v-bind="resolveStatus(item.respuesta)"
           density="default"
@@ -148,7 +184,7 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
       </template>
 
       <!-- Actions -->
-      <template #item.actions="{ item }">
+      <template #item.actions="{ item }: { item: Question }">
         <IconBtn
           v-if="item.motor"
           @click="router.push(`/apps/publications/publication/edit/${item.motor.uuid}`)"

@@ -167,6 +167,17 @@
   "Preguntas": "Questions",
   "Opiniones": "Reviews",
   "Favoritos": "Favorites",
+  "Publicaciones": "Publications",
+  "Ventas": "Sales",
+  "Perfil": "Profile",
+  "Cuenta": "Account",
+  "Estadísticas": "Statistics",
+  "Tipo": "Type",
+  "custom": {
+    "unknown": "Unknown",
+    "draft": "Draft",
+    "published": "Published"
+  },
   "store": {
     "par_options": {
       "range1": "0-50",
@@ -310,6 +321,7 @@
     "price": "Price",
     "status": "Status",
     "actions": "Actions",
+    "questions": "Questions",
     "filters": "Filters",
     "search_publication": "Search Publication",
     "export": "Export",
@@ -407,9 +419,12 @@
     "required_fields_error": "Please fill in all required fields."
   },
   "questions": {
+    "page_title": "Publication Questions",
     "publication": "Publication",
     "question": "Question",
     "answer": "Answer",
+    "question_date": "Question Date",
+    "answer_date": "Answer Date",
     "status": "Status",
     "actions": "Actions",
     "search_placeholder": "Search question...",
@@ -451,6 +466,9 @@
       "ariaLabel": {
         "delimiter": "delimiter"
       }
+    },
+    "dataIterator": {
+      "loadingText": "Loading..."
     },
     "dataFooter": {
       "itemsPerPageText": "Items per page:",
