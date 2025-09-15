@@ -106,17 +106,24 @@ acf_add_local_field_group(array(
             'required' => 1,
         ),
         array(
-            'key' => 'field_pregunta_motor',
-            'label' => 'Motor',
-            'name' => 'motor',
+            'key' => 'field_pregunta_publicacion',
+            'label' => 'Publicacion',
+            'name' => 'publicacion',
             'type' => 'post_object',
             'post_type' => array(
-                0 => 'motor',
+                0 => 'publicaciones',
             ),
             'allow_null' => 0,
             'multiple' => 0,
             'return_format' => 'object',
             'ui' => 1,
+        ),
+        array(
+            'key' => 'field_pregunta_publication_owner',
+            'label' => 'Propietario de la Publicación',
+            'name' => 'publication_owner',
+            'type' => 'user',
+            'required' => 1,
         ),
         array(
             'key' => 'field_pregunta_pregunta',

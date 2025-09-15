@@ -37,7 +37,7 @@ export default [
     children: [
       { title: 'Compras', to: 'apps-purchases-purchases' },
       { title: 'Preguntas', to: 'apps-purchases-questions' },
-      { title: 'Opiniones', to: 'apps-purchases-opinions' },
+      // { title: 'Opiniones', to: 'apps-purchases-opinions' },
       { title: 'Favoritos', to: 'apps-purchases-favorites' },
     ],
   },

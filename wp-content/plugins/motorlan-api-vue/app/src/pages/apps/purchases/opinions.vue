@@ -1,5 +1,8 @@
 <script setup lang="ts">
-import type { ImagenDestacada } from '../../../../../interfaces/publicacion'
+import { ref, computed } from 'vue'
+import type { ImagenDestacada } from '@/interfaces/publicacion'
+import { useApi } from '@/composables/useApi'
+import { createUrl } from '@/@core/composable/createUrl'
 
 const headers = [
   { title: 'Publicacion', key: 'publicacion' },
@@ -55,85 +58,92 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
 </script>
 
 <template>
-  <VCard
-    id="opinion-list"
-  >
-    <VCardText>
-      <div class="d-flex flex-wrap gap-4">
-        <div class="d-flex align-center">
-          <!-- 👉 Search  -->
-          <AppTextField
-            v-model="searchQuery"
-            placeholder="Buscar Opinión"
-            style="inline-size: 200px;"
-            class="me-3"
-          />
-        </div>
-
-        <VSpacer />
-        <div class="d-flex gap-4 flex-wrap align-center">
-          <AppSelect
-            v-model="itemsPerPage"
-            :items="[5, 10, 20, 25, 50]"
-          />
-        </div>
-      </div>
-    </VCardText>
-
-    <VDivider />
-
-    <!-- 👉 Datatable  -->
-    <VDataTableServer
-      v-model:items-per-page="itemsPerPage"
-      v-model:page="page"
-      :headers="headers"
-      :items="opinions"
-      :items-length="totalOpinions"
-      class="text-no-wrap"
-      @update:options="updateOptions"
+  <Suspense>
+    <VCard
+      id="opinion-list"
     >
-      <!-- publicacion -->
-      <template #item.publicacion="{ item }">
-        <div class="d-flex align-center gap-x-4">
-          <VAvatar
-            v-if="item.raw.publicacion?.imagen_destacada"
-            size="38"
-            variant="tonal"
-            rounded
-            :image="getImageBySize(item.raw.publicacion.imagen_destacada, 'thumbnail')"
-          />
-          <div class="d-flex flex-column">
-            <NuxtLink :to="`/apps/publicaciones/publicacion/edit/${item.raw.publicacion.uuid}`">
-              <span class="text-body-1 font-weight-medium text-high-emphasis">{{ item.raw.publicacion.title }}</span>
-            </NuxtLink>
-            <span class="text-body-2">{{ item.raw.publicacion.acf.marca.name }}</span>
+      <VCardText>
+        <div class="d-flex flex-wrap gap-4">
+          <div class="d-flex align-center">
+            <!-- 👉 Search  -->
+            <AppTextField
+              v-model="searchQuery"
+              placeholder="Buscar Opinión"
+              style="inline-size: 200px;"
+              class="me-3"
+            />
+          </div>
+
+          <VSpacer />
+          <div class="d-flex gap-4 flex-wrap align-center">
+            <AppSelect
+              v-model="itemsPerPage"
+              :items="[5, 10, 20, 25, 50]"
+            />
           </div>
         </div>
-      </template>
+      </VCardText>
 
-      <!-- valoracion -->
-      <template #item.valoracion="{ item }">
-        <VRating
-          :model-value="item.raw.valoracion"
-          readonly
-          dense
-          size="small"
-        />
-      </template>
+      <VDivider />
 
-      <!-- comentario -->
-      <template #item.comentario="{ item }">
-        <span class="text-body-1 text-high-emphasis">{{ item.raw.comentario }}</span>
-      </template>
+      <!-- 👉 Datatable  -->
+      <VDataTableServer
+        v-model:items-per-page="itemsPerPage"
+        v-model:page="page"
+        :headers="headers"
+        :items="opinions"
+        :items-length="totalOpinions"
+        class="text-no-wrap"
+        @update:options="updateOptions"
+      >
+        <!-- publicacion -->
+        <template #item.publicacion="{ item }">
+          <div class="d-flex align-center gap-x-4">
+            <VAvatar
+              v-if="item.raw.publicacion?.imagen_destacada"
+              size="38"
+              variant="tonal"
+              rounded
+              :image="getImageBySize(item.raw.publicacion.imagen_destacada, 'thumbnail')"
+            />
+            <div class="d-flex flex-column">
+              <NuxtLink :to="`/apps/publicaciones/publicacion/edit/${item.raw.publicacion.uuid}`">
+                <span class="text-body-1 font-weight-medium text-high-emphasis">{{ item.raw.publicacion.title }}</span>
+              </NuxtLink>
+              <span class="text-body-2">{{ item.raw.publicacion.acf.marca.name }}</span>
+            </div>
+          </div>
+        </template>
 
-      <!-- pagination -->
-      <template #bottom>
-        <TablePagination
-          v-model:page="page"
-          :items-per-page="itemsPerPage"
-          :total-items="totalOpinions"
-        />
-      </template>
-    </VDataTableServer>
-  </VCard>
+        <!-- valoracion -->
+        <template #item.valoracion="{ item }">
+          <VRating
+            :model-value="item.raw.valoracion"
+            readonly
+            dense
+            size="small"
+          />
+        </template>
+
+        <!-- comentario -->
+        <template #item.comentario="{ item }">
+          <span class="text-body-1 text-high-emphasis">{{ item.raw.comentario }}</span>
+        </template>
+
+        <!-- pagination -->
+        <template #bottom>
+          <TablePagination
+            v-model:page="page"
+            :items-per-page="itemsPerPage"
+            :total-items="totalOpinions"
+          />
+        </template>
+      </VDataTableServer>
+    </VCard>
+    <template #fallback>
+      <div>
+        Cargando...
+      </div>
+    </template>
+  </Suspense>
 </template>

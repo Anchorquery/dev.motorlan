@@ -9,9 +9,51 @@ if ( ! defined( 'WPINC' ) ) {
     die;
 }
 
+function format_publication_response( $post ) {
+    if ( ! $post ) {
+        return null;
+    }
+
+    $post_id = $post->ID;
+    $publicacion_item = array(
+        'id'           => $post_id,
+        'uuid'         => get_post_meta( $post_id, 'uuid', true ),
+        'title'        => get_the_title( $post_id ),
+        'slug'         => $post->post_name,
+        'status'       => get_field( 'publicar_acf', $post_id ),
+        'imagen_destacada' => get_field( 'motor_image', $post_id, true ),
+        'author_id'    => (int) $post->post_author,
+        'acf'          => array(),
+    );
+
+    if ( function_exists( 'get_field' ) ) {
+        $acf_fields = [
+            'marca',
+            'tipo_o_referencia',
+            'precio_de_venta',
+        ];
+
+        foreach ( $acf_fields as $field_name ) {
+            $value = get_field( $field_name, $post_id );
+            if ( $field_name === 'marca' && $value ) {
+                $term = get_term( $value, 'marca' );
+                if ( $term && ! is_wp_error( $term ) ) {
+                    $publicacion_item['acf']['marca'] = array(
+                        'id'   => $term->term_id,
+                        'name' => $term->name,
+                    );
+                }
+            } else {
+                $publicacion_item['acf'][ $field_name ] = $value;
+            }
+        }
+    }
+
+    return $publicacion_item;
+}
+
 function motorlan_register_question_rest_routes() {
     $namespace = 'motorlan/v1';
-
     register_rest_route( $namespace, '/publicaciones/(?P<publicacion_id>\d+)/questions', array(
         array(
             'methods'  => WP_REST_Server::READABLE,
@@ -93,6 +135,7 @@ function motorlan_create_question_callback( WP_REST_Request $request ) {
 
     // Notify publication owner
     $publication_author_id = get_post_field( 'post_author', $publicacion_id );
+    update_field( 'publication_owner', $publication_author_id, $post_id );
     $author_data = get_userdata( $publication_author_id );
     $author_email = $author_data->user_email;
     $publication_title = get_the_title( $publicacion_id );
@@ -211,12 +254,14 @@ function motorlan_get_user_questions_callback( WP_REST_Request $request ) {
             $query->the_post();
             $qid = get_the_ID();
             $publicacion_id = get_field( 'publicacion', $qid );
+            $publicacion = get_post( $publicacion_id );
+            $formateada = format_publication_response( $publicacion );
+
             $questions[] = array(
-                'id'       => $qid,
-                'pregunta' => get_field( 'pregunta', $qid ),
-                'respuesta'=> get_field( 'respuesta', $qid ),
-                'publication_title' => get_the_title( $publicacion_id ),
-                'publication_slug' => get_post_field( 'post_name', $publicacion_id ),
+                'id'          => $qid,
+                'pregunta'    => get_field( 'pregunta', $qid ),
+                'respuesta'   => get_field( 'respuesta', $qid ),
+                'publicacion' => $formateada,
             );
         }
         wp_reset_postdata();

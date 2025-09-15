@@ -9,7 +9,6 @@
 if ( ! defined( 'WPINC' ) ) {
     die;
 }
-
 /**
  * Get post taxonomy details.
  *
