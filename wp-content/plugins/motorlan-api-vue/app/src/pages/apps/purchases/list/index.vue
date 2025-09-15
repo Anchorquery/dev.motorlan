@@ -33,7 +33,7 @@ const updateOptions = (options: any) => {
   orderBy.value = options.sortBy[0]?.order
 }
 
-const { data: purchasesData, execute: fetchPurchases } = useApi<any>(createUrl('/wp-json/motorlan/v1/purchases',
+const { data: purchasesData, execute: fetchPurchases, isFetching: isTableLoading } = useApi<any>(createUrl('/wp-json/motorlan/v1/purchases',
   {
     query: {
       search: searchQuery,
@@ -104,12 +104,20 @@ const totalPurchases = computed(() => purchasesData.value?.pagination.total || 0
         :headers="headers"
         :items="purchases"
         :items-length="totalPurchases"
+        :loading="isTableLoading"
         class="text-no-wrap"
         @update:options="updateOptions"
       >
-        <!-- publicacion  -->
-        <template #item.publicacion="{ item }: { item: Compra }">
-          <div class="d-flex align-center gap-x-4">
+       <template #loading>
+         <VProgressLinear
+           height="6"
+           indeterminate
+           color="primary"
+         />
+       </template>
+       <!-- publicacion  -->
+       <template #item.publicacion="{ item }: { item: Compra }">
+         <div class="d-flex align-center gap-x-4">
             <VAvatar
               v-if="item.acf.motor.imagen_destacada"
               size="38"

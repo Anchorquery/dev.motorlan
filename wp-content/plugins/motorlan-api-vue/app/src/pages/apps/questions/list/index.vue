@@ -27,7 +27,7 @@ const updateOptions = (options: any) => {
   orderBy.value = options.sortBy[0]?.order
 }
 
-const { data: questionsData, execute: fetchQuestions } = await useApi<any>(createUrl('/wp-json/motorlan/v1/user/questions',
+const { data: questionsData, execute: fetchQuestions, isFetching: isTableLoading } = await useApi<any>(createUrl('/wp-json/motorlan/v1/user/questions',
   {
     query: {
       search: searchQuery,
@@ -98,12 +98,20 @@ const totalQuestions = computed(() => questionsData.value?.pagination.total || 0
         :headers="headers"
         :items="questions"
         :items-length="totalQuestions"
+        :loading="isTableLoading"
         class="text-no-wrap"
         @update:options="updateOptions"
       >
-        <!-- publicacion  -->
-        <template #item.publicacion="{ item }">
-          <div
+       <template #loading>
+         <VProgressLinear
+           height="6"
+           indeterminate
+           color="primary"
+         />
+       </template>
+       <!-- publicacion  -->
+       <template #item.publicacion="{ item }">
+         <div
             v-if="item.publicacion"
             class="d-flex align-center gap-x-4"
           >

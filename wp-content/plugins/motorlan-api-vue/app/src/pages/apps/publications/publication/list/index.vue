@@ -447,9 +447,16 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
         :return-object="false"
         @update:options="updateOptions"
       >
-        <!-- publicacion  -->
-        <template #item.publicacion="{ item }">
-          <div class="d-flex align-center gap-x-4">
+       <template #loading>
+         <VProgressLinear
+           height="6"
+           indeterminate
+           color="primary"
+         />
+       </template>
+       <!-- publicacion  -->
+       <template #item.publicacion="{ item }">
+         <div class="d-flex align-center gap-x-4">
             <VAvatar
               v-if="(item as any).imagen_destacada"
               size="38"
