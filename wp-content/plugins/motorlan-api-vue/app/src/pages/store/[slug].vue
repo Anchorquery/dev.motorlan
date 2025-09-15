@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { useUserStore } from '@/stores/user'
+import { useUserStore } from '@/@core/stores/user'
 import ProductImage from './components/ProductImage.vue'
 import ProductDetails from './components/ProductDetails.vue'
 import PublicacionInfo from './components/PublicacionInfo.vue'

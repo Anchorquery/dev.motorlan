@@ -407,6 +407,41 @@
     "update_error": "Error al actualizar la publicación: {message}",
     "required_fields_error": "Por favor, rellene todos los campos obligatorios."
   },
+  "questions": {
+    "publication": "Publicación",
+    "question": "Pregunta",
+    "answer": "Respuesta",
+    "status": "Estado",
+    "actions": "Acciones",
+    "search_placeholder": "Buscar pregunta...",
+    "answered": "Respondida",
+    "pending": "Pendiente",
+    "reply_to_question": "Responder a la pregunta",
+    "your_answer": "Tu respuesta",
+    "cancel": "Cancelar",
+    "reply": "Responder",
+    "fetch_error": "Error al cargar las preguntas.",
+    "answer_empty_error": "La respuesta no puede estar vacía.",
+    "answer_success": "Respuesta enviada con éxito.",
+    "answer_error": "Error al enviar la respuesta.",
+    "my_questions": "Mis Preguntas",
+    "no_questions": "Aún no hay preguntas para esta publicación.",
+    "no_questions_received": "No has recibido ninguna pregunta todavía."
+  },
+  "sales": {
+    "publication": "Publicación",
+    "price": "Precio",
+    "date": "Fecha",
+    "search_placeholder": "Buscar venta...",
+    "type": "Tipo",
+    "type_options": {
+      "sale": "Venta",
+      "rent": "Alquiler"
+    },
+    "fetch_error": "Error al cargar las ventas.",
+    "my_sales": "Mis Ventas",
+    "no_sales_yet": "Aún no has realizado ninguna venta."
+  },
   "$vuetify": {
     "badge": "Insignia",
     "noDataText": "No hay datos disponibles",

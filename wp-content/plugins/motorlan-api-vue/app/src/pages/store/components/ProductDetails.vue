@@ -5,7 +5,7 @@ import { useRouter } from 'vue-router'
 // Ajuste final de imports según la estructura real del proyecto
 import ConfirmDialog from '@/components/dialogs/ConfirmDialog.vue'
 import type { Publicacion } from '@/interfaces/publicacion'
-import api from '@/services/api'
+import { useApi } from '@/composables/useApi'
 
 import { useUserStore } from '@/@core/stores/user'
 
@@ -19,9 +19,11 @@ const isLoadingFavorite = ref(false)
 onMounted(async () => {
   if (userStore.getIsLoggedIn) {
     try {
-      const favorites = await api('/wp-json/motorlan/v1/favorites')
-      if (favorites.data && Array.isArray(favorites.data)) {
-        isFavorite.value = favorites.data.some((f: any) => f.id === props.publicacion.id)
+      const { data: favorites, error } = await useApi('/wp-json/motorlan/v1/favorites').get().json()
+      if (error.value)
+        throw error.value
+      if (favorites.value?.data && Array.isArray(favorites.value.data)) {
+        isFavorite.value = favorites.value.data.some((f: any) => f.id === props.publicacion.id)
       }
     } catch (e) {
       console.error('Error cargando favoritos', e)
@@ -30,11 +32,11 @@ onMounted(async () => {
 })
 const sellerName = computed(() => props.publicacion.author?.name || 'N/A')
 const sellerRating = computed(() => {
-  const val = Number((props.publicacion as any).author?.acf?.calificacion)
+  const val = Number(props.publicacion.author?.acf?.calificacion)
   return Number.isFinite(val) ? val : null
 })
 const sellerSales = computed(() => {
-  const val = Number((props.publicacion as any).author?.acf?.ventas)
+  const val = Number(props.publicacion.author?.acf?.ventas)
   return Number.isFinite(val) ? val : null
 })
 const location = computed(() => {
@@ -61,7 +63,7 @@ const brand = computed(() =>
   typeof props.publicacion.acf.marca === 'object'
     // @ts-ignore
     ? (props.publicacion.acf.marca as any)?.name
-    : props.publicacion.acf.marca || ''
+    : props.publicacion.acf.name || ''
 )
 
 const productTitleUpper = computed(() => (props.publicacion.title ? props.publicacion.title.toUpperCase() : ''))
@@ -75,10 +77,15 @@ const toggleFavorite = async () => {
   isLoadingFavorite.value = true
   try {
     if (isFavorite.value) {
-      await api(`/wp-json/motorlan/v1/favorites/${props.publicacion.id}`, { method: 'DELETE' })
+      const { error: deleteError } = await useApi(`/wp-json/motorlan/v1/favorites/${props.publicacion.id}`).delete().execute()
+      if (deleteError.value)
+        throw deleteError.value
       isFavorite.value = false
-    } else {
-      await api(`/wp-json/motorlan/v1/favorites`, { method: 'POST', body: { publicacion_id: props.publicacion.id } })
+    }
+    else {
+      const { error: createError } = await useApi('/wp-json/motorlan/v1/favorites').post({ publicacion_id: props.publicacion.id }).execute()
+      if (createError.value)
+        throw createError.value
       isFavorite.value = true
     }
   } catch (e) {
@@ -99,7 +106,7 @@ const userStore = useUserStore()
 const isLoggedIn = computed(() => userStore.getIsLoggedIn)
 const isOwner = computed(() => {
   if (!userStore.getUser?.id) return false
-  return (props.publicacion as any).author === userStore.getUser.id
+  return props.publicacion.author?.id === userStore.getUser.id
 })
 
 const isNegotiable = computed(() => {
@@ -129,11 +136,11 @@ const handlePurchase = async (confirmed: boolean) => {
     return
 
   try {
-    const res = await api('/wp-json/motorlan/v1/purchases', {
-      method: 'POST',
-      body: { publicacion_id: props.publicacion.id },
-    })
-    router.push(`/store/compra/${res.uuid}`)
+    const { data: res, error } = await useApi('/wp-json/motorlan/v1/purchases').post({ publicacion_id: props.publicacion.id }).json()
+    if (error.value)
+      throw error.value
+    if (res.value)
+      router.push(`/store/compra/${res.value.uuid}`)
   }
   catch (error) {
     console.error(error)
@@ -153,14 +160,13 @@ const submitOffer = async () => {
     return
 
   try {
-    const res = await api(`/wp-json/motorlan/v1/publicaciones/${props.publicacion.id}/offers`, {
-      method: 'POST',
-      body: {
-        monto: offerAmount.value,
-        justificacion: offerMessage.value,
-      },
-    })
-    offer.value = res
+    const { data: res, error } = await useApi(`/wp-json/motorlan/v1/publicaciones/${props.publicacion.id}/offers`).post({
+      monto: offerAmount.value,
+      justificacion: offerMessage.value,
+    }).json()
+    if (error.value)
+      throw error.value
+    offer.value = res.value
     isOfferDialogOpen.value = false
   }
   catch (error) {
@@ -172,7 +178,9 @@ const removeOffer = async () => {
   if (!offer.value)
     return
   try {
-    await api(`/wp-json/motorlan/v1/offers/${offer.value.id}`, { method: 'DELETE' })
+    const { error } = await useApi(`/wp-json/motorlan/v1/offers/${offer.value.id}`).delete().execute()
+    if (error.value)
+      throw error.value
     offer.value = null
     offerAmount.value = null
     offerMessage.value = ''

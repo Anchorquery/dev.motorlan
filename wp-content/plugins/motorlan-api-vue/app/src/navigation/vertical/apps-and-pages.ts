@@ -10,7 +10,8 @@ export default [
     icon: { icon: 'tabler-file-text' },
     children: [
       { title: 'List', to: 'apps-publications-publication-list' },
-      { title: 'Add', to: 'apps-publications-publication-add' },
+      { title: 'Ventas', to: 'apps-publications-sales' },
+      { title: 'Preguntas', to: 'apps-publications-questions' },
     ],
   },
   {
@@ -19,25 +20,17 @@ export default [
     to: 'apps-chat',
   },
 
-  {
-    title: 'Invoice',
-    icon: { icon: 'tabler-file-invoice' },
+  // {
+  //   title: 'Invoice',
+  //   icon: { icon: 'tabler-file-invoice' },
 
-    children: [
-      { title: 'List', to: 'apps-invoice-list' },
-      { title: 'Preview', to: { name: 'apps-invoice-preview-id', params: { id: '5036' } } },
-      { title: 'Edit', to: { name: 'apps-invoice-edit-id', params: { id: '5036' } } },
-      { title: 'Add', to: 'apps-invoice-add' },
-    ],
-  },
-  {
-    title: 'Perfil',
-    icon: { icon: 'tabler-user' },
-    children: [
-      { title: 'Cuenta', to: { name: 'apps-user-account' } },
-      { title: 'Estadísticas', to: { name: 'apps-user-stats' } },
-    ],
-  },
+  //   children: [
+  //     { title: 'List', to: 'apps-invoice-list' },
+  //     { title: 'Preview', to: { name: 'apps-invoice-preview-id', params: { id: '5036' } } },
+  //     { title: 'Edit', to: { name: 'apps-invoice-edit-id', params: { id: '5036' } } },
+  //     { title: 'Add', to: 'apps-invoice-add' },
+  //   ],
+  // },
   {
     title: 'Compras',
     icon: { icon: 'tabler-user-circle' },
@@ -46,6 +39,14 @@ export default [
       { title: 'Preguntas', to: 'apps-purchases-questions' },
       { title: 'Opiniones', to: 'apps-purchases-opinions' },
       { title: 'Favoritos', to: 'apps-purchases-favorites' },
+    ],
+  },
+  {
+    title: 'Perfil',
+    icon: { icon: 'tabler-user' },
+    children: [
+      { title: 'Cuenta', to: { name: 'apps-user-account' } },
+      { title: 'Estadísticas', to: { name: 'apps-user-stats' } },
     ],
   },
 ]

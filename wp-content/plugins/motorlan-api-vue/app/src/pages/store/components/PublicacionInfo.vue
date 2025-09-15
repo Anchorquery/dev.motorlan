@@ -15,7 +15,7 @@ defineProps<{ publicacion: Publicacion }>()
           <td class="font-weight-medium">
             Marca
           </td>
-          <td>{{ publicacion.acf.marca?.name || publicacion.acf.marca || '-' }}</td>
+          <td>{{ publicacion.acf.marca || '-' }}</td>
         </tr>
         <tr>
           <td class="font-weight-medium">

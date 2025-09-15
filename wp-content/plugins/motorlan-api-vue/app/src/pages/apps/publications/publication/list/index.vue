@@ -495,6 +495,13 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
             <VMenu activator="parent">
               <VList>
                 <VListItem
+                  value="questions"
+                  prepend-icon="tabler-help"
+                  @click="router.push(`/apps/publications/publication/questions/${(item as any).uuid}`)"
+                >
+                  {{ t('publication_list.questions') }}
+                </VListItem>
+                <VListItem
                   value="delete"
                   prepend-icon="tabler-trash"
                   @click="openDeleteDialog((item as any).id)"

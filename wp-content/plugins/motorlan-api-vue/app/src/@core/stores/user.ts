@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import api from '@/services/api'
+import { useApi } from '@/composables/useApi'
 
 interface User {
   id: number
@@ -28,10 +28,13 @@ export const useUserStore = defineStore('user', {
     async fetchUserSession() {
       this.loading = true
       try {
-        const data = await api('/wp-json/motorlan/v1/session')
-        if (data) {
-          this.isLoggedIn = data.is_logged_in
-          this.user = data.user
+        const { data, error } = await useApi('/wp-json/motorlan/v1/session').get().json()
+        if (error.value)
+          throw error.value
+
+        if (data.value) {
+          this.isLoggedIn = data.value.is_logged_in
+          this.user = data.value.user
         }
       } catch (error) {
         console.error('Error fetching user session:', error)

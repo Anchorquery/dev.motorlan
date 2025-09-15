@@ -31,7 +31,7 @@ const submitQuestion = async () => {
   try {
     await useApi(
       createUrl(`/wp-json/motorlan/v1/publicaciones/${props.publicacionId}/questions`),
-    ).post({ body: { pregunta: newQuestion.value } })
+    ).post({ pregunta: newQuestion.value })
     newQuestion.value = ''
     snackbar.value = { show: true, text: 'Pregunta enviada', color: 'success' }
     await fetchQuestions()

@@ -406,6 +406,41 @@
     "update_error": "Error updating publication: {message}",
     "required_fields_error": "Please fill in all required fields."
   },
+  "questions": {
+    "publication": "Publication",
+    "question": "Question",
+    "answer": "Answer",
+    "status": "Status",
+    "actions": "Actions",
+    "search_placeholder": "Search question...",
+    "answered": "Answered",
+    "pending": "Pending",
+    "reply_to_question": "Reply to question",
+    "your_answer": "Your answer",
+    "cancel": "Cancel",
+    "reply": "Reply",
+    "fetch_error": "Error loading questions.",
+    "answer_empty_error": "Answer cannot be empty.",
+    "answer_success": "Answer sent successfully.",
+    "answer_error": "Error sending answer.",
+    "my_questions": "My Questions",
+    "no_questions": "There are no questions for this publication yet.",
+    "no_questions_received": "You have not received any questions yet."
+  },
+  "sales": {
+    "publication": "Publication",
+    "price": "Price",
+    "date": "Date",
+    "search_placeholder": "Search sale...",
+    "type": "Type",
+    "type_options": {
+      "sale": "Sale",
+      "rent": "Rent"
+    },
+    "fetch_error": "Error loading sales.",
+    "my_sales": "My Sales",
+    "no_sales_yet": "You have not made any sales yet."
+  },
   "$vuetify": {
     "badge": "Badge",
     "noDataText": "No data available",

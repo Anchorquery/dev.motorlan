@@ -55,4 +55,12 @@ export interface Publicacion {
   status: string
   categories: { name: string }[]
   tipo: { name: string }[]
+  author: {
+    id: number
+    name: string
+    acf: {
+      calificacion: number
+      ventas: number
+    }
+  }
 }
