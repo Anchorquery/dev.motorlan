@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import TiendaFilters from './components/TiendaFilters.vue'
 import SearchBar from './components/SearchBar.vue'
@@ -21,7 +21,6 @@ interface Term {
 const selectedBrand = ref<number | null>(null)
 const selectedState = ref<string | null>(null)
 const typeModel = ref('')
-const productTypes = ref<string[]>([])
 const selectedTechnology = ref<string | null>(null)
 const selectedPar = ref<string | null>(null)
 const selectedPotencia = ref<string | null>(null)
@@ -40,11 +39,14 @@ const itemsPerPage = ref(9)
 const page = ref(1)
 
 // -- Data Fetching --
-const { data: brandsData } = await useApi<Term[]>(createUrl('/wp-json/motorlan/v1/marcas'))
+const { data: brandsData } = useApi<Term[]>(createUrl('/wp-json/motorlan/v1/marcas'))
 const marcas = computed(() => brandsData.value || [])
 
+const tipos = ref<Term[]>([])
+
+
 const publicacionesApiUrl = computed(() => {
-  const baseUrl = '/wp-json/motorlan/v1/publicaciones'
+  const baseUrl = '/wp-json/motorlan/v1/store/publicaciones'
 
   const sortOptions = {
     [t('store.order_options.recents')]: { orderby: 'date', order: 'desc' },
@@ -57,7 +59,6 @@ const publicacionesApiUrl = computed(() => {
     page: page.value,
     status: 'publish',
     s: searchTerm.value,
-    category: productTypes.value.join(','),
     tipo: selectedTipo.value,
     marca: selectedBrand.value,
     estado_del_articulo: selectedState.value,
@@ -70,25 +71,38 @@ const publicacionesApiUrl = computed(() => {
   }
 
   const filteredParams = Object.entries(queryParams)
-    .filter(([_, value]) => value !== null && value !== undefined && value !== '')
-    .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
+    .filter(([, value]) => value !== null && value !== undefined && value !== '')
+    .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`)
     .join('&')
 
   return `${baseUrl}?${filteredParams}`
 })
 
-const { data: publicacionesData, isFetching: loading, execute: fetchPublicaciones } = useApi<any>(publicacionesApiUrl, { immediate: false }).get()
+const { data: publicacionesData, isFetching: loading, execute: fetchPublicaciones } = useApi<any>(publicacionesApiUrl, { immediate: false }).get().json()
+const isSearching = ref(false)
 
-watch(
-  () => publicacionesApiUrl.value,
-  () => {
-    fetchPublicaciones()
-  },
-)
+const applyFilters = async () => {
+  isSearching.value = true
+  await nextTick()
+  try {
+    await fetchPublicaciones()
+  }
+  finally {
+    isSearching.value = false
+  }
+}
 
-onMounted(fetchPublicaciones)
+watch([selectedBrand, selectedState, typeModel, selectedTechnology, selectedPar, selectedPotencia, selectedVelocidad, searchTerm, order, selectedTipo, page, itemsPerPage], applyFilters, { deep: true })
 
-const publicaciones = computed((): Publicacion[] => publicacionesData.value?.data || [])
+onMounted(async () => {
+  const { data: tiposData } = await useApi<any>(createUrl('/wp-json/motorlan/v1/tipos')).get().json()
+  if (tiposData.value) {
+    tipos.value = Array.isArray(tiposData.value) ? tiposData.value : (tiposData.value.data || [])
+  }
+  applyFilters() // Initial data load
+})
+
+const publicaciones = computed((): Publicacion[] => publicacionesData.value?.data || publicacionesData.value || [])
 const totalPublicaciones = computed(() => publicacionesData.value?.pagination.total || 0)
 const totalPages = computed(() => publicacionesData.value?.pagination.totalPages || 1)
 
@@ -102,7 +116,6 @@ const search = () => {
   <div class="store d-flex">
     <TiendaFilters
       v-model:type-model="typeModel"
-      v-model:product-types="productTypes"
       v-model:selected-technology="selectedTechnology"
       v-model:selected-par="selectedPar"
       v-model:selected-potencia="selectedPotencia"
@@ -111,6 +124,7 @@ const search = () => {
       v-model:selected-state="selectedState"
       v-model:selected-tipo="selectedTipo"
       :marcas="marcas"
+      :tipos="tipos"
       :technology-options="technologyOptions"
       :par-options="parOptions"
       :potencia-options="potenciaOptions"
@@ -121,14 +135,14 @@ const search = () => {
       <SearchBar
         v-model:search-term="searchTerm"
         v-model:order="order"
-        :loading="loading"
+        :loading="isSearching"
         :order-options="orderOptions"
         @search="search"
       />
 
       <PublicacionItems
         :publicaciones="publicaciones"
-        :loading="loading"
+        :loading="isSearching"
       />
 
       <PaginationControls

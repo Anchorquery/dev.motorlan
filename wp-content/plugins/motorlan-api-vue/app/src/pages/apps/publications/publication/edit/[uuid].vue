@@ -114,8 +114,6 @@ const newGarantiaData = ref({
 
 onMounted(async () => {
   try {
-    // 1. Crear un arreglo de promesas
-    // 1. Crear un arreglo de promesas para obtener los datos
     const fetchPromises = [
       useApi('/wp-json/motorlan/v1/marcas').get().json(),
       useApi('/wp-json/motorlan/v1/publicacion-categories').get().json(),
@@ -127,7 +125,6 @@ onMounted(async () => {
       fetchPromises.push(useApi(`/wp-json/motorlan/v1/garantias/publicacion/${motorUuid}`).get().json())
     }
 
-    // 2. Ejecutar todas las promesas en paralelo
     const [
       { data: marcasData },
       { data: categoriesData },
@@ -136,12 +133,12 @@ onMounted(async () => {
       garantiaResponse,
     ] = await Promise.all(fetchPromises)
 
-    // 3. Procesar los resultados
     if (marcasData.value) {
-      marcas.value = marcasData.value.map((marca: { name: any; id: any }) => ({
-        title: marca.name,
-        value: Number(marca.id),
-      }))
+      const uniqueMarcas = new Map()
+      marcasData.value.forEach((marca: { id: any; name: any }) => {
+        uniqueMarcas.set(Number(marca.id), { title: marca.name, value: Number(marca.id) })
+      })
+      marcas.value = Array.from(uniqueMarcas.values())
     }
 
     if (categoriesData.value) {
@@ -152,7 +149,7 @@ onMounted(async () => {
     }
 
     if (tiposData.value) {
-      tipos.value = tiposData.value.map((tipo: { name: any; term_id: any; slug: string }) => ({
+      tipos.value = tiposData.value.map((tipo: { name: any; term_id: any; slug: any }) => ({
         title: tipo.name,
         value: tipo.term_id,
         slug: tipo.slug,
@@ -193,6 +190,22 @@ onMounted(async () => {
 
       if (!motorData.value.acf.documentacion_adicional)
         motorData.value.acf.documentacion_adicional = []
+
+      // Normalize legacy values
+      const countryMap: { [key: string]: string } = {
+        'España': 'spain', 'España': 'spain', 'Spain': 'spain', 'Portugal': 'portugal', 'Francia': 'france', 'France': 'france',
+      }
+      const conditionMap: { [key: string]: string } = {
+        'Nuevo': 'new', 'Usado': 'used', 'Restaurado': 'restored',
+      }
+
+      const pais = motorData.value.acf.pais
+      if (typeof pais === 'string' && countryMap[pais])
+        motorData.value.acf.pais = countryMap[pais]
+
+      const estado = motorData.value.acf.estado_del_articulo
+      if (typeof estado === 'string' && conditionMap[estado])
+        motorData.value.acf.estado_del_articulo = conditionMap[estado]
     }
 
     if (garantiaResponse && garantiaResponse.data.value)
@@ -203,26 +216,25 @@ onMounted(async () => {
   }
 })
 
-const uploadMedia = async (file: File) => {
+const uploadMedia = async (file: File, attachToPostId?: number) => {
   const formData = new FormData()
-
   formData.append('file', file)
+  if (attachToPostId)
+    formData.append('post', String(attachToPostId))
   try {
     const { data } = await useApi<any>('/wp-json/wp/v2/media', {
       method: 'POST',
       body: formData,
     })
-
-    return data.value
+    return data.value?.id ?? null
   }
   catch (error) {
     console.error('Failed to upload media:', error)
-
     return null
   }
 }
 
-const updateMotor = async () => {
+const updateMotor = async (status: string) => {
   if (!form.value)
     return
 
@@ -241,54 +253,55 @@ const updateMotor = async () => {
   try {
     const payload = JSON.parse(JSON.stringify(motorData.value))
 
-    // Handle main image upload
+    payload.status = status
+    // Asegurar que el estado también se guarde en el campo ACF correcto
+    if (!payload.acf) payload.acf = {}
+    payload.acf.publicar_acf = status
+
+    if (payload.acf.marca && typeof payload.acf.marca === 'object')
+      payload.acf.marca = payload.acf.marca.id
+
+    // Handle main image upload (ensure ID)
     if (motorImageFile.value.length > 0) {
       const image = motorImageFile.value[0]
       if (image.file) {
-        const uploadedImage = await uploadMedia(image.file)
-        if (uploadedImage)
-          payload.acf.motor_image = uploadedImage.id
-      }
-      else {
+        const uploadedImageId = await uploadMedia(image.file, postId.value ?? undefined)
+        if (uploadedImageId)
+          payload.acf.motor_image = uploadedImageId
+      } else if (image.id) {
         payload.acf.motor_image = image.id
       }
-    }
-    else {
+    } else {
       payload.acf.motor_image = null
     }
 
-    // Handle gallery images upload
+    // Handle gallery images upload (ensure IDs array)
     if (motorGalleryFiles.value.length > 0) {
-      const newGalleryIds: number[] = []
+      const galleryIds: number[] = []
       for (const image of motorGalleryFiles.value) {
         if (image.file) {
-          const uploadedImage = await uploadMedia(image.file)
-          if (uploadedImage)
-            newGalleryIds.push(uploadedImage.id)
-        }
-        else if (image.id) {
-          newGalleryIds.push(image.id)
+          const uploadedImageId = await uploadMedia(image.file)
+          if (uploadedImageId)
+            galleryIds.push(uploadedImageId)
+        } else if (image.id) {
+          galleryIds.push(image.id)
         }
       }
-      payload.acf.motor_gallery = newGalleryIds
-    }
-    else {
+      payload.acf.motor_gallery = galleryIds
+    } else {
       payload.acf.motor_gallery = []
     }
 
-    // Handle additional documentation
+    // Handle additional documentation (ensure IDs only)
     if (payload.acf.documentacion_adicional) {
       for (let i = 0; i < payload.acf.documentacion_adicional.length; i++) {
-        const originalDoc = motorData.value.acf.documentacion_adicional[i]
-        const payloadDoc = payload.acf.documentacion_adicional[i]
-
-        if (originalDoc && originalDoc.archivo instanceof File) {
-          const uploadedFile = await uploadMedia(originalDoc.archivo)
+        const doc = payload.acf.documentacion_adicional[i]
+        if (doc.archivo instanceof File) {
+          const uploadedFile = await uploadMedia(doc.archivo)
           if (uploadedFile)
-            payloadDoc.archivo = uploadedFile.id
-        }
-        else if (payloadDoc.archivo && payloadDoc.archivo.id) {
-          payloadDoc.archivo = payloadDoc.archivo.id
+            doc.archivo = uploadedFile
+        } else if (doc.archivo && doc.archivo.id) {
+          doc.archivo = doc.archivo.id
         }
       }
     }
@@ -348,25 +361,6 @@ const formattedMarca = computed({
 })
 
 // Keep v-model as object for proper label display, store id internally
-const selectedMarca = computed({
-  get() {
-    const current = motorData.value.acf.marca
-    if (current === null || current === undefined)
-      return null
-    const id = typeof current === 'object' ? current.id : current
-    const name = typeof current === 'object' ? current.name : undefined
-    const numId = Number(id)
-    const found = marcas.value.find((m: any) => String(m.value) == String(numId || id))
-    // Si no se encuentra en items, retornar objeto compatible para mostrar título
-    return found ?? (id != null ? { title: name ?? String(id), value: id } : null)
-  },
-  set(newObj) {
-    if (newObj && typeof newObj === 'object' && 'value' in newObj)
-      motorData.value.acf.marca = newObj.value
-    else
-      motorData.value.acf.marca = newObj ?? null
-  },
-})
 
 // Options for selects to map stored keys to labels
 const conditionOptions = computed(() => [
@@ -380,31 +374,6 @@ const countryOptions = computed(() => [
   { title: t('add_publication.country_options.portugal'), value: 'portugal' },
   { title: t('add_publication.country_options.france'), value: 'france' },
 ])
-
-// Normalize legacy values coming from API if needed
-onMounted(() => {
-  const countryMap: { [key: string]: string } = {
-    'España': 'spain',
-    'España': 'spain',
-    'Spain': 'spain',
-    'Portugal': 'portugal',
-    'Francia': 'france',
-    'France': 'france',
-  }
-  const conditionMap: { [key: string]: string } = {
-    'Nuevo': 'new',
-    'Usado': 'used',
-    'Restaurado': 'restored',
-  }
-
-  const pais = motorData.value.acf.pais
-  if (typeof pais === 'string' && countryMap[pais])
-    motorData.value.acf.pais = countryMap[pais]
-
-  const estado = motorData.value.acf.estado_del_articulo
-  if (typeof estado === 'string' && conditionMap[estado])
-    motorData.value.acf.estado_del_articulo = conditionMap[estado]
-})
 
 const addDocument = () => {
   if (motorData.value.acf.documentacion_adicional.length < 5)
@@ -467,8 +436,15 @@ const submitGarantia = async () => {
             {{ t('edit_publication.discard') }}
           </VBtn>
           <VBtn
+            variant="tonal"
+            color="secondary"
+            @click="updateMotor('draft')"
+          >
+            {{ t('edit_publication.save_draft', 'Guardar como borrador') }}
+          </VBtn>
+          <VBtn
             type="submit"
-            @click="updateMotor"
+            @click="updateMotor('publish')"
           >
             {{ t('edit_publication.update_publication') }}
           </VBtn>
@@ -510,8 +486,7 @@ const submitGarantia = async () => {
                   md="4"
                 >
                   <AppSelect
-                    v-model="selectedMarca"
-                    :return-object="true"
+                    v-model="formattedMarca"
                     :label="t('edit_publication.brand')"
                     item-title="title"
                     item-value="value"

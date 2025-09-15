@@ -170,8 +170,36 @@ function motorlan_register_publicaciones_rest_routes() {
         'callback' => 'motorlan_remove_user_favorite',
         'permission_callback' => 'motorlan_is_user_authenticated'
     ) );
+    // Route for getting a list of publicaciones for the public store
+    register_rest_route( $namespace, '/store/publicaciones', array(
+        'methods'  => WP_REST_Server::READABLE,
+        'callback' => 'motorlan_get_public_publicaciones_callback',
+        'permission_callback' => '__return_true',
+    ) );
 }
 add_action( 'rest_api_init', 'motorlan_register_publicaciones_rest_routes' );
+
+/**
+ * Callback function to get a list of public publications for the store.
+ * This is a public endpoint and should only return published posts.
+ *
+ * @param WP_REST_Request $request The request object.
+ * @return WP_REST_Response The response object.
+ */
+function motorlan_get_public_publicaciones_callback( $request ) {
+    // Use the existing callback but force the status to 'publish'
+    // and remove any author filtering.
+    $request->set_param('status', 'publish');
+
+    // Unset author if it was passed, to ensure we get all users' publications
+    $params = $request->get_params();
+    if (isset($params['author'])) {
+        unset($params['author']);
+        $request->set_param('author', null);
+    }
+    
+    return motorlan_get_publicaciones_callback($request);
+}
 
 /**
  * Obtener favoritos del usuario autenticado
@@ -462,9 +490,45 @@ function motorlan_update_publicacion_by_uuid(WP_REST_Request $request) {
         wp_set_post_terms($post_id, $params['tipo'], 'tipo', false);
     }
 
+    // Update status/publicar_acf
+    if (isset($params['status'])) {
+        update_field('publicar_acf', sanitize_text_field($params['status']), $post_id);
+    }
+
     // Update ACF fields
     if (isset($params['acf']) && is_array($params['acf'])) {
         foreach ($params['acf'] as $key => $value) {
+            // Si es marca o tipo y es array, extraer el ID
+            if (in_array($key, ['marca', 'tipo']) && is_array($value) && isset($value['id'])) {
+                $value = $value['id'];
+            }
+            // Si es imagen principal, soportar id directo o array con id
+            if ($key === 'motor_image') {
+                if (is_array($value) && isset($value['id'])) {
+                    $value = intval($value['id']);
+                }
+                if (is_numeric($value)) {
+                    $value = intval($value);
+                }
+            }
+            // Si es galería, asegurarse de que quede como array de IDs
+            if ($key === 'motor_gallery' && is_array($value)) {
+                $value = array_map(function($item) {
+                    if (is_array($item) && isset($item['id'])) {
+                        return intval($item['id']);
+                    }
+                    return is_numeric($item) ? intval($item) : $item;
+                }, $value);
+            }
+            // Si es documentación adicional, extraer IDs de archivos
+            if ($key === 'documentacion_adicional' && is_array($value)) {
+                foreach ($value as &$doc) {
+                    if (isset($doc['archivo']) && is_array($doc['archivo']) && isset($doc['archivo']['id'])) {
+                        $doc['archivo'] = $doc['archivo']['id'];
+                    }
+                }
+                unset($doc);
+            }
             if (is_string($value)) {
                 $value = sanitize_text_field($value);
             }

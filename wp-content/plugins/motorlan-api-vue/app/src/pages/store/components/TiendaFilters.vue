@@ -28,7 +28,7 @@ const selectedTipo = defineModel<string | null>('selectedTipo')
   <aside class="filters pa-4">
     <div class="d-flex align-center mb-2">
       <VIcon size="18" class="me-2" color="error">
-        mdi-checkbox-blank-outline
+        mdi-filter-variant
       </VIcon>
       <span class="text-error font-weight-semibold">FILTROS</span>
     </div>
@@ -42,19 +42,44 @@ const selectedTipo = defineModel<string | null>('selectedTipo')
       class="mb-6"
     />
 
-    <AppSelect v-model="selectedTipo" label="Tipo de producto" :items="tipos" item-title="name" item-value="slug" class="mb-4" clearable />
-    <AppSelect v-model="selectedTechnology" label="Tecnología" :items="technologyOptions" class="mb-4" clearable />
-    <AppSelect v-model="selectedPar" label="PAR (Nm)" :items="parOptions" class="mb-4" clearable />
-    <AppSelect v-model="selectedPotencia" label="Potencia" :items="potenciaOptions" class="mb-4" clearable />
-    <AppSelect v-model="selectedVelocidad" label="Velocidad" :items="velocidadOptions" class="mb-4" clearable />
-    <AppSelect v-model="selectedBrand" label="Marcas" :items="marcas" item-title="name" item-value="id" class="mb-4" clearable />
-    <AppSelect v-model="selectedState" label="Estado" :items="['Nuevo','Usado','Restaurado']" class="mb-4" clearable />
+    <div class="mb-4">
+      <span class="text-sm font-weight-medium text-high-emphasis">Tipo de producto</span>
+      <VRadioGroup v-if="tipos.length" v-model="selectedTipo" class="mt-2">
+        <VRadio label="Todos" :value="null" />
+        <VRadio
+          v-for="tipo in tipos"
+          :key="tipo.slug"
+          :label="tipo.name"
+          :value="tipo.slug"
+        />
+      </VRadioGroup>
+    </div>
+
+    <AppSelect v-model="selectedPar" label="PAR (Nm)" placeholder="Seleccionar PAR (Nm)" :items="parOptions" class="mb-4" variant="outlined" color="error" clearable />
+    <AppSelect v-model="selectedPotencia" label="Potencia" placeholder="Seleccionar potencia" :items="potenciaOptions" class="mb-4" variant="outlined" color="error" clearable />
+    <AppSelect v-model="selectedVelocidad" label="Velocidad" placeholder="Seleccionar velocidad" :items="velocidadOptions" class="mb-4" variant="outlined" color="error" clearable />
+    <AppSelect v-model="selectedBrand" label="Marcas" placeholder="Seleccionar marcas" :items="marcas" item-title="name" item-value="id" class="mb-4" variant="outlined" color="error" clearable />
+    <AppSelect v-model="selectedState" label="Estado" placeholder="Seleccionar estado" :items="['Nuevo','Usado','Restaurado']" class="mb-4" variant="outlined" color="error" clearable />
   </aside>
 </template>
 
-<style scoped>
+<style>
 .filters {
   width: 300px;
+}
+
+.filters .v-icon,
+.filters .text-error,
+.filters .v-select .v-label {
+  color: #da291c !important;
+}
+
+.filters .v-select--variant-outlined .v-field__outline__color {
+  color: #da291c !important;
+}
+
+.filters .v-divider {
+  border-color: #da291c !important;
 }
 </style>
 

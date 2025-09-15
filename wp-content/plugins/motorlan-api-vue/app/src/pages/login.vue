@@ -83,9 +83,7 @@ const login = async () => {
     }
 
     // Grant abilities based on role
-    const userAbilities = user_nicename === 'admin'
-      ? [{ action: 'manage', subject: 'all' }]
-      : [{ action: 'read', subject: 'all' }]
+    const userAbilities = [{ action: 'manage', subject: 'all' }]
 
     ability.update(userAbilities)
     useCookie('userAbilityRules').value = userAbilities

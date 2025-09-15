@@ -8,46 +8,52 @@ const onSearch = () => emit('search')
 </script>
 
 <template>
-  <div class="top-bar">
-    <VTextField
-      v-model="searchTerm"
-      placeholder="Buscar..."
-      variant="outlined"
-      hide-details
-      class="flex-grow-1"
-      @keydown.enter="onSearch"
-    />
-    <VBtn
-      icon
-      color="error"
-      class="search-btn"
-      :loading="loading"
-      @click="onSearch"
-    >
-      <VIcon color="white">
-        mdi-magnify
-      </VIcon>
-    </VBtn>
-    <AppSelect
-
-      v-model="order"
-      :items="orderOptions"
-      label=""
-      max-width="250"
-    />
+  <div class="search-bar-wrapper mb-6">
+    <h2 class="text-h5 text-error font-weight-bold mb-4">COMPRA VENTA DE MOTORES ELÉCTRICOS INDUSTRIALES</h2>
+    <div class="top-bar">
+      <VTextField
+        v-model="searchTerm"
+        placeholder="Buscar..."
+        variant="outlined"
+        hide-details
+        class="flex-grow-1"
+        @keydown.enter="onSearch"
+      />
+      <VBtn
+        color="error"
+        class="search-btn"
+        @click="onSearch"
+      >
+        BUSCAR
+      </VBtn>
+      <AppSelect
+        v-model="order"
+        :items="orderOptions"
+        placeholder="Ordenar"
+        variant="outlined"
+        color="error"
+        style="max-width: 250px;"
+      />
+    </div>
   </div>
 </template>
 
-<style scoped>
+<style>
 .top-bar {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   width: 100%;
   gap: 16px;
-  margin-bottom: 24px;
 }
 .search-btn {
-  height: 56px;
-  width: 56px;
+  height: 56px !important;
+  background-color: #da291c !important;
+  color: white !important;
+}
+.search-bar-wrapper .text-error {
+  color: #da291c !important;
+}
+.search-bar-wrapper .v-select--variant-outlined .v-field__outline__color {
+  color: #da291c !important;
 }
 </style>
