@@ -280,7 +280,7 @@ const updateMotor = async (status: string) => {
       const galleryIds: number[] = []
       for (const image of motorGalleryFiles.value) {
         if (image.file) {
-          const uploadedImageId = await uploadMedia(image.file)
+          const uploadedImageId = await uploadMedia(image.file, postId.value ?? undefined)
           if (uploadedImageId)
             galleryIds.push(uploadedImageId)
         } else if (image.id) {
