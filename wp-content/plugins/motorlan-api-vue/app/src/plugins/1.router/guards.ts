@@ -25,10 +25,15 @@ export const setupGuards = (router: _RouterTyped<RouteNamedMap & { [key: string]
      */
     if (to.meta.unauthenticatedOnly) {
       if (isLoggedIn)
-        return '/'
+        return { name: 'store', replace: true }
       else
         return undefined
     }
+
+    // If the user is logged in and is trying to access the account page, allow it.
+    // This is to prevent a redirect loop for new users who need to complete their profile.
+    if (to.name === 'apps-user-account' && isLoggedIn)
+      return undefined
 
     if (!isLoggedIn) {
       return {

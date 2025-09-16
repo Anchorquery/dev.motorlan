@@ -1,6 +1,8 @@
 <script lang="ts" setup>
-import type { Component } from 'vue'
+import { provide, ref, watch, type Component } from 'vue'
+import { useRoute } from 'vue-router'
 import { PerfectScrollbar } from 'vue3-perfect-scrollbar'
+import { useElementHover } from '@vueuse/core'
 import { layoutConfig } from '@layouts'
 import { VerticalNavGroup, VerticalNavLink, VerticalNavSectionTitle } from '@layouts/components'
 import { useLayoutConfigStore } from '@layouts/stores/config'
@@ -82,7 +84,7 @@ const hideTitleAndIcon = configStore.isVerticalNavMini(isHovered)
               v-show="!hideTitleAndIcon"
               class="app-logo-title"
             >
-              {{ layoutConfig.app.title }}
+              
             </h1>
           </Transition>
         </RouterLink>

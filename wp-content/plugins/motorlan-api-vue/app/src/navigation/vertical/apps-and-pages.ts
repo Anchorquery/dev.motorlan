@@ -46,7 +46,7 @@ export default [
     icon: { icon: 'tabler-user' },
     children: [
       { title: 'Cuenta', to: { name: 'apps-user-account' } },
-      { title: 'Estadísticas', to: { name: 'apps-user-stats' } },
+      // { title: 'Estadísticas', to: { name: 'apps-user-stats' } },
     ],
   },
 ]

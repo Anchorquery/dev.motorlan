@@ -2,6 +2,21 @@
 import { VerticalNav } from '@layouts/components'
 import { useLayoutConfigStore } from '@layouts/stores/config'
 import type { VerticalNavItems } from '@layouts/types'
+import { useRouter } from 'vue-router'
+import { useToast } from '@/composables/useToast'
+
+const router = useRouter()
+const { isToastVisible, toastMessage, toastColor } = useToast()
+
+const logout = () => {
+  // Remove "userData" from cookie
+  useCookie('userData').value = null
+  useCookie('accessToken').value = null
+  useCookie('userAbilityRules').value = null
+
+  // Redirect to login page
+  router.push('/login')
+}
 interface Props {
   navItems: VerticalNavItems
   verticalNavAttrs?: {
@@ -112,6 +127,14 @@ const verticalNavAttrs = computed(() => {
       :class="[{ visible: isLayoutOverlayVisible }]"
       @click="() => { isLayoutOverlayVisible = !isLayoutOverlayVisible }"
     />
+    <VSnackbar
+      v-model="isToastVisible"
+      :color="toastColor"
+      location="top end"
+      variant="tonal"
+    >
+      {{ toastMessage }}
+    </VSnackbar>
   </div>
 </template>
 

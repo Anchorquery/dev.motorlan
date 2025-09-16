@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import CompanyProfile from '@/views/apps/user/view/CompanyProfile.vue'
+import UserProfile from '@/views/apps/user/view/UserProfile.vue'
 </script>
 
 <template>
-  <CompanyProfile />
+  <UserProfile />
 </template>

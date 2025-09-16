@@ -168,17 +168,24 @@ function motorlan_create_question_callback( WP_REST_Request $request ) {
     // Notify publication owner
     $publication_author_id = get_post_field( 'post_author', $publicacion_id );
     update_field( 'publication_owner', $publication_author_id, $post_id );
-    $author_data = get_userdata( $publication_author_id );
-    $author_email = $author_data->user_email;
+    
     $publication_title = get_the_title( $publicacion_id );
     $publication_url = get_permalink( $publicacion_id );
+    $user_who_asked = get_userdata( $user_id );
 
-    $subject = 'Nueva pregunta en tu publicación: ' . $publication_title;
-    $message = 'Has recibido una nueva pregunta en tu publicación "' . $publication_title . '".';
-    $message .= '\n\nPregunta: ' . $pregunta;
-    $message .= '\n\nPuedes ver la publicación aquí: ' . $publication_url;
-    
-    wp_mail( $author_email, $subject, $message );
+    $notification_manager = new Motorlan_Notification_Manager();
+    $notification_manager->create_notification(
+        $publication_author_id,
+        'new_question',
+        "Nueva pregunta de {$user_who_asked->display_name} en \"{$publication_title}\"",
+        $pregunta,
+        [
+            'publication_id' => $publicacion_id,
+            'question_id'    => $post_id,
+            'url'            => $publication_url,
+        ],
+        ['web', 'email']
+    );
 
     return new WP_REST_Response( array( 'success' => true, 'id' => $post_id ), 201 );
 }

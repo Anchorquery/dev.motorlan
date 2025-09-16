@@ -34,8 +34,74 @@ function motorlan_register_session_rest_routes()
         'callback' => 'update_user_profile_data',
         'permission_callback' => 'motorlan_permission_callback_true'
     ]);
+
+    register_rest_route($namespace, '/register', [
+        'methods' => 'POST',
+        'callback' => 'motorlan_register_user_callback',
+        'permission_callback' => '__return_true',
+    ]);
+
+    register_rest_route($namespace, '/check-username', [
+        'methods' => 'POST',
+        'callback' => 'motorlan_check_username_callback',
+        'permission_callback' => '__return_true',
+    ]);
 }
 add_action('rest_api_init', 'motorlan_register_session_rest_routes');
+
+/**
+ * Callback function to check username availability.
+ *
+ * @param WP_REST_Request $request The request object.
+ * @return WP_REST_Response The response object.
+ */
+function motorlan_check_username_callback(WP_REST_Request $request) {
+    $params = $request->get_json_params();
+    $username = sanitize_text_field($params['username']);
+
+    if (empty($username)) {
+        return new WP_REST_Response(['available' => false, 'message' => 'Username is required.'], 400);
+    }
+
+    if (username_exists($username)) {
+        return new WP_REST_Response(['available' => false, 'message' => 'Username already exists.'], 200);
+    }
+
+    return new WP_REST_Response(['available' => true], 200);
+}
+
+/**
+ * Callback function to register a new user.
+ *
+ * @param WP_REST_Request $request The request object.
+ * @return WP_REST_Response The response object.
+ */
+function motorlan_register_user_callback(WP_REST_Request $request) {
+    $params = $request->get_json_params();
+    $username = sanitize_text_field($params['username']);
+    $email = sanitize_email($params['email']);
+    $password = $params['password'];
+
+    if (empty($username) || empty($email) || empty($password)) {
+        return new WP_REST_Response(['message' => 'Username, email, and password are required.'], 400);
+    }
+
+    if (username_exists($username)) {
+        return new WP_REST_Response(['message' => 'Username already exists.'], 400);
+    }
+
+    if (email_exists($email)) {
+        return new WP_REST_Response(['message' => 'Email already exists.'], 400);
+    }
+
+    $user_id = wp_create_user($username, $password, $email);
+
+    if (is_wp_error($user_id)) {
+        return new WP_REST_Response(['message' => $user_id->get_error_message()], 500);
+    }
+
+    return new WP_REST_Response(['message' => 'User registered successfully.'], 200);
+}
 
 /**
  * Callback function to get session data.

@@ -1,6 +1,9 @@
 <!-- ❗Errors in the form are set on line 60 -->
 <script setup lang="ts">
+import { nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useAbility } from '@casl/vue'
+import { useRoute, useRouter } from 'vue-router'
 import { VForm } from 'vuetify/components/VForm'
 import { useGenerateImageVariant } from '@core/composable/useGenerateImageVariant'
 import authV2LoginIllustrationBorderedDark from '@images/pages/auth-v2-login-illustration-bordered-dark.png'
@@ -12,6 +15,8 @@ import authV2MaskLight from '@images/pages/misc-mask-light.png'
 import { VNodeRenderer } from '@layouts/components/VNodeRenderer'
 import { themeConfig } from '@themeConfig'
 import { useApi } from '@/composables/useApi'
+import { useToast } from '@/composables/useToast'
+import { requiredValidator } from '@core/utils/validators'
 
 const authThemeImg = useGenerateImageVariant(authV2LoginIllustrationLight, authV2LoginIllustrationDark, authV2LoginIllustrationBorderedLight, authV2LoginIllustrationBorderedDark, true)
 
@@ -31,6 +36,7 @@ const isPasswordVisible = ref(false)
 const route = useRoute()
 const router = useRouter()
 const ability = useAbility()
+const { showToast } = useToast()
 
 const errors = ref<Record<string, string | undefined>>({
   username: undefined,
@@ -78,6 +84,23 @@ const login = async () => {
     // Store the token in a cookie
     useCookie('accessToken').value = token
 
+    // Use native fetch to ensure the new token is used immediately
+    const profileResponse = await fetch('/wp-json/motorlan/v1/profile', {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    })
+
+    if (!profileResponse.ok) {
+      const errorData = await profileResponse.json().catch(() => ({}))
+      genericError.value = errorData.message || `Error al obtener el perfil: ${profileResponse.statusText}`
+      
+      return
+    }
+
+    const profileData = await profileResponse.json()
+
     // Store user data in a cookie
     useCookie('userData').value = {
       displayName: user_display_name,
@@ -92,14 +115,22 @@ const login = async () => {
     ability.update(userAbilities)
     useCookie('userAbilityRules').value = userAbilities
 
+    const { nombre, apellidos } = profileData.personal_data
+
     // Redirect to `to` query if exist or redirect to index route
     // ❗ nextTick is required to wait for DOM updates and later redirect
     await nextTick(() => {
-      if (route.query.to)
-
-        router.replace(String(route.query.to))
-      else
-        router.push({ name: 'dashboards-publications' })
+      showToast('Logueo exitoso')
+      if (!nombre || !apellidos) {
+        showToast('Por favor, completa tu perfil para continuar.', 'warning')
+        router.replace({ name: 'apps-user-account' })
+      }
+      else {
+        if (route.query.to)
+          router.replace(String(route.query.to))
+        else
+          router.replace({ path: '/store' })
+      }
     })
   }
   catch (err: any) {
@@ -196,7 +227,7 @@ const onSubmit = () => {
             <VRow>
               <!-- username -->
               <VCol cols="12">
-                <AppTextField
+                <VTextField
                   v-model="credentials.username"
                   :label="t('login.username')"
                   placeholder="johndoe"
@@ -209,7 +240,7 @@ const onSubmit = () => {
 
               <!-- password -->
               <VCol cols="12">
-                <AppTextField
+                <VTextField
                   v-model="credentials.password"
                   :label="t('login.password')"
                   placeholder="············"

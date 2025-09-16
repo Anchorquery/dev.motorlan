@@ -1,10 +1,13 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import { VForm } from 'vuetify/components/VForm'
 import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
 import { useApi } from '@/composables/useApi'
 import AuthProvider from '@/views/pages/authentication/AuthProvider.vue'
 import { VNodeRenderer } from '@layouts/components/VNodeRenderer'
 import { themeConfig } from '@themeConfig'
+import { emailValidator, requiredValidator } from '@core/utils/validators'
 
 import authV2RegisterIllustrationBorderedDark from '@images/pages/auth-v2-register-illustration-bordered-dark.png'
 import authV2RegisterIllustrationBorderedLight from '@images/pages/auth-v2-register-illustration-bordered-light.png'
@@ -42,6 +45,38 @@ const isSubmitting = ref(false)
 const refVForm = ref<VForm>()
 const errors = ref<Record<string, string | undefined>>({})
 const genericError = ref<string | null>(null)
+const isCheckingUsername = ref(false)
+const usernameError = ref<string | null>(null)
+const showSuccessNotification = ref(false)
+
+const checkUsernameAvailability = async () => {
+  if (!form.value.username) {
+    usernameError.value = null
+    
+    return
+  }
+  isCheckingUsername.value = true
+  usernameError.value = null
+  try {
+    const { data, error } = await useApi('/wp-json/motorlan/v1/check-username', {
+      method: 'POST',
+      body: JSON.stringify({ username: form.value.username }),
+    }).json()
+
+    if (error.value) {
+      usernameError.value = 'Error al verificar el nombre de usuario.'
+    }
+    else if (data.value && !data.value.available) {
+      usernameError.value = data.value.message || 'El nombre de usuario no está disponible.'
+    }
+  }
+  catch (e) {
+    usernameError.value = 'Error al conectar con el servidor.'
+  }
+  finally {
+    isCheckingUsername.value = false
+  }
+}
 
 const register = async () => {
   if (!form.value.privacyPolicies) {
@@ -53,7 +88,7 @@ const register = async () => {
   genericError.value = null
   errors.value = {}
 
-  const { data, error } = await useApi('/wp-json/wp/v2/users/register', {
+  const { data, error } = await useApi('/wp-json/motorlan/v1/register', {
     method: 'POST',
     body: JSON.stringify({
       username: form.value.username,
@@ -65,16 +100,25 @@ const register = async () => {
   isSubmitting.value = false
 
   if (error.value) {
-    genericError.value = error.value.data?.message || 'Ocurrió un error al registrar la cuenta.'
+    const errorMessage = error.value.data?.message || 'Ocurrió un error al registrar la cuenta.'
+    if (errorMessage.toLowerCase().includes('username')) {
+      errors.value.username = errorMessage
+    }
+    else if (errorMessage.toLowerCase().includes('email')) {
+      errors.value.email = errorMessage
+    }
+    else {
+      genericError.value = errorMessage
+    }
     
     return
   }
 
-  // Handle success
   if (data.value) {
-    // Optionally, you can automatically log in the user here
-    // For now, let's redirect to the login page with a success message
-    router.push({ name: 'login', query: { registered: 'true' } })
+    showSuccessNotification.value = true
+    setTimeout(() => {
+      router.push({ name: 'login' })
+    }, 4000)
   }
 }
 
@@ -161,21 +205,24 @@ const onSubmit = () => {
             @submit.prevent="onSubmit"
           >
             <VRow>
+
               <!-- Username -->
               <VCol cols="12">
-                <AppTextField
+                <VTextField
                   v-model="form.username"
                   :rules="[requiredValidator]"
                   autofocus
                   :label="t('register.username')"
                   placeholder="Johndoe"
-                  :error-messages="errors.username"
+                  :error-messages="errors.username || usernameError"
+                  :loading="isCheckingUsername"
+                  @blur="checkUsernameAvailability"
                 />
               </VCol>
 
               <!-- email -->
               <VCol cols="12">
-                <AppTextField
+                <VTextField
                   v-model="form.email"
                   :rules="[requiredValidator, emailValidator]"
                   :label="t('register.email')"
@@ -187,7 +234,7 @@ const onSubmit = () => {
 
               <!-- password -->
               <VCol cols="12">
-                <AppTextField
+                <VTextField
                   v-model="form.password"
                   :rules="[requiredValidator]"
                   :label="t('register.password')"
@@ -222,7 +269,7 @@ const onSubmit = () => {
                   block
                   type="submit"
                   :loading="isSubmitting"
-                  :disabled="isSubmitting"
+                  :disabled="isSubmitting || isCheckingUsername || !!usernameError"
                 >
                   {{ t('register.sign_up') }}
                 </VBtn>
@@ -264,6 +311,13 @@ const onSubmit = () => {
       </VCard>
     </VCol>
   </VRow>
+  <VSnackbar
+    v-model="showSuccessNotification"
+    color="success"
+    :timeout="4000"
+  >
+    ¡Registro exitoso! Se ha enviado un correo de verificación. Por favor, revisa tu bandeja de entrada.
+  </VSnackbar>
 </template>
 
 <style lang="scss">

@@ -4,9 +4,7 @@ import NavBarNotifications from './NavBarNotifications.vue'
 
 <template>
  
-    <div class="d-flex align-center cursor-pointer w-100 h-min">
-      <NavBarNotifications />
-    </div>
+    <NavBarNotifications />
   
 </template>
 
