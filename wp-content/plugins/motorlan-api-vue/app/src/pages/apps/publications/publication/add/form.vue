@@ -225,28 +225,6 @@ watch(tipos, newTipos => {
   }
 }, { immediate: true })
 
-// Media upload utility
-const uploadMedia = async (file: File, postId: number | null = null) => {
-  const formData = new FormData()
-
-  formData.append('file', file)
-  if (postId)
-    formData.append('post', postId.toString())
-
-  try {
-    const { data } = await useApi<any>('/wp-json/wp/v2/media', {
-      method: 'POST',
-      body: formData,
-    })
-
-    return data.value.id
-  }
-  catch (error) {
-    console.error('Failed to upload media:', error)
-
-    return null
-  }
-}
 
 
 const addDocument = () => {
@@ -275,11 +253,21 @@ const createPostAndContinue = async () => {
   }
 
   isLoading.value = true
-  try {
-    // Step 1: Create the post without media to get an ID
-    if (userData.value?.id)
-      postData.value.author = userData.value.id
 
+  try {
+    const formData = new FormData()
+
+    // Append basic post data
+    formData.append('title', postData.value.title)
+    formData.append('status', postData.value.status)
+    if (userData.value?.id)
+      formData.append('author', userData.value.id.toString())
+
+    // Append taxonomies as JSON strings
+    formData.append('categories', JSON.stringify(postData.value.categories))
+    formData.append('tipo', JSON.stringify(postData.value.tipo))
+
+    // Separate ACF fields from files
     const {
       motor_image,
       motor_gallery,
@@ -287,61 +275,39 @@ const createPostAndContinue = async () => {
       ...acfFields
     } = postData.value.acf
 
-    const initialPostData = {
-      ...postData.value,
-      acf: acfFields,
-    }
+    // Append ACF fields as a JSON string
+    formData.append('acf', JSON.stringify(acfFields))
 
-    const response = await useApi<any>(apiEndpoint, {
-      method: 'POST',
-      body: JSON.stringify(initialPostData),
+    // Append main image
+    if (motorImageFile.value.length > 0 && motorImageFile.value[0].file)
+      formData.append('motor_image', motorImageFile.value[0].file)
+
+    // Append gallery images
+    motorGalleryFiles.value.forEach(img => {
+      if (img.file)
+        formData.append('motor_gallery[]', img.file)
     })
 
-    newPostId.value = response.data.value.id
+    // Append additional documentation files and their names
+    const docNombres: { nombre: string }[] = []
+    documentacion_adicional.forEach((doc, index) => {
+      if (doc.archivo instanceof File) {
+        formData.append(`documentacion_adicional_archivos[]`, doc.archivo)
+        docNombres.push({ nombre: doc.nombre })
+      }
+    })
+    if (docNombres.length > 0)
+      formData.append('documentacion_adicional_nombres', JSON.stringify(docNombres))
 
-    // Step 2: Upload media and associate it with the new post ID
-    const uploadedImageIds: { motor_image?: number; motor_gallery?: number[]; documentacion_adicional?: any[] } = {}
-
-    if (motorImageFile.value.length > 0 && motorImageFile.value[0].file) {
-      const imageId = await uploadMedia(motorImageFile.value[0].file, newPostId.value)
-      if (imageId)
-        uploadedImageIds.motor_image = imageId
-    }
-
-    if (motorGalleryFiles.value.length > 0) {
-      const galleryIds = await Promise.all(
-        motorGalleryFiles.value
-          .filter(img => img.file)
-          .map(img => uploadMedia(img.file, newPostId.value)),
-      )
-      uploadedImageIds.motor_gallery = galleryIds.filter(id => id !== null) as number[]
-    }
-
-    if (postData.value.acf.documentacion_adicional.length > 0) {
-      const uploadedDocs = await Promise.all(
-        postData.value.acf.documentacion_adicional.map(async doc => {
-          if (doc.archivo instanceof File) {
-            const fileId = await uploadMedia(doc.archivo, newPostId.value)
-            return { nombre: doc.nombre, archivo: fileId }
-          }
-          return doc
-        }),
-      )
-      uploadedImageIds.documentacion_adicional = uploadedDocs
-    }
-
-    // Step 3: Update the post with the media IDs
-    if (Object.keys(uploadedImageIds).length > 0) {
-      await useApi<any>(`${apiEndpoint}/${newPostId.value}`, {
-        method: 'POST', // In WP REST API, POST on an existing ID acts as an update
-        body: JSON.stringify({
-          acf: uploadedImageIds,
-        }),
-      })
-    }
+    // Make the API call
+    await useApi<any>(apiEndpoint, {
+      method: 'POST',
+      body: formData,
+      // No need to set Content-Type, browser will do it for multipart/form-data
+    })
 
     showToast(t('add_publication.toasts.post_created_success'), 'success')
-   // router.push('/apps/publications/publication/list')
+    router.push('/apps/publications/publication/list')
   }
   catch (error: any) {
     showToast(t('add_publication.toasts.post_created_error', { message: error.message }), 'error')

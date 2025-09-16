@@ -216,101 +216,86 @@ onMounted(async () => {
   }
 })
 
-const uploadMedia = async (file: File, attachToPostId?: number) => {
-  const formData = new FormData()
-  formData.append('file', file)
-  if (attachToPostId)
-    formData.append('post', String(attachToPostId))
-  try {
-    const { data } = await useApi<any>('/wp-json/wp/v2/media', {
-      method: 'POST',
-      body: formData,
-    })
-    return data.value?.id ?? null
-  }
-  catch (error) {
-    console.error('Failed to upload media:', error)
-    return null
-  }
-}
 
 const updateMotor = async (status: string) => {
   if (!form.value)
     return
 
   const { valid } = await form.value.validate()
-
   if (!valid) {
     showToast(t('edit_publication.required_fields_error'), 'error')
 
     return
   }
 
-  const url = `/wp-json/motorlan/v1/publicaciones/uuid/${motorUuid}`
-  const method = 'POST'
-
   isLoading.value = true
+
   try {
-    const payload = JSON.parse(JSON.stringify(motorData.value))
+    const formData = new FormData()
 
-    payload.status = status
-    // Asegurar que el estado también se guarde en el campo ACF correcto
-    if (!payload.acf) payload.acf = {}
-    payload.acf.publicar_acf = status
+    // Append basic post data
+    formData.append('title', motorData.value.title)
+    formData.append('status', status)
 
-    if (payload.acf.marca && typeof payload.acf.marca === 'object')
-      payload.acf.marca = payload.acf.marca.id
+    // Append taxonomies
+    formData.append('categories', JSON.stringify(motorData.value.categories))
+    formData.append('tipo', JSON.stringify(motorData.value.tipo))
 
-    // Handle main image upload (ensure ID)
+    // Separate ACF fields from files
+    const {
+      motor_image,
+      motor_gallery,
+      documentacion_adicional,
+      ...acfFields
+    } = motorData.value.acf
+
+    // Append ACF fields as a JSON string
+    formData.append('acf', JSON.stringify(acfFields))
+
+    // Handle main image
     if (motorImageFile.value.length > 0) {
       const image = motorImageFile.value[0]
-      if (image.file) {
-        const uploadedImageId = await uploadMedia(image.file, postId.value ?? undefined)
-        if (uploadedImageId)
-          payload.acf.motor_image = uploadedImageId
-      } else if (image.id) {
-        payload.acf.motor_image = image.id
-      }
-    } else {
-      payload.acf.motor_image = null
+      if (image.file)
+        formData.append('motor_image', image.file)
+      else if (image.id)
+        formData.append('motor_image_id', image.id.toString())
+    }
+    else {
+      formData.append('motor_image_id', '') // To remove image
     }
 
-    // Handle gallery images upload (ensure IDs array)
-    if (motorGalleryFiles.value.length > 0) {
-      const galleryIds: number[] = []
-      for (const image of motorGalleryFiles.value) {
-        if (image.file) {
-          const uploadedImageId = await uploadMedia(image.file, postId.value ?? undefined)
-          if (uploadedImageId)
-            galleryIds.push(uploadedImageId)
-        } else if (image.id) {
-          galleryIds.push(image.id)
-        }
-      }
-      payload.acf.motor_gallery = galleryIds
-    } else {
-      payload.acf.motor_gallery = []
-    }
-
-    // Handle additional documentation (ensure IDs only)
-    if (payload.acf.documentacion_adicional) {
-      for (let i = 0; i < payload.acf.documentacion_adicional.length; i++) {
-        const doc = payload.acf.documentacion_adicional[i]
-        if (doc.archivo instanceof File) {
-          const uploadedFile = await uploadMedia(doc.archivo)
-          if (uploadedFile)
-            doc.archivo = uploadedFile
-        } else if (doc.archivo && doc.archivo.id) {
-          doc.archivo = doc.archivo.id
-        }
-      }
-    }
-
-    console.log('Data to send:', payload)
-    await useApi(url, {
-      method,
-      body: JSON.stringify(payload),
+    // Handle gallery images
+    const existingGalleryIds: number[] = []
+    motorGalleryFiles.value.forEach(image => {
+      if (image.file)
+        formData.append('motor_gallery[]', image.file)
+      else if (image.id)
+        existingGalleryIds.push(image.id)
     })
+    formData.append('motor_gallery_ids', existingGalleryIds.join(','))
+
+    // Handle additional documentation
+    const existingDocs: { nombre: string; archivo: number }[] = []
+    const newDocNombres: { nombre: string }[] = []
+    documentacion_adicional.forEach(doc => {
+      if (doc.archivo instanceof File) {
+        formData.append('documentacion_adicional_archivos[]', doc.archivo)
+        newDocNombres.push({ nombre: doc.nombre })
+      }
+      else if (doc.archivo && doc.archivo.id) {
+        existingDocs.push({ nombre: doc.nombre, archivo: doc.archivo.id })
+      }
+    })
+    formData.append('documentacion_adicional_ids', JSON.stringify(existingDocs))
+    formData.append('documentacion_adicional_nombres', JSON.stringify(newDocNombres))
+
+    // Make the API call
+    const url = `/wp-json/motorlan/v1/publicaciones/uuid/${motorUuid}`
+    await useApi(url, {
+      method: 'POST',
+      body: formData,
+    })
+
     showToast(t('edit_publication.update_success'), 'success')
     router.push('/apps/publications/publication/list')
   }
