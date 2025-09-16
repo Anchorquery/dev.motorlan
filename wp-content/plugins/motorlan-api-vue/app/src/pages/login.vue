@@ -1,5 +1,6 @@
 <!-- ❗Errors in the form are set on line 60 -->
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { VForm } from 'vuetify/components/VForm'
 import { useGenerateImageVariant } from '@core/composable/useGenerateImageVariant'
 import authV2LoginIllustrationBorderedDark from '@images/pages/auth-v2-login-illustration-bordered-dark.png'
@@ -10,11 +11,13 @@ import authV2MaskDark from '@images/pages/misc-mask-dark.png'
 import authV2MaskLight from '@images/pages/misc-mask-light.png'
 import { VNodeRenderer } from '@layouts/components/VNodeRenderer'
 import { themeConfig } from '@themeConfig'
-import api from '@/services/api'
+import { useApi } from '@/composables/useApi'
 
 const authThemeImg = useGenerateImageVariant(authV2LoginIllustrationLight, authV2LoginIllustrationDark, authV2LoginIllustrationBorderedLight, authV2LoginIllustrationBorderedDark, true)
 
 const authThemeMask = useGenerateImageVariant(authV2MaskLight, authV2MaskDark)
+
+const { t } = useI18n()
 
 definePage({
   meta: {
@@ -51,25 +54,26 @@ const login = async () => {
     errors.value = { username: undefined, password: undefined }
     genericError.value = null
 
-    const res = await api('/wp-json/jwt-auth/v1/token', {
-      method: 'POST',
-      body: {
+    const { data, error } = await useApi('/wp-json/jwt-auth/v1/token')
+      .post({
         username: credentials.value.username,
         password: credentials.value.password,
-      },
-      onResponseError({ response }) {
-        if (response._data && response._data.errors) {
-          errors.value = response._data.errors
-        }
-        else {
-          genericError.value = response._data?.message
-            || response.statusText
-            || 'An unknown error occurred. Please try again.'
-        }
-      },
-    })
+      })
+      .json()
 
-    const { token, user_display_name, user_email, user_nicename } = res
+    if (error.value) {
+      const errorData = error.value.data
+      if (errorData && errorData.errors) {
+        errors.value = errorData.errors
+      }
+      else {
+        genericError.value = errorData?.message || error.value.message || 'An unknown error occurred. Please try again.'
+      }
+
+      return
+    }
+
+    const { token, user_display_name, user_email, user_nicename } = data.value
 
     // Store the token in a cookie
     useCookie('accessToken').value = token
@@ -168,10 +172,10 @@ const onSubmit = () => {
       >
         <VCardText>
           <h4 class="text-h4 mb-1">
-            Welcome to <span class="text-capitalize"> {{ themeConfig.app.title }} </span>! 👋🏻
+            {{ t('login.welcome', { title: themeConfig.app.title }) }}
           </h4>
           <p class="mb-0">
-            Please sign-in to your account and start the adventure
+            {{ t('login.subtitle') }}
           </p>
         </VCardText>
 
@@ -194,7 +198,7 @@ const onSubmit = () => {
               <VCol cols="12">
                 <AppTextField
                   v-model="credentials.username"
-                  label="Username"
+                  :label="t('login.username')"
                   placeholder="johndoe"
                   type="text"
                   autofocus
@@ -207,7 +211,7 @@ const onSubmit = () => {
               <VCol cols="12">
                 <AppTextField
                   v-model="credentials.password"
-                  label="Password"
+                  :label="t('login.password')"
                   placeholder="············"
                   :rules="[requiredValidator]"
                   :type="isPasswordVisible ? 'text' : 'password'"
@@ -225,7 +229,7 @@ const onSubmit = () => {
                   :loading="isSubmitting"
                   :disabled="isSubmitting"
                 >
-                  Login
+                  {{ t('login.login_button') }}
                 </VBtn>
               </VCol>
 
@@ -234,12 +238,12 @@ const onSubmit = () => {
                 cols="12"
                 class="text-center"
               >
-                <span>New on our platform?</span>
+                <span>{{ t('login.new_platform') }}</span>
                 <RouterLink
                   class="text-primary ms-1"
                   :to="{ name: 'register' }"
                 >
-                  Create an account
+                  {{ t('login.create_account') }}
                 </RouterLink>
               </VCol>
               <VCol
@@ -247,7 +251,7 @@ const onSubmit = () => {
                 class="d-flex align-center"
               >
                 <VDivider />
-                <span class="mx-4">or</span>
+                <span class="mx-4">{{ t('login.or') }}</span>
                 <VDivider />
               </VCol>
 

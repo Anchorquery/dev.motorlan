@@ -457,6 +457,29 @@
     "my_sales": "Mis Ventas",
     "no_sales_yet": "Aún no has realizado ninguna venta."
   },
+  "login": {
+    "welcome": "¡Bienvenido a {title}! 👋🏻",
+    "subtitle": "Por favor, inicia sesión en tu cuenta y comienza la aventura",
+    "username": "Usuario",
+    "password": "Contraseña",
+    "login_button": "Iniciar sesión",
+    "new_platform": "¿Nuevo en nuestra plataforma?",
+    "create_account": "Crear una cuenta",
+    "or": "o"
+  },
+  "register": {
+    "title": "La aventura comienza aquí 🚀",
+    "subtitle": "¡Haz que la gestión de tu aplicación sea fácil y divertida!",
+    "username": "Usuario",
+    "email": "Correo electrónico",
+    "password": "Contraseña",
+    "agree_to": "Acepto la",
+    "privacy_policy": "política de privacidad y términos",
+    "sign_up": "Registrarse",
+    "already_account": "¿Ya tienes una cuenta?",
+    "sign_in_instead": "Inicia sesión en su lugar",
+    "or": "o"
+  },
   "$vuetify": {
     "badge": "Insignia",
     "noDataText": "No hay datos disponibles",

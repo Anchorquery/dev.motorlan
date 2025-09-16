@@ -3,14 +3,13 @@ import { useConfigStore } from '@core/stores/config'
 import { AppContentLayoutNav } from '@layouts/enums'
 import { switchToVerticalNavOnLtOverlayNavBreakpoint } from '@layouts/utils'
 
-const DefaultLayoutWithHorizontalNav = defineAsyncComponent(() => import('./components/DefaultLayoutWithHorizontalNav.vue'))
-const DefaultLayoutWithVerticalNav = defineAsyncComponent(() => import('./components/DefaultLayoutWithVerticalNav.vue'))
+const DefaultLayoutWithVerticalNav = defineAsyncComponent(() => import('@/layouts/components/DefaultLayoutWithVerticalNav.vue'))
 
 const configStore = useConfigStore()
 
 // ℹ️ This will switch to vertical nav when define breakpoint is reached when in horizontal nav layout
 // Remove below composable usage if you are not using horizontal nav layout in your app
-switchToVerticalNavOnLtOverlayNavBreakpoint()
+// switchToVerticalNavOnLtOverlayNavBreakpoint()
 
 const { layoutAttrs, injectSkinClasses } = useSkins()
 
@@ -34,7 +33,7 @@ watch([isFallbackStateActive, refLoadingIndicator], () => {
 <template>
   <Component
     v-bind="layoutAttrs"
-    :is="configStore.appContentLayoutNav === AppContentLayoutNav.Vertical ? DefaultLayoutWithVerticalNav : DefaultLayoutWithHorizontalNav"
+    :is="DefaultLayoutWithVerticalNav"
   >
     <AppLoadingIndicator ref="refLoadingIndicator" />
 

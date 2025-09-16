@@ -24,11 +24,7 @@ const configStore = useLayoutConfigStore()
       :class="configStore.isNavbarBlurEnabled && 'header-blur'"
     >
       <!-- 👉 Navbar -->
-      <div class="layout-navbar">
-        <div class="navbar-content-container">
-          <slot name="navbar" />
-        </div>
-      </div>
+
       <!-- 👉 Navigation -->
       <div class="layout-horizontal-nav">
         <div class="horizontal-nav-content-container">

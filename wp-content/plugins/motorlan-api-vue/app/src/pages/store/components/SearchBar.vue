@@ -32,6 +32,7 @@ const onSearch = () => emit('search')
         placeholder="Ordenar"
         variant="outlined"
         color="error"
+        class="ml-auto"
         style="max-width: 250px;"
       />
     </div>
@@ -46,7 +47,6 @@ const onSearch = () => emit('search')
   gap: 16px;
 }
 .search-btn {
-  height: 56px !important;
   background-color: #da291c !important;
   color: white !important;
 }

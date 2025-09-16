@@ -75,17 +75,27 @@ onMounted(fetchQuestions)
       <div
         v-for="q in questions"
         :key="q.id"
-        class="mb-4"
+        class="question-item mb-6 pb-6"
       >
         <p class="mb-1 font-weight-medium">
           {{ q.pregunta }}
         </p>
-        <p
+        <div
           v-if="q.respuesta"
-          class="text-secondary"
+          class="answer-wrapper"
         >
-          {{ q.respuesta }}
-        </p>
+          <VIcon
+            size="18"
+            icon="mdi-subdirectory-arrow-right"
+            class="mr-2"
+          />
+          <div class="answer-content">
+            <p class="text-secondary mb-1">
+              {{ q.respuesta }}
+            </p>
+            <span class="text-caption text-disabled">{{ q.fecha_respuesta }}</span>
+          </div>
+        </div>
       </div>
     </div>
     <div
@@ -108,5 +118,21 @@ onMounted(fetchQuestions)
 .publicacion-questions {
   border-top: 1px solid #E6E6E6;
   padding-top: 1rem;
+}
+
+.question-item {
+  border-bottom: 1px solid #E6E6E6;
+}
+
+.answer-wrapper {
+  display: flex;
+  align-items: flex-start;
+  margin-left: 1.5rem;
+  margin-top: 0.5rem;
+}
+
+.answer-content {
+  display: flex;
+  flex-direction: column;
 }
 </style>

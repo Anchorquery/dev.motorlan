@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { VForm } from 'vuetify/components/VForm'
-
+import { useI18n } from 'vue-i18n'
+import { useApi } from '@/composables/useApi'
 import AuthProvider from '@/views/pages/authentication/AuthProvider.vue'
 import { VNodeRenderer } from '@layouts/components/VNodeRenderer'
 import { themeConfig } from '@themeConfig'
@@ -19,6 +20,9 @@ const imageVariant = useGenerateImageVariant(authV2RegisterIllustrationLight,
 
 const authThemeMask = useGenerateImageVariant(authV2MaskLight, authV2MaskDark)
 
+const { t } = useI18n()
+const router = useRouter()
+
 definePage({
   meta: {
     layout: 'blank',
@@ -34,6 +38,53 @@ const form = ref({
 })
 
 const isPasswordVisible = ref(false)
+const isSubmitting = ref(false)
+const refVForm = ref<VForm>()
+const errors = ref<Record<string, string | undefined>>({})
+const genericError = ref<string | null>(null)
+
+const register = async () => {
+  if (!form.value.privacyPolicies) {
+    genericError.value = 'Debes aceptar la política de privacidad y los términos.'
+    
+    return
+  }
+  isSubmitting.value = true
+  genericError.value = null
+  errors.value = {}
+
+  const { data, error } = await useApi('/wp-json/wp/v2/users/register', {
+    method: 'POST',
+    body: JSON.stringify({
+      username: form.value.username,
+      email: form.value.email,
+      password: form.value.password,
+    }),
+  }).json()
+
+  isSubmitting.value = false
+
+  if (error.value) {
+    genericError.value = error.value.data?.message || 'Ocurrió un error al registrar la cuenta.'
+    
+    return
+  }
+
+  // Handle success
+  if (data.value) {
+    // Optionally, you can automatically log in the user here
+    // For now, let's redirect to the login page with a success message
+    router.push({ name: 'login', query: { registered: 'true' } })
+  }
+}
+
+const onSubmit = () => {
+  refVForm.value?.validate()
+    .then(({ valid: isValid }) => {
+      if (isValid)
+        register()
+    })
+}
 </script>
 
 <template>
@@ -89,15 +140,26 @@ const isPasswordVisible = ref(false)
       >
         <VCardText>
           <h4 class="text-h4 mb-1">
-            Adventure starts here 🚀
+            {{ t('register.title') }}
           </h4>
           <p class="mb-0">
-            Make your app management easy and fun!
+            {{ t('register.subtitle') }}
           </p>
         </VCardText>
 
         <VCardText>
-          <VForm @submit.prevent="() => {}">
+          <VAlert
+            v-if="genericError"
+            color="error"
+            variant="tonal"
+            class="mb-4"
+          >
+            {{ genericError }}
+          </VAlert>
+          <VForm
+            ref="refVForm"
+            @submit.prevent="onSubmit"
+          >
             <VRow>
               <!-- Username -->
               <VCol cols="12">
@@ -105,8 +167,9 @@ const isPasswordVisible = ref(false)
                   v-model="form.username"
                   :rules="[requiredValidator]"
                   autofocus
-                  label="Username"
+                  :label="t('register.username')"
                   placeholder="Johndoe"
+                  :error-messages="errors.username"
                 />
               </VCol>
 
@@ -115,9 +178,10 @@ const isPasswordVisible = ref(false)
                 <AppTextField
                   v-model="form.email"
                   :rules="[requiredValidator, emailValidator]"
-                  label="Email"
+                  :label="t('register.email')"
                   type="email"
                   placeholder="johndoe@email.com"
+                  :error-messages="errors.email"
                 />
               </VCol>
 
@@ -126,11 +190,12 @@ const isPasswordVisible = ref(false)
                 <AppTextField
                   v-model="form.password"
                   :rules="[requiredValidator]"
-                  label="Password"
+                  :label="t('register.password')"
                   placeholder="············"
                   :type="isPasswordVisible ? 'text' : 'password'"
                   autocomplete="password"
                   :append-inner-icon="isPasswordVisible ? 'tabler-eye-off' : 'tabler-eye'"
+                  :error-messages="errors.password"
                   @click:append-inner="isPasswordVisible = !isPasswordVisible"
                 />
 
@@ -138,25 +203,28 @@ const isPasswordVisible = ref(false)
                   <VCheckbox
                     id="privacy-policy"
                     v-model="form.privacyPolicies"
+                    :rules="[requiredValidator]"
                     inline
                   />
                   <VLabel
                     for="privacy-policy"
                     style="opacity: 1;"
                   >
-                    <span class="me-1 text-high-emphasis">I agree to</span>
+                    <span class="me-1 text-high-emphasis">{{ t('register.agree_to') }}</span>
                     <a
                       href="javascript:void(0)"
                       class="text-primary"
-                    >privacy policy & terms</a>
+                    >{{ t('register.privacy_policy') }}</a>
                   </VLabel>
                 </div>
 
                 <VBtn
                   block
                   type="submit"
+                  :loading="isSubmitting"
+                  :disabled="isSubmitting"
                 >
-                  Sign up
+                  {{ t('register.sign_up') }}
                 </VBtn>
               </VCol>
 
@@ -165,12 +233,12 @@ const isPasswordVisible = ref(false)
                 cols="12"
                 class="text-center text-base"
               >
-                <span class="d-inline-block">Already have an account?</span>
+                <span class="d-inline-block">{{ t('register.already_account') }}</span>
                 <RouterLink
                   class="text-primary ms-1 d-inline-block"
                   :to="{ name: 'login' }"
                 >
-                  Sign in instead
+                  {{ t('register.sign_in_instead') }}
                 </RouterLink>
               </VCol>
 
@@ -179,7 +247,7 @@ const isPasswordVisible = ref(false)
                 class="d-flex align-center"
               >
                 <VDivider />
-                <span class="mx-4">or</span>
+                <span class="mx-4">{{ t('register.or') }}</span>
                 <VDivider />
               </VCol>
 

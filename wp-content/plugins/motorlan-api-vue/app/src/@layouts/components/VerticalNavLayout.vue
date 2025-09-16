@@ -2,7 +2,6 @@
 import { VerticalNav } from '@layouts/components'
 import { useLayoutConfigStore } from '@layouts/stores/config'
 import type { VerticalNavItems } from '@layouts/types'
-
 interface Props {
   navItems: VerticalNavItems
   verticalNavAttrs?: {
@@ -78,6 +77,16 @@ const verticalNavAttrs = computed(() => {
         <template #before-nav-items>
           <slot name="before-vertical-nav-items" />
         </template>
+        <template #after-nav-items>
+          <VBtn
+            class="ma-4"
+            icon
+            variant="text"
+            @click="logout"
+          >
+            <VIcon icon="tabler-logout" />
+          </VBtn>
+        </template>
       </VerticalNav>
     </component>
     <div class="layout-content-wrapper">
@@ -85,12 +94,7 @@ const verticalNavAttrs = computed(() => {
         class="layout-navbar"
         :class="[{ 'navbar-blur': configStore.isNavbarBlurEnabled }]"
       >
-        <div class="navbar-content-container">
-          <slot
-            name="navbar"
-            :toggle-vertical-overlay-nav-active="toggleIsOverlayNavActive"
-          />
-        </div>
+
       </header>
       <main class="layout-page-content">
         <div class="page-content-container">
