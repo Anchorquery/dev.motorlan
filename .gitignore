@@ -13,7 +13,7 @@ wp-content/debug.log
 
 # Node / build
 **/node_modules/
-**/dist/
+
 **/.vite/
 
 # Varios
@@ -22,3 +22,5 @@ wp-content/debug.log
 wp-config.php
 wp-content/plugins/motorlan-api-vue/app/typed-router.d.ts
 wp-config.php
+/wp-content/plugins/gp-premium/dist
+/wp-content/plugins/jwt-authentication-for-wp-rest-api/admin/ui/dist
