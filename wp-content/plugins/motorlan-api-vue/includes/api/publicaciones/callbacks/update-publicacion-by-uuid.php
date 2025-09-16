@@ -31,7 +31,12 @@ function motorlan_update_publicacion_by_uuid(WP_REST_Request $request) {
         wp_update_post(['ID' => $post_id, 'post_title' => sanitize_text_field($params['title'])]);
     }
     if (isset($params['status'])) {
-        wp_update_post(['ID' => $post_id, 'post_status' => sanitize_text_field($params['status'])]);
+        wp_update_post([
+            'ID' => $post_id,
+            'post_status' => sanitize_text_field($params['status'])
+        ]);
+        // Also update the ACF field for consistency if it exists
+        update_field('publicar_acf', sanitize_text_field($params['status']), $post_id);
     }
 
     // --- Handle Taxonomies ---
