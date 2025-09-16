@@ -456,6 +456,14 @@
     "my_sales": "My Sales",
     "no_sales_yet": "You have not made any sales yet."
   },
+  "notifications": {
+    "title": "Notifications",
+    "new_count": "{count} New",
+    "mark_all_read": "Mark all as read",
+    "mark_all_unread": "Mark all as unread",
+    "no_notifications": "No Notification Found!",
+    "view_all": "View All Notifications"
+  },
   "$vuetify": {
     "badge": "Badge",
     "noDataText": "No data available",

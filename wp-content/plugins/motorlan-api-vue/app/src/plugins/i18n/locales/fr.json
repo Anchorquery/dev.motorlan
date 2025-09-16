@@ -302,6 +302,14 @@
       "warranty_request_error": "Erreur lors de la demande de garantie : {message}"
     }
   },
+  "notifications": {
+    "title": "Notifications",
+    "new_count": "{count} Nouveau",
+    "mark_all_read": "Marquer tout comme lu",
+    "mark_all_unread": "Marquer tout comme non lu",
+    "no_notifications": "Aucune notification trouvée !",
+    "view_all": "Voir toutes les notifications"
+  },
   "$vuetify": {
     "badge": "Badge",
     "loading": "Chargement",

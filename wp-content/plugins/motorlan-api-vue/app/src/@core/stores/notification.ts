@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import type { Notification } from '@layouts/types'
-import api from '@/services/api'
+import { useApi } from '@/composables/useApi'
 
 export const useNotificationStore = defineStore('notification', {
   state: () => ({
@@ -9,28 +9,28 @@ export const useNotificationStore = defineStore('notification', {
 
   actions: {
     async fetchNotifications() {
-      try {
-        const { data } = await api.get<Notification[]>('/notifications')
-        this.notifications = data
+      const { data, error } = await useApi('/notifications').get().json<Notification[]>()
+      if (error.value) {
+        console.error('Error fetching notifications:', error.value)
+        return
       }
-      catch (error) {
-        console.error('Error fetching notifications:', error)
-      }
+      if (data.value)
+        this.notifications = data.value
     },
 
     async markNotificationsAsRead(notificationIds: number[]) {
-      try {
-        await api.post('/notifications/read', { notification_ids: notificationIds })
-        
-        // Update the state locally
-        this.notifications.forEach(notification => {
-          if (notificationIds.includes(notification.id))
-            notification.isSeen = true
-        })
+      const { error } = await useApi('/notifications/read').post({ notification_ids: notificationIds }).json()
+
+      if (error.value) {
+        console.error('Error marking notifications as read:', error.value)
+        return
       }
-      catch (error) {
-        console.error('Error marking notifications as read:', error)
-      }
+      
+      // Update the state locally
+      this.notifications.forEach(notification => {
+        if (notificationIds.includes(notification.id))
+          notification.isSeen = true
+      })
     },
 
     removeNotification(notificationId: number) {

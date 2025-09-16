@@ -480,6 +480,14 @@
     "sign_in_instead": "Inicia sesión en su lugar",
     "or": "o"
   },
+  "notifications": {
+    "title": "Notificaciones",
+    "new_count": "{count} Nueva(s)",
+    "mark_all_read": "Marcar todo como leído",
+    "mark_all_unread": "Marcar todo como no leído",
+    "no_notifications": "¡No se encontraron notificaciones!",
+    "view_all": "Ver todas las notificaciones"
+  },
   "$vuetify": {
     "badge": "Insignia",
     "noDataText": "No hay datos disponibles",
