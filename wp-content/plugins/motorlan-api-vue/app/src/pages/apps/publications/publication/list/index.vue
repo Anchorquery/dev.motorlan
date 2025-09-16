@@ -78,7 +78,7 @@ const apiUrl = computed(() => {
   if (orderBy.value)
     params.append('order', orderBy.value)
 
-  return `/wp-json/motorlan/v1/publicaciones?${params.toString()}`
+  return `/wp-json/motorlan/v1/my-publications?${params.toString()}`
 })
 
 const { data: publicacionesData, execute: fetchPublicaciones, isFetching: isTableLoading } = useApi<any>(apiUrl, { immediate: false }).get().json()

@@ -116,7 +116,7 @@ interface FileData {
   file: File
   url: string
 }
-interface Marca { id: number; name: string; title: string; value: number }
+interface Marca { term_id: number; name: string; title: string; value: number }
 interface Categoria { term_id: number; name: string; title: string; value: number }
 interface Tipo { term_id: number; name: string; slug: string; title: string; value: number }
 interface Documento { nombre: string; archivo: File | number | null }
@@ -175,23 +175,23 @@ onMounted(async () => {
       tiposResponse,
       userResponse,
     ] = await Promise.all([
-      useApi<Marca[]>('/wp-json/motorlan/v1/marcas'),
-      useApi<Categoria[]>('/wp-json/motorlan/v1/publicacion-categories'),
-      useApi<Tipo[]>('/wp-json/motorlan/v1/tipos'),
-      useApi<any>('/wp-json/wp/v2/users/me?context=edit'),
+      useApi<Marca[]>('/wp-json/motorlan/v1/marcas').json(),
+      useApi<Categoria[]>('/wp-json/motorlan/v1/publicacion-categories').json(),
+      useApi<Tipo[]>('/wp-json/motorlan/v1/tipos').json(),
+      useApi<any>('/wp-json/wp/v2/users/me?context=edit').json(),
     ])
 
     if (marcasResponse && marcasResponse.data.value) {
-      marcas.value = marcasResponse.data.value.map(marca => ({
-        id: marca.id,
+      marcas.value = marcasResponse.data.value.map((marca: Marca) => ({
+        term_id: marca.term_id,
         name: marca.name,
         title: marca.name,
-        value: marca.id,
+        value: marca.term_id,
       }))
     }
 
     if (categoriesResponse && categoriesResponse.data.value) {
-      categories.value = categoriesResponse.data.value.map(category => ({
+      categories.value = categoriesResponse.data.value.map((category: Categoria) => ({
         term_id: category.term_id,
         name: category.name,
         title: category.name,
