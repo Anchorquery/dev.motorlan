@@ -122,7 +122,7 @@ onMounted(async () => {
 
     if (motorUuid) {
       fetchPromises.push(useApi(`/wp-json/motorlan/v1/publicaciones/uuid/${motorUuid}`).get().json())
-      fetchPromises.push(useApi(`/wp-json/motorlan/v1/garantias/publicacion/${motorUuid}`).get().json())
+      // fetchPromises.push(useApi(`/wp-json/motorlan/v1/garantias/publicacion/${motorUuid}`).get().json())
     }
 
     const [
@@ -130,7 +130,7 @@ onMounted(async () => {
       { data: categoriesData },
       { data: tiposData },
       motorResponse,
-      garantiaResponse,
+      // garantiaResponse,
     ] = await Promise.all(fetchPromises)
 
     if (marcasData.value) {
@@ -208,8 +208,8 @@ onMounted(async () => {
         motorData.value.acf.estado_del_articulo = conditionMap[estado]
     }
 
-    if (garantiaResponse && garantiaResponse.data.value)
-      garantiaData.value = garantiaResponse.data.value
+    /* if (garantiaResponse && garantiaResponse.data.value)
+      garantiaData.value = garantiaResponse.data.value */
   }
   catch (error) {
     console.error('Error al obtener los datos iniciales:', error)
@@ -812,6 +812,7 @@ const submitGarantia = async () => {
           </VCard>
 
           <!-- Warranty Section -->
+          <!--
           <VCard
             class="mb-6"
             :title="t('edit_publication.warranty_section_title', 'Garantía')"
@@ -834,6 +835,7 @@ const submitGarantia = async () => {
               </VBtn>
             </VCardText>
           </VCard>
+          -->
         </VCol>
       </VRow>
     </VForm>
@@ -851,6 +853,7 @@ const submitGarantia = async () => {
     </VOverlay>
 
     <!-- Warranty Request Modal -->
+    <!--
     <VDialog
       v-model="isWarrantyModalVisible"
       max-width="800px"
@@ -957,5 +960,6 @@ const submitGarantia = async () => {
         </VCardActions>
       </VCard>
     </VDialog>
+    -->
   </div>
 </template>

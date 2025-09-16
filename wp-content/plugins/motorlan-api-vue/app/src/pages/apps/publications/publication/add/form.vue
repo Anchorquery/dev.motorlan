@@ -57,7 +57,7 @@ const postData = ref<{
     stock: number
     documentacion_adicional: Documento[]
   }
-  author_id: null | number
+  author: null | number
 }>({
   title: '',
   status: 'publish',
@@ -89,10 +89,10 @@ const postData = ref<{
     stock: 1,
     documentacion_adicional: [],
   },
-  author_id: null,
+  author: null,
 })
 
-const garantiaData = ref<{
+/* const garantiaData = ref<{
   motor_id: number | null
   is_same_address: string
   direccion_motor: string
@@ -108,7 +108,7 @@ const garantiaData = ref<{
   agencia_transporte: '',
   modalidad_pago: 'cod',
   comentarios: '',
-})
+}) */
 
 const userData = ref<any>(null)
 
@@ -226,10 +226,13 @@ watch(tipos, newTipos => {
 }, { immediate: true })
 
 // Media upload utility
-const uploadMedia = async (file: File) => {
+const uploadMedia = async (file: File, postId: number | null = null) => {
   const formData = new FormData()
 
   formData.append('file', file)
+  if (postId)
+    formData.append('post', postId.toString())
+
   try {
     const { data } = await useApi<any>('/wp-json/wp/v2/media', {
       method: 'POST',
@@ -273,56 +276,72 @@ const createPostAndContinue = async () => {
 
   isLoading.value = true
   try {
-    // Handle main image upload
-    if (motorImageFile.value.length > 0) {
-      const image = motorImageFile.value[0]
-      if (image.file) {
-        const uploadedImageId = await uploadMedia(image.file)
+    // Step 1: Create the post without media to get an ID
+    if (userData.value?.id)
+      postData.value.author = userData.value.id
 
-        postData.value.acf.motor_image = uploadedImageId
-      }
-    }
+    const {
+      motor_image,
+      motor_gallery,
+      documentacion_adicional,
+      ...acfFields
+    } = postData.value.acf
 
-    // Handle gallery images upload
-    if (motorGalleryFiles.value.length > 0) {
-      const newGalleryIds = []
-      for (const image of motorGalleryFiles.value) {
-        if (image.file) {
-          const uploadedImageId = await uploadMedia(image.file)
-
-          newGalleryIds.push(uploadedImageId)
-        }
-      }
-      postData.value.acf.motor_gallery = newGalleryIds
-    }
-
-    // Handle file uploads for additional documentation
-    for (const doc of postData.value.acf.documentacion_adicional) {
-      if (doc.archivo instanceof File) {
-        const fileId = await uploadMedia(doc.archivo)
-
-        doc.archivo = fileId
-      }
-    }
-    // Insertar id de usuario como autor
-    if (userData.value?.id) {
-      postData.value.author_id = userData.value.id
+    const initialPostData = {
+      ...postData.value,
+      acf: acfFields,
     }
 
     const response = await useApi<any>(apiEndpoint, {
       method: 'POST',
-      body: JSON.stringify(postData.value),
+      body: JSON.stringify(initialPostData),
     })
 
     newPostId.value = response.data.value.id
+
+    // Step 2: Upload media and associate it with the new post ID
+    const uploadedImageIds: { motor_image?: number; motor_gallery?: number[]; documentacion_adicional?: any[] } = {}
+
+    if (motorImageFile.value.length > 0 && motorImageFile.value[0].file) {
+      const imageId = await uploadMedia(motorImageFile.value[0].file, newPostId.value)
+      if (imageId)
+        uploadedImageIds.motor_image = imageId
+    }
+
+    if (motorGalleryFiles.value.length > 0) {
+      const galleryIds = await Promise.all(
+        motorGalleryFiles.value
+          .filter(img => img.file)
+          .map(img => uploadMedia(img.file, newPostId.value)),
+      )
+      uploadedImageIds.motor_gallery = galleryIds.filter(id => id !== null) as number[]
+    }
+
+    if (postData.value.acf.documentacion_adicional.length > 0) {
+      const uploadedDocs = await Promise.all(
+        postData.value.acf.documentacion_adicional.map(async doc => {
+          if (doc.archivo instanceof File) {
+            const fileId = await uploadMedia(doc.archivo, newPostId.value)
+            return { nombre: doc.nombre, archivo: fileId }
+          }
+          return doc
+        }),
+      )
+      uploadedImageIds.documentacion_adicional = uploadedDocs
+    }
+
+    // Step 3: Update the post with the media IDs
+    if (Object.keys(uploadedImageIds).length > 0) {
+      await useApi<any>(`${apiEndpoint}/${newPostId.value}`, {
+        method: 'POST', // In WP REST API, POST on an existing ID acts as an update
+        body: JSON.stringify({
+          acf: uploadedImageIds,
+        }),
+      })
+    }
+
     showToast(t('add_publication.toasts.post_created_success'), 'success')
-
-    const tipoTerm = tipos.value.find(t => t.value === postData.value.tipo[0])
-    if (tipoTerm && tipoTerm.name === 'Otro Repuesto')
-      router.push('/apps/publications/publication/list')
-
-    else
-      currentStep.value = 2
+   // router.push('/apps/publications/publication/list')
   }
   catch (error: any) {
     showToast(t('add_publication.toasts.post_created_error', { message: error.message }), 'error')
@@ -333,7 +352,7 @@ const createPostAndContinue = async () => {
   }
 }
 
-// Step 2: Skip warranty
+/* // Step 2: Skip warranty
 const skipGarantia = () => {
   if (confirm(t('add_publication.toasts.warranty_skipped_confirmation'))) {
     showToast(t('add_publication.toasts.warranty_skipped_info'), 'info')
@@ -371,7 +390,7 @@ const submitGarantia = async () => {
     showToast(t('add_publication.toasts.warranty_request_error', { message: error.message }), 'error')
     console.error('Failed to submit garantia:', error)
   }
-}
+} */
 </script>
 
 <template>
@@ -381,10 +400,10 @@ const submitGarantia = async () => {
         <h4 class="text-h4 font-weight-medium">
           {{ pageTitle }}
         </h4>
-        <span
+        <!-- <span
           v-if="postData.tipo[0] !== 3"
           class="text-body-1"
-        >{{ t('add_publication.step', { currentStep }) }}</span>
+        >{{ t('add_publication.step', { currentStep }) }}</span> -->
       </div>
       <div class="d-flex gap-4 align-center flex-wrap">
         <VBtn
@@ -745,6 +764,7 @@ const submitGarantia = async () => {
     </VForm>
 
     <!-- Step 2: Warranty Offer -->
+    <!--
     <VCard
       v-if="currentStep === 2"
       :title="t('add_publication.warranty.add_warranty_title')"
@@ -775,8 +795,10 @@ const submitGarantia = async () => {
         </VBtn>
       </VCardActions>
     </VCard>
+    -->
 
     <!-- Step 3: Warranty Form -->
+    <!--
     <VCard
       v-if="currentStep === 3"
       :title="t('add_publication.warranty.form_title')"
@@ -881,6 +903,7 @@ const submitGarantia = async () => {
         </VBtn>
       </VCardActions>
     </VCard>
+    -->
   </div>
   <!-- 👉 Loading overlay -->
   <VOverlay

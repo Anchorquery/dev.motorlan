@@ -83,6 +83,7 @@ const login = async () => {
 
     // Store the token in a cookie
     useCookie('accessToken').value = token
+    localStorage.setItem('accessToken', token)
 
     // Use native fetch to ensure the new token is used immediately
     const profileResponse = await fetch('/wp-json/motorlan/v1/profile', {

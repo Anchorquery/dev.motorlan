@@ -46,16 +46,20 @@ const updateOptions = (options: any) => {
   orderBy.value = options.sortBy[0]?.order
 }
 
-const resolveStatus = (statusMsg: string) => {
-  if (statusMsg === 'publish')
+const resolveStatus = (statusMsg: string | number) => {
+  const statusString = String(statusMsg)
+
+  // Handle the expected string values first
+  if (statusString === 'publish')
     return { text: t('custom.published'), color: 'success' }
-  if (statusMsg === 'draft')
+  if (statusString === 'draft')
     return { text: t('custom.draft'), color: 'secondary' }
-  if (statusMsg === 'paused')
+  if (statusString === 'paused')
     return { text: t('custom.paused'), color: 'warning' }
-  if (statusMsg === 'sold')
+  if (statusString === 'sold')
     return { text: t('custom.sold'), color: 'error' }
 
+  // If it's not one of the expected strings, it's an unknown/invalid status
   return { text: t('custom.unknown'), color: 'info' }
 }
 
@@ -471,7 +475,7 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
 
         <!-- precio -->
         <template #item.precio="{ item }">
-          <span class="text-body-1 text-high-emphasis">{{ (item as any).acf.precio_de_venta }}</span>
+          <span class="text-body-1 text-high-emphasis">{{ (item as any).acf.precio_de_venta }}€</span>
         </template>
 
         <!-- status -->

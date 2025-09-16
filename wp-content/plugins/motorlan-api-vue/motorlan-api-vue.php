@@ -99,3 +99,25 @@ function motorlan_create_notifications_table() {
     dbDelta( $sql );
 }
 register_activation_hook( __FILE__, 'motorlan_create_notifications_table' );
+/**
+ * Filter the JWT payload to fix the "Not Before" (nbf) claim.
+ * This prevents issues with server time synchronization.
+ *
+ * @param array $payload The JWT payload.
+ * @param WP_User $user The user object.
+ * @return array The modified JWT payload.
+ */
+function motorlan_jwt_payload_fix_nbf($payload, $user) {
+    // Subtract 10 seconds from the 'nbf' claim to ensure the token is valid immediately.
+    if (isset($payload['nbf'])) {
+        $payload['nbf'] = $payload['nbf'] - 10;
+    }
+    
+    // Also, ensure the 'iat' (Issued At) is not in the future.
+    if (isset($payload['iat'])) {
+        $payload['iat'] = min($payload['iat'], time());
+    }
+
+    return $payload;
+}
+add_filter('jwt_auth_payload', 'motorlan_jwt_payload_fix_nbf', 10, 2);

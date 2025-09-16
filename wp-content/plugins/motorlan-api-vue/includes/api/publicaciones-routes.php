@@ -77,7 +77,7 @@ function motorlan_register_publicaciones_rest_routes() {
     register_rest_route( $namespace, '/publicaciones', array(
         'methods'  => WP_REST_Server::CREATABLE,
         'callback' => 'motorlan_create_publicacion_callback',
-        //'permission_callback' => 'motorlan_is_user_authenticated',
+        'permission_callback' => 'motorlan_is_user_authenticated',
     ) );
 
     // Route for getting and updating a single publicacion by UUID
@@ -919,11 +919,19 @@ function motorlan_create_publicacion_callback(WP_REST_Request $request) {
         return new WP_Error('missing_description', 'La descripción es obligatoria', ['status' => 400]);
     }
 
+    // Determinar el autor. Priorizar el ID enviado en la solicitud,
+    // pero usar el usuario actual como fallback si la autenticación es por cookie/nonce.
+    $author_id = get_current_user_id();
+    if ( ! $author_id ) {
+        // Si después de todo no hay autor, es un error porque la permission_callback debió impedirlo.
+        return new WP_Error('no_author', 'No se pudo determinar el autor de la publicación.', ['status' => 401]);
+    }
+
     $post_data = array(
         'post_title'  => sanitize_text_field($params['title']),
         'post_status' => sanitize_text_field($params['status']),
         'post_type'   => 'publicaciones',
-        'post_author' => get_current_user_id(),
+        'post_author' => $author_id,
     );
 
     $post_id = wp_insert_post($post_data);
