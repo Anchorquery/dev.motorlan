@@ -76,18 +76,6 @@ const title = computed(() => {
             {{ publicacion.acf.precio_de_venta ? `${publicacion.acf.precio_de_venta}€` : 'Consultar precio' }}
           </div>
         </div>
-        <div
-          v-if="publicacion.acf.precio_negociable && !isOwner"
-          class="d-flex gap-4 mt-4"
-        >
-          <VBtn
-            variant="tonal"
-            @click="isOfferModalVisible = true"
-          >
-            Hacer una oferta
-          </VVBtn>
-          <VBtn>Comprar</VBtn>
-        </div>
       </VCol>
     </VRow>
     <VRow>

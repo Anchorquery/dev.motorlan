@@ -314,30 +314,21 @@ const removeOffer = async () => {
 
     <div class="d-flex flex-wrap gap-4 mb-6">
       <VBtn
+        v-if="isNegotiable && !isOwner"
+        variant="tonal"
+        color="error"
+        class="px-6 flex-grow-1 action-btn"
+        @click="openOfferDialog"
+      >
+        Hacer una oferta
+      </VBtn>
+      <VBtn
         v-if="!isOwner"
         color="error"
         class="px-6 flex-grow-1 action-btn"
         @click="isConfirmDialogOpen = true"
       >
         Comprar
-      </VBtn>
-      <VBtn
-        v-if="isNegotiable && !isOwner"
-        variant="outlined"
-        color="error"
-        class="px-6 flex-grow-1 action-btn"
-        @click="openOfferDialog"
-      >
-        {{ offer ? 'Editar oferta' : 'Hacer una oferta' }}
-      </VBtn>
-      <VBtn
-        v-if="offer && isNegotiable && !isOwner"
-        variant="text"
-        color="error"
-        class="px-6 flex-grow-1 action-btn"
-        @click="removeOffer"
-      >
-        Quitar oferta
       </VBtn>
     </div>
 

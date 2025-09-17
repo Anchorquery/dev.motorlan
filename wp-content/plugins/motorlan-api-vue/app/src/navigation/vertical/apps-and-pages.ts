@@ -11,7 +11,7 @@ export default [
     children: [
       { title: 'List', to: 'apps-publications-publication-list' },
       { title: 'Ventas', to: 'apps-publications-sales' },
-      { title: 'Preguntas', to: 'apps-publications-questions' },
+      { title: 'Ofertas Recibidas', to: 'apps-publications-offers-received' },
     ],
   },
   {
@@ -36,7 +36,7 @@ export default [
     icon: { icon: 'tabler-user-circle' },
     children: [
       { title: 'Compras', to: 'apps-purchases-purchases' },
-      { title: 'Preguntas', to: 'apps-purchases-questions' },
+      { title: 'Ofertas Enviadas', to: 'apps-purchases-offers-sent' },
       // { title: 'Opiniones', to: 'apps-purchases-opinions' },
       { title: 'Favoritos', to: 'apps-purchases-favorites' },
     ],

@@ -8,7 +8,9 @@ const props = defineProps<{
   publicacionId: number
 }>()
 
-const emit = defineEmits<['close']>()
+const emit = defineEmits({
+  close: () => true,
+})
 
 const userStore = useUserStore()
 const offer = ref<number | null>(null)
