@@ -6,9 +6,12 @@ import { useRouter } from 'vue-router'
 import type { ImagenDestacada, Publicacion } from '../../../../../interfaces/publicacion'
 import { useApi } from '@/composables/useApi'
 import { debounce } from '@/utils/debounce'
+import OffersReceived from '@/pages/dashboards/components/OffersReceived.vue'
+import OffersSent from '@/pages/dashboards/components/OffersSent.vue'
 
 const { t } = useI18n()
 const router = useRouter()
+const currentTab = ref('publications')
 
 const headers = [
   { title: t('publication_list.publication'), key: 'publicacion' },
@@ -261,307 +264,267 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
 
 <template>
   <div>
-    <!-- 👉 widgets -->
-    <!--
-      <VCard class="mb-6">
-      <VCardText class="px-3">
-      <VRow>
-      <template
-      v-for="(data, id) in widgetData"
-      :key="id"
-      >
-      <VCol
-      cols="12"
-      sm="6"
-      md="3"
-      class="px-6"
-      >
-      <div
-      class="d-flex justify-space-between"
-      :class="$vuetify.display.xs
-      ? id !== widgetData.length - 1 ? 'border-b pb-4' : ''
-      : $vuetify.display.sm
-      ? id < (widgetData.length / 2) ? 'border-b pb-4' : ''
-      : ''"
-      >
-      <div class="d-flex flex-column gap-y-1">
-      <div class="text-body-1 text-capitalize">
-      {{ data.title }}
-      </div>
-
-      <h4 class="text-h4">
-      {{ data.value }}
-      </h4>
-
-      <div class="d-flex align-center gap-x-2">
-      <div class="text-no-wrap">
-      {{ data.desc }}
-      </div>
-
-      <VChip
-      v-if="data.change"
-      label
-      :color="data.change > 0 ? 'success' : 'error'"
-      size="small"
-      >
-      {{ prefixWithPlus(data.change) }}%
-      </VChip>
-      </div>
-      </div>
-
-      <VAvatar
-      variant="tonal"
-      rounded
-      size="44"
-      >
-      <VIcon
-      :icon="data.icon"
-      size="28"
-      class="text-high-emphasis"
-      />
-      </VAvatar>
-      </div>
-      </VCol>
-      <VDivider
-      v-if="$vuetify.display.mdAndUp ? id !== widgetData.length - 1
-      : $vuetify.display.smAndUp ? id % 2 === 0
-      : false"
-      vertical
-      inset
-      length="92"
-      />
-      </template>
-      </VRow>
-      </VCardText>
-      </VCard>
-    -->
-
-    <!-- 👉 publicaciones -->
-    <VCard
-      :title="t('publication_list.filters')"
+    <VTabs
+      v-model="currentTab"
       class="mb-6"
     >
-      <VCardText>
-        <VRow>
-          <!-- 👉 Select Status -->
-          <VCol
-            cols="12"
-            sm="4"
-          >
-            <AppSelect
-              v-model="selectedStatus"
-              :placeholder="t('publication_list.status')"
-              :items="status"
-              clearable
-              clear-icon="tabler-x"
-            />
-          </VCol>
+      <VTab value="publications">
+        {{ t('publication_list.my_publications') }}
+      </VTab>
+      <VTab value="offers-received">
+        {{ t('publication_list.offers_received') }}
+      </VTab>
+      <VTab value="offers-sent">
+        {{ t('publication_list.offers_sent') }}
+      </VTab>
+    </VTabs>
 
-          <!-- 👉 Select Category -->
-          <VCol
-            cols="12"
-            sm="4"
-          >
-            <AppSelect
-              v-model="selectedCategory"
-              :placeholder="t('Category')"
-              :items="categories"
-              clearable
-              clear-icon="tabler-x"
-            />
-          </VCol>
-          <!-- 👉 Select Tipo -->
-          <VCol
-            cols="12"
-            sm="4"
-          >
-            <AppSelect
-              v-model="selectedTipo"
-              :placeholder="t('Tipo')"
-              :items="tipos"
-              clearable
-              clear-icon="tabler-x"
-            />
-          </VCol>
-        </VRow>
-      </VCardText>
+    <VWindow v-model="currentTab">
+      <VWindowItem value="publications">
+        <VCard
+          :title="t('publication_list.filters')"
+          class="mb-6"
+        >
+          <VCardText>
+            <VRow>
+              <!-- 👉 Select Status -->
+              <VCol
+                cols="12"
+                sm="4"
+              >
+                <AppSelect
+                  v-model="selectedStatus"
+                  :placeholder="t('publication_list.status')"
+                  :items="status"
+                  clearable
+                  clear-icon="tabler-x"
+                />
+              </VCol>
 
-      <VDivider />
+              <!-- 👉 Select Category -->
+              <VCol
+                cols="12"
+                sm="4"
+              >
+                <AppSelect
+                  v-model="selectedCategory"
+                  :placeholder="t('Category')"
+                  :items="categories"
+                  clearable
+                  clear-icon="tabler-x"
+                />
+              </VCol>
+              <!-- 👉 Select Tipo -->
+              <VCol
+                cols="12"
+                sm="4"
+              >
+                <AppSelect
+                  v-model="selectedTipo"
+                  :placeholder="t('Tipo')"
+                  :items="tipos"
+                  clearable
+                  clear-icon="tabler-x"
+                />
+              </VCol>
+            </VRow>
+          </VCardText>
 
-      <div class="d-flex flex-wrap gap-4 ma-6">
-        <div class="d-flex align-center">
-          <!-- 👉 Search  -->
-          <AppTextField
-            v-model="searchQuery"
-            :placeholder="t('publication_list.search_publication')"
-            style="inline-size: 200px;"
-            class="me-3"
-          />
-        </div>
+          <VDivider />
 
-        <VSpacer />
-        <div class="d-flex gap-4 flex-wrap align-center">
-          <AppSelect
-            v-model="itemsPerPage"
-            :items="[5, 10, 20, 25, 50]"
-          />
-          <!-- 👉 Export button -->
-          <VBtn
-            variant="tonal"
-            color="secondary"
-            prepend-icon="tabler-upload"
-          >
-            {{ t('publication_list.export') }}
-          </VBtn>
+          <div class="d-flex flex-wrap gap-4 ma-6">
+            <div class="d-flex align-center">
+              <!-- 👉 Search  -->
+              <AppTextField
+                v-model="searchQuery"
+                :placeholder="t('publication_list.search_publication')"
+                style="inline-size: 200px;"
+                class="me-3"
+              />
+            </div>
 
-          <!-- 👉 Delete button -->
-          <VBtn
-            v-if="selectedRows.length > 0"
-            color="error"
-            prepend-icon="tabler-trash"
-            @click="openDeleteDialog(0)"
-          >
-            {{ t('publication_list.delete_selected') }} ({{ selectedRows.length }})
-          </VBtn>
+            <VSpacer />
+            <div class="d-flex gap-4 flex-wrap align-center">
+              <AppSelect
+                v-model="itemsPerPage"
+                :items="[5, 10, 20, 25, 50]"
+              />
+              <!-- 👉 Export button -->
+              <VBtn
+                variant="tonal"
+                color="secondary"
+                prepend-icon="tabler-upload"
+              >
+                {{ t('publication_list.export') }}
+              </VBtn>
 
-          <VBtn
-            color="primary"
-            prepend-icon="tabler-plus"
-            @click="router.push({ path: '/apps/publications/publication/add' })"
-          >
-            {{ t('publication_list.add_publication') }}
-          </VBtn>
-        </div>
-      </div>
+              <!-- 👉 Delete button -->
+              <VBtn
+                v-if="selectedRows.length > 0"
+                color="error"
+                prepend-icon="tabler-trash"
+                @click="openDeleteDialog(0)"
+              >
+                {{ t('publication_list.delete_selected') }} ({{ selectedRows.length }})
+              </VBtn>
 
-      <VDivider class="mt-4" />
-
-      <!-- 👉 Datatable  -->
-      <VDataTableServer
-        v-model:items-per-page="itemsPerPage"
-        v-model:model-value="selectedRows"
-        v-model:page="page"
-        :headers="headers"
-        show-select
-        :items="publicaciones"
-        :items-length="totalPublicaciones"
-        :loading="isTableLoading || isSearching"
-        class="text-no-wrap"
-        item-value="id"
-        :return-object="false"
-        @update:options="updateOptions"
-      >
-       <!-- publicacion  -->
-       <template #item.publicacion="{ item }">
-         <div class="d-flex align-center gap-x-4">
-            <VAvatar
-              v-if="(item as any).imagen_destacada"
-              size="38"
-              variant="tonal"
-              rounded
-              :image="getImageBySize((item as any).imagen_destacada, 'thumbnail')"
-            />
-            <div class="d-flex flex-column">
-              <span class="text-body-1 font-weight-medium text-high-emphasis">{{ (item as any).title }}</span>
-              <span class="text-body-2">{{ (item as any).acf.marca?.name }}</span>
+              <VBtn
+                color="primary"
+                prepend-icon="tabler-plus"
+                @click="router.push({ path: '/apps/publications/publication/add' })"
+              >
+                {{ t('publication_list.add_publication') }}
+              </VBtn>
             </div>
           </div>
-        </template>
 
-        <!-- referencia -->
-        <template #item.referencia="{ item }">
-          <span class="text-body-1 text-high-emphasis">{{ (item as any).acf.tipo_o_referencia }}</span>
-        </template>
+          <VDivider class="mt-4" />
 
-        <!-- precio -->
-        <template #item.precio="{ item }">
-          <span class="text-body-1 text-high-emphasis">{{ (item as any).acf.precio_de_venta }}€</span>
-        </template>
-
-        <!-- status -->
-        <template #item.status="{ item }">
-          <VChip
-            v-bind="resolveStatus((item as any).status)"
-            density="default"
-            label
-            size="small"
-          />
-        </template>
-
-        <!-- Actions -->
-        <template #item.actions="{ item }">
-          <IconBtn @click="router.push(`/apps/publications/publication/edit/${(item as any).uuid}`)">
-            <VIcon icon="tabler-eye" />
-          </IconBtn>
-
-          <IconBtn>
-            <VIcon icon="tabler-dots-vertical" />
-            <VMenu activator="parent">
-              <VList>
-                <VListItem
-                  value="questions"
-                  prepend-icon="tabler-help"
-                  @click="router.push(`/apps/publications/publication/questions/${(item as any).uuid}`)"
-                >
-                  {{ t('publication_list.questions') }}
-                </VListItem>
-                <VListItem
-                  value="delete"
-                  prepend-icon="tabler-trash"
-                  @click="openDeleteDialog((item as any).id)"
-                >
-                  {{ t('publication_list.delete') }}
-                </VListItem>
-
-                <VListItem
-                  value="duplicate"
-                  prepend-icon="tabler-copy"
-                  @click="openDuplicateDialog((item as any).id)"
-                >
-                  {{ t('publication_list.duplicate') }}
-                </VListItem>
-
-                <VListItem
-                  v-if="(item as any).status !== 'publish'"
-                  value="publish"
-                  prepend-icon="tabler-player-play"
-                  @click="openStatusDialog((item as any).id, 'publish')"
-                >
-                  {{ t('publication_list.publish') }}
-                </VListItem>
-
-                <VListItem
-                  v-if="(item as any).status !== 'paused'"
-                  value="pause"
-                  prepend-icon="tabler-player-pause"
-                  @click="openStatusDialog((item as any).id, 'paused')"
-                >
-                  {{ t('publication_list.pause') }}
-                </VListItem>
-
-                <VListItem
-                  v-if="(item as any).status !== 'draft'"
-                  value="draft"
-                  prepend-icon="tabler-file-text"
-                  @click="openStatusDialog((item as any).id, 'draft')"
-                >
-                  {{ t('publication_list.move_to_draft') }}
-                </VListItem>
-              </VList>
-            </VMenu>
-          </IconBtn>
-        </template>
-
-        <!-- pagination -->
-        <template #bottom>
-          <TablePagination
+          <!-- 👉 Datatable  -->
+          <VDataTableServer
+            v-model:items-per-page="itemsPerPage"
+            v-model:model-value="selectedRows"
             v-model:page="page"
-            :items-per-page="itemsPerPage"
-            :total-items="totalPublicaciones"
-          />
-        </template>
-      </VDataTableServer>
-    </VCard>
+            :headers="headers"
+            show-select
+            :items="publicaciones"
+            :items-length="totalPublicaciones"
+            :loading="isTableLoading || isSearching"
+            class="text-no-wrap"
+            item-value="id"
+            :return-object="false"
+            @update:options="updateOptions"
+          >
+            <!-- publicacion  -->
+            <template #item.publicacion="{ item }">
+              <div class="d-flex align-center gap-x-4">
+                <VAvatar
+                  v-if="(item as any).imagen_destacada"
+                  size="38"
+                  variant="tonal"
+                  rounded
+                  :image="getImageBySize((item as any).imagen_destacada, 'thumbnail')"
+                />
+                <div class="d-flex flex-column">
+                  <span class="text-body-1 font-weight-medium text-high-emphasis">{{ (item as any).title }}</span>
+                  <span class="text-body-2">{{ (item as any).acf.marca?.name }}</span>
+                </div>
+              </div>
+            </template>
+
+            <!-- referencia -->
+            <template #item.referencia="{ item }">
+              <span class="text-body-1 text-high-emphasis">{{ (item as any).acf.tipo_o_referencia }}</span>
+            </template>
+
+            <!-- precio -->
+            <template #item.precio="{ item }">
+              <span class="text-body-1 text-high-emphasis">{{ (item as any).acf.precio_de_venta }}€</span>
+            </template>
+
+            <!-- status -->
+            <template #item.status="{ item }">
+              <VChip
+                v-bind="resolveStatus((item as any).status)"
+                density="default"
+                label
+                size="small"
+              />
+            </template>
+
+            <!-- Actions -->
+            <template #item.actions="{ item }">
+              <IconBtn @click="router.push(`/apps/publications/publication/edit/${(item as any).uuid}`)">
+                <VIcon icon="tabler-eye" />
+              </IconBtn>
+
+              <IconBtn>
+                <VIcon icon="tabler-dots-vertical" />
+                <VMenu activator="parent">
+                  <VList>
+                    <VListItem
+                      value="questions"
+                      prepend-icon="tabler-help"
+                      @click="router.push(`/apps/publications/publication/questions/${(item as any).uuid}`)"
+                    >
+                      {{ t('publication_list.questions') }}
+                    </VListItem>
+                    <VListItem
+                      value="delete"
+                      prepend-icon="tabler-trash"
+                      @click="openDeleteDialog((item as any).id)"
+                    >
+                      {{ t('publication_list.delete') }}
+                    </VListItem>
+
+                    <VListItem
+                      value="duplicate"
+                      prepend-icon="tabler-copy"
+                      @click="openDuplicateDialog((item as any).id)"
+                    >
+                      {{ t('publication_list.duplicate') }}
+                    </VListItem>
+
+                    <VListItem
+                      v-if="(item as any).status !== 'publish'"
+                      value="publish"
+                      prepend-icon="tabler-player-play"
+                      @click="openStatusDialog((item as any).id, 'publish')"
+                    >
+                      {{ t('publication_list.publish') }}
+                    </VListItem>
+
+                    <VListItem
+                      v-if="(item as any).status !== 'paused'"
+                      value="pause"
+                      prepend-icon="tabler-player-pause"
+                      @click="openStatusDialog((item as any).id, 'paused')"
+                    >
+                      {{ t('publication_list.pause') }}
+                    </VListItem>
+
+                    <VListItem
+                      v-if="(item as any).status !== 'draft'"
+                      value="draft"
+                      prepend-icon="tabler-file-text"
+                      @click="openStatusDialog((item as any).id, 'draft')"
+                    >
+                      {{ t('publication_list.move_to_draft') }}
+                    </VListItem>
+                  </VList>
+                </VMenu>
+              </IconBtn>
+            </template>
+
+            <!-- pagination -->
+            <template #bottom>
+              <TablePagination
+                v-model:page="page"
+                :items-per-page="itemsPerPage"
+                :total-items="totalPublicaciones"
+              />
+            </template>
+          </VDataTableServer>
+        </VCard>
+      </VWindowItem>
+      <VWindowItem value="offers-received">
+        <Suspense>
+          <OffersReceived />
+          <template #fallback>
+            Cargando...
+          </template>
+        </Suspense>
+      </VWindowItem>
+      <VWindowItem value="offers-sent">
+        <Suspense>
+          <OffersSent />
+          <template #fallback>
+            Cargando...
+          </template>
+        </Suspense>
+      </VWindowItem>
+    </VWindow>
+
     <!-- 👉 Loading overlay -->
     <VOverlay
       v-model="isLoading"

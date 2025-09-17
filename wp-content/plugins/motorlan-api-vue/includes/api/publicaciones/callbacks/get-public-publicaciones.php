@@ -21,7 +21,9 @@ function motorlan_get_public_publicaciones_callback($request) {
     $params['status'] = 'publish';
     unset($params['author']);
 
-    $request->set_params($params);
+    // Create a new request object to avoid modifying the original one.
+    $new_request = new WP_REST_Request($request->get_method(), $request->get_route());
+    $new_request->set_query_params($params);
     
-    return motorlan_get_publicaciones_callback($request);
+    return motorlan_get_publicaciones_callback($new_request);
 }

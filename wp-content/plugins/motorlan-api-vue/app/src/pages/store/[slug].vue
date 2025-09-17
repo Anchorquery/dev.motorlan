@@ -7,7 +7,6 @@ import ProductDetails from './components/ProductDetails.vue'
 import PublicacionInfo from './components/PublicacionInfo.vue'
 import ProductDocs from './components/ProductDocs.vue'
 import RelatedProducts from './components/RelatedProducts.vue'
-import PublicacionQuestions from './components/PublicacionQuestions.vue'
 import OfferModal from './components/OfferModal.vue'
 import type { Publicacion } from '@/interfaces/publicacion'
 import { createUrl } from '@/@core/composable/createUrl'
@@ -112,10 +111,6 @@ const title = computed(() => {
     </div>
 
     <RelatedProducts :current-id="publicacion.id" />
-    <PublicacionQuestions
-      v-if="!isOwner"
-      :publicacion-id="publicacion.id"
-    />
     <OfferModal
       v-if="isOfferModalVisible"
       :publicacion-id="publicacion.id"

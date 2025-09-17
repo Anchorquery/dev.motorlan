@@ -47,6 +47,8 @@ declare module 'vue-router/auto-routes' {
     'apps-user-profile': RouteRecordInfo<'apps-user-profile', '/apps/user/profile', Record<never, never>, Record<never, never>>,
     'apps-user-stats': RouteRecordInfo<'apps-user-stats', '/apps/user/stats', Record<never, never>, Record<never, never>>,
     'apps-user-view-id': RouteRecordInfo<'apps-user-view-id', '/apps/user/view/:id', { id: ParamValue<true> }, { id: ParamValue<false> }>,
+    'dashboards-components-offers-received': RouteRecordInfo<'dashboards-components-offers-received', '/dashboards/components/OffersReceived', Record<never, never>, Record<never, never>>,
+    'dashboards-components-offers-sent': RouteRecordInfo<'dashboards-components-offers-sent', '/dashboards/components/OffersSent', Record<never, never>, Record<never, never>>,
     'dashboards-publications': RouteRecordInfo<'dashboards-publications', '/dashboards/publications', Record<never, never>, Record<never, never>>,
     'forgot-password': RouteRecordInfo<'forgot-password', '/forgot-password', Record<never, never>, Record<never, never>>,
     'login': RouteRecordInfo<'login', '/login', Record<never, never>, Record<never, never>>,
