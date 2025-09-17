@@ -101,6 +101,7 @@ const isOfferDialogOpen = ref(false)
 const offerAmount = ref<number | null>(null)
 const offerMessage = ref('')
 const offer = ref<any | null>(null)
+const isSubmittingOffer = ref(false)
 
 const userStore = useUserStore()
 const isLoggedIn = computed(() => userStore.getIsLoggedIn)
@@ -111,7 +112,11 @@ const isOwner = computed(() => {
 
 const isNegotiable = computed(() => {
   const val = props.publicacion.acf.precio_negociable
-  return typeof val === 'string' ? val.toLowerCase() === 'si' : !!val
+  if (typeof val === 'string') {
+    const lowerVal = val.toLowerCase()
+    return lowerVal === 'si' || lowerVal === 'yes'
+  }
+  return !!val
 })
 
 const share = () => {
@@ -159,10 +164,11 @@ const submitOffer = async () => {
   if (offerAmount.value === null || offerAmount.value >= Number(props.publicacion.acf.precio_de_venta || Infinity))
     return
 
+  isSubmittingOffer.value = true
   try {
     const { data: res, error } = await useApi(`/wp-json/motorlan/v1/publicaciones/${props.publicacion.id}/offers`).post({
-      monto: offerAmount.value,
-      justificacion: offerMessage.value,
+      amount: offerAmount.value,
+      justification: offerMessage.value,
     }).json()
     if (error.value)
       throw error.value
@@ -171,6 +177,9 @@ const submitOffer = async () => {
   }
   catch (error) {
     console.error(error)
+  }
+  finally {
+    isSubmittingOffer.value = false
   }
 }
 
@@ -314,21 +323,30 @@ const removeOffer = async () => {
 
     <div class="d-flex flex-wrap gap-4 mb-6">
       <VBtn
-        v-if="isNegotiable && !isOwner"
-        variant="tonal"
-        color="error"
-        class="px-6 flex-grow-1 action-btn"
-        @click="openOfferDialog"
-      >
-        Hacer una oferta
-      </VBtn>
-      <VBtn
         v-if="!isOwner"
         color="error"
         class="px-6 flex-grow-1 action-btn"
         @click="isConfirmDialogOpen = true"
       >
         Comprar
+      </VBtn>
+      <VBtn
+        v-if="isNegotiable && !isOwner"
+        variant="outlined"
+        color="error"
+        class="px-6 flex-grow-1 action-btn"
+        @click="openOfferDialog"
+      >
+        {{ offer ? 'Editar oferta' : 'Hacer una oferta' }}
+      </VBtn>
+      <VBtn
+        v-if="offer && isNegotiable && !isOwner"
+        variant="text"
+        color="error"
+        class="px-6 flex-grow-1 action-btn"
+        @click="removeOffer"
+      >
+        Quitar oferta
       </VBtn>
     </div>
 
@@ -355,10 +373,11 @@ const removeOffer = async () => {
           <VSpacer />
           <VBtn
             color="primary"
-            @click="submitOffer"
-          >
-            Enviar
-          </VBtn>
+           :loading="isSubmittingOffer"
+           @click="submitOffer"
+         >
+           Enviar
+         </VBtn>
           <VBtn
             variant="text"
             @click="isOfferDialogOpen = false"

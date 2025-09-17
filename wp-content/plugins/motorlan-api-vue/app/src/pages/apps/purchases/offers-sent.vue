@@ -78,7 +78,7 @@ const resolveStatus = (status: string) => {
 </script>
 
 <template>
-  <VCard title="Ofertas Enviadas">
+  <VCard :title="t('Ofertas Enviadas')">
     <VCardText>
       <div class="d-flex flex-wrap gap-4">
         <div class="d-flex align-center">
@@ -139,7 +139,7 @@ const resolveStatus = (status: string) => {
 
       <template #bottom>
         <TablePagination
-          v-model:page"
+          v-model:page="page"
           :items-per-page="itemsPerPage"
           :total-items="totalOffers"
         />

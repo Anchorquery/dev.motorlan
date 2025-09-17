@@ -66,10 +66,19 @@ onMounted(() => {
 const offers = computed(() => (offersData.value?.data || offersData.value || []).filter(Boolean))
 const totalOffers = computed(() => (offersData.value?.pagination?.total) || 0)
 
+const updateOfferStatus = async (offerId: number, status: 'accepted' | 'rejected') => {
+  try {
+    await useApi(`/wp-json/motorlan/v1/offers/${offerId}/status`).post({ status }).execute()
+    fetchOffers()
+  }
+  catch (error) {
+    console.error(error)
+  }
+}
 </script>
 
 <template>
-  <VCard title="Ofertas Recibidas">
+  <VCard :title="t('Ofertas Recibidas')">
     <VCardText>
       <div class="d-flex flex-wrap gap-4">
         <div class="d-flex align-center">
@@ -118,12 +127,14 @@ const totalOffers = computed(() => (offersData.value?.pagination?.total) || 0)
               <VListItem
                 value="accept"
                 prepend-icon="tabler-check"
+                @click="updateOfferStatus(item.id, 'accepted')"
               >
                 Aceptar
               </VListItem>
               <VListItem
                 value="reject"
                 prepend-icon="tabler-x"
+                @click="updateOfferStatus(item.id, 'rejected')"
               >
                 Rechazar
               </VListItem>

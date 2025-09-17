@@ -16,6 +16,12 @@ function motorlan_register_offers_routes() {
                     return is_numeric($param) && $param > 0;
                 }
             ),
+            'justification' => array(
+                'required' => false,
+                'validate_callback' => function($param, $request, $key) {
+                    return is_string($param);
+                }
+            ),
         ),
     ));
 
@@ -30,12 +36,29 @@ function motorlan_register_offers_routes() {
         'callback' => 'motorlan_handle_get_sent_offers',
         'permission_callback' => 'motorlan_is_user_authenticated'
     ));
+
+    register_rest_route('motorlan/v1', '/offers/(?P<id>\d+)/status', array(
+        'methods' => 'POST',
+        'callback' => 'motorlan_handle_update_offer_status',
+        'permission_callback' => 'motorlan_is_user_authenticated',
+        'args' => array(
+            'status' => array(
+                'required' => true,
+                'validate_callback' => function($param, $request, $key) {
+                    return in_array($param, ['accepted', 'rejected']);
+                }
+            ),
+        ),
+    ));
 }
 
 function motorlan_handle_create_offer($request) {
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'motorlan_offers';
     $user_id = get_current_user_id();
     $post_id = $request['id'];
     $amount = $request['amount'];
+    $justification = $request['justification'];
 
     // Daily offers limit logic
     $today = date('Y-m-d');
@@ -50,13 +73,17 @@ function motorlan_handle_create_offer($request) {
     }
 
     // Save the offer
-    $offer_data = array(
-        'user_id' => $user_id,
-        'amount' => $amount,
-        'date' => current_time('mysql')
+    $wpdb->insert(
+        $table_name,
+        array(
+            'publication_id' => $post_id,
+            'user_id' => $user_id,
+            'offer_amount' => $amount,
+            'justification' => $justification,
+            'offer_date' => current_time('mysql'),
+            'status' => 'pending'
+        )
     );
-
-    add_post_meta($post_id, 'publication_offer', $offer_data);
 
     // Update user's offer count
     $offers_today['count']++;
@@ -70,65 +97,65 @@ function motorlan_handle_create_offer($request) {
 }
 
 function motorlan_handle_get_received_offers($request) {
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'motorlan_offers';
     $user_id = get_current_user_id();
 
-    $args = array(
-        'post_type' => 'publicacion',
-        'author' => $user_id,
-        'posts_per_page' => -1,
-        'meta_query' => array(
-            array(
-                'key' => 'publication_offer',
-                'compare' => 'EXISTS'
-            )
-        )
+    $query = $wpdb->prepare(
+        "SELECT o.*, p.post_title as publication_title, u.display_name as user_name
+         FROM $table_name o
+         JOIN {$wpdb->posts} p ON o.publication_id = p.ID
+         JOIN {$wpdb->users} u ON o.user_id = u.ID
+         WHERE p.post_author = %d",
+        $user_id
     );
 
-    $publications = get_posts($args);
-    $offers = array();
-
-    foreach ($publications as $publication) {
-        $publication_offers = get_post_meta($publication->ID, 'publication_offer');
-        if (!empty($publication_offers)) {
-            foreach($publication_offers as $offer_data) {
-                $user_info = get_userdata($offer_data['user_id']);
-                $offers[] = array(
-                    'publication_id' => $publication->ID,
-                    'publication_title' => $publication->post_title,
-                    'offer_amount' => $offer_data['amount'],
-                    'offer_date' => $offer_data['date'],
-                    'user_name' => $user_info ? $user_info->display_name : 'Unknown User'
-                );
-            }
-        }
-    }
+    $offers = $wpdb->get_results($query);
 
     return new WP_REST_Response($offers, 200);
 }
 
-function motorlan_handle_get_sent_offers($request) {
-    $user_id = get_current_user_id();
+function motorlan_handle_update_offer_status($request) {
     global $wpdb;
+    $table_name = $wpdb->prefix . 'motorlan_offers';
+    $offer_id = $request['id'];
+    $status = $request['status'];
+    $user_id = get_current_user_id();
 
-    $results = $wpdb->get_results($wpdb->prepare(
-        "SELECT post_id, meta_value FROM {$wpdb->postmeta} WHERE meta_key = 'publication_offer'",
-    ));
-
-    $sent_offers = array();
-    foreach ($results as $result) {
-        $offer_data = maybe_unserialize($result->meta_value);
-        if (isset($offer_data['user_id']) && $offer_data['user_id'] == $user_id) {
-            $publication = get_post($result->post_id);
-            if ($publication) {
-                $sent_offers[] = array(
-                    'publication_id' => $publication->ID,
-                    'publication_title' => $publication->post_title,
-                    'offer_amount' => $offer_data['amount'],
-                    'offer_date' => $offer_data['date'],
-                );
-            }
-        }
+    // Verify that the user is the owner of the publication
+    $offer = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table_name WHERE id = %d", $offer_id));
+    if (!$offer) {
+        return new WP_Error('not_found', 'Offer not found.', array('status' => 404));
     }
 
-    return new WP_REST_Response($sent_offers, 200);
+    $publication = get_post($offer->publication_id);
+    if (!$publication || $publication->post_author != $user_id) {
+        return new WP_Error('unauthorized', 'You are not authorized to update this offer.', array('status' => 403));
+    }
+
+    $wpdb->update(
+        $table_name,
+        array('status' => $status),
+        array('id' => $offer_id)
+    );
+
+    return new WP_REST_Response(array('success' => true, 'message' => 'Offer status updated successfully.'), 200);
+}
+
+function motorlan_handle_get_sent_offers($request) {
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'motorlan_offers';
+    $user_id = get_current_user_id();
+
+    $query = $wpdb->prepare(
+        "SELECT o.*, p.post_title as publication_title
+         FROM $table_name o
+         JOIN {$wpdb->posts} p ON o.publication_id = p.ID
+         WHERE o.user_id = %d",
+        $user_id
+    );
+
+    $offers = $wpdb->get_results($query);
+
+    return new WP_REST_Response($offers, 200);
 }

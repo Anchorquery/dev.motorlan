@@ -40,6 +40,7 @@ require_once MOTORLAN_API_VUE_PATH . 'includes/classes/class-motorlan-notificati
 require_once MOTORLAN_API_VUE_PATH . 'includes/admin-mods.php';
 require_once MOTORLAN_API_VUE_PATH . 'includes/vue-app-setup.php';
 require_once MOTORLAN_API_VUE_PATH . 'includes/cron-jobs.php';
+require_once MOTORLAN_API_VUE_PATH . 'includes/db-setup.php';
 
 /**
  * Add CORS headers to the REST API.
