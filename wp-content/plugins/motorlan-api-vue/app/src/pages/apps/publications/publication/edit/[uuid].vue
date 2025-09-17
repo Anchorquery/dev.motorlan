@@ -134,11 +134,11 @@ onMounted(async () => {
     ] = await Promise.all(fetchPromises)
 
     if (marcasData.value) {
-      const uniqueMarcas = new Map()
-      marcasData.value.forEach((marca: { id: any; name: any }) => {
-        uniqueMarcas.set(Number(marca.id), { title: marca.name, value: Number(marca.id) })
-      })
-      marcas.value = Array.from(uniqueMarcas.values())
+      // La API de marcas devuelve un array de objetos con term_id y name
+      marcas.value = marcasData.value.map((marca: { term_id: any; name: any }) => ({
+        title: marca.name,
+        value: marca.term_id,
+      }))
     }
 
     if (categoriesData.value) {
@@ -165,11 +165,14 @@ onMounted(async () => {
       motorData.value.acf = { ...motorData.value.acf, ...post.acf }
       motorData.value.tipo = post.tipo ? post.tipo.map((t: { id: any }) => t.id) : []
 
-      if (motorData.value.acf.marca && typeof motorData.value.acf.marca === 'object')
-        motorData.value.acf.marca = motorData.value.acf.marca.id
-
-      if (motorData.value.acf.marca !== null && motorData.value.acf.marca !== undefined)
-        motorData.value.acf.marca = Number(motorData.value.acf.marca)
+      // Normalizar el valor de la marca a un número (ID)
+      const marcaValue = motorData.value.acf.marca
+      if (marcaValue && typeof marcaValue === 'object' && marcaValue.id) {
+        motorData.value.acf.marca = Number(marcaValue.id)
+      }
+      else if (marcaValue) {
+        motorData.value.acf.marca = Number(marcaValue)
+      }
 
       if (motorData.value.acf.motor_image) {
         motorImageFile.value = [{
@@ -297,7 +300,7 @@ const updateMotor = async (status: string) => {
     })
 
     showToast(t('edit_publication.update_success'), 'success')
-    router.push('/apps/publications/publication/list')
+    //router.push('/apps/publications/publication/list')
   }
   catch (error: any) {
     showToast(t('edit_publication.update_error', { message: error.message }), 'error')
@@ -404,7 +407,7 @@ const submitGarantia = async () => {
     <VForm
       ref="form"
       v-model="isFormValid"
-      @submit.prevent="updateMotor"
+      @submit.prevent="() => updateMotor('publish')"
     >
       <div class="d-flex flex-wrap justify-start justify-sm-space-between gap-y-4 gap-x-6 mb-6">
         <div class="d-flex flex-column justify-center">
@@ -429,7 +432,6 @@ const submitGarantia = async () => {
           </VBtn>
           <VBtn
             type="submit"
-            @click="updateMotor('publish')"
           >
             {{ t('edit_publication.update_publication') }}
           </VBtn>

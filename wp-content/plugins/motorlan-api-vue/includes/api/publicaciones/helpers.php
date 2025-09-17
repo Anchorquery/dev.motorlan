@@ -121,17 +121,11 @@ function motorlan_get_publicacion_data($post_id) {
         'imagen_destacada' => get_field('motor_image', $post_id, true),
     ];
 
-    if (!empty($publicacion_item['acf']['marca'])) {
-        $term_id = $publicacion_item['acf']['marca'];
-        if (is_numeric($term_id)) {
-            $term = get_term($term_id, 'marca');
-            if ($term && !is_wp_error($term)) {
-                $publicacion_item['acf']['marca'] = [
-                    'id' => $term->term_id,
-                    'name' => $term->name,
-                    'slug' => $term->slug,
-                ];
-            }
+    // Forzar la obtención de la marca si get_fields() no la incluye.
+    if (empty($publicacion_item['acf']['marca'])) {
+        $marca_id = get_field('marca', $post_id);
+        if ($marca_id) {
+            $publicacion_item['acf']['marca'] = $marca_id;
         }
     }
 

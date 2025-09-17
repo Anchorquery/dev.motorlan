@@ -416,7 +416,8 @@
     "add_document": "Add Document",
     "update_success": "Publication updated successfully.",
     "update_error": "Error updating publication: {message}",
-    "required_fields_error": "Please fill in all required fields."
+    "required_fields_error": "Please fill in all required fields.",
+    "save_draft": "Save Draft"
   },
   "questions": {
     "page_title": "Publication Questions",

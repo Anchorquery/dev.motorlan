@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { useUserStore } from '@/@core/stores/user'
 import ProductImage from './components/ProductImage.vue'
@@ -8,6 +8,7 @@ import PublicacionInfo from './components/PublicacionInfo.vue'
 import ProductDocs from './components/ProductDocs.vue'
 import RelatedProducts from './components/RelatedProducts.vue'
 import PublicacionQuestions from './components/PublicacionQuestions.vue'
+import OfferModal from './components/OfferModal.vue'
 import type { Publicacion } from '@/interfaces/publicacion'
 import { createUrl } from '@/@core/composable/createUrl'
 import { useApi } from '@/composables/useApi'
@@ -19,6 +20,8 @@ const userStore = useUserStore()
 const { data, isFetching } = await useApi<any>(
   createUrl(`/wp-json/motorlan/v1/publicaciones/${slug}`),
 ).get().json()
+
+const isOfferModalVisible = ref(false)
 
 const isOwner = computed(() => {
   if (!userStore.user || !publicacion.value)
@@ -74,6 +77,18 @@ const title = computed(() => {
             {{ publicacion.acf.precio_de_venta ? `${publicacion.acf.precio_de_venta}€` : 'Consultar precio' }}
           </div>
         </div>
+        <div
+          v-if="publicacion.acf.precio_negociable && !isOwner"
+          class="d-flex gap-4 mt-4"
+        >
+          <VBtn
+            variant="tonal"
+            @click="isOfferModalVisible = true"
+          >
+            Hacer una oferta
+          </VVBtn>
+          <VBtn>Comprar</VBtn>
+        </div>
       </VCol>
     </VRow>
     <VRow>
@@ -100,6 +115,11 @@ const title = computed(() => {
     <PublicacionQuestions
       v-if="!isOwner"
       :publicacion-id="publicacion.id"
+    />
+    <OfferModal
+      v-if="isOfferModalVisible"
+      :publicacion-id="publicacion.id"
+      @close="isOfferModalVisible = false"
     />
   </VContainer>
 

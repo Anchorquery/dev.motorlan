@@ -417,7 +417,8 @@
     "add_document": "Añadir Documento",
     "update_success": "Publicación actualizada correctamente.",
     "update_error": "Error al actualizar la publicación: {message}",
-    "required_fields_error": "Por favor, rellene todos los campos obligatorios."
+    "required_fields_error": "Por favor, rellene todos los campos obligatorios.",
+    "save_draft": "Guardar Borrador"
   },
   "questions": {
     "page_title": "Preguntas de la Publicación",

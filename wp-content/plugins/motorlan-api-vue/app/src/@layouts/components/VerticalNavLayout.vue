@@ -107,7 +107,7 @@ const verticalNavAttrs = computed(() => {
     <div class="layout-content-wrapper">
       <header
         class="layout-navbar"
-        :class="[{ 'navbar-blur': configStore.isNavbarBlurEnabled }]"
+        :class="[{ 'navbar-blur': false}]"
       >
 
       </header>

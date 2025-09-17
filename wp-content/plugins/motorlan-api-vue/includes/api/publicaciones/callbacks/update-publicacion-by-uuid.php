@@ -30,13 +30,22 @@ function motorlan_update_publicacion_by_uuid(WP_REST_Request $request) {
     if (isset($params['title'])) {
         wp_update_post(['ID' => $post_id, 'post_title' => sanitize_text_field($params['title'])]);
     }
+    // --- Handle Post Status ---
+    // This is critical for the post to be 'published', 'draft', etc.
     if (isset($params['status'])) {
-        wp_update_post([
-            'ID' => $post_id,
-            'post_status' => sanitize_text_field($params['status'])
-        ]);
-        // Also update the ACF field for consistency if it exists
-        update_field('publicar_acf', sanitize_text_field($params['status']), $post_id);
+        $new_status = sanitize_text_field($params['status']);
+        
+        // Create an array with the data to update the post
+        $post_update_data = [
+            'ID'          => $post_id,
+            'post_status' => $new_status,
+        ];
+
+        // Update the post in the database
+        wp_update_post($post_update_data);
+
+        // Also update the ACF field for consistency in the UI
+        update_field('publicar_acf', $new_status, $post_id);
     }
 
     // --- Handle Taxonomies ---
@@ -52,10 +61,29 @@ function motorlan_update_publicacion_by_uuid(WP_REST_Request $request) {
 
     // --- Handle ACF Fields ---
     $acf_data = isset($params['acf']) ? (is_string($params['acf']) ? json_decode($params['acf'], true) : $params['acf']) : [];
+    
+    // --- Update ACF Fields Individually ---
     if (!empty($acf_data)) {
-        foreach ($acf_data as $key => $value) {
-            update_field($key, $value, $post_id);
-        }
+        if (isset($acf_data['marca'])) update_field('marca', $acf_data['marca'], $post_id);
+        if (isset($acf_data['tipo_o_referencia'])) update_field('tipo_o_referencia', sanitize_text_field($acf_data['tipo_o_referencia']), $post_id);
+        if (isset($acf_data['potencia'])) update_field('potencia', $acf_data['potencia'], $post_id);
+        if (isset($acf_data['velocidad'])) update_field('velocidad', $acf_data['velocidad'], $post_id);
+        if (isset($acf_data['par_nominal'])) update_field('par_nominal', $acf_data['par_nominal'], $post_id);
+        if (isset($acf_data['voltaje'])) update_field('voltaje', $acf_data['voltaje'], $post_id);
+        if (isset($acf_data['intensidad'])) update_field('intensidad', $acf_data['intensidad'], $post_id);
+        if (isset($acf_data['pais'])) update_field('pais', sanitize_text_field($acf_data['pais']), $post_id);
+        if (isset($acf_data['provincia'])) update_field('provincia', sanitize_text_field($acf_data['provincia']), $post_id);
+        if (isset($acf_data['estado_del_articulo'])) update_field('estado_del_articulo', sanitize_text_field($acf_data['estado_del_articulo']), $post_id);
+        if (isset($acf_data['informe_de_reparacion'])) update_field('informe_de_reparacion', $acf_data['informe_de_reparacion'], $post_id);
+        if (isset($acf_data['descripcion'])) update_field('descripcion', sanitize_textarea_field($acf_data['descripcion']), $post_id);
+        if (isset($acf_data['posibilidad_de_alquiler'])) update_field('posibilidad_de_alquiler', sanitize_text_field($acf_data['posibilidad_de_alquiler']), $post_id);
+        if (isset($acf_data['tipo_de_alimentacion'])) update_field('tipo_de_alimentacion', sanitize_text_field($acf_data['tipo_de_alimentacion']), $post_id);
+        if (isset($acf_data['servomotores'])) update_field('servomotores', $acf_data['servomotores'], $post_id);
+        if (isset($acf_data['regulacion_electronica_drivers'])) update_field('regulacion_electronica_drivers', $acf_data['regulacion_electronica_drivers'], $post_id);
+        if (isset($acf_data['precio_de_venta'])) update_field('precio_de_venta', $acf_data['precio_de_venta'], $post_id);
+        if (isset($acf_data['precio_negociable'])) update_field('precio_negociable', sanitize_text_field($acf_data['precio_negociable']), $post_id);
+        if (isset($acf_data['documentacion_adjunta'])) update_field('documentacion_adjunta', $acf_data['documentacion_adjunta'], $post_id);
+        if (isset($acf_data['stock'])) update_field('stock', intval($acf_data['stock']), $post_id);
     }
 
     // --- Handle File Uploads ---
