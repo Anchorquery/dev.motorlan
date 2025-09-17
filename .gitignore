@@ -6,7 +6,7 @@ license.txt
 readme.html
 
 # Uploads y cachés
-wp-content/uploads/
+
 wp-content/cache/
 wp-content/upgrade/
 wp-content/debug.log
