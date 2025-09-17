@@ -101,18 +101,44 @@ function motorlan_handle_get_received_offers($request) {
     $table_name = $wpdb->prefix . 'motorlan_offers';
     $user_id = get_current_user_id();
 
+    $page = isset($request['page']) ? absint($request['page']) : 1;
+    $per_page = isset($request['per_page']) ? absint($request['per_page']) : 10;
+    $offset = ($page - 1) * $per_page;
+
+    $total_query = $wpdb->prepare(
+        "SELECT COUNT(o.id)
+         FROM $table_name o
+         JOIN {$wpdb->posts} p ON o.publication_id = p.ID
+         WHERE p.post_author = %d",
+        $user_id
+    );
+    $total = $wpdb->get_var($total_query);
+
     $query = $wpdb->prepare(
         "SELECT o.*, p.post_title as publication_title, u.display_name as user_name
          FROM $table_name o
          JOIN {$wpdb->posts} p ON o.publication_id = p.ID
          JOIN {$wpdb->users} u ON o.user_id = u.ID
-         WHERE p.post_author = %d",
-        $user_id
+         WHERE p.post_author = %d
+         LIMIT %d OFFSET %d",
+        $user_id,
+        $per_page,
+        $offset
     );
 
     $offers = $wpdb->get_results($query);
 
-    return new WP_REST_Response($offers, 200);
+    $response = array(
+        'data' => $offers,
+        'pagination' => array(
+            'total' => (int) $total,
+            'totalPages' => ceil($total / $per_page),
+            'currentPage' => $page,
+            'perPage' => $per_page
+        )
+    );
+
+    return new WP_REST_Response($response, 200);
 }
 
 function motorlan_handle_update_offer_status($request) {
@@ -147,15 +173,38 @@ function motorlan_handle_get_sent_offers($request) {
     $table_name = $wpdb->prefix . 'motorlan_offers';
     $user_id = get_current_user_id();
 
+    $page = isset($request['page']) ? absint($request['page']) : 1;
+    $per_page = isset($request['per_page']) ? absint($request['per_page']) : 10;
+    $offset = ($page - 1) * $per_page;
+
+    $total_query = $wpdb->prepare(
+        "SELECT COUNT(id) FROM $table_name WHERE user_id = %d",
+        $user_id
+    );
+    $total = $wpdb->get_var($total_query);
+
     $query = $wpdb->prepare(
         "SELECT o.*, p.post_title as publication_title
          FROM $table_name o
          JOIN {$wpdb->posts} p ON o.publication_id = p.ID
-         WHERE o.user_id = %d",
-        $user_id
+         WHERE o.user_id = %d
+         LIMIT %d OFFSET %d",
+        $user_id,
+        $per_page,
+        $offset
     );
 
     $offers = $wpdb->get_results($query);
 
-    return new WP_REST_Response($offers, 200);
+    $response = array(
+        'data' => $offers,
+        'pagination' => array(
+            'total' => (int) $total,
+            'totalPages' => ceil($total / $per_page),
+            'currentPage' => $page,
+            'perPage' => $per_page
+        )
+    );
+
+    return new WP_REST_Response($response, 200);
 }
