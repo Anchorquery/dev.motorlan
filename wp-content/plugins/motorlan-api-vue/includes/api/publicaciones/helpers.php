@@ -49,14 +49,8 @@ function motorlan_build_publicaciones_query_args($params) {
             'compare' => '=',
         ];
     }
+    
 
-    if (!empty($params['status'])) {
-        $meta_query[] = [
-            'key'     => 'estado_del_articulo',
-            'value'   => "Usado",
-            'compare' => '=',
-        ];
-    }
 
     if (!empty($params['category'])) {
         $tax_query[] = [
