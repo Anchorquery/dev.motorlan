@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useUserStore } from '@/@core/stores/user'
 import ProductImage from './components/ProductImage.vue'
@@ -16,9 +16,11 @@ const route = useRoute()
 const slug = route.params.slug as string
 const userStore = useUserStore()
 
-const { data, isFetching } = await useApi<any>(
+const { data, isFetching, execute } = useApi<any>(
   createUrl(`/wp-json/motorlan/v1/publicaciones/${slug}`),
-).get().json()
+)
+
+onMounted(execute)
 
 const isOfferModalVisible = ref(false)
 
@@ -26,7 +28,7 @@ const isOwner = computed(() => {
   if (!userStore.user || !publicacion.value)
     return false
 
-  return Number(userStore.user.id) === Number(publicacion.value.post_author)
+  return Number(userStore.user.id) === Number(publicacion.value.author.id)
 })
 
 const publicacion = computed(() => {
@@ -50,6 +52,9 @@ const docs = computed(() => {
 })
 
 const title = computed(() => {
+  if (!publicacion.value)
+    return ''
+
   const parts = [
     publicacion.value.title,
     publicacion.value.acf.tipo_o_referencia,

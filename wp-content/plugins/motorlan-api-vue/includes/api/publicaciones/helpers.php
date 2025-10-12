@@ -28,7 +28,7 @@ function motorlan_build_publicaciones_query_args($params) {
 
     $filterable_fields = [
         'marca', 'tipo_o_referencia', 'potencia', 'velocidad', 'par_nominal', 'voltaje', 'intensidad',
-        'pais', 'provincia', 'estado_del_articulo', 'posibilidad_de_alquiler', 'tipo_de_alimentacion',
+        'pais', 'provincia', 'posibilidad_de_alquiler', 'tipo_de_alimentacion',
         'servomotores', 'regulacion_electronica_drivers', 'precio_de_venta', 'precio_negociable', 'uuid'
     ];
 
@@ -46,6 +46,14 @@ function motorlan_build_publicaciones_query_args($params) {
         $meta_query[] = [
             'key'     => 'publicar_acf',
             'value'   => sanitize_text_field($params['status']),
+            'compare' => '=',
+        ];
+    }
+
+    if (!empty($params['status'])) {
+        $meta_query[] = [
+            'key'     => 'estado_del_articulo',
+            'value'   => "Usado",
             'compare' => '=',
         ];
     }

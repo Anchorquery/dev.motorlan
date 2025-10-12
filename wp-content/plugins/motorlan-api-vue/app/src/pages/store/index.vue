@@ -12,7 +12,7 @@ import type { Publicacion } from '@/interfaces/publicacion'
 const { t } = useI18n()
 
 interface Term {
-  id: number
+  term_id: number
   name: string
   slug: string
 }
@@ -54,13 +54,21 @@ const publicacionesApiUrl = computed(() => {
     [t('store.order_options.price_desc')]: { orderby: 'price', order: 'desc' },
   }
 
+  const selectedBrandSlug = computed(() => {
+    if (!selectedBrand.value)
+      return null
+    const brand = marcas.value.find(m => m.term_id === selectedBrand.value)
+
+    return brand ? brand.slug : null
+  })
+
   const queryParams = {
     per_page: itemsPerPage.value,
     page: page.value,
     status: 'publish',
     s: searchTerm.value,
     tipo: selectedTipo.value,
-    marca: selectedBrand.value,
+    marca: selectedBrandSlug.value,
     estado_del_articulo: selectedState.value,
     potencia: selectedPotencia.value,
     velocidad: selectedVelocidad.value,
@@ -113,48 +121,52 @@ const search = () => {
 </script>
 
 <template>
-  <div class="store d-flex">
-    <TiendaFilters
-      v-model:type-model="typeModel"
-      v-model:selected-technology="selectedTechnology"
-      v-model:selected-par="selectedPar"
-      v-model:selected-potencia="selectedPotencia"
-      v-model:selected-velocidad="selectedVelocidad"
-      v-model:selected-brand="selectedBrand"
-      v-model:selected-state="selectedState"
-      v-model:selected-tipo="selectedTipo"
-      :marcas="marcas"
-      :tipos="tipos"
-      :technology-options="technologyOptions"
-      :par-options="parOptions"
-      :potencia-options="potenciaOptions"
-      :velocidad-options="velocidadOptions"
-    />
+  <v-container fluid>
+    <v-row>
+      <v-col
+        cols="12"
+        md="3"
+      >
+        <TiendaFilters
+          v-model:type-model="typeModel"
+          v-model:selected-technology="selectedTechnology"
+          v-model:selected-par="selectedPar"
+          v-model:selected-potencia="selectedPotencia"
+          v-model:selected-velocidad="selectedVelocidad"
+          v-model:selected-brand="selectedBrand"
+          v-model:selected-state="selectedState"
+          v-model:selected-tipo="selectedTipo"
+          :marcas="marcas"
+          :tipos="tipos"
+          :technology-options="technologyOptions"
+          :par-options="parOptions"
+          :potencia-options="potenciaOptions"
+          :velocidad-options="velocidadOptions"
+        />
+      </v-col>
 
-    <section class="flex-grow-1 ps-6">
-      <SearchBar
-        v-model:search-term="searchTerm"
-        v-model:order="order"
-        :loading="isSearching"
-        :order-options="orderOptions"
-        @search="search"
-      />
+      <v-col
+        cols="12"
+        md="9"
+      >
+        <SearchBar
+          v-model:search-term="searchTerm"
+          v-model:order="order"
+          :loading="isSearching"
+          :order-options="orderOptions"
+          @search="search"
+        />
 
-      <PublicacionItems
-        :publicaciones="publicaciones"
-        :loading="isSearching"
-      />
+        <PublicacionItems
+          :publicaciones="publicaciones"
+          :loading="isSearching"
+        />
 
-      <PaginationControls
-        v-model:page="page"
-        :total-pages="totalPages"
-      />
-    </section>
-  </div>
+        <PaginationControls
+          v-model:page="page"
+          :total-pages="totalPages"
+        />
+      </v-col>
+    </v-row>
+  </v-container>
 </template>
-
-<style scoped>
-.store {
-  align-items: flex-start;
-}
-</style>
