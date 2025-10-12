@@ -39,7 +39,7 @@ const itemsPerPage = ref(9)
 const page = ref(1)
 
 // -- Data Fetching --
-const { data: brandsData } = useApi<Term[]>(createUrl('/wp-json/motorlan/v1/marcas'))
+const { data: brandsData } = useApi<Term[]>(createUrl('/wp-json/motorlan/v1/marcas')).get().json();
 const marcas = computed(() => brandsData.value || [])
 
 const tipos = ref<Term[]>([])

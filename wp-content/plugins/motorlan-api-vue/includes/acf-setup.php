@@ -131,9 +131,9 @@ acf_add_local_field_group(array(
 			'name' => 'estado_del_articulo',
 			'type' => 'select',
 			'choices' => array(
-				'Nuevo' => 'Nuevo',
-				'Usado' => 'Usado',
-				'Restaurado' => 'Restaurado',
+				'new' => 'Nuevo',
+				'used' => 'Usado',
+				'restored' => 'Restaurado',
 			),
 		),
 		array(

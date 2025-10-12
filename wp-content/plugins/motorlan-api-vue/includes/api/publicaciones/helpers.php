@@ -29,7 +29,7 @@ function motorlan_build_publicaciones_query_args($params) {
     $filterable_fields = [
         'marca', 'tipo_o_referencia', 'potencia', 'velocidad', 'par_nominal', 'voltaje', 'intensidad',
         'pais', 'provincia', 'posibilidad_de_alquiler', 'tipo_de_alimentacion',
-        'servomotores', 'regulacion_electronica_drivers', 'precio_de_venta', 'precio_negociable', 'uuid'
+        'servomotores', 'regulacion_electronica_drivers', 'precio_de_venta', 'precio_negociable', 'uuid','estado_del_articulo'
     ];
 
     foreach ($filterable_fields as $field) {
@@ -66,13 +66,7 @@ function motorlan_build_publicaciones_query_args($params) {
         ];
     }
 
-    if (!empty($params['estado_del_articulo'])) {
-        $tax_query[] = [
-            'taxonomy' => 'estado_del_articulo',
-            'field'    => 'slug',
-            'terms'    => array_map('sanitize_text_field', explode(',', $params['estado_del_articulo'])),
-        ];
-    }
+
 
     if (count($meta_query) > 1) $args['meta_query'] = $meta_query;
     if (count($tax_query) > 1) $args['tax_query'] = $tax_query;

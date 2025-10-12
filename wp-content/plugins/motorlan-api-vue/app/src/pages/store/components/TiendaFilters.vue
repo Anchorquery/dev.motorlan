@@ -59,7 +59,7 @@ const selectedTipo = defineModel<string | null>('selectedTipo')
     <AppSelect v-model="selectedPotencia" label="Potencia" placeholder="Seleccionar potencia" :items="potenciaOptions" class="mb-4" variant="outlined" color="error" clearable />
     <AppSelect v-model="selectedVelocidad" label="Velocidad" placeholder="Seleccionar velocidad" :items="velocidadOptions" class="mb-4" variant="outlined" color="error" clearable />
     <AppSelect v-model="selectedBrand" label="Marcas" placeholder="Seleccionar marcas" :items="marcas" item-title="name" item-value="term_id" class="mb-4" variant="outlined" color="error" clearable />
-    <AppSelect v-model="selectedState" label="Estado" placeholder="Seleccionar estado" :items="['Nuevo','Usado','Restaurado']" class="mb-4" variant="outlined" color="error" clearable />
+    <AppSelect v-model="selectedState" label="Estado" placeholder="Seleccionar estado" :items="[{'name':'Nuevo', 'value':'new'},{'name':'Usado', 'value':'used'},{'name':'Restaurado', 'value':'restored'}]" class="mb-4" variant="outlined" color="error" clearable />
   </aside>
 </template>
 
