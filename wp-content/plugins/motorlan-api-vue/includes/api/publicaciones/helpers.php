@@ -41,7 +41,7 @@ function motorlan_build_publicaciones_query_args($params) {
             ];
         }
     }
-
+ 
     if (!empty($params['status'])) {
         $meta_query[] = [
             'key'     => 'publicar_acf',
@@ -49,8 +49,6 @@ function motorlan_build_publicaciones_query_args($params) {
             'compare' => '=',
         ];
     }
-    
-
 
     if (!empty($params['category'])) {
         $tax_query[] = [
@@ -65,6 +63,14 @@ function motorlan_build_publicaciones_query_args($params) {
             'taxonomy' => 'tipo',
             'field'    => 'slug',
             'terms'    => array_map('sanitize_text_field', explode(',', $params['tipo'])),
+        ];
+    }
+
+    if (!empty($params['estado_del_articulo'])) {
+        $tax_query[] = [
+            'taxonomy' => 'estado_del_articulo',
+            'field'    => 'slug',
+            'terms'    => array_map('sanitize_text_field', explode(',', $params['estado_del_articulo'])),
         ];
     }
 
