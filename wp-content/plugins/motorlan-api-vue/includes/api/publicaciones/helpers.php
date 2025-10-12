@@ -41,7 +41,7 @@ function motorlan_build_publicaciones_query_args($params) {
             ];
         }
     }
- 
+
     if (!empty($params['status'])) {
         $meta_query[] = [
             'key'     => 'publicar_acf',
@@ -65,8 +65,6 @@ function motorlan_build_publicaciones_query_args($params) {
             'terms'    => array_map('sanitize_text_field', explode(',', $params['tipo'])),
         ];
     }
-
-
 
     if (count($meta_query) > 1) $args['meta_query'] = $meta_query;
     if (count($tax_query) > 1) $args['tax_query'] = $tax_query;
