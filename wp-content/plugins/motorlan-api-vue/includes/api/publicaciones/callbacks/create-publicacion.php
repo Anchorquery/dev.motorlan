@@ -33,12 +33,21 @@ function motorlan_create_publicacion_callback(WP_REST_Request $request) {
     if (empty($acf_data['tipo_o_referencia'])) return new WP_Error('missing_reference', 'La referencia es obligatoria', ['status' => 400]);
 
     // --- Create Post ---
+    $slug = '';
+    if (!empty($params['slug'])) {
+        $slug = sanitize_title($params['slug']);
+    }
+
     $post_data = [
         'post_title'  => sanitize_text_field($params['title']),
         'post_status' => sanitize_text_field($params['status'] ?? 'draft'),
         'post_type'   => 'publicaciones',
         'post_author' => get_current_user_id(),
     ];
+
+    if (!empty($slug)) {
+        $post_data['post_name'] = $slug;
+    }
 
     $post_id = wp_insert_post($post_data);
     if (is_wp_error($post_id)) {

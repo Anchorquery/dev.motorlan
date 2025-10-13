@@ -30,6 +30,16 @@ function motorlan_update_publicacion_by_uuid(WP_REST_Request $request) {
     if (isset($params['title'])) {
         wp_update_post(['ID' => $post_id, 'post_title' => sanitize_text_field($params['title'])]);
     }
+
+    if (isset($params['slug'])) {
+        $sanitized_slug = sanitize_title($params['slug']);
+        if (!empty($sanitized_slug)) {
+            wp_update_post([
+                'ID' => $post_id,
+                'post_name' => $sanitized_slug,
+            ]);
+        }
+    }
     // --- Handle Post Status ---
     // This is critical for the post to be 'published', 'draft', etc.
     if (isset($params['status'])) {

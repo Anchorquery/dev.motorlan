@@ -127,6 +127,30 @@ const tipos = ref<Tipo[]>([])
 const motorImageFile = ref<FileData[]>([])
 const motorGalleryFiles = ref<FileData[]>([])
 
+const slugify = (value: string): string => {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
+
+const buildPublicationSlug = (): string => {
+  const parts = [
+    postData.value.title,
+    postData.value.acf.tipo_o_referencia,
+    postData.value.acf.potencia ? `${postData.value.acf.potencia} kW` : null,
+    postData.value.acf.velocidad ? `${postData.value.acf.velocidad} rpm` : null,
+  ].filter(Boolean) as string[]
+
+  if (!parts.length)
+    return ''
+
+  return slugify(parts.join(' '))
+}
+
 const conditionOptions = computed(() => [
   { title: t('add_publication.condition_options.new'), value: 'new' },
   { title: t('add_publication.condition_options.used'), value: 'used' },
@@ -256,10 +280,13 @@ const createPostAndContinue = async () => {
 
   try {
     const formData = new FormData()
+    const slug = buildPublicationSlug()
 
     // Append basic post data
     formData.append('title', postData.value.title)
     formData.append('status', postData.value.status)
+    if (slug)
+      formData.append('slug', slug)
     if (userData.value?.id)
       formData.append('author', userData.value.id.toString())
 

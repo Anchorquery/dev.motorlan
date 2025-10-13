@@ -90,6 +90,30 @@ interface DropZoneFile {
 const motorImageFile = ref<DropZoneFile[]>([])
 const motorGalleryFiles = ref<DropZoneFile[]>([])
 
+const slugify = (value: string): string => {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
+
+const buildPublicationSlug = (): string => {
+  const parts = [
+    motorData.value.title,
+    motorData.value.acf.tipo_o_referencia,
+    motorData.value.acf.potencia ? `${motorData.value.acf.potencia} kW` : null,
+    motorData.value.acf.velocidad ? `${motorData.value.acf.velocidad} rpm` : null,
+  ].filter(Boolean) as string[]
+
+  if (!parts.length)
+    return ''
+
+  return slugify(parts.join(' '))
+}
+
 const marcas = ref([])
 const categories = ref([])
 const tipos = ref<Tipo[]>([])
@@ -235,10 +259,13 @@ const updateMotor = async (status: string) => {
 
   try {
     const formData = new FormData()
+    const slug = buildPublicationSlug()
 
     // Append basic post data
     formData.append('title', motorData.value.title)
     formData.append('status', status)
+    if (slug)
+      formData.append('slug', slug)
 
     // Append taxonomies
     formData.append('categories', JSON.stringify(motorData.value.categories))
