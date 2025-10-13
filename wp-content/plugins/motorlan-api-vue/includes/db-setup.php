@@ -12,7 +12,10 @@ function motorlan_offers_create_table() {
         offer_amount float NOT NULL,
         offer_date datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
         justification TEXT,
-        status ENUM('pending', 'rejected', 'accepted') DEFAULT 'pending' NOT NULL,
+        status ENUM('pending', 'rejected', 'accepted', 'accepted_pending_confirmation', 'confirmed', 'expired') DEFAULT 'pending' NOT NULL,
+        accepted_at datetime DEFAULT NULL,
+        expires_at datetime DEFAULT NULL,
+        confirmed_at datetime DEFAULT NULL,
         PRIMARY KEY  (id)
     ) $charset_collate;";
 

@@ -47,8 +47,23 @@ const { data: purchasesData } = await useApi<any>(createUrl('/wp-json/motorlan/v
   },
 }))
 
-const purchases = computed(() => purchasesData.value?.data || [])
-const totalPurchases = computed(() => purchasesData.value?.pagination.total || 0)
+const purchases = computed(() => {
+  const raw = purchasesData.value?.data ?? purchasesData.value ?? []
+  return Array.isArray(raw) ? raw.filter(Boolean) : []
+})
+
+const totalPurchases = computed(() => {
+  if (purchasesData.value?.pagination?.total != null)
+    return purchasesData.value.pagination.total
+  if (typeof purchasesData.value?.total === 'number')
+    return purchasesData.value.total
+  if (Array.isArray(purchasesData.value?.data))
+    return purchasesData.value.data.length
+  const raw = purchasesData.value
+  if (Array.isArray(raw))
+    return raw.length
+  return 0
+})
 
 const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail'): string => {
   let imageObj: ImagenDestacada | null = null
