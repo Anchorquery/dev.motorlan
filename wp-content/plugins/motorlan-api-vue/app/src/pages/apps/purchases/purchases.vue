@@ -4,6 +4,8 @@ import type { ImagenDestacada } from '../../../../../interfaces/publicacion'
 
 const router = useRouter()
 
+const normalizeStatus = (status: string) => status?.toLowerCase() ?? ''
+
 const headers = [
   { title: 'Publicacion', key: 'motor' },
   { title: 'Fecha de Compra', key: 'fecha_compra' },
@@ -27,17 +29,24 @@ const updateOptions = (options: any) => {
 }
 
 const resolveStatus = (status: string) => {
-  if (status === 'pendiente')
-    return { text: 'Pendiente', color: 'warning' }
-  if (status === 'completado')
-    return { text: 'Completado', color: 'success' }
-  if (status === 'cancelado')
-    return { text: 'Cancelado', color: 'error' }
-
-  return { text: 'Desconocido', color: 'info' }
+  switch (normalizeStatus(status)) {
+    case 'pending':
+    case 'pendiente':
+      return { text: 'Pendiente', color: 'warning' }
+    case 'completed':
+    case 'completado':
+      return { text: 'Completado', color: 'success' }
+    case 'cancelled':
+    case 'cancelado':
+      return { text: 'Cancelado', color: 'error' }
+    case 'rejected':
+      return { text: 'Rechazado', color: 'error' }
+    default:
+      return { text: status || 'Desconocido', color: 'info' }
+  }
 }
 
-const { data: purchasesData } = await useApi<any>(createUrl('/wp-json/motorlan/v1/purchases/purchases', {
+const purchasesApiUrl = createUrl('/wp-json/motorlan/v1/purchases/purchases', {
   query: {
     page,
     per_page: itemsPerPage,
@@ -45,7 +54,22 @@ const { data: purchasesData } = await useApi<any>(createUrl('/wp-json/motorlan/v
     order: orderBy,
     search: searchQuery,
   },
-}))
+})
+
+const {
+  data: purchasesData,
+  execute: fetchPurchases,
+  isFetching: isTableLoading,
+} = useApi<any>(purchasesApiUrl, { immediate: false }).get().json()
+
+watch(purchasesApiUrl, () => {
+  fetchPurchases()
+}, { immediate: true })
+
+watch(searchQuery, () => {
+  if (page.value !== 1)
+    page.value = 1
+})
 
 const purchases = computed(() => {
   const raw = purchasesData.value?.data ?? purchasesData.value ?? []
@@ -119,6 +143,7 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
       :headers="headers"
       :items="purchases"
       :items-length="totalPurchases"
+      :loading="isTableLoading"
       class="text-no-wrap"
       @update:options="updateOptions"
     >
@@ -162,7 +187,7 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
 
       <!-- Actions -->
       <template #item.actions="{ item }">
-        <IconBtn @click="router.push(`/apps/purchases/view/${item.uuid}`)">
+        <IconBtn @click="router.push(`/apps/purchases/${item.uuid}`)">
           <VIcon icon="tabler-eye" />
         </IconBtn>
       </template>

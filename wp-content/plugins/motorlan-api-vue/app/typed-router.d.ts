@@ -37,6 +37,7 @@ declare module 'vue-router/auto-routes' {
     'apps-publications-sales': RouteRecordInfo<'apps-publications-sales', '/apps/publications/sales', Record<never, never>, Record<never, never>>,
     'apps-publications-sales-id': RouteRecordInfo<'apps-publications-sales-id', '/apps/publications/sales/:id', { id: ParamValue<true> }, { id: ParamValue<false> }>,
     'apps-purchases': RouteRecordInfo<'apps-purchases', '/apps/purchases', Record<never, never>, Record<never, never>>,
+    'apps-purchases-uuid': RouteRecordInfo<'apps-purchases-uuid', '/apps/purchases/:uuid', { uuid: ParamValue<true> }, { uuid: ParamValue<false> }>,
     'apps-purchases-favorites': RouteRecordInfo<'apps-purchases-favorites', '/apps/purchases/favorites', Record<never, never>, Record<never, never>>,
     'apps-purchases-list': RouteRecordInfo<'apps-purchases-list', '/apps/purchases/list', Record<never, never>, Record<never, never>>,
     'apps-purchases-offers-sent': RouteRecordInfo<'apps-purchases-offers-sent', '/apps/purchases/offers-sent', Record<never, never>, Record<never, never>>,
@@ -70,7 +71,5 @@ declare module 'vue-router/auto-routes' {
     'store-components-related-products': RouteRecordInfo<'store-components-related-products', '/store/components/RelatedProducts', Record<never, never>, Record<never, never>>,
     'store-components-search-bar': RouteRecordInfo<'store-components-search-bar', '/store/components/SearchBar', Record<never, never>, Record<never, never>>,
     'store-components-tienda-filters': RouteRecordInfo<'store-components-tienda-filters', '/store/components/TiendaFilters', Record<never, never>, Record<never, never>>,
-    'store-compra-id': RouteRecordInfo<'store-compra-id', '/store/compra/:id', { id: ParamValue<true> }, { id: ParamValue<false> }>,
-    'store-compra-uuid': RouteRecordInfo<'store-compra-uuid', '/store/compra/:uuid', { uuid: ParamValue<true> }, { uuid: ParamValue<false> }>,
   }
 }
