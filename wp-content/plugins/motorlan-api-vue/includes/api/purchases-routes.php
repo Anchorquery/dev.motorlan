@@ -10,6 +10,10 @@ if ( ! defined( 'WPINC' ) ) {
     die;
 }
 
+if ( ! function_exists( 'motorlan_get_motor_data' ) ) {
+    require_once MOTORLAN_API_VUE_PATH . 'includes/api/motor-helpers.php';
+}
+
 /**
  * Register custom REST API routes for purchases.
  */
