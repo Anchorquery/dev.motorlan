@@ -18,7 +18,8 @@ const userStore = useUserStore()
 
 const { data, isFetching, execute } = useApi<any>(
   createUrl(`/wp-json/motorlan/v1/publicaciones/${slug}`),
-)
+  { immediate: false },
+).get().json()
 
 onMounted(execute)
 
