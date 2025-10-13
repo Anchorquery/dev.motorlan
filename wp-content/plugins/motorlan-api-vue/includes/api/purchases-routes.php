@@ -110,7 +110,7 @@ function motorlan_get_my_purchases_callback( $request ) {
             $motor_post = get_field('motor', $post_id);
             $motor_data = null;
             if ($motor_post) {
-                $motor_data = motorlan_get_motor_data($motor_post->ID);
+                $motor_data = motorlan_get_motor_data( $motor_post );
             }
 
             $data[] = array(
@@ -175,7 +175,7 @@ function motorlan_get_my_questions_callback( $request ) {
             $motor_post = get_field('motor', $post_id);
             $motor_data = null;
             if ($motor_post) {
-                $motor_data = motorlan_get_motor_data($motor_post->ID);
+                $motor_data = motorlan_get_motor_data( $motor_post );
             }
 
             $data[] = array(
@@ -238,7 +238,7 @@ function motorlan_get_my_opinions_callback( $request ) {
             $motor_post = get_field('motor', $post_id);
             $motor_data = null;
             if ($motor_post) {
-                $motor_data = motorlan_get_motor_data($motor_post->ID);
+                $motor_data = motorlan_get_motor_data( $motor_post );
             }
 
             $data[] = array(
@@ -379,7 +379,7 @@ function motorlan_get_purchase_callback( WP_REST_Request $request ) {
     $motor_post = get_field( 'motor', $purchase_id );
     $motor_data = null;
     if ( $motor_post ) {
-        $motor_data = motorlan_get_motor_data( $motor_post->ID );
+        $motor_data = motorlan_get_motor_data( $motor_post );
     }
 
     $data = array(
