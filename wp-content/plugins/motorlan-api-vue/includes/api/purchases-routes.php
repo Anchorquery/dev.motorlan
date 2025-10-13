@@ -1,5 +1,6 @@
 <?php
 /**
+require_once plugin_dir_path(__FILE__) . 'motor-helpers.php';
  * Setup for My Account REST API Routes.
  *
  * @package motorlan-api-vue
