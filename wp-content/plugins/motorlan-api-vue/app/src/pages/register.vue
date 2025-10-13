@@ -34,6 +34,7 @@ definePage({
 })
 
 const form = ref({
+  name: '',
   username: '',
   email: '',
   password: '',
@@ -67,7 +68,7 @@ const checkUsernameAvailability = async () => {
       usernameError.value = 'Error al verificar el nombre de usuario.'
     }
     else if (data.value && !data.value.available) {
-      usernameError.value = data.value.message || 'El nombre de usuario no está disponible.'
+      usernameError.value = data.value.message || 'El nombre de usuario no esta disponible.'
     }
   }
   catch (e) {
@@ -80,7 +81,7 @@ const checkUsernameAvailability = async () => {
 
 const register = async () => {
   if (!form.value.privacyPolicies) {
-    genericError.value = 'Debes aceptar la política de privacidad y los términos.'
+    genericError.value = 'Debes aceptar la politica de privacidad y los terminos.'
     
     return
   }
@@ -91,6 +92,7 @@ const register = async () => {
   const { data, error } = await useApi('/wp-json/motorlan/v1/register', {
     method: 'POST',
     body: JSON.stringify({
+      name: form.value.name,
       username: form.value.username,
       email: form.value.email,
       password: form.value.password,
@@ -100,11 +102,15 @@ const register = async () => {
   isSubmitting.value = false
 
   if (error.value) {
-    const errorMessage = error.value.data?.message || 'Ocurrió un error al registrar la cuenta.'
-    if (errorMessage.toLowerCase().includes('username')) {
+    const errorMessage = error.value.data?.message || 'Ocurrio un error al registrar la cuenta.'
+    const loweredMessage = errorMessage.toLowerCase()
+    if (loweredMessage.includes('name')) {
+      errors.value.name = errorMessage
+    }
+    else if (loweredMessage.includes('username')) {
       errors.value.username = errorMessage
     }
-    else if (errorMessage.toLowerCase().includes('email')) {
+    else if (loweredMessage.includes('email')) {
       errors.value.email = errorMessage
     }
     else {
@@ -206,12 +212,23 @@ const onSubmit = () => {
           >
             <VRow>
 
+              <!-- Name -->
+              <VCol cols="12">
+                <VTextField
+                  v-model="form.name"
+                  :rules="[requiredValidator]"
+                  autofocus
+                  :label="t('register.name')"
+                  placeholder="John Doe"
+                  :error-messages="errors.name"
+                />
+              </VCol>
+
               <!-- Username -->
               <VCol cols="12">
                 <VTextField
                   v-model="form.username"
                   :rules="[requiredValidator]"
-                  autofocus
                   :label="t('register.username')"
                   placeholder="Johndoe"
                   :error-messages="errors.username || usernameError"
@@ -238,7 +255,7 @@ const onSubmit = () => {
                   v-model="form.password"
                   :rules="[requiredValidator]"
                   :label="t('register.password')"
-                  placeholder="············"
+                  placeholder="************"
                   :type="isPasswordVisible ? 'text' : 'password'"
                   autocomplete="password"
                   :append-inner-icon="isPasswordVisible ? 'tabler-eye-off' : 'tabler-eye'"
@@ -316,7 +333,7 @@ const onSubmit = () => {
     color="success"
     :timeout="4000"
   >
-    ¡Registro exitoso! Se ha enviado un correo de verificación. Por favor, revisa tu bandeja de entrada.
+    Registro exitoso. Hemos enviado un correo de bienvenida. Revisa tu bandeja de entrada.
   </VSnackbar>
 </template>
 

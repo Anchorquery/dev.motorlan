@@ -473,6 +473,7 @@
   "register": {
     "title": "La aventura comienza aquí 🚀",
     "subtitle": "¡Haz que la gestión de tu aplicación sea fácil y divertida!",
+    "name": "Nombre",
     "username": "Usuario",
     "email": "Correo electrónico",
     "password": "Contraseña",
