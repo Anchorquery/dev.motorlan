@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useApi } from '@/composables/useApi'
 import { createUrl } from '@/@core/composable/createUrl'
+import { useApi } from '@/composables/useApi'
 import type { Publicacion } from '@/interfaces/publicacion'
 
 const props = defineProps<{ currentId: number }>()
@@ -11,6 +11,18 @@ const { data } = await useApi<any>(
 ).get().json()
 
 const products = computed(() => (data.value?.data || []).filter((m: Publicacion) => m.id !== props.currentId))
+
+const formatProductTitle = (publication: Publicacion) => {
+  const acf = publication?.acf || {}
+  const parts = [
+    publication?.title,
+    acf?.tipo_o_referencia,
+    acf?.potencia ? `${acf.potencia} kW` : null,
+    acf?.velocidad ? `${acf.velocidad} rpm` : null,
+  ].filter(Boolean)
+
+  return parts.join(' ').toUpperCase()
+}
 </script>
 
 <template>
@@ -22,7 +34,7 @@ const products = computed(() => (data.value?.data || []).filter((m: Publicacion)
           <div class="motor-image mb-4">
             <img :src="publicacion.imagen_destacada?.url || '/placeholder.png'" alt="" />
           </div>
-          <div class="text-body-1 mb-4">{{ publicacion.title }}</div>
+          <div class="text-body-1 mb-4">{{ formatProductTitle(publicacion) }}</div>
           <VBtn color="error" class="rounded-pill px-6" :to="'/store/' + publicacion.slug">+ INFO</VBtn>
         </div>
       </VCol>
