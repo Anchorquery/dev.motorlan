@@ -112,10 +112,10 @@ function motorlan_get_my_purchases_callback( $request ) {
             $query->the_post();
             $post_id = get_the_ID();
 
-            $motor_post = get_field('motor', $post_id);
+            $motor_id = get_post_meta($post_id, 'motor', true);
             $motor_data = null;
-            if ($motor_post) {
-                $motor_data = motorlan_get_motor_data( $motor_post );
+            if ($motor_id) {
+                $motor_data = motorlan_get_motor_data( (int) $motor_id );
             }
 
             $data[] = array(
