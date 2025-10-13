@@ -35,6 +35,9 @@ const formatProductTitle = (publication: Publicacion) => {
             <img :src="publicacion.imagen_destacada?.url || '/placeholder.png'" alt="" />
           </div>
           <div class="text-body-1 mb-4">{{ formatProductTitle(publicacion) }}</div>
+          <div class="text-h6 text-error font-weight-bold mb-4">
+            {{ publicacion.acf?.precio_de_venta ? `${publicacion.acf.precio_de_venta} €` : 'Consultar precio' }}
+          </div>
           <VBtn color="error" class="rounded-pill px-6" :to="'/store/' + publicacion.slug">+ INFO</VBtn>
         </div>
       </VCol>
