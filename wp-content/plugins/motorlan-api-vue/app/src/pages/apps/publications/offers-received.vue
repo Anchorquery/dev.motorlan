@@ -76,6 +76,7 @@ const apiUrl = computed(() => {
 
 const { data: offersData, execute: fetchOffers, isFetching: isTableLoading } = useApi<any>(apiUrl, { immediate: false }).get().json()
 const isSearching = ref(false)
+const updatingOfferId = ref<number | null>(null)
 
 const debouncedFetch = debounce(async () => {
   isSearching.value = true
@@ -109,13 +110,66 @@ onMounted(() => {
 const offers = computed(() => (offersData.value?.data || offersData.value || []).filter(Boolean))
 const totalOffers = computed(() => (offersData.value?.pagination?.total) || 0)
 
+const replaceOfferInTable = (updatedOffer: any) => {
+  if (!updatedOffer || !offersData.value)
+    return
+
+  const current = offersData.value
+
+  if (Array.isArray(current?.data)) {
+    const index = current.data.findIndex((item: any) => item?.id === updatedOffer.id)
+    if (index !== -1) {
+      const newData = [...current.data]
+      newData[index] = { ...newData[index], ...updatedOffer }
+      offersData.value = { ...current, data: newData }
+    }
+    return
+  }
+
+  if (Array.isArray(current)) {
+    const index = current.findIndex((item: any) => item?.id === updatedOffer.id)
+    if (index !== -1) {
+      const newData = [...current]
+      newData[index] = { ...newData[index], ...updatedOffer }
+      offersData.value = newData
+    }
+  }
+}
+
 const updateOfferStatus = async (offerId: number, status: 'accepted' | 'rejected') => {
+  if (updatingOfferId.value === offerId)
+    return
+
+  updatingOfferId.value = offerId
   try {
-    await useApi(`/wp-json/motorlan/v1/offers/${offerId}/status`).post({ status }).execute()
-    fetchOffers()
+    const { data: response, error } = await useApi(`/wp-json/motorlan/v1/offers/${offerId}/status`).post({ status }).json()
+
+    if (error.value)
+      throw error.value
+
+    const payload = response.value || null
+    const updatedOffer = payload?.data || payload
+
+    replaceOfferInTable(updatedOffer)
+
+    if (selectedOffer.value?.id === offerId && updatedOffer)
+      selectedOffer.value = { ...selectedOffer.value, ...updatedOffer }
+
+    await fetchOffers()
+
+    if (selectedOffer.value?.id === offerId) {
+      const stillVisible = offers.value.some((offer: any) => offer?.id === offerId)
+      if (!stillVisible) {
+        selectedOffer.value = null
+        isDetailDialogOpen.value = false
+      }
+    }
   }
   catch (error) {
     console.error(error)
+  }
+  finally {
+    updatingOfferId.value = null
   }
 }
 
@@ -270,7 +324,7 @@ const resolveStatus = (status: string) => {
               <VListItem
                 value="accept"
                 prepend-icon="tabler-check"
-                :disabled="!item.can_accept"
+                :disabled="!item.can_accept || updatingOfferId === item.id"
                 :title="!item.can_accept ? item.accept_disabled_reason || 'No disponible para aceptar' : undefined"
                 @click="updateOfferStatus(item.id, 'accepted')"
               >
@@ -279,7 +333,7 @@ const resolveStatus = (status: string) => {
               <VListItem
                 value="reject"
                 prepend-icon="tabler-x"
-                :disabled="item.status === 'confirmed'"
+                :disabled="item.status === 'confirmed' || updatingOfferId === item.id"
                 @click="updateOfferStatus(item.id, 'rejected')"
               >
                 Rechazar

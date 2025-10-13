@@ -17,9 +17,25 @@ export const useApi = createFetch({
   baseUrl: baseURL,
   options: {
     async beforeFetch({ options }) {
+      const nextOptions: RequestInit = { ...options }
       const token = getToken()
-      const headers = new Headers(options.headers as any)
-      const isFormData = options.body instanceof FormData
+      const headers = new Headers(nextOptions.headers as any)
+      const body = nextOptions.body as any
+      const isFormData = body instanceof FormData
+      const shouldSerializeBody =
+        body !== undefined
+        && body !== null
+        && !isFormData
+        && typeof body === 'object'
+        && !(body instanceof Blob)
+        && !(body instanceof ArrayBuffer)
+        && !(typeof ReadableStream !== 'undefined' && body instanceof ReadableStream)
+        && !(body instanceof URLSearchParams)
+        && !ArrayBuffer.isView(body)
+
+      if (shouldSerializeBody)
+        nextOptions.body = JSON.stringify(body)
+
       if (!isFormData)
         headers.set('Content-Type', 'application/json')
       if (token)
@@ -27,7 +43,7 @@ export const useApi = createFetch({
       const nonce = (window as any)?.wpData?.nonce
       if (nonce)
         headers.set('X-WP-Nonce', nonce)
-      return { options: { ...options, headers } }
+      return { options: { ...nextOptions, headers } }
     },
     async onFetchError({ response }) {
       if (response && response.status === 401) {

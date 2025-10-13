@@ -1,6 +1,7 @@
 <script setup lang="ts">
 // @ts-nocheck
 import { ref, computed, onMounted, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useApi } from '@/composables/useApi'
 import { debounce } from '@/utils/debounce'
@@ -75,6 +76,8 @@ const apiUrl = computed(() => {
 
 const { data: offersData, execute: fetchOffers, isFetching: isTableLoading } = useApi<any>(apiUrl, { immediate: false }).get().json()
 const isSearching = ref(false)
+const isConfirmingOffer = ref(false)
+const router = useRouter()
 
 const debouncedFetch = debounce(async () => {
   isSearching.value = true
@@ -159,20 +162,36 @@ const openOfferDetails = (offer: any) => {
 }
 
 const confirmOffer = async (offerId: number) => {
+  if (isConfirmingOffer.value)
+    return
+
+  isConfirmingOffer.value = true
   try {
-    const request = useApi(`/wp-json/motorlan/v1/offers/${offerId}/confirm`).post()
-    await request.execute()
-    if (request.error.value)
-      throw request.error.value
+    const { data: response, error } = await useApi(`/wp-json/motorlan/v1/offers/${offerId}/confirm`).post().json()
+
+    if (error.value)
+      throw error.value
+
+    const payload = response.value || null
+    const updatedOffer = payload?.data || null
+
+    if (selectedOffer.value?.id === offerId && updatedOffer)
+      selectedOffer.value = updatedOffer
 
     await fetchOffers()
-    if (selectedOffer.value?.id === offerId)
-      selectedOffer.value = null
-
     isDetailDialogOpen.value = false
+
+    if (payload?.purchase_uuid)
+      router.push(`/store/compra/${payload.purchase_uuid}`)
+
   }
   catch (error) {
     console.error(error)
+  }
+  finally {
+    isConfirmingOffer.value = false
+    if (selectedOffer.value?.id === offerId && isDetailDialogOpen.value === false)
+      selectedOffer.value = null
   }
 }
 
@@ -290,6 +309,7 @@ const withdrawOffer = async (offerId: number) => {
               v-if="item.status === 'accepted_pending_confirmation'"
               value="confirm"
               prepend-icon="tabler-check"
+              :disabled="isConfirmingOffer"
               @click="confirmOffer(item.id)"
             >
               Confirmar compra
@@ -372,6 +392,7 @@ const withdrawOffer = async (offerId: number) => {
             v-if="selectedOffer.status === 'accepted_pending_confirmation'"
             color="success"
             variant="flat"
+            :disabled="isConfirmingOffer"
             @click="confirmOffer(selectedOffer.id)"
           >
             Confirmar compra
