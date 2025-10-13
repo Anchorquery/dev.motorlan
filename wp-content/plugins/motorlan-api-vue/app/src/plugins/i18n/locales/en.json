@@ -445,6 +445,9 @@
   },
   "sales": {
     "publication": "Publication",
+    "buyer": "Buyer",
+    "buyer_name": "Buyer",
+    "buyer_email": "Buyer email",
     "price": "Price",
     "date": "Date",
     "search_placeholder": "Search sale...",
@@ -453,6 +456,47 @@
       "sale": "Sale",
       "rent": "Rent"
     },
+    "status": "Status",
+    "actions": "Actions",
+    "filters": {
+      "status": "Status",
+      "date_range": "Date range",
+      "clear": "Clear filters"
+    },
+    "status_options": {
+      "all": "All statuses",
+      "completed": "Completed",
+      "pending": "Pending",
+      "processing": "Processing",
+      "cancelled": "Cancelled",
+      "refunded": "Refunded",
+      "expired": "Expired"
+    },
+    "status_labels": {
+      "completed": "Completed",
+      "pending": "Pending",
+      "processing": "Processing",
+      "cancelled": "Cancelled",
+      "refunded": "Refunded",
+      "expired": "Expired",
+      "unknown": "Unknown"
+    },
+    "view_sale": "View sale",
+    "view_publication": "View publication",
+    "no_buyer": "No buyer assigned",
+    "sale_detail_title": "Sale detail",
+    "refresh": "Refresh",
+    "back_to_list": "Back to sales",
+    "detail_error": "We couldn't load the sale details.",
+    "detail_not_found": "Sale not found.",
+    "summary": "Summary",
+    "motor_information": "Motor information",
+    "buyer_information": "Buyer information",
+    "payment_type": "Payment type",
+    "notes": "Notes",
+    "sale_identifier": "Sale identifier",
+    "motor_brand": "Brand",
+    "motor_power": "Power",
     "fetch_error": "Error loading sales.",
     "my_sales": "My Sales",
     "no_sales_yet": "You have not made any sales yet."

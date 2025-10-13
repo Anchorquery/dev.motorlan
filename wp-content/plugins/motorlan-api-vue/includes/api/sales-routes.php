@@ -17,8 +17,149 @@ function motorlan_register_sales_rest_routes() {
         'callback' => 'motorlan_get_user_sales_callback',
         'permission_callback' => 'motorlan_is_user_authenticated',
     ) );
+
+    register_rest_route( $namespace, '/user/sales/(?P<sale_id>\d+)', array(
+        'methods'  => WP_REST_Server::READABLE,
+        'callback' => 'motorlan_get_user_sale_callback',
+        'permission_callback' => 'motorlan_is_user_authenticated',
+    ) );
 }
 add_action( 'rest_api_init', 'motorlan_register_sales_rest_routes' );
+
+/**
+ * Normalize a sale date value into ISO 8601 if possible.
+ *
+ * @param string $date_string Raw date string.
+ * @return string
+ */
+function motorlan_normalize_sale_date( $date_string ) {
+    if ( empty( $date_string ) ) {
+        return '';
+    }
+
+    $normalized = str_replace( '/', '-', $date_string );
+    $timestamp  = strtotime( $normalized );
+
+    return $timestamp ? gmdate( DATE_ATOM, $timestamp ) : $date_string;
+}
+
+/**
+ * Build the response payload for a sale.
+ *
+ * @param int $purchase_id Purchase post ID.
+ * @return array
+ */
+function motorlan_prepare_sale_item( $purchase_id ) {
+    $purchase_id    = absint( $purchase_id );
+    $publication_id = null;
+
+    if ( function_exists( 'get_field' ) ) {
+        $motor_post = get_field( 'motor', $purchase_id );
+    } else {
+        $motor_post = get_post_meta( $purchase_id, 'motor', true );
+    }
+
+    if ( is_object( $motor_post ) && isset( $motor_post->ID ) ) {
+        $publication_id = $motor_post->ID;
+    } elseif ( is_numeric( $motor_post ) ) {
+        $publication_id = (int) $motor_post;
+    }
+
+    $price = function_exists( 'get_field' ) ? get_field( 'precio_compra', $purchase_id ) : get_post_meta( $purchase_id, 'precio_compra', true );
+    if ( '' === $price ) {
+        $price = get_post_meta( $purchase_id, 'precio_compra', true );
+    }
+    if ( '' === $price && $publication_id ) {
+        $price = function_exists( 'get_field' ) ? get_field( 'precio_de_venta', $publication_id ) : get_post_meta( $publication_id, 'precio_de_venta', true );
+    }
+
+    $buyer_id  = function_exists( 'get_field' ) ? get_field( 'comprador', $purchase_id ) : get_post_meta( $purchase_id, 'comprador_id', true );
+    $buyer_id  = $buyer_id ? absint( $buyer_id ) : 0;
+    $buyer     = null;
+    $buyer_name  = '';
+    $buyer_email = '';
+
+    if ( $buyer_id ) {
+        $buyer_user = get_userdata( $buyer_id );
+        if ( $buyer_user ) {
+            $buyer_name  = $buyer_user->display_name ?: trim( $buyer_user->first_name . ' ' . $buyer_user->last_name );
+            $buyer_email = $buyer_user->user_email;
+            $buyer = array(
+                'id'       => $buyer_id,
+                'name'     => $buyer_name,
+                'email'    => $buyer_email,
+                'username' => $buyer_user->user_login,
+            );
+        }
+    }
+
+    $status = function_exists( 'get_field' ) ? get_field( 'estado', $purchase_id ) : get_post_meta( $purchase_id, 'estado', true );
+    $type   = function_exists( 'get_field' ) ? get_field( 'tipo_venta', $purchase_id ) : get_post_meta( $purchase_id, 'tipo_venta', true );
+    $uuid   = function_exists( 'get_field' ) ? get_field( 'uuid', $purchase_id ) : get_post_meta( $purchase_id, 'uuid', true );
+
+    $raw_date   = function_exists( 'get_field' ) ? get_field( 'fecha_compra', $purchase_id ) : get_post_meta( $purchase_id, 'fecha_compra', true );
+    $iso_date   = $raw_date ? motorlan_normalize_sale_date( $raw_date ) : get_post_time( DATE_ATOM, true, $purchase_id );
+    $date_label = $raw_date ? $raw_date : get_the_date( 'Y-m-d', $purchase_id );
+
+    $publication_slug  = '';
+    $publication_title = get_the_title( $purchase_id );
+    $publication_uuid  = '';
+
+    if ( $publication_id ) {
+        $publication = get_post( $publication_id );
+        if ( $publication ) {
+            $publication_title = get_the_title( $publication_id );
+            $publication_slug  = $publication->post_name;
+            $publication_uuid  = function_exists( 'get_field' ) ? get_field( 'uuid', $publication_id ) : get_post_meta( $publication_id, 'uuid', true );
+        }
+    }
+
+    $price_value = is_numeric( $price ) ? (float) $price : null;
+
+    return array(
+        'id'                   => $purchase_id,
+        'uuid'                 => $uuid ?: '',
+        'publication_id'       => $publication_id,
+        'publication_uuid'     => $publication_uuid ?: '',
+        'publication_title'    => $publication_title,
+        'publication_slug'     => $publication_slug,
+        'price'                => $price,
+        'price_value'          => $price_value,
+        'currency'             => '',
+        'date'                 => $iso_date,
+        'date_label'           => $date_label,
+        'status'               => $status ?: 'completed',
+        'type'                 => $type ?: 'sale',
+        'buyer_id'             => $buyer_id ?: null,
+        'buyer_name'           => $buyer_name,
+        'buyer_email'          => $buyer_email,
+        'buyer'                => $buyer,
+        'detail_url'           => get_permalink( $purchase_id ),
+        'publication_permalink'=> $publication_id ? get_permalink( $publication_id ) : '',
+    );
+}
+
+/**
+ * Append motor details to a sale item if available.
+ *
+ * @param array $sale_item Sale payload.
+ * @param int   $purchase_id Purchase post ID.
+ * @return array
+ */
+function motorlan_enrich_sale_with_motor( $sale_item, $purchase_id ) {
+    if ( ! function_exists( 'motorlan_get_motor_data' ) || ! function_exists( 'get_field' ) ) {
+        return $sale_item;
+    }
+
+    $motor_post = get_field( 'motor', $purchase_id );
+    if ( $motor_post instanceof WP_Post ) {
+        $sale_item['motor'] = motorlan_get_motor_data( $motor_post->ID );
+    } elseif ( is_numeric( $motor_post ) && $motor_post ) {
+        $sale_item['motor'] = motorlan_get_motor_data( (int) $motor_post );
+    }
+
+    return $sale_item;
+}
 
 function motorlan_get_user_sales_callback( WP_REST_Request $request ) {
     $user_id = get_current_user_id();
@@ -29,24 +170,59 @@ function motorlan_get_user_sales_callback( WP_REST_Request $request ) {
     $params = $request->get_params();
     $per_page = isset( $params['per_page'] ) ? (int) $params['per_page'] : 10;
     $page = isset( $params['page'] ) ? (int) $params['page'] : 1;
+    $search = isset( $params['search'] ) ? sanitize_text_field( $params['search'] ) : '';
+    $status = isset( $params['status'] ) ? sanitize_text_field( $params['status'] ) : '';
+    $type   = isset( $params['type'] ) ? sanitize_text_field( $params['type'] ) : '';
+    $order  = isset( $params['order'] ) ? strtoupper( sanitize_text_field( $params['order'] ) ) : 'DESC';
+    $orderby = isset( $params['orderby'] ) ? sanitize_text_field( $params['orderby'] ) : 'date';
+    $date_from = isset( $params['date_from'] ) ? sanitize_text_field( $params['date_from'] ) : '';
+    $date_to   = isset( $params['date_to'] ) ? sanitize_text_field( $params['date_to'] ) : '';
+
+    if ( ! in_array( $order, array( 'ASC', 'DESC' ), true ) ) {
+        $order = 'DESC';
+    }
 
     $meta_query = array(
+        'relation' => 'AND',
         array(
             'key'   => 'vendedor_id',
             'value' => $user_id,
             'compare' => '=',
         ),
-        array(
+    );
+
+    $status_meta_map = array(
+        'pending'   => 'pendiente',
+        'pendiente' => 'pendiente',
+        'completed' => 'completed',
+        'complete'  => 'completed',
+        'processing'=> 'processing',
+        'cancelled' => 'cancelled',
+        'canceled'  => 'cancelled',
+        'refunded'  => 'refunded',
+        'rejected'  => 'rejected',
+        'expired'   => 'expired',
+    );
+
+    if ( '' === $status ) {
+        $meta_query[] = array(
             'key'   => 'estado',
             'value' => 'completed',
             'compare' => '=',
-        ),
-    );
+        );
+    } elseif ( 'all' !== $status ) {
+        $status_value = isset( $status_meta_map[ $status ] ) ? $status_meta_map[ $status ] : $status;
+        $meta_query[] = array(
+            'key'   => 'estado',
+            'value' => $status_value,
+            'compare' => '=',
+        );
+    }
 
-    if ( ! empty( $params['type'] ) ) {
+    if ( ! empty( $type ) ) {
         $meta_query[] = array(
             'key'   => 'tipo_venta',
-            'value' => $params['type'],
+            'value' => $type,
             'compare' => '=',
         );
     }
@@ -56,10 +232,46 @@ function motorlan_get_user_sales_callback( WP_REST_Request $request ) {
         'posts_per_page' => $per_page,
         'paged'          => $page,
         'meta_query'     => $meta_query,
+        'order'          => $order,
+        'post_status'    => 'any',
     );
 
-    if ( ! empty( $params['search'] ) ) {
-        $args['s'] = sanitize_text_field( $params['search'] );
+    if ( ! empty( $search ) ) {
+        $args['s'] = $search;
+    }
+
+    if ( ! empty( $date_from ) || ! empty( $date_to ) ) {
+        $date_filter = array( 'inclusive' => true );
+        if ( ! empty( $date_from ) ) {
+            $timestamp = strtotime( $date_from );
+            if ( $timestamp ) {
+                $date_filter['after'] = gmdate( 'Y-m-d', $timestamp );
+            }
+        }
+        if ( ! empty( $date_to ) ) {
+            $timestamp = strtotime( $date_to );
+            if ( $timestamp ) {
+                $date_filter['before'] = gmdate( 'Y-m-d', $timestamp ) . ' 23:59:59';
+            }
+        }
+        if ( count( $date_filter ) > 1 ) {
+            $args['date_query'] = array( $date_filter );
+        }
+    }
+
+    switch ( $orderby ) {
+        case 'price':
+        case 'price_value':
+            $args['meta_key'] = 'precio_compra';
+            $args['orderby']  = 'meta_value_num';
+            break;
+        case 'publication_title':
+            $args['orderby'] = 'title';
+            break;
+        case 'date':
+        default:
+            $args['orderby'] = 'date';
+            break;
     }
 
     $query = new WP_Query( $args );
@@ -70,29 +282,8 @@ function motorlan_get_user_sales_callback( WP_REST_Request $request ) {
             $query->the_post();
             $purchase_id = get_the_ID();
 
-            $motor_post = get_field( 'motor', $purchase_id );
-            $publication_id = null;
-            if ( is_object( $motor_post ) && isset( $motor_post->ID ) ) {
-                $publication_id = $motor_post->ID;
-            } elseif ( is_numeric( $motor_post ) ) {
-                $publication_id = (int) $motor_post;
-            }
-
-            $price = get_field( 'precio_compra', $purchase_id );
-            if ( '' === $price ) {
-                $price = get_post_meta( $purchase_id, 'precio_compra', true );
-            }
-            if ( '' === $price && $publication_id ) {
-                $price = get_field( 'precio_de_venta', $publication_id );
-            }
-
-            $sales[] = array(
-                'id'       => $purchase_id,
-                'publication_title' => $publication_id ? get_the_title( $publication_id ) : get_the_title( $purchase_id ),
-                'publication_slug'  => $publication_id ? get_post_field( 'post_name', $publication_id ) : '',
-                'price'             => $price,
-                'date'              => get_field( 'fecha_compra', $purchase_id ) ?: get_the_date( 'Y-m-d', $purchase_id ),
-            );
+            $sale_item = motorlan_prepare_sale_item( $purchase_id );
+            $sales[]   = motorlan_enrich_sale_with_motor( $sale_item, $purchase_id );
         }
         wp_reset_postdata();
     }
@@ -103,8 +294,52 @@ function motorlan_get_user_sales_callback( WP_REST_Request $request ) {
         'data' => $sales,
         'pagination' => array(
             'total' => (int) $total_sales,
+            'per_page' => $per_page,
+            'current_page' => $page,
+            'total_pages' => (int) $query->max_num_pages,
         ),
     );
 
     return new WP_REST_Response( $response, 200 );
+}
+
+/**
+ * Retrieve the details for a single sale.
+ *
+ * @param WP_REST_Request $request Request object.
+ * @return WP_REST_Response|WP_Error
+ */
+function motorlan_get_user_sale_callback( WP_REST_Request $request ) {
+    $user_id = get_current_user_id();
+    if ( ! $user_id ) {
+        return new WP_Error( 'rest_not_logged_in', 'Sorry, you are not allowed to do that.', array( 'status' => 401 ) );
+    }
+
+    $sale_id = absint( $request['sale_id'] );
+    if ( ! $sale_id ) {
+        return new WP_Error( 'invalid_sale_id', 'Invalid sale identifier.', array( 'status' => 400 ) );
+    }
+
+    $sale_post = get_post( $sale_id );
+    if ( ! $sale_post || 'compra' !== $sale_post->post_type ) {
+        return new WP_Error( 'sale_not_found', 'Sale not found.', array( 'status' => 404 ) );
+    }
+
+    $seller_id = function_exists( 'get_field' ) ? get_field( 'vendedor', $sale_id ) : get_post_meta( $sale_id, 'vendedor_id', true );
+    $seller_id = $seller_id ? absint( $seller_id ) : 0;
+
+    if ( $seller_id !== $user_id ) {
+        return new WP_Error( 'forbidden_sale_access', 'You are not allowed to view this sale.', array( 'status' => 403 ) );
+    }
+
+    $sale_item = motorlan_prepare_sale_item( $sale_id );
+    $sale_item = motorlan_enrich_sale_with_motor( $sale_item, $sale_id );
+
+    if ( function_exists( 'get_field' ) ) {
+        $sale_item['notes']        = get_field( 'notas', $sale_id );
+        $sale_item['payment_type'] = get_field( 'tipo_de_pago', $sale_id );
+        $sale_item['payment_meta'] = get_fields( $sale_id ) ?: array();
+    }
+
+    return new WP_REST_Response( array( 'data' => $sale_item ), 200 );
 }

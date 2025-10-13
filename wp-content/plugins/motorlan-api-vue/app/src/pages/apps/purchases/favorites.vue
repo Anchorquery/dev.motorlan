@@ -1,5 +1,8 @@
 <script setup lang="ts">
+import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { createUrl } from '@/@core/composable/createUrl'
+import { useApi } from '@/composables/useApi'
 import type { ImagenDestacada, Publicacion } from '../../../../../interfaces/publicacion'
 
 const router = useRouter()
@@ -27,7 +30,11 @@ const updateOptions = (options: any) => {
   orderBy.value = options.sortBy[0]?.order
 }
 
-const { data: favoritesData, execute: fetchFavorites } = await useApi<any>(createUrl('/wp-json/motorlan/v1/favorites', {
+const {
+  data: favoritesData,
+  execute: fetchFavorites,
+  isFetching,
+} = useApi<any>(createUrl('/wp-json/motorlan/v1/favorites', {
   query: {
     page,
     per_page: itemsPerPage,
@@ -35,10 +42,23 @@ const { data: favoritesData, execute: fetchFavorites } = await useApi<any>(creat
     order: orderBy,
     search: searchQuery,
   },
-}))
+}), { immediate: false }).get().json()
 
 const favorites = computed((): Publicacion[] => favoritesData.value?.data || [])
-const totalFavorites = computed(() => favoritesData.value?.data?.length || 0)
+const totalFavorites = computed(() => favoritesData.value?.total ?? favorites.value.length)
+
+const refreshFavorites = async () => {
+  try {
+    await fetchFavorites()
+  }
+  catch (error) {
+    console.error('Error fetching favorites:', error)
+  }
+}
+
+watch([page, itemsPerPage, sortBy, orderBy, searchQuery], () => {
+  void refreshFavorites()
+}, { immediate: true })
 
 const resolveStatus = (status: string) => {
   if (status === 'publish')
@@ -55,12 +75,19 @@ const resolveStatus = (status: string) => {
 
 const removeFavorite = async (motorId: number) => {
   try {
-    await $api(`/wp-json/motorlan/v1/favorites/${motorId}`, { method: 'DELETE' })
-    fetchFavorites()
+    const request = useApi(`/wp-json/motorlan/v1/favorites/${motorId}`, { immediate: false }).delete()
+    await request.execute()
+    if (request.error.value)
+      throw request.error.value
+    await refreshFavorites()
   }
   catch (error) {
     console.error('Error removing favorite:', error)
   }
+}
+
+const goToDetail = (item: Publicacion) => {
+  router.push(`/store/${item.slug}`)
 }
 
 const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail'): string => {
@@ -117,6 +144,7 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
       :headers="headers"
       :items="favorites"
       :items-length="totalFavorites"
+      :loading="isFetching"
       class="text-no-wrap"
       @update:options="updateOptions"
     >
@@ -162,7 +190,7 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
 
       <!-- Actions -->
       <template #item.actions="{ item }">
-        <IconBtn @click="router.push(`/apps/publications/publication/edit/${item.uuid}`)">
+        <IconBtn @click="goToDetail(item)">
           <VIcon icon="tabler-eye" />
         </IconBtn>
         <IconBtn @click="removeFavorite(item.id)">

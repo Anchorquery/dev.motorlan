@@ -448,6 +448,9 @@
   },
   "sales": {
     "publication": "Publicación",
+    "buyer": "Comprador",
+    "buyer_name": "Comprador",
+    "buyer_email": "Correo del comprador",
     "price": "Precio",
     "date": "Fecha",
     "search_placeholder": "Buscar venta...",
@@ -456,6 +459,47 @@
       "sale": "Venta",
       "rent": "Alquiler"
     },
+    "status": "Estado",
+    "actions": "Acciones",
+    "filters": {
+      "status": "Estado",
+      "date_range": "Rango de fechas",
+      "clear": "Limpiar filtros"
+    },
+    "status_options": {
+      "all": "Todos los estados",
+      "completed": "Completadas",
+      "pending": "Pendientes",
+      "processing": "En proceso",
+      "cancelled": "Canceladas",
+      "refunded": "Reembolsadas",
+      "expired": "Expiradas"
+    },
+    "status_labels": {
+      "completed": "Completada",
+      "pending": "Pendiente",
+      "processing": "En proceso",
+      "cancelled": "Cancelada",
+      "refunded": "Reembolsada",
+      "expired": "Expirada",
+      "unknown": "Desconocido"
+    },
+    "view_sale": "Ver venta",
+    "view_publication": "Ver publicación",
+    "no_buyer": "Sin comprador asignado",
+    "sale_detail_title": "Detalle de la venta",
+    "refresh": "Refrescar",
+    "back_to_list": "Volver a ventas",
+    "detail_error": "No pudimos cargar el detalle de la venta.",
+    "detail_not_found": "No se encontró la venta.",
+    "summary": "Resumen",
+    "motor_information": "Información del motor",
+    "buyer_information": "Información del comprador",
+    "payment_type": "Tipo de pago",
+    "notes": "Notas",
+    "sale_identifier": "Identificador de la venta",
+    "motor_brand": "Marca",
+    "motor_power": "Potencia",
     "fetch_error": "Error al cargar las ventas.",
     "my_sales": "Mis Ventas",
     "no_sales_yet": "Aún no has realizado ninguna venta."

@@ -77,15 +77,17 @@ const toggleFavorite = async () => {
   isLoadingFavorite.value = true
   try {
     if (isFavorite.value) {
-      const { error: deleteError } = await useApi(`/wp-json/motorlan/v1/favorites/${props.publicacion.id}`).delete().execute()
-      if (deleteError.value)
-        throw deleteError.value
+      const deleteRequest = useApi(`/wp-json/motorlan/v1/favorites/${props.publicacion.id}`, { immediate: false }).delete()
+      await deleteRequest.execute()
+      if (deleteRequest.error.value)
+        throw deleteRequest.error.value
       isFavorite.value = false
     }
     else {
-      const { error: createError } = await useApi('/wp-json/motorlan/v1/favorites').post({ publicacion_id: props.publicacion.id }).execute()
-      if (createError.value)
-        throw createError.value
+      const createRequest = useApi('/wp-json/motorlan/v1/favorites', { immediate: false }).post({ publicacion_id: props.publicacion.id })
+      await createRequest.execute()
+      if (createRequest.error.value)
+        throw createRequest.error.value
       isFavorite.value = true
     }
   } catch (e) {
