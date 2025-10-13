@@ -270,7 +270,8 @@ const resolveStatus = (status: string) => {
               <VListItem
                 value="accept"
                 prepend-icon="tabler-check"
-                :disabled="!['pending', 'expired'].includes(item.status)"
+                :disabled="!item.can_accept"
+                :title="!item.can_accept ? item.accept_disabled_reason || 'No disponible para aceptar' : undefined"
                 @click="updateOfferStatus(item.id, 'accepted')"
               >
                 Aceptar
@@ -337,6 +338,13 @@ const resolveStatus = (status: string) => {
           >
             <strong>Aceptada el:</strong>
             <div>{{ new Date(selectedOffer.accepted_at).toLocaleString() }}</div>
+          </div>
+          <div
+            v-if="!selectedOffer.can_accept && ['pending', 'expired'].includes(selectedOffer.status)"
+            class="mb-3"
+          >
+            <strong>Motivo para no aceptar:</strong>
+            <div>{{ selectedOffer.accept_disabled_reason || 'Sin disponibilidad de stock.' }}</div>
           </div>
           <div>
             <strong>Comentario:</strong>

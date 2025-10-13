@@ -18,13 +18,66 @@ function motorlan_offers_get_table_name() {
 }
 
 function motorlan_offers_get_stock($publication_id) {
-    $stock = function_exists('get_field') ? get_field('stock', $publication_id) : 0;
+    static $cache = array();
 
-    if ($stock === null || $stock === '') {
+    $publication_id = (int) $publication_id;
+    if ($publication_id <= 0) {
         return 0;
     }
 
-    return (int) $stock;
+    if (array_key_exists($publication_id, $cache)) {
+        return $cache[$publication_id];
+    }
+
+    $stock = function_exists('get_field') ? get_field('stock', $publication_id) : 0;
+
+    if ($stock === null || $stock === '') {
+        $cache[$publication_id] = 0;
+        return 0;
+    }
+
+    $cache[$publication_id] = (int) $stock;
+
+    return $cache[$publication_id];
+}
+
+function motorlan_offers_get_reserved_units($publication_id, $exclude_offer_id = null) {
+    global $wpdb;
+
+    $table_name = motorlan_offers_get_table_name();
+    $query = "SELECT COUNT(*) FROM $table_name WHERE publication_id = %d AND status = %s";
+    $params = array($publication_id, MOTORLAN_OFFER_STATUS_ACCEPTED_PENDING);
+
+    if (!empty($exclude_offer_id)) {
+        $query .= " AND id != %d";
+        $params[] = (int) $exclude_offer_id;
+    }
+
+    return (int) $wpdb->get_var($wpdb->prepare($query, $params));
+}
+
+function motorlan_offers_has_available_stock_for_acceptance($publication_id, $exclude_offer_id = null) {
+    $stock = motorlan_offers_get_stock($publication_id);
+    if ($stock <= 0) {
+        return false;
+    }
+
+    $reserved = motorlan_offers_get_reserved_units($publication_id, $exclude_offer_id);
+
+    return ($stock - $reserved) > 0;
+}
+
+function motorlan_offers_can_accept_offer($offer) {
+    if (!$offer) {
+        return false;
+    }
+
+    $allowed_statuses = array(MOTORLAN_OFFER_STATUS_PENDING, MOTORLAN_OFFER_STATUS_EXPIRED);
+    if (!in_array($offer->status, $allowed_statuses, true)) {
+        return false;
+    }
+
+    return motorlan_offers_has_available_stock_for_acceptance($offer->publication_id, $offer->id);
 }
 
 function motorlan_offers_normalize_status($status) {
@@ -130,7 +183,21 @@ function motorlan_offers_prepare_offer_item($offer) {
         'expires_at' => $offer->expires_at,
         'confirmed_at' => $offer->confirmed_at,
         'time_to_expire' => motorlan_offers_seconds_to_expire($offer),
+        'can_accept' => motorlan_offers_can_accept_offer($offer),
+        'accept_disabled_reason' => null,
     );
+
+    $accept_candidate_statuses = array(MOTORLAN_OFFER_STATUS_PENDING, MOTORLAN_OFFER_STATUS_EXPIRED);
+    if (in_array($offer->status, $accept_candidate_statuses, true) && !$base['can_accept']) {
+        $current_stock = motorlan_offers_get_stock($offer->publication_id);
+        $reserved_units = motorlan_offers_get_reserved_units($offer->publication_id, $offer->id);
+
+        if ($current_stock <= 0) {
+            $base['accept_disabled_reason'] = 'Sin stock disponible para este motor.';
+        } elseif ($reserved_units >= $current_stock) {
+            $base['accept_disabled_reason'] = 'Ya existe una oferta aceptada esperando confirmación.';
+        }
+    }
 
     $extra = array_diff_key($offer_vars, array_flip($base_keys));
 
@@ -446,6 +513,14 @@ function motorlan_handle_update_offer_status($request) {
         $stock = motorlan_offers_get_stock($offer->publication_id);
         if ($stock <= 0) {
             return new WP_Error('no_stock', 'No hay stock disponible para aceptar la oferta.', array('status' => 400));
+        }
+
+        if (!motorlan_offers_has_available_stock_for_acceptance($offer->publication_id, $offer_id)) {
+            return new WP_Error(
+                'reserved_stock',
+                'Ya existe otra oferta aceptada esperando confirmación para este motor.',
+                array('status' => 400)
+            );
         }
 
         $accepted_at = current_time('mysql');
