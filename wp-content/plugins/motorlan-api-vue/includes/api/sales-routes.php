@@ -30,23 +30,36 @@ function motorlan_get_user_sales_callback( WP_REST_Request $request ) {
     $per_page = isset( $params['per_page'] ) ? (int) $params['per_page'] : 10;
     $page = isset( $params['page'] ) ? (int) $params['page'] : 1;
 
+    $meta_query = array(
+        array(
+            'key'   => 'vendedor_id',
+            'value' => $user_id,
+            'compare' => '=',
+        ),
+        array(
+            'key'   => 'estado',
+            'value' => 'completed',
+            'compare' => '=',
+        ),
+    );
+
+    if ( ! empty( $params['type'] ) ) {
+        $meta_query[] = array(
+            'key'   => 'tipo_venta',
+            'value' => $params['type'],
+            'compare' => '=',
+        );
+    }
+
     $args = array(
-        'post_type'      => 'publicacion',
+        'post_type'      => 'compra',
         'posts_per_page' => $per_page,
         'paged'          => $page,
-        'author'         => $user_id,
-        'post_status'    => 'sold',
+        'meta_query'     => $meta_query,
     );
 
     if ( ! empty( $params['search'] ) ) {
         $args['s'] = sanitize_text_field( $params['search'] );
-    }
-
-    if ( ! empty( $params['type'] ) ) {
-        $args['meta_query'][] = array(
-            'key'   => 'posibilidad_de_alquiler',
-            'value' => $params['type'] === 'rent' ? 'yes' : 'no',
-        );
     }
 
     $query = new WP_Query( $args );
@@ -55,13 +68,30 @@ function motorlan_get_user_sales_callback( WP_REST_Request $request ) {
     if ( $query->have_posts() ) {
         while ( $query->have_posts() ) {
             $query->the_post();
-            $pid = get_the_ID();
+            $purchase_id = get_the_ID();
+
+            $motor_post = get_field( 'motor', $purchase_id );
+            $publication_id = null;
+            if ( is_object( $motor_post ) && isset( $motor_post->ID ) ) {
+                $publication_id = $motor_post->ID;
+            } elseif ( is_numeric( $motor_post ) ) {
+                $publication_id = (int) $motor_post;
+            }
+
+            $price = get_field( 'precio_compra', $purchase_id );
+            if ( '' === $price ) {
+                $price = get_post_meta( $purchase_id, 'precio_compra', true );
+            }
+            if ( '' === $price && $publication_id ) {
+                $price = get_field( 'precio_de_venta', $publication_id );
+            }
+
             $sales[] = array(
-                'id'       => $pid,
-                'publication_title' => get_the_title( $pid ),
-                'publication_slug' => get_post_field( 'post_name', $pid ),
-                'price' => get_field( 'precio_de_venta', $pid ),
-                'date' => get_the_date( 'Y-m-d', $pid ),
+                'id'       => $purchase_id,
+                'publication_title' => $publication_id ? get_the_title( $publication_id ) : get_the_title( $purchase_id ),
+                'publication_slug'  => $publication_id ? get_post_field( 'post_name', $publication_id ) : '',
+                'price'             => $price,
+                'date'              => get_field( 'fecha_compra', $purchase_id ) ?: get_the_date( 'Y-m-d', $purchase_id ),
             );
         }
         wp_reset_postdata();

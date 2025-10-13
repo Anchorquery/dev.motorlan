@@ -160,9 +160,10 @@ const openOfferDetails = (offer: any) => {
 
 const confirmOffer = async (offerId: number) => {
   try {
-    const { error } = await useApi(`/wp-json/motorlan/v1/offers/${offerId}/confirm`).post().execute()
-    if (error.value)
-      throw error.value
+    const request = useApi(`/wp-json/motorlan/v1/offers/${offerId}/confirm`).post()
+    await request.execute()
+    if (request.error.value)
+      throw request.error.value
 
     await fetchOffers()
     if (selectedOffer.value?.id === offerId)

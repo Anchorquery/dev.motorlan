@@ -207,6 +207,7 @@ function motorlan_offers_prepare_offer_item($offer) {
 function motorlan_offers_create_purchase_from_offer($offer) {
     $motor_id = (int) $offer->publication_id;
     $buyer_id = (int) $offer->user_id;
+    $amount = (float) $offer->offer_amount;
 
     $motor_title = get_the_title($motor_id);
     if (!$motor_title) {
@@ -229,17 +230,38 @@ function motorlan_offers_create_purchase_from_offer($offer) {
 
     $uuid = wp_generate_uuid4();
     $seller_id = (int) get_post_field('post_author', $motor_id);
+    $today = current_time('d/m/Y');
 
     if (function_exists('update_field')) {
         update_field('uuid', $uuid, $purchase_id);
         update_field('motor', $motor_id, $purchase_id);
         update_field('vendedor', $seller_id, $purchase_id);
         update_field('comprador', $buyer_id, $purchase_id);
-        update_field('estado', 'pendiente', $purchase_id);
-        update_field('fecha_compra', current_time('d/m/Y'), $purchase_id);
+        update_field('usuario', $buyer_id, $purchase_id);
+        update_field('precio_compra', $amount, $purchase_id);
+        update_field('estado', 'completed', $purchase_id);
+        update_field('fecha_compra', $today, $purchase_id);
+    } else {
+        update_post_meta($purchase_id, 'uuid', $uuid);
+        update_post_meta($purchase_id, 'motor', $motor_id);
+        update_post_meta($purchase_id, 'vendedor', $seller_id);
+        update_post_meta($purchase_id, 'comprador', $buyer_id);
+        update_post_meta($purchase_id, 'usuario', $buyer_id);
+        update_post_meta($purchase_id, 'precio_compra', $amount);
+        update_post_meta($purchase_id, 'estado', 'completed');
+        update_post_meta($purchase_id, 'fecha_compra', $today);
     }
 
-    return $uuid;
+    update_post_meta($purchase_id, 'vendedor_id', $seller_id);
+    update_post_meta($purchase_id, 'comprador_id', $buyer_id);
+    update_post_meta($purchase_id, 'offer_id', (int) $offer->id);
+    update_post_meta($purchase_id, 'precio_compra', $amount);
+    update_post_meta($purchase_id, 'tipo_venta', 'sale');
+
+    return array(
+        'uuid' => $uuid,
+        'id' => $purchase_id,
+    );
 }
 
 function motorlan_register_offers_routes() {
@@ -624,20 +646,19 @@ function motorlan_handle_confirm_offer($request) {
         return new WP_Error('no_stock', 'La publicación se quedó sin stock al intentar confirmar la oferta.', array('status' => 400));
     }
 
-    $purchase_uuid = motorlan_offers_create_purchase_from_offer($offer);
-    if (is_wp_error($purchase_uuid)) {
-        return $purchase_uuid;
+    $purchase_data = motorlan_offers_create_purchase_from_offer($offer);
+    if (is_wp_error($purchase_data)) {
+        return $purchase_data;
     }
 
     $new_stock = max(0, $stock - 1);
 
     if (function_exists('update_field')) {
         update_field('stock', $new_stock, $offer->publication_id);
-
-        if ($new_stock <= 0) {
-            update_field('publicar_acf', 'paused', $offer->publication_id);
-        }
+        update_field('publicar_acf', 'paused', $offer->publication_id);
     }
+    update_post_meta($offer->publication_id, 'stock', $new_stock);
+    update_post_meta($offer->publication_id, 'publicar_acf', 'paused');
 
     $confirmed_at = current_time('mysql');
 
@@ -657,7 +678,8 @@ function motorlan_handle_confirm_offer($request) {
         'success' => true,
         'message' => 'Oferta confirmada correctamente. Se generó la compra asociada.',
         'data' => motorlan_offers_prepare_offer_item($updated_offer),
-        'purchase_uuid' => $purchase_uuid,
+        'purchase_uuid' => is_array($purchase_data) ? $purchase_data['uuid'] : $purchase_data,
+        'purchase_id' => is_array($purchase_data) ? (int) $purchase_data['id'] : null,
         'stock_remaining' => $new_stock,
     ), 200);
 }

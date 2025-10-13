@@ -118,9 +118,9 @@ function motorlan_get_my_purchases_callback( $request ) {
                 'title'        => get_the_title(),
                 'fecha_compra' => get_field('fecha_compra', $post_id),
                 'motor'        => $motor_data,
-                'vendedor'     => get_field('vendedor', $post_id),
-                'comprador'    => get_field('comprador', $post_id),
-                'estado'       => get_field('estado', $post_id),
+                'vendedor'     => get_field('vendedor', $post_id) ?: get_post_meta($post_id, 'vendedor_id', true),
+                'comprador'    => get_field('comprador', $post_id) ?: get_post_meta($post_id, 'comprador_id', true),
+                'estado'       => get_field('estado', $post_id) ?: get_post_meta($post_id, 'estado', true),
             );
         }
         wp_reset_postdata();
