@@ -224,7 +224,7 @@ onMounted(async () => {
     }
 
     if (tiposResponse && tiposResponse.data.value) {
-      tipos.value = tiposResponse.data.value.map(tipo => ({
+      tipos.value = tiposResponse.data.value.map((tipo: Tipo) => ({
         term_id: tipo.term_id,
         name: tipo.name,
         slug: tipo.slug,
