@@ -178,7 +178,7 @@ const sellerSalesLabel = computed(() => {
   if (sellerSales.value === null)
     return null
 
-  return new Intl.NumberFormat('es-VE').format(sellerSales.value)
+  return new Intl.NumberFormat('es-ES').format(sellerSales.value)
 })
 
 const sellerSalesText = computed(() => {
@@ -250,29 +250,36 @@ const formatCurrency = (value: unknown) => {
   if (value === null || value === undefined || value === '')
     return null
 
+  // 1. Manejo de valores de tipo number
   if (typeof value === 'number') {
-    return new Intl.NumberFormat('es-VE', {
+    return new Intl.NumberFormat('es-ES', { // <-- Cambiado a 'es-ES'
       style: 'currency',
-      currency: 'VES',
+      currency: 'EUR', // <-- Cambiado a 'EUR'
       minimumFractionDigits: 2,
     }).format(value)
   }
 
+  // 2. Manejo de valores de tipo string
   if (typeof value === 'string') {
+    // La normalización del string se mantiene para intentar limpiar y parsear el valor
     const normalized = value.replace(/[^\d,.-]/g, '').replace(/\./g, '').replace(',', '.')
     const parsed = Number(normalized)
 
     if (!Number.isNaN(parsed)) {
-      return new Intl.NumberFormat('es-VE', {
+      return new Intl.NumberFormat('es-ES', { // <-- Cambiado a 'es-ES'
         style: 'currency',
-        currency: 'VES',
+        currency: 'EUR', // <-- Cambiado a 'EUR'
         minimumFractionDigits: 2,
       }).format(parsed)
     }
 
-    return `Bs. ${value}`
+    // Si no es un número parseable, puedes cambiar el prefijo si es necesario,
+    // o simplemente devolver el string original o un formato indicativo.
+    // En este caso, cambiamos el prefijo si se devuelve el string sin formato.
+    return `€ ${value}` 
   }
 
+  // 3. Cualquier otro tipo de valor devuelve null
   return null
 }
 
@@ -389,7 +396,7 @@ const formatDateTime = (value: string | null | undefined) => {
   if (Number.isNaN(date.getTime()))
     return value
 
-  return new Intl.DateTimeFormat('es-VE', {
+  return new Intl.DateTimeFormat('es-ES', {
     dateStyle: 'medium',
     timeStyle: 'short',
   }).format(date)
