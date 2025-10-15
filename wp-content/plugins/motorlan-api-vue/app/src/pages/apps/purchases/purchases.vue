@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
-import type { ImagenDestacada } from '../../../../../interfaces/publicacion'
+import type { ImagenDestacada } from '@/interfaces/publicacion'
 
 const router = useRouter()
 

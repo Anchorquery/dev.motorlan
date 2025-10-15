@@ -14,11 +14,7 @@ export default [
       { title: 'Ofertas Recibidas', to: 'apps-publications-offers-received' },
     ],
   },
-  {
-    title: 'Chat',
-    icon: { icon: 'tabler-message-circle-2' },
-    to: 'apps-chat',
-  },
+
 
   // {
   //   title: 'Invoice',

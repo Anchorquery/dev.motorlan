@@ -38,6 +38,7 @@ declare module 'vue-router/auto-routes' {
     'apps-publications-sales-id': RouteRecordInfo<'apps-publications-sales-id', '/apps/publications/sales/:id', { id: ParamValue<true> }, { id: ParamValue<false> }>,
     'apps-purchases': RouteRecordInfo<'apps-purchases', '/apps/purchases', Record<never, never>, Record<never, never>>,
     'apps-purchases-uuid': RouteRecordInfo<'apps-purchases-uuid', '/apps/purchases/:uuid', { uuid: ParamValue<true> }, { uuid: ParamValue<false> }>,
+    'apps-purchases-chat-uuid': RouteRecordInfo<'apps-purchases-chat-uuid', '/apps/purchases/chat/:uuid', { uuid: ParamValue<true> }, { uuid: ParamValue<false> }>,
     'apps-purchases-favorites': RouteRecordInfo<'apps-purchases-favorites', '/apps/purchases/favorites', Record<never, never>, Record<never, never>>,
     'apps-purchases-list': RouteRecordInfo<'apps-purchases-list', '/apps/purchases/list', Record<never, never>, Record<never, never>>,
     'apps-purchases-offers-sent': RouteRecordInfo<'apps-purchases-offers-sent', '/apps/purchases/offers-sent', Record<never, never>, Record<never, never>>,

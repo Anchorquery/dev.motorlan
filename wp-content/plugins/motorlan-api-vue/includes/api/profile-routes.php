@@ -24,6 +24,7 @@ function get_user_profile_data() {
     $user_meta = get_user_meta($user_id);
 
     $profile_data = [
+        'id' => $user_id,
         'personal_data' => [
             'nombre' => $user_data->first_name,
             'apellidos' => $user_data->last_name,
