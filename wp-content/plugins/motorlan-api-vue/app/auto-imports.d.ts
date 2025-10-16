@@ -51,6 +51,7 @@ declare global {
   const effectScope: typeof import('vue')['effectScope']
   const emailValidator: typeof import('./src/@core/utils/validators')['emailValidator']
   const extendRef: typeof import('@vueuse/core')['extendRef']
+  const formatCurrency: typeof import('./src/utils/formatCurrency')['formatCurrency']
   const formatDate: typeof import('./src/@core/utils/formatters')['formatDate']
   const formatDateToMonthShort: typeof import('./src/@core/utils/formatters')['formatDateToMonthShort']
   const getActivePinia: typeof import('pinia')['getActivePinia']
@@ -288,6 +289,7 @@ declare global {
   const usePrevious: typeof import('@vueuse/core')['usePrevious']
   const useProjection: typeof import('@vueuse/math')['useProjection']
   const usePurchaseChat: typeof import('./src/composables/usePurchaseChat')['usePurchaseChat']
+  const usePusherChannel: typeof import('./src/composables/usePusherChannel')['usePusherChannel']
   const useRafFn: typeof import('@vueuse/core')['useRafFn']
   const useRefHistory: typeof import('@vueuse/core')['useRefHistory']
   const useResizeObserver: typeof import('@vueuse/core')['useResizeObserver']
@@ -421,6 +423,7 @@ declare module 'vue' {
     readonly effectScope: UnwrapRef<typeof import('vue')['effectScope']>
     readonly emailValidator: UnwrapRef<typeof import('./src/@core/utils/validators')['emailValidator']>
     readonly extendRef: UnwrapRef<typeof import('@vueuse/core')['extendRef']>
+    readonly formatCurrency: UnwrapRef<typeof import('./src/utils/formatCurrency')['formatCurrency']>
     readonly formatDate: UnwrapRef<typeof import('./src/@core/utils/formatters')['formatDate']>
     readonly formatDateToMonthShort: UnwrapRef<typeof import('./src/@core/utils/formatters')['formatDateToMonthShort']>
     readonly getActivePinia: UnwrapRef<typeof import('pinia')['getActivePinia']>
@@ -653,6 +656,7 @@ declare module 'vue' {
     readonly usePrevious: UnwrapRef<typeof import('@vueuse/core')['usePrevious']>
     readonly useProjection: UnwrapRef<typeof import('@vueuse/math')['useProjection']>
     readonly usePurchaseChat: UnwrapRef<typeof import('./src/composables/usePurchaseChat')['usePurchaseChat']>
+    readonly usePusherChannel: UnwrapRef<typeof import('./src/composables/usePusherChannel')['usePusherChannel']>
     readonly useRafFn: UnwrapRef<typeof import('@vueuse/core')['useRafFn']>
     readonly useRefHistory: UnwrapRef<typeof import('@vueuse/core')['useRefHistory']>
     readonly useResizeObserver: UnwrapRef<typeof import('@vueuse/core')['useResizeObserver']>

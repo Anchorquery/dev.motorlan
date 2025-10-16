@@ -57,7 +57,7 @@ const publicacionesApiUrl = computed(() => {
   const selectedBrandSlug = computed(() => {
     if (!selectedBrand.value)
       return null
-    const brand = marcas.value.find(m => m.term_id === selectedBrand.value)
+    const brand = marcas.value.find((m: Term) => m.term_id === selectedBrand.value)
 
     return brand ? brand.slug : null
   })

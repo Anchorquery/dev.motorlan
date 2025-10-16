@@ -1,5 +1,8 @@
 <script setup lang="ts">
+import { ref, watch, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { createUrl } from '@/@core/composable/createUrl'
+import { useApi } from '@/composables/useApi'
 import type { ImagenDestacada } from '@/interfaces/publicacion'
 
 const router = useRouter()

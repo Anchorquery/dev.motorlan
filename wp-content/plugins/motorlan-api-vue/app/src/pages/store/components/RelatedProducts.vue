@@ -6,7 +6,7 @@ import type { Publicacion } from '@/interfaces/publicacion'
 
 const props = defineProps<{ currentId: number }>()
 
-const { data } = await useApi<any>(
+const { data } =  useApi<any>(
   createUrl('/wp-json/motorlan/v1/publicaciones', { query: { per_page: 4 } })
 ).get().json()
 
@@ -24,29 +24,7 @@ const formatProductTitle = (publication: Publicacion) => {
   return parts.join(' ').toUpperCase()
 }
 
-const formatCurrency = (value: unknown) => {
-  if (value === null || value === undefined || value === '')
-    return null
-
-  const format = (amount: number) => new Intl.NumberFormat('es-VE', {
-    style: 'currency',
-    currency: 'VES',
-    minimumFractionDigits: 2,
-  }).format(amount)
-
-  if (typeof value === 'number' && Number.isFinite(value))
-    return format(value)
-
-  if (typeof value === 'string') {
-    const normalized = value.replace(/[^\d,.-]/g, '').replace(/\./g, '').replace(',', '.')
-    const parsed = Number(normalized)
-    if (!Number.isNaN(parsed))
-      return format(parsed)
-    return `Bs. ${value}`
-  }
-
-  return null
-}
+import { formatCurrency } from '@/utils/formatCurrency'
 
 const formatPriceLabel = (publication: Publicacion) => formatCurrency(publication?.acf?.precio_de_venta) || 'Consultar precio'
 

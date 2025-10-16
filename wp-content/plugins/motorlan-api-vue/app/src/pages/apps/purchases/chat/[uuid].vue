@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import Pusher, { type Channel } from 'pusher-js'
 import { useRoute } from 'vue-router'
 import { createUrl } from '@/@core/composable/createUrl'
 import { useCookie } from '@/@core/composable/useCookie'
 import { useApi } from '@/composables/useApi'
+import { usePusherChannel } from '@/composables/usePusherChannel'
+import { formatCurrency } from '@/utils/formatCurrency'
 
 interface PurchaseMessage {
   id: string
@@ -28,22 +29,7 @@ const uuid = route.params.uuid as string
 
 const accessToken = useCookie<string | null>('accessToken')
 
-const parseEnvNumber = (value: unknown): number | undefined => {
-  if (value === null || value === undefined || value === '')
-    return undefined
-
-  const parsed = Number(value)
-
-  return Number.isNaN(parsed) ? undefined : parsed
-}
-
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '').toString().replace(/\/$/, '')
-const PUSHER_APP_KEY = (import.meta.env.VITE_PUSHER_APP_KEY || '').toString()
-const PUSHER_APP_CLUSTER = (import.meta.env.VITE_PUSHER_APP_CLUSTER || '').toString()
-const PUSHER_HOST = (import.meta.env.VITE_PUSHER_HOST || '').toString()
-const PUSHER_PORT = parseEnvNumber(import.meta.env.VITE_PUSHER_PORT)
-const PUSHER_WSS_PORT = parseEnvNumber(import.meta.env.VITE_PUSHER_WSS_PORT)
-const PUSHER_FORCE_TLS = (import.meta.env.VITE_PUSHER_FORCE_TLS ?? '1') !== '0'
+const API_BASE_URL = (process.env.VITE_API_BASE_URL || '').toString().replace(/\/$/, '')
 const PUSHER_AUTH_ENDPOINT = API_BASE_URL
   ? `${API_BASE_URL}/wp-json/motorlan/v1/purchases/pusher/auth`
   : '/wp-json/motorlan/v1/purchases/pusher/auth'
@@ -60,36 +46,6 @@ const breadcrumbs = computed(() => [
   { title: 'Detalle de la compra', to: `/apps/purchases/${uuid}` },
   { title: 'Mensajes de la compra', disabled: true },
 ])
-
-const formatCurrency = (value: unknown): string | null => {
-  if (value === null || value === undefined || value === '')
-    return null
-
-  if (typeof value === 'number') {
-    return new Intl.NumberFormat('es-VE', {
-      style: 'currency',
-      currency: 'VES',
-      minimumFractionDigits: 2,
-    }).format(value)
-  }
-
-  if (typeof value === 'string') {
-    const normalized = value.replace(/[^\d,.-]/g, '').replace(/\./g, '').replace(',', '.')
-    const parsed = Number(normalized)
-
-    if (!Number.isNaN(parsed)) {
-      return new Intl.NumberFormat('es-VE', {
-        style: 'currency',
-        currency: 'VES',
-        minimumFractionDigits: 2,
-      }).format(parsed)
-    }
-
-    return `Bs. ${value}`
-  }
-
-  return null
-}
 
 const formattedPrice = computed(() => formatCurrency(purchase.value?.motor?.acf?.precio_de_venta))
 const priceLabel = computed(() => formattedPrice.value || 'Consultar precio')
@@ -113,7 +69,7 @@ const productImage = computed(() => {
     return image
 
   if (Array.isArray(image))
-    return image?.url || null
+    return (image[0] && typeof image[0] === 'object' && 'url' in image[0]) ? (image[0] as any).url || null : null
 
   return image.url || null
 })
@@ -196,7 +152,7 @@ const groupedMessages = computed<MessageGroup[]>(() => {
 
   for (const message of messages.value) {
     const date = parseMessageDate(message.created_at)
-    const key = date.toISOString().split('T')
+    const key = date.toISOString().split('T')[0]
 
     if (!buckets.has(key))
       buckets.set(key, [])
@@ -211,7 +167,8 @@ const groupedMessages = computed<MessageGroup[]>(() => {
 
     bucket.sort((a, b) => parseMessageDate(a.created_at).getTime() - parseMessageDate(b.created_at).getTime())
 
-    const label = capitalize(dateFormatter.format(parseMessageDate(bucket?.created_at)))
+    const firstMessage = bucket[0]
+    const label = capitalize(dateFormatter.format(parseMessageDate(firstMessage?.created_at)))
 
     groups.push({
       key,
@@ -342,12 +299,20 @@ watch(messages, () => {
 })
 
 let pollTimer: ReturnType<typeof setInterval> | null = null
-let pusherClient: Pusher | null = null
-let pusherChannel: Channel | null = null
+let unbindRealtimeHandler: (() => void) | null = null
 
-const isRealtimeConfigured = computed(() => Boolean(PUSHER_APP_KEY))
-const isRealtimeConnected = ref(false)
-const realtimeError = ref<string | null>(null)
+const buildAuthHeaders = () => {
+  const headers: Record<string, string> = {}
+
+  if (accessToken.value)
+    headers.Authorization = `Bearer ${accessToken.value}`
+
+  const nonce = (window as any)?.wpData?.nonce
+  if (nonce)
+    headers['X-WP-Nonce'] = nonce
+
+  return headers
+}
 
 const startPolling = (interval = 10000) => {
   if (pollTimer || isConversationLocked.value)
@@ -366,33 +331,38 @@ const stopPolling = () => {
   pollTimer = null
 }
 
+const {
+  connect: connectRealtime,
+  disconnect: disconnectRealtime,
+  bind: bindRealtimeEvent,
+  isConfigured: isRealtimeConfigured,
+  isConnected: isRealtimeConnected,
+  error: realtimeError,
+} = usePusherChannel(PUSHER_CHANNEL_NAME, {
+  authEndpoint: PUSHER_AUTH_ENDPOINT,
+  authHeaders: buildAuthHeaders,
+  onSubscriptionSucceeded: () => {
+    stopPolling()
+  },
+  onSubscriptionError: () => {
+    realtimeError.value = 'No se pudo establecer la conexion en tiempo real. Actualizaremos automaticamente.'
+    disconnectRealtime()
+    if (!isConversationLocked.value)
+      startPolling()
+  },
+  onClientError: () => {
+    if (!isConversationLocked.value && !isRealtimeConnected.value)
+      startPolling()
+  },
+})
+
 const teardownRealtime = () => {
-  if (pusherChannel && pusherClient) {
-    pusherChannel.unbind_all()
-    pusherClient.unsubscribe(PUSHER_CHANNEL_NAME)
+  if (unbindRealtimeHandler) {
+    unbindRealtimeHandler()
+    unbindRealtimeHandler = null
   }
 
-  if (pusherClient) {
-    pusherClient.unbind_all()
-    pusherClient.disconnect()
-  }
-
-  pusherChannel = null
-  pusherClient = null
-  isRealtimeConnected.value = false
-}
-
-const buildAuthHeaders = () => {
-  const headers: Record<string, string> = {}
-
-  if (accessToken.value)
-    headers.Authorization = `Bearer ${accessToken.value}`
-
-  const nonce = (window as any)?.wpData?.nonce
-  if (nonce)
-    headers['X-WP-Nonce'] = nonce
-
-  return headers
+  disconnectRealtime()
 }
 
 let realtimeRetryTimer: ReturnType<typeof setTimeout> | null = null
@@ -417,73 +387,28 @@ const setupRealtime = (): boolean => {
   if (isConversationLocked.value)
     return false
 
-  if (!PUSHER_APP_KEY) {
+  if (!isRealtimeConfigured.value) {
     if (!realtimeError.value)
-      realtimeError.value = 'Mensajería en tiempo real no está configurada. Actualizando cada 10 segundos.'
+      realtimeError.value = 'Mensajeria en tiempo real no esta configurada. Actualizando cada 10 segundos.'
 
     return false
   }
 
-  if (pusherClient)
-    return true
+  realtimeError.value = null
 
-  try {
-    realtimeError.value = null
+  const connected = connectRealtime()
 
-    const options: import('pusher-js').Options = {
-      cluster: PUSHER_APP_CLUSTER || undefined,
-      forceTLS: PUSHER_FORCE_TLS,
-      authEndpoint: PUSHER_AUTH_ENDPOINT,
-      auth: {
-        headers: buildAuthHeaders(),
-      },
-      disableStats: true,
-    }
+  if (!connected) {
+    if (!realtimeError.value)
+      realtimeError.value = 'No pudimos iniciar la conexion en tiempo real.'
 
-    if (PUSHER_HOST) {
-      options.wsHost = PUSHER_HOST
-      if (typeof PUSHER_PORT === 'number')
-        options.wsPort = PUSHER_PORT
-      if (typeof PUSHER_WSS_PORT === 'number')
-        options.wssPort = PUSHER_WSS_PORT
-      options.enabledTransports = PUSHER_FORCE_TLS ? ['wss'] : ['ws', 'wss']
-    }
-
-    if (!PUSHER_FORCE_TLS) {
-      options.forceTLS = false
-    }
-
-    pusherClient = new Pusher(PUSHER_APP_KEY, options)
-
-    pusherClient.bind('error', (event: any) => {
-      if (event?.data?.message)
-        realtimeError.value = event.data.message
-    })
-
-    pusherChannel = pusherClient.subscribe(PUSHER_CHANNEL_NAME)
-
-    pusherChannel.bind('pusher:subscription_succeeded', () => {
-      isRealtimeConnected.value = true
-      realtimeError.value = null
-      stopPolling()
-    })
-
-    pusherChannel.bind('pusher:subscription_error', () => {
-      realtimeError.value = 'No se pudo establecer la conexión en tiempo real. Actualizaremos automáticamente.'
-      isRealtimeConnected.value = false
-      teardownRealtime()
-      startPolling()
-    })
-
-    pusherChannel.bind('purchase.message', handleRealtimePayload)
-
-    return true
-  }
-  catch (error: any) {
-    realtimeError.value = error?.message || 'No pudimos iniciar la conexión en tiempo real.'
-    teardownRealtime()
     return false
   }
+
+  if (!unbindRealtimeHandler)
+    unbindRealtimeHandler = bindRealtimeEvent('purchase.message', handleRealtimePayload)
+
+  return true
 }
 
 const ensureRealtimeOrPolling = () => {
@@ -615,12 +540,13 @@ watch(isConversationLocked, value => {
 })
 
 onMounted(async () => {
+  ensureRealtimeOrPolling()
+
   const { data, error } = await useApi<any>(createUrl(`/wp-json/motorlan/v1/purchases/${uuid}`)).get().json()
 
   purchaseData.value = data.value
   purchaseError.value = error.value
   await fetchMessages()
-  ensureRealtimeOrPolling()
 })
 
 onBeforeUnmount(() => {
