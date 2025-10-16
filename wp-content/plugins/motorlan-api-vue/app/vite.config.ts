@@ -5,14 +5,17 @@ import AutoImport from 'unplugin-auto-import/vite'
 import Components from 'unplugin-vue-components/vite'
 import { VueRouterAutoImports, getPascalCaseRouteName } from 'unplugin-vue-router'
 import VueRouter from 'unplugin-vue-router/vite'
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import VueDevTools from 'vite-plugin-vue-devtools'
 import MetaLayouts from 'vite-plugin-vue-meta-layouts'
 import vuetify from 'vite-plugin-vuetify'
 import svgLoader from 'vite-svg-loader'
 
 // https://vitejs.dev/config/
-export default defineConfig({
+export default ({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), '')
+
+  return defineConfig({
   plugins: [
     // Docs: https://github.com/posva/unplugin-vue-router
     // ℹ️ This plugin should be placed before vue plugin
@@ -80,7 +83,10 @@ export default defineConfig({
     svgLoader(),
 
   ],
-  define: { 'process.env': {} },
+  define: {
+    'process.env': {},
+    '__APP_ENV__': JSON.stringify(env),
+  },
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
@@ -159,4 +165,5 @@ export default defineConfig({
       './src/**/*.vue',
     ],
   },
-})
+  })
+}

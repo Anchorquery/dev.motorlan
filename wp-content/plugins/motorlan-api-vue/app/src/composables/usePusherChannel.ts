@@ -1,6 +1,9 @@
 import { computed, onBeforeUnmount, ref, unref } from 'vue'
 import Pusher, { type Channel } from 'pusher-js'
 
+// Declaración global para evitar error de TypeScript al usar __APP_ENV__
+declare const __APP_ENV__: Record<string, any>
+
 type MaybeRef<T> = T | import('vue').Ref<T>
 type EventHandler = (payload: any) => void
 
@@ -14,12 +17,10 @@ const parseEnvNumber = (value: unknown): number | undefined => {
 }
 
 const getEnv = (key: string): unknown => {
-  const viteEnv = (typeof import.meta !== 'undefined' && (import.meta as any)?.env)
-    ? (import.meta as any).env
-    : undefined
+  const appEnv = (typeof __APP_ENV__ !== 'undefined') ? (__APP_ENV__ as Record<string, any>) : undefined
 
-  if (viteEnv && key in viteEnv)
-    return viteEnv[key as keyof typeof viteEnv]
+  if (appEnv && key in appEnv)
+    return appEnv[key]
 
   if (typeof process !== 'undefined' && process.env && key in process.env)
     return process.env[key]
@@ -180,7 +181,7 @@ export const usePusherChannel = (channelName: MaybeRef<string>, options?: UsePus
 
     client.value = new Pusher(pusherKey, baseOptions)
 
-    client.value.bind('error', event => {
+    client.value.bind('error', (event: any) => {
       if (event?.data?.message)
         error.value = event.data.message
 
