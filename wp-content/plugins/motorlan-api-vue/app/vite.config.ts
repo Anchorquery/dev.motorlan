@@ -148,7 +148,7 @@ export default defineConfig({
 
           return 'assets/[name].[ext]' // Otros assets
         },
-        inlineDynamicImports: true,
+       inlineDynamicImports: true,
       },
     },
   },
