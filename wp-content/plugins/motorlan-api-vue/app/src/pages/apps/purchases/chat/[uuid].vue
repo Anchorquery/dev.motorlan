@@ -1,10 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { createUrl } from '@/@core/composable/createUrl'
-import { useCookie } from '@/@core/composable/useCookie'
-import { useApi } from '@/composables/useApi'
-import { usePusherChannel } from '@/composables/usePusherChannel'
+import { usePurchaseChat } from '@/composables/usePurchaseChat'
 import { formatCurrency } from '@/utils/formatCurrency'
 
 interface PurchaseMessage {
@@ -27,19 +24,26 @@ interface MessageGroup {
 const route = useRoute()
 const uuid = route.params.uuid as string
 
-const accessToken = useCookie<string | null>('accessToken')
+const chat = usePurchaseChat(uuid)
 
-const API_BASE_URL = (process.env.VITE_API_BASE_URL || '').toString().replace(/\/$/, '')
-const PUSHER_AUTH_ENDPOINT = API_BASE_URL
-  ? `${API_BASE_URL}/wp-json/motorlan/v1/purchases/pusher/auth`
-  : '/wp-json/motorlan/v1/purchases/pusher/auth'
-const PUSHER_CHANNEL_NAME = `private-purchase-${uuid}`
+const purchase = chat.purchase
+const purchaseLoadError = computed(() => {
+  const error = chat.purchaseError.value
 
-const purchaseData = ref<any>(null)
-const purchaseError = ref<any>(null)
+  if (!error)
+    return null
 
-const purchase = computed(() => purchaseData.value?.data ?? null)
-const purchaseLoadError = computed(() => purchaseError.value?.message ?? null)
+  if (typeof error === 'string')
+    return error
+
+  if (error.data && typeof error.data.message === 'string')
+    return error.data.message
+
+  if (typeof error.message === 'string')
+    return error.message
+
+  return null
+})
 
 const breadcrumbs = computed(() => [
   { title: 'Compras', to: '/apps/purchases' },
@@ -93,7 +97,7 @@ const sellerAvatar = computed(() => {
 const sellerInitials = computed(() => {
   const parts = sellerName.value.split(' ').filter(Boolean)
 
-  return parts.slice(0, 2).map((part: string) => part?.toUpperCase()).join('') || 'V'
+  return parts.slice(0, 2).map(part => part.toUpperCase()).join('') || 'V'
 })
 
 const statusInfo = computed(() => {
@@ -128,82 +132,31 @@ const statusInfo = computed(() => {
     },
     cancelado: {
       label: 'Cancelado',
-      title: 'La compra se canceló',
-      description: withDate('anulamos el pedido.'),
+      title: 'La compra fue cancelada',
+      description: withDate('se detuvo el proceso de compra.'),
       tone: 'error',
     },
   }
 
-  return map[status] || {
-    label: 'En progreso',
-    title: 'Estamos procesando tu compra',
-    description: withDate('estamos gestionando tu pedido.'),
+  return map[status] ?? {
+    label: 'Sin estado',
+    title: 'Seguimiento en curso',
+    description: withDate('seguimos monitoreando esta compra.'),
     tone: 'info',
   }
 })
 
-const messages = ref<PurchaseMessage[]>([])
-const groupedMessages = computed<MessageGroup[]>(() => {
-  if (!messages.value.length)
-    return []
-
-  const groups: MessageGroup[] = []
-  const buckets = new Map<string, PurchaseMessage[]>()
-
-  for (const message of messages.value) {
-    const date = parseMessageDate(message.created_at)
-    const key = date.toISOString().split('T')[0]
-
-    if (!buckets.has(key))
-      buckets.set(key, [])
-
-    buckets.get(key)!.push(message)
-  }
-
-  const sortedKeys = Array.from(buckets.keys()).sort((a, b) => a.localeCompare(b))
-
-  for (const key of sortedKeys) {
-    const bucket = buckets.get(key) ?? []
-
-    bucket.sort((a, b) => parseMessageDate(a.created_at).getTime() - parseMessageDate(b.created_at).getTime())
-
-    const firstMessage = bucket[0]
-    const label = capitalize(dateFormatter.format(parseMessageDate(firstMessage?.created_at)))
-
-    groups.push({
-      key,
-      label,
-      items: bucket,
-    })
-  }
-
-  return groups
-})
-
-const messagesError = ref<string | null>(null)
-const sendError = ref<string | null>(null)
-const isLoadingMessages = ref(false)
-const hasLoadedMessages = ref(false)
-const isFetchingMessages = ref(false)
-const isSendingMessage = ref(false)
-const isConversationLocked = ref(false)
-const messageText = ref('')
 const messagesContainer = ref<HTMLElement | null>(null)
+const messageText = ref('')
 
-const canSendMessage = computed(() => !isConversationLocked.value && messageText.value.trim().length > 0 && !isSendingMessage.value)
+const messagesError = chat.loadError
+const sendError = chat.sendError
+const isSendingMessage = computed(() => chat.isSending.value)
+const isConversationLocked = chat.isLocked
+const hasLoadedMessages = chat.hasLoadedMessages
+const isLoadingMessages = computed(() => chat.isFetchingMessages.value && !chat.hasLoadedMessages.value)
 
-const realtimeStatusLabel = computed(() => {
-  if (isConversationLocked.value)
-    return 'La mensajería está bloqueada.'
-
-  if (isRealtimeConnected.value)
-    return 'Conectado en tiempo real.'
-
-  if (isRealtimeConfigured.value)
-    return 'Conectando en tiempo real...'
-
-  return 'Actualizamos los mensajes cada 10 segundos.'
-})
+const canSendMessage = computed(() => !chat.isLocked.value && messageText.value.trim().length > 0 && !chat.isSending.value)
 
 const timeFormatter = new Intl.DateTimeFormat('es-VE', { hour: '2-digit', minute: '2-digit' })
 const dateFormatter = new Intl.DateTimeFormat('es-VE', { day: 'numeric', month: 'long' })
@@ -218,306 +171,60 @@ const capitalize = (value: string | undefined): string => {
 const getInitials = (value: string): string => {
   const parts = value.split(' ').filter(Boolean)
 
-  return parts.slice(0, 2).map((part: string) => part?.toUpperCase()).join('') || 'U'
+  return parts.slice(0, 2).map(part => part.toUpperCase()).join('') || 'U'
 }
 
-const parseMessageDate = (input: string | null | undefined): Date => {
-  if (!input)
-    return new Date()
+const formatMessageTime = (value: string) => timeFormatter.format(new Date(value))
 
-  let normalized = input.trim()
+const groupedMessages = computed<MessageGroup[]>(() => {
+  const items = chat.messages.value
+  if (!items.length)
+    return []
 
-  if (!normalized)
-    return new Date()
+  const buckets = new Map<string, PurchaseMessage[]>()
 
-  if (normalized.includes(' ')) {
-    normalized = normalized.replace(' ', 'T')
+  for (const message of items) {
+    const key = message.created_at.slice(0, 10)
+
+    if (!buckets.has(key))
+      buckets.set(key, [])
+
+    buckets.get(key)!.push(message)
   }
 
-  if (!/Z$|[+-]\d{2}:\d{2}$/.test(normalized))
-    normalized = `${normalized}Z`
+  return Array.from(buckets.entries())
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([key, bucket]) => {
+      bucket.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
 
-  const parsed = new Date(normalized)
+      const first = bucket[0]
+      const label = capitalize(dateFormatter.format(new Date(first?.created_at ?? Date.now())))
 
-  if (Number.isNaN(parsed.getTime()))
-    return new Date()
-
-  return parsed
-}
-
-const formatMessageTime = (value: string) => timeFormatter.format(parseMessageDate(value))
-
-const extractStatus = (err: any): number | null => {
-  if (!err)
-    return null
-
-  if (typeof err.status === 'number')
-    return err.status
-
-  if (err.data && typeof err.data.status === 'number')
-    return err.data.status
-
-  return null
-}
-
-const extractErrorMessage = (err: any, fallback: string): string => {
-  if (!err)
-    return fallback
-
-  if (typeof err === 'string')
-    return err
-
-  if (err.data && typeof err.data.message === 'string')
-    return err.data.message
-
-  if (typeof err.message === 'string')
-    return err.message
-
-  return fallback
-}
-
-const normalizeMessage = (item: any, fallbackIndex = 0): PurchaseMessage => ({
-  id: String(item?.id ?? `msg-${fallbackIndex}`),
-  message: String(item?.message ?? ''),
-  created_at: typeof item?.created_at === 'string' ? item.created_at : '',
-  sender_role: typeof item?.sender_role === 'string' ? item.sender_role : 'buyer',
-  user_id: Number(item?.user_id ?? 0),
-  display_name: typeof item?.display_name === 'string' ? item.display_name : '',
-  avatar: item?.avatar ?? null,
-  is_current_user: Boolean(item?.is_current_user ?? false),
+      return {
+        key,
+        label,
+        items: bucket,
+      }
+    })
 })
+
+const realtimeStatusLabel = computed(() => {
+  if (chat.isLocked.value)
+    return 'La mensajería está bloqueada.'
+
+  if (chat.isPollingActive.value)
+    return 'Actualizamos los mensajes cada 3 segundos.'
+
+  return 'Conectando con el chat...'
+})
+
+const isRealtimeLive = computed(() => chat.isPollingActive.value && !chat.isLocked.value)
 
 const scrollMessagesToBottom = () => {
-  if (messagesContainer.value)
-    messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
-}
-
-watch(messages, () => {
-  nextTick(() => {
-    scrollMessagesToBottom()
-  })
-})
-
-let pollTimer: ReturnType<typeof setInterval> | null = null
-let unbindRealtimeHandler: (() => void) | null = null
-
-const buildAuthHeaders = () => {
-  const headers: Record<string, string> = {}
-
-  if (accessToken.value)
-    headers.Authorization = `Bearer ${accessToken.value}`
-
-  const nonce = (window as any)?.wpData?.nonce
-  if (nonce)
-    headers['X-WP-Nonce'] = nonce
-
-  return headers
-}
-
-const startPolling = (interval = 10000) => {
-  if (pollTimer || isConversationLocked.value)
+  if (!messagesContainer.value)
     return
 
-  pollTimer = setInterval(() => {
-    void fetchMessages()
-  }, interval)
-}
-
-const stopPolling = () => {
-  if (!pollTimer)
-    return
-
-  clearInterval(pollTimer)
-  pollTimer = null
-}
-
-const {
-  connect: connectRealtime,
-  disconnect: disconnectRealtime,
-  bind: bindRealtimeEvent,
-  isConfigured: isRealtimeConfigured,
-  isConnected: isRealtimeConnected,
-  error: realtimeError,
-} = usePusherChannel(PUSHER_CHANNEL_NAME, {
-  authEndpoint: PUSHER_AUTH_ENDPOINT,
-  authHeaders: buildAuthHeaders,
-  onSubscriptionSucceeded: () => {
-    stopPolling()
-  },
-  onSubscriptionError: () => {
-    realtimeError.value = 'No se pudo establecer la conexion en tiempo real. Actualizaremos automaticamente.'
-    disconnectRealtime()
-    if (!isConversationLocked.value)
-      startPolling()
-  },
-  onClientError: () => {
-    if (!isConversationLocked.value && !isRealtimeConnected.value)
-      startPolling()
-  },
-})
-
-const teardownRealtime = () => {
-  if (unbindRealtimeHandler) {
-    unbindRealtimeHandler()
-    unbindRealtimeHandler = null
-  }
-
-  disconnectRealtime()
-}
-
-let realtimeRetryTimer: ReturnType<typeof setTimeout> | null = null
-
-const handleRealtimePayload = () => {
-  if (isFetchingMessages.value) {
-    if (realtimeRetryTimer)
-      return
-
-    realtimeRetryTimer = setTimeout(() => {
-      realtimeRetryTimer = null
-      void fetchMessages()
-    }, 500)
-
-    return
-  }
-
-  void fetchMessages()
-}
-
-const setupRealtime = (): boolean => {
-  if (isConversationLocked.value)
-    return false
-
-  if (!isRealtimeConfigured.value) {
-    if (!realtimeError.value)
-      realtimeError.value = 'Mensajeria en tiempo real no esta configurada. Actualizando cada 10 segundos.'
-
-    return false
-  }
-
-  realtimeError.value = null
-
-  const connected = connectRealtime()
-
-  if (!connected) {
-    if (!realtimeError.value)
-      realtimeError.value = 'No pudimos iniciar la conexion en tiempo real.'
-
-    return false
-  }
-
-  if (!unbindRealtimeHandler)
-    unbindRealtimeHandler = bindRealtimeEvent('purchase.message', handleRealtimePayload)
-
-  return true
-}
-
-const ensureRealtimeOrPolling = () => {
-  if (isConversationLocked.value)
-    return
-
-  const realtimeReady = setupRealtime()
-
-  if (!realtimeReady) {
-    if (!realtimeError.value)
-      realtimeError.value = 'Actualizamos los mensajes cada 10 segundos.'
-
-    startPolling()
-  }
-}
-
-const fetchMessages = async () => {
-  if (isFetchingMessages.value)
-    return
-
-  isFetchingMessages.value = true
-
-  if (!hasLoadedMessages.value)
-    isLoadingMessages.value = true
-
-  messagesError.value = null
-
-  try {
-    const { data, error } = await useApi<any>(createUrl(`/wp-json/motorlan/v1/purchases/${uuid}/messages`)).get().json()
-
-    if (error.value) {
-      const status = extractStatus(error.value)
-
-      if (status === 403) {
-        messagesError.value = 'No tienes permisos para ver estos mensajes.'
-        isConversationLocked.value = true
-        stopPolling()
-      }
-      else if (status === 404) {
-        messagesError.value = 'No pudimos encontrar esta compra.'
-        isConversationLocked.value = true
-        stopPolling()
-      }
-      else {
-        messagesError.value = extractErrorMessage(error.value, 'No se pudieron cargar los mensajes.')
-        isConversationLocked.value = false
-      }
-
-      return
-    }
-
-    const incoming = Array.isArray(data.value?.data) ? data.value.data : []
-
-    messages.value = incoming
-      .map((item: any, index: number) => normalizeMessage(item, index))
-      .filter((item: PurchaseMessage) => item.message.trim().length > 0)
-      .sort((a: PurchaseMessage, b: PurchaseMessage) => parseMessageDate(a.created_at).getTime() - parseMessageDate(b.created_at).getTime())
-
-    isConversationLocked.value = false
-  }
-  finally {
-    hasLoadedMessages.value = true
-    isLoadingMessages.value = false
-    isFetchingMessages.value = false
-  }
-
-  await nextTick(scrollMessagesToBottom)
-}
-
-const sendMessage = async () => {
-  const trimmed = messageText.value.trim()
-
-  if (!trimmed || isSendingMessage.value || isConversationLocked.value)
-    return
-
-  isSendingMessage.value = true
-  sendError.value = null
-
-  const { data: sendResponse, error } = await useApi<any>(createUrl(`/wp-json/motorlan/v1/purchases/${uuid}/messages`))
-    .post({ message: trimmed })
-    .json()
-
-  if (error.value) {
-    const status = extractStatus(error.value)
-
-    if (status === 403) {
-      sendError.value = 'No tienes permisos para enviar mensajes en esta compra.'
-      isConversationLocked.value = true
-      stopPolling()
-    }
-    else {
-      sendError.value = extractErrorMessage(error.value, 'No se pudo enviar el mensaje.')
-    }
-  }
-  else {
-    const payload = sendResponse.value?.data
-    if (payload) {
-      const normalized = normalizeMessage(payload, messages.value.length)
-      normalized.is_current_user = true
-      messages.value = [...messages.value, normalized]
-        .sort((a, b) => parseMessageDate(a.created_at).getTime() - parseMessageDate(b.created_at).getTime())
-    }
-
-    messageText.value = ''
-    await nextTick(scrollMessagesToBottom)
-    void fetchMessages()
-  }
-
-  isSendingMessage.value = false
+  messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
 }
 
 const handleComposerSubmit = async (event?: Event) => {
@@ -526,37 +233,51 @@ const handleComposerSubmit = async (event?: Event) => {
   if (!canSendMessage.value)
     return
 
-  await sendMessage()
+  const previousCount = chat.messages.value.length
+  const text = messageText.value
+
+  await chat.sendMessage(text)
+
+  if (!chat.sendError.value) {
+    messageText.value = ''
+    if (chat.messages.value.length > previousCount)
+      await nextTick(scrollMessagesToBottom)
+  }
 }
 
-watch(isConversationLocked, value => {
-  if (value) {
-    teardownRealtime()
-    stopPolling()
+const handleRetryMessages = async () => {
+  await chat.fetchMessages({ reset: false })
+}
+
+watch(
+  () => chat.messages.value.length,
+  async (length, previous) => {
+    if (length === previous)
+      return
+
+    await nextTick(scrollMessagesToBottom)
   }
-  else {
-    ensureRealtimeOrPolling()
+)
+
+watch(
+  () => chat.isLocked.value,
+  value => {
+    if (value)
+      chat.stopPolling()
+    else
+      chat.setupPolling()
   }
-})
+)
 
 onMounted(async () => {
-  ensureRealtimeOrPolling()
-
-  const { data, error } = await useApi<any>(createUrl(`/wp-json/motorlan/v1/purchases/${uuid}`)).get().json()
-
-  purchaseData.value = data.value
-  purchaseError.value = error.value
-  await fetchMessages()
+  await chat.fetchPurchaseDetails()
+  await chat.fetchMessages({ reset: true })
+  chat.setupPolling()
+  await nextTick(scrollMessagesToBottom)
 })
 
 onBeforeUnmount(() => {
-  stopPolling()
-  teardownRealtime()
-
-  if (realtimeRetryTimer) {
-    clearTimeout(realtimeRetryTimer)
-    realtimeRetryTimer = null
-  }
+  chat.stopPolling()
 })
 </script>
 
@@ -628,23 +349,13 @@ onBeforeUnmount(() => {
                   </p>
                   <p
                     class="chat-panel__status"
-                    :class="{ 'chat-panel__status--live': isRealtimeConnected }"
+                    :class="{ 'chat-panel__status--live': isRealtimeLive }"
                   >
                     {{ realtimeStatusLabel }}
                   </p>
                 </div>
               </div>
             </div>
-
-            <VAlert
-              v-if="realtimeError"
-              type="warning"
-              variant="tonal"
-              density="compact"
-              class="chat-panel__notice mx-4 mt-3"
-            >
-              {{ realtimeError }}
-            </VAlert>
 
             <VDivider />
 
@@ -670,7 +381,17 @@ onBeforeUnmount(() => {
                 variant="tonal"
                 class="mb-4"
               >
-                {{ messagesError }}
+                <div class="d-flex justify-space-between align-center gap-4">
+                  <span>{{ messagesError }}</span>
+                  <VBtn
+                    size="small"
+                    variant="text"
+                    color="primary"
+                    @click="handleRetryMessages"
+                  >
+                    Reintentar
+                  </VBtn>
+                </div>
               </VAlert>
 
               <div
@@ -684,7 +405,7 @@ onBeforeUnmount(() => {
                   color="primary"
                 />
                 <p>
-                  Aún no hay mensajes. Inicia la conversación con el vendedor.
+                  AÃºn no hay mensajes. Inicia la conversaciÃ³n con el vendedor.
                 </p>
               </div>
 
@@ -754,7 +475,7 @@ onBeforeUnmount(() => {
                     :counter="1000"
                     auto-grow
                     hide-details
-                    label="Escríbele al vendedor"
+                    label="EscrÃ­bele al vendedor"
                     rows="2"
                     class="flex-grow-1"
                     maxlength="1000"
@@ -834,7 +555,7 @@ onBeforeUnmount(() => {
                   </span>
 
                   <p class="summary-card__product-meta">
-                    {{ quantityLabel }} • {{ priceLabel }}
+                    {{ quantityLabel }} â€¢ {{ priceLabel }}
                   </p>
                 </div>
               </div>

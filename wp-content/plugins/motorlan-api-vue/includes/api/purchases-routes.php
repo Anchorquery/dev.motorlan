@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
 require_once plugin_dir_path(__FILE__) . 'motor-helpers.php';
  * Setup for My Account REST API Routes.
@@ -14,6 +14,8 @@ if ( ! defined( 'WPINC' ) ) {
 if ( ! function_exists( 'motorlan_get_motor_data' ) ) {
     require_once MOTORLAN_API_VUE_PATH . 'includes/api/motor-helpers.php';
 }
+
+require_once MOTORLAN_API_VUE_PATH . 'includes/api/purchases/controllers/class-purchase-chat-controller.php';
 
 /**
  * Normalize different ACF return formats into a numeric user ID.
@@ -206,7 +208,7 @@ function motorlan_get_pusher_config() {
  * @return void
  */
 function motorlan_trigger_purchase_event( $uuid, $event, array $payload ) {
-    // Eliminado: ya no se envían eventos en tiempo real con Pusher.
+    // Eliminado: ya no se envÃƒÆ’Ã‚Â­an eventos en tiempo real con Pusher.
     // Conservada por compatibilidad futura (por ejemplo, si se usa polling o WebSockets autogestionados).
     return;
 }
@@ -260,24 +262,8 @@ function motorlan_register_purchases_rest_routes() {
     ) );
 
     // Routes for purchase messaging
-    register_rest_route( $namespace, '/purchases/(?P<uuid>[\\w-]+)/messages', array(
-        array(
-            'methods'  => WP_REST_Server::READABLE,
-            'callback' => 'motorlan_get_purchase_messages_callback',
-            'permission_callback' => 'motorlan_is_user_authenticated',
-        ),
-        array(
-            'methods'  => WP_REST_Server::CREATABLE,
-            'callback' => 'motorlan_add_purchase_message_callback',
-            'permission_callback' => 'motorlan_is_user_authenticated',
-            'args'     => array(
-                'message' => array(
-                    'type'     => 'string',
-                    'required' => true,
-                ),
-            ),
-        ),
-    ) );
+    $chat_controller = new Motorlan_Purchase_Chat_Controller();
+    $chat_controller->register_routes();
 
     // Realtime authentication endpoint
     register_rest_route( $namespace, '/purchases/pusher/auth', array(
@@ -736,79 +722,14 @@ function motorlan_pusher_auth_callback( WP_REST_Request $request ) {
  * @return WP_REST_Response|WP_Error
  */
 function motorlan_get_purchase_messages_callback( WP_REST_Request $request ) {
-    $uuid          = sanitize_text_field( $request['uuid'] );
-    $purchase_post = motorlan_find_purchase_by_uuid( $uuid );
-
-    if ( ! $purchase_post ) {
-        return new WP_Error( 'not_found', 'Purchase not found', array( 'status' => 404 ) );
-    }
-
-    $purchase_id     = $purchase_post->ID;
-    $current_user_id = get_current_user_id();
-
-    if ( ! motorlan_user_can_access_purchase( $purchase_id, $current_user_id ) ) {
-        return new WP_Error( 'forbidden', 'You are not allowed to access these messages.', array( 'status' => 403 ) );
-    }
-
-    $raw_messages = get_post_meta( $purchase_id, 'purchase_messages', true );
-    if ( ! is_array( $raw_messages ) ) {
-        $raw_messages = array();
-    }
-
-    // Nuevo parámetro opcional para polling: since_timestamp
-    $since_timestamp_param = $request->get_param( 'since_timestamp' );
-    $since_timestamp = $since_timestamp_param ? strtotime( sanitize_text_field( $since_timestamp_param ) ) : null;
-
-    usort(
-        $raw_messages,
-        function ( $a, $b ) {
-            $time_a = isset( $a['created_at'] ) ? strtotime( $a['created_at'] ) : 0;
-            $time_b = isset( $b['created_at'] ) ? strtotime( $b['created_at'] ) : 0;
-            return $time_a <=> $time_b;
-        }
+    _doing_it_wrong(
+        __FUNCTION__,
+        'motorlan_get_purchase_messages_callback() is deprecated. Use Motorlan_Purchase_Chat_Controller instead.',
+        '2.0.0'
     );
 
-    $messages = array();
-    foreach ( $raw_messages as $message ) {
-        $created_at_str = isset( $message['created_at'] ) ? $message['created_at'] : gmdate( 'Y-m-d H:i:s' );
-        $created_ts = strtotime( $created_at_str );
-
-        if ( $since_timestamp && $created_ts <= $since_timestamp ) {
-            continue;
-        }
-
-        $user_id      = isset( $message['user_id'] ) ? (int) $message['user_id'] : 0;
-        $display_name = isset( $message['display_name'] ) ? $message['display_name'] : '';
-
-        if ( ! $display_name && $user_id ) {
-            $user         = get_user_by( 'id', $user_id );
-            $display_name = $user ? $user->display_name : '';
-        }
-
-        $messages[] = array(
-            'id'              => isset( $message['id'] ) ? (string) $message['id'] : uniqid( 'msg_', true ),
-            'message'         => isset( $message['message'] ) ? (string) $message['message'] : '',
-            'created_at'      => $created_at_str,
-            'sender_role'     => isset( $message['sender_role'] ) ? $message['sender_role'] : 'buyer',
-            'user_id'         => $user_id,
-            'display_name'    => $display_name,
-            'avatar'          => isset( $message['avatar'] ) ? $message['avatar'] : ( $user_id ? get_avatar_url( $user_id ) : '' ),
-            'is_current_user' => ( $user_id === $current_user_id ),
-        );
-    }
-
-    $participants = motorlan_get_purchase_participants( $purchase_id );
-    $viewer_role  = ( $participants['seller_id'] === $current_user_id ) ? 'seller' : 'buyer';
-
-    return new WP_REST_Response( array(
-        'data' => $messages,
-        'meta' => array(
-            'current_user_id' => $current_user_id,
-            'viewer_role'     => $viewer_role,
-            'purchase_uuid'   => $uuid,
-            'server_timestamp'=> gmdate( 'Y-m-d H:i:s' ),
-        ),
-    ), 200 );
+    $controller = new Motorlan_Purchase_Chat_Controller();
+    return $controller->get_messages( $request );
 }
 
 /**
@@ -819,70 +740,14 @@ function motorlan_get_purchase_messages_callback( WP_REST_Request $request ) {
  * @return WP_REST_Response|WP_Error
  */
 function motorlan_add_purchase_message_callback( WP_REST_Request $request ) {
-    $uuid          = sanitize_text_field( $request['uuid'] );
-    $purchase_post = motorlan_find_purchase_by_uuid( $uuid );
-
-    if ( ! $purchase_post ) {
-        return new WP_Error( 'not_found', 'Purchase not found', array( 'status' => 404 ) );
-    }
-
-    $purchase_id     = $purchase_post->ID;
-    $current_user_id = get_current_user_id();
-
-    if ( ! motorlan_user_can_access_purchase( $purchase_id, $current_user_id ) ) {
-        return new WP_Error( 'forbidden', 'You are not allowed to send messages for this purchase.', array( 'status' => 403 ) );
-    }
-
-    $raw_message = $request->get_param( 'message' );
-    $message     = sanitize_textarea_field( wp_unslash( $raw_message ) );
-
-    if ( '' === trim( $message ) ) {
-        return new WP_Error( 'empty_message', 'Message cannot be empty.', array( 'status' => 400 ) );
-    }
-
-    if ( mb_strlen( $message ) > 1000 ) {
-        return new WP_Error( 'message_too_long', 'Message is too long.', array( 'status' => 400 ) );
-    }
-
-    $participants = motorlan_get_purchase_participants( $purchase_id );
-    $sender_role  = ( $participants['seller_id'] === $current_user_id ) ? 'seller' : 'buyer';
-
-    $user         = get_user_by( 'id', $current_user_id );
-    $display_name = $user ? $user->display_name : '';
-    $avatar       = get_avatar_url( $current_user_id );
-
-    $new_message = array(
-        'id'           => uniqid( 'msg_', true ),
-        'user_id'      => $current_user_id,
-        'sender_role'  => $sender_role,
-        'message'      => $message,
-        'created_at'   => gmdate( 'Y-m-d H:i:s' ),
-        'display_name' => $display_name,
-        'avatar'       => $avatar,
+    _doing_it_wrong(
+        __FUNCTION__,
+        'motorlan_add_purchase_message_callback() is deprecated. Use Motorlan_Purchase_Chat_Controller instead.',
+        '2.0.0'
     );
 
-    $existing_messages = get_post_meta( $purchase_id, 'purchase_messages', true );
-    if ( ! is_array( $existing_messages ) ) {
-        $existing_messages = array();
-    }
-
-    $existing_messages[] = $new_message;
-
-    update_post_meta( $purchase_id, 'purchase_messages', $existing_messages );
-
-    // Eliminada la notificación a Pusher: ahora los clientes obtienen mensajes mediante polling.
-
-    $response_message                 = $new_message;
-    $response_message['is_current_user'] = true;
-
-    return new WP_REST_Response( array(
-        'data' => $response_message,
-        'meta' => array(
-            'current_user_id' => $current_user_id,
-            'viewer_role'     => $sender_role,
-            'purchase_uuid'   => $uuid,
-        ),
-    ), 201 );
+    $controller = new Motorlan_Purchase_Chat_Controller();
+    return $controller->create_message( $request );
 }
 
 /**
