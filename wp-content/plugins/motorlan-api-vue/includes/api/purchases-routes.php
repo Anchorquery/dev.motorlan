@@ -206,65 +206,9 @@ function motorlan_get_pusher_config() {
  * @return void
  */
 function motorlan_trigger_purchase_event( $uuid, $event, array $payload ) {
-    $config = motorlan_get_pusher_config();
-
-    if ( ! $config ) {
-        return;
-    }
-
-    $app_id = $config['app_id'];
-
-    $event_body = array(
-        'name'     => $event,
-        'channels' => array( "private-purchase-{$uuid}" ),
-        'data'     => wp_json_encode( $payload ),
-    );
-
-    $body = wp_json_encode( $event_body );
-    if ( false === $body ) {
-        return;
-    }
-
-    $query = array(
-        'auth_key'       => $config['key'],
-        'auth_timestamp' => time(),
-        'auth_version'   => '1.0',
-        'body_md5'       => md5( $body ),
-    );
-
-    $path            = "/apps/{$app_id}/events";
-    $query_to_sign   = http_build_query( $query, '', '&', PHP_QUERY_RFC3986 );
-    $string_to_sign  = "POST\n{$path}\n{$query_to_sign}";
-    $query['auth_signature'] = hash_hmac( 'sha256', $string_to_sign, $config['secret'] );
-
-    $scheme = isset( $config['scheme'] ) && $config['scheme'] ? $config['scheme'] : ( ! empty( $config['force_tls'] ) ? 'https' : 'http' );
-    $host   = isset( $config['host'] ) && $config['host'] ? $config['host'] : ( ! empty( $config['cluster'] ) ? "api-{$config['cluster']}.pusher.com" : 'api.pusherapp.com' );
-
-    $port = null;
-    if ( isset( $config['port'] ) && ! empty( $config['port'] ) ) {
-        $port = (int) $config['port'];
-    }
-    elseif ( isset( $config['wss_port'] ) && ! empty( $config['wss_port'] ) ) {
-        $port = (int) $config['wss_port'];
-    }
-
-    $url = "{$scheme}://{$host}";
-    if ( $port ) {
-        $url .= ':' . $port;
-    }
-    $url .= $path . '?' . http_build_query( $query, '', '&', PHP_QUERY_RFC3986 );
-
-    $response = wp_remote_post( $url, array(
-        'headers' => array(
-            'Content-Type' => 'application/json',
-        ),
-        'timeout' => 5,
-        'body'    => $body,
-    ) );
-
-    if ( is_wp_error( $response ) ) {
-        error_log( '[motorlan] Failed to publish realtime event: ' . $response->get_error_message() );
-    }
+    // Eliminado: ya no se envían eventos en tiempo real con Pusher.
+    // Conservada por compatibilidad futura (por ejemplo, si se usa polling o WebSockets autogestionados).
+    return;
 }
 
 /**
@@ -811,22 +755,28 @@ function motorlan_get_purchase_messages_callback( WP_REST_Request $request ) {
         $raw_messages = array();
     }
 
+    // Nuevo parámetro opcional para polling: since_timestamp
+    $since_timestamp_param = $request->get_param( 'since_timestamp' );
+    $since_timestamp = $since_timestamp_param ? strtotime( sanitize_text_field( $since_timestamp_param ) ) : null;
+
     usort(
         $raw_messages,
         function ( $a, $b ) {
             $time_a = isset( $a['created_at'] ) ? strtotime( $a['created_at'] ) : 0;
             $time_b = isset( $b['created_at'] ) ? strtotime( $b['created_at'] ) : 0;
-
-            if ( $time_a === $time_b ) {
-                return 0;
-            }
-
-            return ( $time_a < $time_b ) ? -1 : 1;
+            return $time_a <=> $time_b;
         }
     );
 
     $messages = array();
     foreach ( $raw_messages as $message ) {
+        $created_at_str = isset( $message['created_at'] ) ? $message['created_at'] : gmdate( 'Y-m-d H:i:s' );
+        $created_ts = strtotime( $created_at_str );
+
+        if ( $since_timestamp && $created_ts <= $since_timestamp ) {
+            continue;
+        }
+
         $user_id      = isset( $message['user_id'] ) ? (int) $message['user_id'] : 0;
         $display_name = isset( $message['display_name'] ) ? $message['display_name'] : '';
 
@@ -838,7 +788,7 @@ function motorlan_get_purchase_messages_callback( WP_REST_Request $request ) {
         $messages[] = array(
             'id'              => isset( $message['id'] ) ? (string) $message['id'] : uniqid( 'msg_', true ),
             'message'         => isset( $message['message'] ) ? (string) $message['message'] : '',
-            'created_at'      => isset( $message['created_at'] ) ? $message['created_at'] : gmdate( 'Y-m-d H:i:s' ),
+            'created_at'      => $created_at_str,
             'sender_role'     => isset( $message['sender_role'] ) ? $message['sender_role'] : 'buyer',
             'user_id'         => $user_id,
             'display_name'    => $display_name,
@@ -856,6 +806,7 @@ function motorlan_get_purchase_messages_callback( WP_REST_Request $request ) {
             'current_user_id' => $current_user_id,
             'viewer_role'     => $viewer_role,
             'purchase_uuid'   => $uuid,
+            'server_timestamp'=> gmdate( 'Y-m-d H:i:s' ),
         ),
     ), 200 );
 }
@@ -919,15 +870,7 @@ function motorlan_add_purchase_message_callback( WP_REST_Request $request ) {
 
     update_post_meta( $purchase_id, 'purchase_messages', $existing_messages );
 
-    motorlan_trigger_purchase_event(
-        $uuid,
-        'purchase.message',
-        array(
-            'message'       => $new_message,
-            'purchase_uuid' => $uuid,
-            'sender_role'   => $sender_role,
-        )
-    );
+    // Eliminada la notificación a Pusher: ahora los clientes obtienen mensajes mediante polling.
 
     $response_message                 = $new_message;
     $response_message['is_current_user'] = true;

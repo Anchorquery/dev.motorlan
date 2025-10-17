@@ -1,7 +1,7 @@
 import { ref, computed } from 'vue'
 import { createUrl } from '@/@core/composable/createUrl'
 import { useApi } from '@/composables/useApi'
-import Pusher from 'pusher-js'
+import { usePolling } from '@/composables/usePolling'
 
 // Interfaces
 interface PurchaseMessage {
@@ -20,8 +20,8 @@ export function usePurchaseChat(uuid: string) {
   const purchaseError = ref<any>(null)
   const messages = ref<PurchaseMessage[]>([])
   const isLoading = ref(false)
-  const pusherClient = ref<Pusher | null>(null)
-  const isRealtimeConnected = ref(false)
+  const isPollingActive = ref(false)
+  const polling = ref<any>(null)
 
   const purchase = computed(() => purchaseData.value?.data ?? null)
 
@@ -55,37 +55,20 @@ export function usePurchaseChat(uuid: string) {
     // Handle error
   }
 
-  // Setup Pusher for real-time messages
-  const setupRealtime = () => {
-    if (pusherClient.value) return
+  // Setup polling to replace realtime updates
+  const setupPolling = () => {
+    if (polling.value) return
 
-    const PUSHER_APP_KEY = import.meta.env.VITE_PUSHER_APP_KEY?.toString()
-    const PUSHER_APP_CLUSTER = import.meta.env.VITE_PUSHER_APP_CLUSTER?.toString()
-    const PUSHER_AUTH_ENDPOINT = `${import.meta.env.VITE_API_BASE_URL}/wp-json/motorlan/v1/purchases/pusher/auth`
-    const channelName = `private-purchase-${uuid}`
+    const endpointUrl = `/wp-json/motorlan/v1/purchases/${uuid}/messages`
 
-    if (!PUSHER_APP_KEY) {
-      console.error('Pusher key not found.')
-      return
-    }
+    polling.value = usePolling(endpointUrl, (newMessages: PurchaseMessage[]) => {
+      if (newMessages.length) {
+        console.info('Mensajes nuevos detectados mediante polling:', newMessages.length)
+        messages.value = [...messages.value, ...newMessages]
+      }
+    }, 3000)
 
-    pusherClient.value = new Pusher(PUSHER_APP_KEY, {
-      cluster: PUSHER_APP_CLUSTER,
-      forceTLS: true,
-      authEndpoint: PUSHER_AUTH_ENDPOINT,
-    })
-
-    const channel = pusherClient.value.subscribe(channelName)
-
-    channel.bind('pusher:subscription_succeeded', () => {
-      console.info('Connected to Pusher channel:', channelName)
-      isRealtimeConnected.value = true
-    })
-
-    channel.bind('purchase.message', async () => {
-      console.info('New message detected via Pusher')
-      await fetchMessages()
-    })
+    isPollingActive.value = true
   }
 
   return {
@@ -93,10 +76,10 @@ export function usePurchaseChat(uuid: string) {
     purchaseError,
     messages,
     isLoading,
-    isRealtimeConnected,
+    isPollingActive,
     fetchPurchaseDetails,
     fetchMessages,
     sendMessage,
-    setupRealtime,
+    setupPolling,
   }
 }
