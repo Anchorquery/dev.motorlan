@@ -185,7 +185,7 @@ function motorlan_get_user_sales_callback( WP_REST_Request $request ) {
     $meta_query = array(
         'relation' => 'AND',
         array(
-            'key'   => 'vendedor_id',
+            'key'   => 'field_compra_vendedor',
             'value' => $user_id,
             'compare' => '=',
         ),
@@ -336,7 +336,7 @@ function motorlan_get_user_sale_by_uuid_callback( WP_REST_Request $request ) {
     $sale_post = $posts;
     $sale_id   = $sale_post->ID;
 
-    $seller_id = function_exists( 'get_field' ) ? get_field( 'vendedor_id', $sale_id ) : get_post_meta( $sale_id, 'vendedor_id', true );
+    $seller_id = function_exists( 'get_field' ) ? get_field( 'field_compra_vendedor', $sale_id ) : get_post_meta( $sale_id, 'field_compra_vendedor', true );
     $seller_id = $seller_id ? absint( $seller_id ) : 0;
 
     if ( $seller_id !== $user_id ) {
