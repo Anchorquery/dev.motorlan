@@ -116,6 +116,44 @@ function motorlan_prepare_sale_item( $purchase_id ) {
 
     $price_value = is_numeric( $price ) ? (float) $price : null;
 
+    // Obtener info del vendedor
+    $seller_id = function_exists( 'get_field' ) ? get_field( 'vendedor', $purchase_id ) : get_post_meta( $purchase_id, 'vendedor', true );
+    if ( is_array( $seller_id ) && isset( $seller_id['ID'] ) ) {
+        $seller_id = absint( $seller_id['ID'] );
+    } elseif ( is_object( $seller_id ) && isset( $seller_id->ID ) ) {
+        $seller_id = absint( $seller_id->ID );
+    } elseif ( is_array( $seller_id ) && isset( $seller_id[0]['ID'] ) ) {
+        $seller_id = absint( $seller_id[0]['ID'] );
+    } elseif ( is_numeric( $seller_id ) ) {
+        $seller_id = absint( $seller_id );
+    }
+
+    $seller_data = null;
+    $seller_name = '';
+    $seller_email = '';
+
+    if ( $seller_id ) {
+        $seller_user = get_userdata( $seller_id );
+        if ( $seller_user ) {
+            $seller_name  = $seller_user->display_name ?: trim( $seller_user->first_name . ' ' . $seller_user->last_name );
+            $seller_email = $seller_user->user_email;
+            $seller_data = array(
+                'id'       => $seller_id,
+                'name'     => $seller_name,
+                'email'    => $seller_email,
+                'username' => $seller_user->user_login,
+            );
+
+            // Si tiene info ACF adicional (por ejemplo empresa)
+            if ( function_exists( 'get_field' ) ) {
+                $company = get_field( 'empresa', 'user_' . $seller_id );
+                if ( $company ) {
+                    $seller_data['company'] = $company;
+                }
+            }
+        }
+    }
+
     return array(
         'id'                   => $purchase_id,
         'uuid'                 => $uuid ?: '',
@@ -134,6 +172,10 @@ function motorlan_prepare_sale_item( $purchase_id ) {
         'buyer_name'           => $buyer_name,
         'buyer_email'          => $buyer_email,
         'buyer'                => $buyer,
+        'seller_id'            => $seller_id ?: null,
+        'seller_name'          => $seller_name,
+        'seller_email'         => $seller_email,
+        'seller'               => $seller_data,
         'detail_url'           => get_permalink( $purchase_id ),
         'publication_permalink'=> $publication_id ? get_permalink( $publication_id ) : '',
     );
