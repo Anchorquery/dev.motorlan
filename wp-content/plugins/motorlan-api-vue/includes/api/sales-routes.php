@@ -53,11 +53,9 @@ function motorlan_prepare_sale_item( $purchase_id ) {
     $purchase_id    = absint( $purchase_id );
     $publication_id = null;
 
-    if ( function_exists( 'get_field' ) ) {
-        $publication_post = get_field( 'publicacion', $purchase_id );
-    } else {
-        $publication_post = get_post_meta( $purchase_id, 'publicaciones', true );
-    }
+ 
+    $publication_post = get_post_meta( $purchase_id, 'publicaciones', true );
+    
 
  
 
