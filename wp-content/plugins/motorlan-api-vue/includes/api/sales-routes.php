@@ -336,8 +336,25 @@ function motorlan_get_user_sale_by_uuid_callback( WP_REST_Request $request ) {
     $sale_post = $posts;
     $sale_id   = $sale_post->ID;
 
-    $seller_id = function_exists( 'get_field' ) ? get_field( 'field_compra_vendedor', $sale_id ) : get_post_meta( $sale_id, 'vendedor_id', true );
-    $seller_id = $seller_id ? absint( $seller_id ) : 0;
+    $seller_id = 0;
+
+    if ( function_exists( 'get_field' ) ) {
+        $seller_field = get_field( 'field_compra_vendedor', $sale_id );
+        $seller_id = $seller_field ? absint( $seller_field ) : 0;
+    }
+
+    // Si no hay vendedor directo, buscar al autor del motor asociado
+    if ( ! $seller_id && function_exists( 'get_field' ) ) {
+        $motor_post = get_field( 'motor', $sale_id );
+        if ( $motor_post instanceof WP_Post ) {
+            $seller_id = (int) $motor_post->post_author;
+        } elseif ( is_numeric( $motor_post ) ) {
+            $motor = get_post( (int) $motor_post );
+            if ( $motor instanceof WP_Post ) {
+                $seller_id = (int) $motor->post_author;
+            }
+        }
+    }
 
     if ( $seller_id !== $user_id ) {
         return new WP_Error( 'forbidden_sale_access', 'You are not allowed to view this sale.', array( 'status' => 403 ) );
