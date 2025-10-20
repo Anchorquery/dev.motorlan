@@ -54,15 +54,15 @@ function motorlan_prepare_sale_item( $purchase_id ) {
     $publication_id = null;
 
     if ( function_exists( 'get_field' ) ) {
-        $motor_post = get_field( 'motor', $purchase_id );
+        $publication_post = get_field( 'publicacion', $purchase_id );
     } else {
-        $motor_post = get_post_meta( $purchase_id, 'motor', true );
+        $publication_post = get_post_meta( $purchase_id, 'publicacion', true );
     }
 
-    if ( is_object( $motor_post ) && isset( $motor_post->ID ) ) {
-        $publication_id = $motor_post->ID;
-    } elseif ( is_numeric( $motor_post ) ) {
-        $publication_id = (int) $motor_post;
+    if ( is_object( $publication_post ) && isset( $publication_post->ID ) ) {
+        $publication_id = $publication_post->ID;
+    } elseif ( is_numeric( $publication_post ) ) {
+        $publication_id = (int) $publication_post;
     }
 
     $price = function_exists( 'get_field' ) ? get_field( 'precio_compra', $purchase_id ) : get_post_meta( $purchase_id, 'precio_compra', true );
@@ -116,19 +116,25 @@ function motorlan_prepare_sale_item( $purchase_id ) {
 
     $price_value = is_numeric( $price ) ? (float) $price : null;
 
-    // Obtener info del vendedor
-    $seller_id = function_exists( 'get_field' ) ? get_field( 'vendedor', $purchase_id ) : get_post_meta( $purchase_id, 'vendedor', true );
-    if ( is_array( $seller_id ) && isset( $seller_id['ID'] ) ) {
-        $seller_id = absint( $seller_id['ID'] );
-    } elseif ( is_object( $seller_id ) && isset( $seller_id->ID ) ) {
-        $seller_id = absint( $seller_id->ID );
-    } elseif ( is_array( $seller_id ) && isset( $seller_id[0]['ID'] ) ) {
-        $seller_id = absint( $seller_id[0]['ID'] );
-    } elseif ( is_numeric( $seller_id ) ) {
-        $seller_id = absint( $seller_id );
+    // Obtener y normalizar info del vendedor (campo ACF “vendedor”)
+    $seller_field = function_exists( 'get_field' ) ? get_field( 'vendedor', $purchase_id ) : get_post_meta( $purchase_id, 'vendedor', true );
+    $seller_id = null;
+
+    if ( is_numeric( $seller_field ) ) {
+        $seller_id = absint( $seller_field );
+    } elseif ( is_object( $seller_field ) && isset( $seller_field->ID ) ) {
+        $seller_id = absint( $seller_field->ID );
+    } elseif ( is_array( $seller_field ) ) {
+        if ( isset( $seller_field['ID'] ) ) {
+            $seller_id = absint( $seller_field['ID'] );
+        } elseif ( isset( $seller_field[0]['ID'] ) ) {
+            $seller_id = absint( $seller_field[0]['ID'] );
+        } elseif ( isset( $seller_field[0] ) && is_numeric( $seller_field[0] ) ) {
+            $seller_id = absint( $seller_field[0] );
+        }
     }
 
-    $seller_data = null;
+    $seller = null;
     $seller_name = '';
     $seller_email = '';
 
@@ -137,36 +143,29 @@ function motorlan_prepare_sale_item( $purchase_id ) {
         if ( $seller_user ) {
             $seller_name  = $seller_user->display_name ?: trim( $seller_user->first_name . ' ' . $seller_user->last_name );
             $seller_email = $seller_user->user_email;
-            $seller_data = array(
+
+            $seller = array(
                 'id'       => $seller_id,
                 'name'     => $seller_name,
                 'email'    => $seller_email,
                 'username' => $seller_user->user_login,
             );
-
-            // Si tiene info ACF adicional (por ejemplo empresa)
-            if ( function_exists( 'get_field' ) ) {
-                $company = get_field( 'empresa', 'user_' . $seller_id );
-                if ( $company ) {
-                    $seller_data['company'] = $company;
-                }
-            }
         }
     }
 
     return array(
         'id'                   => $purchase_id,
         'uuid'                 => $uuid ?: '',
-        'publication_id'       => $publication_id,
-        'publication_uuid'     => $publication_uuid ?: '',
-        'publication_title'    => $publication_title,
-        'publication_slug'     => $publication_slug,
+        'motor_id'             => $publication_id,
+        'motor_uuid'           => $publication_uuid ?: '',
+        'motor_title'          => $publication_title,
+        'motor_slug'           => $publication_slug,
         'price'                => $price,
         'price_value'          => $price_value,
         'currency'             => '',
         'date'                 => $iso_date,
         'date_label'           => $date_label,
-        'status'               => $status ?: 'completed',
+        'status'               => $status ?: 'pending',
         'type'                 => $type ?: 'sale',
         'buyer_id'             => $buyer_id ?: null,
         'buyer_name'           => $buyer_name,
@@ -175,9 +174,9 @@ function motorlan_prepare_sale_item( $purchase_id ) {
         'seller_id'            => $seller_id ?: null,
         'seller_name'          => $seller_name,
         'seller_email'         => $seller_email,
-        'seller'               => $seller_data,
+        'seller'               => $seller,
         'detail_url'           => get_permalink( $purchase_id ),
-        'publication_permalink'=> $publication_id ? get_permalink( $publication_id ) : '',
+        'motor_permalink'      => $publication_id ? get_permalink( $publication_id ) : '',
     );
 }
 
