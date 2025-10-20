@@ -324,7 +324,7 @@ function motorlan_get_user_sales_callback( WP_REST_Request $request ) {
             $purchase_id = get_the_ID();
 
             $sale_item = motorlan_prepare_sale_item( $purchase_id );
-            $sales[]   = motorlan_enrich_sale_with_motor( $sale_item, $purchase_id );
+            $sales[]   = motorlan_enrich_sale_with_publicacion( $sale_item, $purchase_id );
         }
         wp_reset_postdata();
     }
