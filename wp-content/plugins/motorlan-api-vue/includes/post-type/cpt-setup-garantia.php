@@ -58,7 +58,7 @@ function motorlan_register_garantia_cpt() {
 
     register_post_type( 'garantia', $args );
 }
-add_action( 'init', 'motorlan_register_garantia_cpt' );
+//add_action( 'init', 'motorlan_register_garantia_cpt' );
 
 /**
  * Register custom meta fields for the 'garantia' post type.
@@ -95,4 +95,4 @@ function motorlan_register_garantia_meta() {
         'type' => 'string',
     ) );
 }
-add_action( 'init', 'motorlan_register_garantia_meta' );
+//add_action( 'init', 'motorlan_register_garantia_meta' );
