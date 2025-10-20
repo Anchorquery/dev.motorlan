@@ -18,7 +18,7 @@ function motorlan_register_sales_rest_routes() {
         'permission_callback' => 'motorlan_is_user_authenticated',
     ) );
 
-    register_rest_route( $namespace, '/user/sales/(?P<uuid>[a-zA-Z0-9-]+)', array(
+    register_rest_route( $namespace, '/user/sale-details/(?P<uuid>[a-zA-Z0-9-]+)', array(
         'methods'  => WP_REST_Server::READABLE,
         'callback' => 'motorlan_get_user_sale_by_uuid_callback',
         'permission_callback' => 'motorlan_is_user_authenticated',
@@ -336,7 +336,7 @@ function motorlan_get_user_sale_by_uuid_callback( WP_REST_Request $request ) {
     $sale_post = $posts;
     $sale_id   = $sale_post->ID;
 
-    $seller_id = function_exists( 'get_field' ) ? get_field( 'field_compra_vendedor', $sale_id ) : get_post_meta( $sale_id, 'field_compra_vendedor', true );
+    $seller_id = function_exists( 'get_field' ) ? get_field( 'field_compra_vendedor', $sale_id ) : get_post_meta( $sale_id, 'vendedor_id', true );
     $seller_id = $seller_id ? absint( $seller_id ) : 0;
 
     if ( $seller_id !== $user_id ) {

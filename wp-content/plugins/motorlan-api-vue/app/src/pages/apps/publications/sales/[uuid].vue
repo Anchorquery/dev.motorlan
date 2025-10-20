@@ -12,7 +12,7 @@ const { t } = useI18n()
 
 const saleUuid = computed(() => route.params.uuid as string)
 
-const apiUrl = computed(() => `/wp-json/motorlan/v1/user/sales/${saleUuid.value}`)
+const apiUrl = computed(() => `/wp-json/motorlan/v1/user/sale-details/${saleUuid.value}`)
 
 const {
   data,
