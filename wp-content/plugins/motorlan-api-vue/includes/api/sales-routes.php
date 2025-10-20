@@ -340,7 +340,17 @@ function motorlan_get_user_sale_by_uuid_callback( WP_REST_Request $request ) {
 
     if ( function_exists( 'get_field' ) ) {
         $seller_field = get_field( 'field_compra_vendedor', $sale_id );
-        $seller_id = $seller_field ? absint( $seller_field ) : 0;
+
+        // Si ACF devuelve objeto/array de usuario
+        if ( is_array( $seller_field ) && isset( $seller_field['ID'] ) ) {
+            $seller_id = absint( $seller_field['ID'] );
+        } elseif ( is_object( $seller_field ) && isset( $seller_field->ID ) ) {
+            $seller_id = absint( $seller_field->ID );
+        } elseif ( is_numeric( $seller_field ) ) {
+            $seller_id = absint( $seller_field );
+        }
+
+        error_log( "[SALE_UUID] Checking sale $sale_id => seller_id=$seller_id ; user_id=$user_id" );
     }
 
     // Si no hay vendedor directo, buscar al autor del motor asociado
@@ -354,9 +364,11 @@ function motorlan_get_user_sale_by_uuid_callback( WP_REST_Request $request ) {
                 $seller_id = (int) $motor->post_author;
             }
         }
+        error_log( "[SALE_UUID] Using motor author fallback => $seller_id" );
     }
 
-    if ( $seller_id !== $user_id ) {
+    if ( intval($seller_id) !== intval($user_id) ) {
+        error_log( "[SALE_UUID] Access forbidden: user=$user_id, seller=$seller_id" );
         return new WP_Error( 'forbidden_sale_access', 'You are not allowed to view this sale.', array( 'status' => 403 ) );
     }
 
