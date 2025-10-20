@@ -185,7 +185,7 @@ function motorlan_get_user_sales_callback( WP_REST_Request $request ) {
     $meta_query = array(
         'relation' => 'AND',
         array(
-            'key'   => 'vendedor',
+            'key'   => 'field_compra_vendedor',
             'value' => $user_id,
             'compare' => '=',
         ),
