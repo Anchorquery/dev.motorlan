@@ -17,9 +17,9 @@ if ( ! defined( 'WPINC' ) ) {
  */
 function motorlan_register_publicaciones_cpt() {
     $labels = array(
-        'name'               => _x( 'Publicaciones', 'post type general name', 'motorlan-api-vue' ),
+        'name'               => _x('publicacion', 'post type general name', 'motorlan-api-vue' ),
         'singular_name'      => _x( 'Publicación', 'post type singular name', 'motorlan-api-vue' ),
-        'menu_name'          => _x( 'Publicaciones', 'admin menu', 'motorlan-api-vue' ),
+        'menu_name'          => _x('publicacion', 'admin menu', 'motorlan-api-vue' ),
         'name_admin_bar'     => _x( 'Publicación', 'add new on admin bar', 'motorlan-api-vue' ),
         'add_new'            => _x( 'Añadir Nueva', 'publicacion', 'motorlan-api-vue' ),
         'add_new_item'       => __( 'Añadir Nueva Publicación', 'motorlan-api-vue' ),
@@ -40,7 +40,7 @@ function motorlan_register_publicaciones_cpt() {
         'show_ui'            => true,
         'show_in_menu'       => true,
         'query_var'          => true,
-        'rewrite'            => array( 'slug' => 'publicaciones' ),
+        'rewrite'            => array( 'slug' => 'publicacion' ),
         'capability_type'    => 'post',
         'has_archive'        => true,
         'hierarchical'       => false,
@@ -49,17 +49,17 @@ function motorlan_register_publicaciones_cpt() {
         'show_in_rest'       => true, // This is crucial for the REST API
     );
 
-    register_post_type( 'publicaciones', $args );
+    register_post_type( 'publicacion', $args );
 }
 add_action( 'init', 'motorlan_register_publicaciones_cpt' );
 
 
 /**
- * Create two taxonomies, 'categoria' and 'marca' for the post type 'publicaciones'.
+ * Create two taxonomies, 'categoria' and 'marca' for the post type'publicacion'.
  */
 function motorlan_register_taxonomies() {
     // The post types to register the taxonomies for.
-    $post_types = array( 'publicaciones' );
+    $post_types = array( 'publicacion' );
 
     // Taxonomy: Categoria
     $labels_categoria = array(

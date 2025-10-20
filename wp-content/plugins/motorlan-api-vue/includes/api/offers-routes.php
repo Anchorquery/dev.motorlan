@@ -336,7 +336,7 @@ function motorlan_handle_create_offer($request) {
     $justification = isset($request['justification']) ? sanitize_textarea_field($request['justification']) : null;
 
     $publication = get_post($post_id);
-    if (!$publication || $publication->post_type !== 'publicaciones') {
+    if (!$publication || $publication->post_type !=='publicacion') {
         return new WP_Error('invalid_publication', 'La publicación no está disponible.', array('status' => 404));
     }
 

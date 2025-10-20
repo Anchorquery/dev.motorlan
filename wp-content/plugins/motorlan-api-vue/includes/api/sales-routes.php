@@ -54,7 +54,7 @@ function motorlan_prepare_sale_item( $purchase_id ) {
     $publication_id = null;
 
  
-    $publication_post = get_post_meta( $purchase_id, 'publicaciones', true );
+    $publication_post = get_post_meta( $purchase_id,'publicacion', true );
     
 
  

@@ -23,7 +23,7 @@ function motorlan_get_user_favorites(WP_REST_Request $request) {
     $data = [];
     foreach ($favorites as $post_id) {
         $post = get_post($post_id);
-        if ($post && $post->post_type === 'publicaciones') {
+        if ($post && $post->post_type ==='publicacion') {
             $data[] = motorlan_get_publicacion_data($post_id);
         }
     }

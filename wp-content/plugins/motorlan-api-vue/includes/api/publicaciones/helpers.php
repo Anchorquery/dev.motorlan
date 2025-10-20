@@ -17,7 +17,7 @@ if (!defined('WPINC')) {
  */
 function motorlan_build_publicaciones_query_args($params) {
     $args = [
-        'post_type'      => 'publicaciones',
+        'post_type'      => 'publicacion',
         'posts_per_page' => !empty($params['per_page']) ? absint($params['per_page']) : 10,
         'paged'          => !empty($params['page']) ? absint($params['page']) : 1,
         'post_status'    => 'any',
@@ -165,7 +165,7 @@ function motorlan_get_post_id_by_uuid($uuid) {
         return null;
     }
     $args = [
-        'post_type'      => 'publicaciones',
+        'post_type'      => 'publicacion',
         'meta_key'       => 'uuid',
         'meta_value'     => $uuid,
         'posts_per_page' => 1,

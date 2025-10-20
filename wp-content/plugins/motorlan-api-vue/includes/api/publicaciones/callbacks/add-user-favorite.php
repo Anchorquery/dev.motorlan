@@ -20,7 +20,7 @@ function motorlan_add_user_favorite(WP_REST_Request $request) {
     $params = $request->get_json_params();
     $post_id = intval($params['publicacion_id'] ?? 0);
 
-    if (!$post_id || get_post_type($post_id) !== 'publicaciones') {
+    if (!$post_id || get_post_type($post_id) !=='publicacion') {
         return new WP_Error('invalid_post', 'Publicación inválida', ['status' => 400]);
     }
 

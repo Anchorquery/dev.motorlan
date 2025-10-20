@@ -22,7 +22,7 @@ function motorlan_get_publicacion_by_slug(WP_REST_Request $request) {
     }
 
     $args = [
-        'post_type'      => 'publicaciones',
+        'post_type'      => 'publicacion',
         'name'           => $slug,
         'posts_per_page' => 1,
         'post_status'    => 'any',

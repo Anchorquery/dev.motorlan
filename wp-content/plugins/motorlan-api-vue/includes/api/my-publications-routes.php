@@ -64,7 +64,7 @@ function motorlan_build_my_publications_query_args($params) {
     $per_page = !empty($params['per_page']) ? absint($params['per_page']) : 10;
 
     $args = [
-        'post_type'      => 'publicaciones',
+        'post_type'      => 'publicacion',
         'posts_per_page' => $per_page,
         'paged'          => $page,
         'post_status'    => 'any',

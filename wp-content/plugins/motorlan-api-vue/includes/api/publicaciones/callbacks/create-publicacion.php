@@ -41,7 +41,7 @@ function motorlan_create_publicacion_callback(WP_REST_Request $request) {
     $post_data = [
         'post_title'  => sanitize_text_field($params['title']),
         'post_status' => sanitize_text_field($params['status'] ?? 'draft'),
-        'post_type'   => 'publicaciones',
+        'post_type'   =>'publicacion',
         'post_author' => get_current_user_id(),
     ];
 
