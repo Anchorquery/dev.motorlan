@@ -40,7 +40,7 @@ acf_add_local_field_group(array(
             'label' => 'ID del Motor',
             'name' => 'motor_id',
             'type' => 'post_object',
-            'post_type' => array('publicaciones'),
+            'post_type' => array('publicacion'),
             'allow_null' => 1,
             'multiple' => 0,
             'return_format' => 'id',
