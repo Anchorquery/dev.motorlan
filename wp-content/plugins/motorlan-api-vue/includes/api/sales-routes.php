@@ -333,43 +333,50 @@ function motorlan_get_user_sale_by_uuid_callback( WP_REST_Request $request ) {
         return new WP_Error( 'sale_not_found', 'Sale not found.', array( 'status' => 404 ) );
     }
 
-    $sale_post = $posts;
-    $sale_id   = $sale_post->ID;
+    $sale_post = is_array($posts) ? reset($posts) : $posts;
+    $sale_id   = is_object($sale_post) ? $sale_post->ID : 0;
 
     $seller_id = 0;
 
     if ( function_exists( 'get_field' ) ) {
-        $seller_field = get_field( 'field_compra_vendedor', $sale_id );
+        $seller_field = get_field( 'vendedor', $sale_id );
 
-        // Si ACF devuelve objeto/array de usuario
+        // ACF puede retornar distintos tipos (ID, objeto, array o lista)
         if ( is_array( $seller_field ) && isset( $seller_field['ID'] ) ) {
             $seller_id = absint( $seller_field['ID'] );
+        } elseif ( is_array( $seller_field ) && isset( $seller_field[0]['ID'] ) ) {
+            $seller_id = absint( $seller_field[0]['ID'] );
+        } elseif ( is_array( $seller_field ) && isset( $seller_field[0] ) && is_numeric( $seller_field[0] ) ) {
+            $seller_id = absint( $seller_field[0] );
         } elseif ( is_object( $seller_field ) && isset( $seller_field->ID ) ) {
             $seller_id = absint( $seller_field->ID );
         } elseif ( is_numeric( $seller_field ) ) {
             $seller_id = absint( $seller_field );
         }
 
-        error_log( "[SALE_UUID] Checking sale $sale_id => seller_id=$seller_id ; user_id=$user_id" );
+        error_log( "[SALE_UUID_DEBUG] Sale ID={$sale_id} vendedor field type=" . gettype($seller_field) . " => seller_id={$seller_id}" );
     }
 
-    // Si no hay vendedor directo, buscar al autor del motor asociado
+    // Fallback: si no se encuentra vendedor, usar autor del motor asociado
     if ( ! $seller_id && function_exists( 'get_field' ) ) {
         $motor_post = get_field( 'motor', $sale_id );
         if ( $motor_post instanceof WP_Post ) {
             $seller_id = (int) $motor_post->post_author;
+        } elseif ( is_array( $motor_post ) && isset( $motor_post['ID'] ) ) {
+            $seller_id = (int) get_post_field( 'post_author', $motor_post['ID'] );
         } elseif ( is_numeric( $motor_post ) ) {
-            $motor = get_post( (int) $motor_post );
-            if ( $motor instanceof WP_Post ) {
-                $seller_id = (int) $motor->post_author;
-            }
+            $seller_id = (int) get_post_field( 'post_author', (int) $motor_post );
         }
-        error_log( "[SALE_UUID] Using motor author fallback => $seller_id" );
+        error_log("[SALE_UUID_DEBUG] Using motor author fallback seller_id={$seller_id}");
     }
 
     if ( intval($seller_id) !== intval($user_id) ) {
-        error_log( "[SALE_UUID] Access forbidden: user=$user_id, seller=$seller_id" );
-        return new WP_Error( 'forbidden_sale_access', 'You are not allowed to view this sale.', array( 'status' => 403 ) );
+        error_log("[SALE_UUID_DEBUG] Access denied: user_id={$user_id}, seller_id={$seller_id}");
+        return new WP_Error(
+            'forbidden_sale_access',
+            'You are not allowed to view this sale.',
+            array( 'status' => 403, 'seller_id' => $seller_id, 'user_id' => $user_id )
+        );
     }
 
     $sale_item = motorlan_prepare_sale_item( $sale_id );
