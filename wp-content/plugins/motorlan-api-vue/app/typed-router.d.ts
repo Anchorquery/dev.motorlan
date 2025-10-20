@@ -35,7 +35,7 @@ declare module 'vue-router/auto-routes' {
     'apps-publications-publication-questions-uuid': RouteRecordInfo<'apps-publications-publication-questions-uuid', '/apps/publications/publication/questions/:uuid', { uuid: ParamValue<true> }, { uuid: ParamValue<false> }>,
     'apps-publications-questions': RouteRecordInfo<'apps-publications-questions', '/apps/publications/questions', Record<never, never>, Record<never, never>>,
     'apps-publications-sales': RouteRecordInfo<'apps-publications-sales', '/apps/publications/sales', Record<never, never>, Record<never, never>>,
-    'apps-publications-sales-id': RouteRecordInfo<'apps-publications-sales-id', '/apps/publications/sales/:id', { id: ParamValue<true> }, { id: ParamValue<false> }>,
+    'apps-publications-sales-uuid': RouteRecordInfo<'apps-publications-sales-uuid', '/apps/publications/sales/:uuid', { uuid: ParamValue<true> }, { uuid: ParamValue<false> }>,
     'apps-purchases': RouteRecordInfo<'apps-purchases', '/apps/purchases', Record<never, never>, Record<never, never>>,
     'apps-purchases-uuid': RouteRecordInfo<'apps-purchases-uuid', '/apps/purchases/:uuid', { uuid: ParamValue<true> }, { uuid: ParamValue<false> }>,
     'apps-purchases-chat-uuid': RouteRecordInfo<'apps-purchases-chat-uuid', '/apps/purchases/chat/:uuid', { uuid: ParamValue<true> }, { uuid: ParamValue<false> }>,

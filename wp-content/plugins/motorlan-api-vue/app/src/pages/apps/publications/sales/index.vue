@@ -165,7 +165,7 @@ const apiUrl = computed(() => {
   return `/wp-json/motorlan/v1/user/sales?${params.toString()}`
 })
 
-const { data: salesData, execute: fetchSales, isLoading: isTableLoading } = useApi<any>(apiUrl, { immediate: false }).get().json()
+const { data: salesData, execute: fetchSales, isFetching: isTableLoading } = useApi<any>(apiUrl, { immediate: false }).get().json()
 const isSearching = ref(false)
 
 const debouncedFetch = debounce(async () => {
@@ -201,10 +201,10 @@ const sales = computed(() => salesData.value?.data || [])
 const totalSales = computed(() => salesData.value?.pagination?.total || 0)
 
 const goToSale = (sale: any) => {
-  if (!sale?.id)
+  if (!sale?.uuid)
     return
 
-  router.push(`/apps/publications/sales/${sale.id}`)
+  router.push(`/apps/publications/sales/${sale.uuid}`)
 }
 
 const goToPublication = (sale: any) => {
@@ -369,7 +369,7 @@ const goToPublication = (sale: any) => {
             prepend-icon="tabler-eye"
             @click="goToSale(item)"
           >
-            {{ t('sales.view_sale') }}
+           
           </VBtn>
           <VBtn
             variant="text"
@@ -378,7 +378,7 @@ const goToPublication = (sale: any) => {
             prepend-icon="tabler-external-link"
             @click="goToPublication(item)"
           >
-            {{ t('sales.view_publication') }}
+          
           </VBtn>
         </div>
       </template>

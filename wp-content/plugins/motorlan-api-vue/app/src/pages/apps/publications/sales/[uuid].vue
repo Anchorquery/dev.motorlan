@@ -3,14 +3,16 @@ import { computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useApi } from '@/composables/useApi'
+import { formatCurrency } from '@/utils/formatCurrency'
+import type { Publicacion } from '@/interfaces/publicacion'
 
 const route = useRoute()
 const router = useRouter()
 const { t } = useI18n()
 
-const saleId = computed(() => route.params.id as string)
+const saleUuid = computed(() => route.params.uuid as string)
 
-const apiUrl = computed(() => `/wp-json/motorlan/v1/user/sales/${saleId.value}`)
+const apiUrl = computed(() => `/wp-json/motorlan/v1/user/sales/${saleUuid.value}`)
 
 const {
   data,
@@ -20,36 +22,23 @@ const {
 } = useApi<any>(apiUrl, { immediate: false }).get().json()
 
 onMounted(() => {
-  if (saleId.value)
+  if (saleUuid.value)
     fetchSale()
 })
 
-watch(saleId, newId => {
+watch(saleUuid, newId => {
   if (newId)
     fetchSale()
 })
 
 const sale = computed(() => data.value?.data || null)
-
-const formatCurrency = (value: number | string | null | undefined) => {
-  const numericValue = Number(value)
-  if (Number.isNaN(numericValue))
-    return value ?? '—'
-
-  return new Intl.NumberFormat('es-VE', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(numericValue)
-}
+const motor = computed(() => sale.value?.motor as Publicacion | null)
+const buyer = computed(() => sale.value?.buyer || null)
+const offer = computed(() => sale.value?.offer || null)
 
 const formatDate = (value?: string, fallback?: string) => {
-  if (!value) {
-    if (!fallback)
-      return '—'
-    return fallback
-  }
+  if (!value)
+    return fallback || '—'
 
   const parsed = new Date(value)
   if (Number.isNaN(parsed.getTime()))
@@ -66,18 +55,19 @@ const formatDate = (value?: string, fallback?: string) => {
 
 const resolveStatus = (status: string) => {
   const normalized = (status || '').toLowerCase()
-  if (normalized === 'completed')
-    return { text: t('sales.status_labels.completed'), color: 'success' }
-  if (normalized === 'pendiente' || normalized === 'pending')
-    return { text: t('sales.status_labels.pending'), color: 'warning' }
-  if (normalized === 'processing')
-    return { text: t('sales.status_labels.processing'), color: 'info' }
-  if (normalized === 'cancelled' || normalized === 'canceled')
-    return { text: t('sales.status_labels.cancelled'), color: 'error' }
-  if (normalized === 'refunded')
-    return { text: t('sales.status_labels.refunded'), color: 'secondary' }
-  if (normalized === 'expired')
-    return { text: t('sales.status_labels.expired'), color: 'warning' }
+  const statusMap: Record<string, { text: string; color: string }> = {
+    completed: { text: t('sales.status_labels.completed'), color: 'success' },
+    pending: { text: t('sales.status_labels.pending'), color: 'warning' },
+    pendiente: { text: t('sales.status_labels.pending'), color: 'warning' },
+    processing: { text: t('sales.status_labels.processing'), color: 'info' },
+    cancelled: { text: t('sales.status_labels.cancelled'), color: 'error' },
+    canceled: { text: t('sales.status_labels.cancelled'), color: 'error' },
+    refunded: { text: t('sales.status_labels.refunded'), color: 'secondary' },
+    expired: { text: t('sales.status_labels.expired'), color: 'warning' },
+  }
+
+  if (statusMap[normalized])
+    return statusMap[normalized]
 
   if (!status)
     return { text: t('sales.status_labels.unknown'), color: 'secondary' }
@@ -85,28 +75,29 @@ const resolveStatus = (status: string) => {
   return { text: status.toUpperCase(), color: 'primary' }
 }
 
-const resolveType = (type: string) => {
-  if ((type || '').toLowerCase() === 'rent')
-    return t('sales.type_options.rent')
+const purchaseModeLabel = computed(() => {
+  if (offer.value)
+    return 'Venta por oferta'
+  if (sale.value?.type === 'rent')
+    return 'Alquiler'
 
-  return t('sales.type_options.sale')
-}
+  return 'Venta directa'
+})
 
 const goToPublication = () => {
-  if (!sale.value)
-    return
+  if (motor.value?.slug)
+    window.open(`/store/${motor.value.slug}`, '_blank', 'noopener,noreferrer')
+  else if (motor.value?.uuid)
+    router.push(`/apps/publications/publication/edit/${motor.value.uuid}`)
+}
 
-  if (sale.value.publication_slug) {
-    window.open(`/store/${sale.value.publication_slug}`, '_blank', 'noopener,noreferrer')
-    return
-  }
-
-  if (sale.value.publication_uuid)
-    router.push(`/apps/publications/publication/edit/${sale.value.publication_uuid}`)
+const goToChat = () => {
+  if (sale.value?.uuid)
+    router.push({ name: 'apps-purchases-chat-uuid', params: { uuid: sale.value.uuid } })
 }
 
 const goBack = () => {
-  router.back()
+  router.push({ name: 'apps-publications-sales' })
 }
 
 const refresh = () => {
@@ -126,7 +117,7 @@ const refresh = () => {
             v-if="sale"
             class="text-body-2 text-medium-emphasis"
           >
-            #{{ sale.id }}
+            #{{ sale.uuid }}
             <span v-if="sale.date_label">• {{ formatDate(sale.date, sale.date_label) }}</span>
           </div>
         </div>
@@ -189,6 +180,7 @@ const refresh = () => {
               cols="12"
               md="7"
             >
+              <!-- 👉 Resumen de Venta -->
               <VCard
                 variant="outlined"
                 class="mb-6"
@@ -240,27 +232,21 @@ const refresh = () => {
                       sm="6"
                     >
                       <div class="text-caption text-medium-emphasis">
-                        {{ t('sales.type') }}
+                        Modalidad
                       </div>
                       <div class="text-body-1">
-                        {{ resolveType(sale.type) }}
-                      </div>
-                    </VCol>
-                    <VCol cols="12">
-                      <div class="text-caption text-medium-emphasis">
-                        {{ t('sales.sale_identifier') }}
-                      </div>
-                      <div class="text-body-1">
-                        {{ sale.uuid || sale.id }}
+                        {{ purchaseModeLabel }}
                       </div>
                     </VCol>
                   </VRow>
                 </VCardText>
               </VCard>
 
+              <!-- 👉 Información del Producto -->
               <VCard
-                v-if="sale.motor"
+                v-if="motor"
                 variant="outlined"
+                class="mb-6"
               >
                 <VCardTitle>{{ t('sales.motor_information') }}</VCardTitle>
                 <VDivider />
@@ -271,11 +257,11 @@ const refresh = () => {
                         {{ t('sales.publication') }}
                       </div>
                       <div class="text-h6">
-                        {{ sale.motor.title }}
+                        {{ motor.title }}
                       </div>
                     </VCol>
                     <VCol
-                      v-if="sale.motor.acf?.marca"
+                      v-if="motor.acf?.marca"
                       cols="12"
                       sm="6"
                     >
@@ -283,11 +269,11 @@ const refresh = () => {
                         {{ t('sales.motor_brand') }}
                       </div>
                       <div class="text-body-1">
-                        {{ sale.motor.acf.marca?.name || sale.motor.acf.marca }}
+                        {{ motor.acf.marca?.name || motor.acf.marca }}
                       </div>
                     </VCol>
                     <VCol
-                      v-if="sale.motor.acf?.potencia"
+                      v-if="motor.acf?.potencia"
                       cols="12"
                       sm="6"
                     >
@@ -295,7 +281,7 @@ const refresh = () => {
                         {{ t('sales.motor_power') }}
                       </div>
                       <div class="text-body-1">
-                        {{ sale.motor.acf.potencia }}
+                        {{ motor.acf.potencia }}
                       </div>
                     </VCol>
                     <VCol
@@ -303,7 +289,7 @@ const refresh = () => {
                       class="d-flex gap-2 flex-wrap"
                     >
                       <VBtn
-                        variant="text"
+                        variant="tonal"
                         color="primary"
                         prepend-icon="tabler-eye"
                         @click="goToPublication"
@@ -314,35 +300,92 @@ const refresh = () => {
                   </VRow>
                 </VCardText>
               </VCard>
+
+              <!-- 👉 Detalles de la Oferta -->
+              <VCard
+                v-if="offer"
+                variant="outlined"
+              >
+                <VCardTitle>Detalles de la Oferta</VCardTitle>
+                <VDivider />
+                <VCardText>
+                  <VRow class="gy-4">
+                    <VCol
+                      cols="12"
+                      sm="6"
+                    >
+                      <div class="text-caption text-medium-emphasis">
+                        Monto Ofertado
+                      </div>
+                      <div class="text-h6">
+                        {{ formatCurrency(offer.offer_amount) }}
+                      </div>
+                    </VCol>
+                    <VCol
+                      cols="12"
+                      sm="6"
+                    >
+                      <div class="text-caption text-medium-emphasis">
+                        Estado Oferta
+                      </div>
+                      <VChip
+                        :color="offer.status === 'confirmed' ? 'success' : 'warning'"
+                        class="mt-1"
+                        density="comfortable"
+                        label
+                      >
+                        {{ offer.status_label || offer.status }}
+                      </VChip>
+                    </VCol>
+                    <VCol
+                      v-if="offer.justification"
+                      cols="12"
+                    >
+                      <div class="text-caption text-medium-emphasis">
+                        Mensaje del comprador
+                      </div>
+                      <p class="text-body-1 mt-1">
+                        {{ offer.justification }}
+                      </p>
+                    </VCol>
+                  </VRow>
+                </VCardText>
+              </VCard>
             </VCol>
 
             <VCol
               cols="12"
               md="5"
             >
+              <!-- 👉 Información del Comprador -->
               <VCard variant="outlined">
                 <VCardTitle>{{ t('sales.buyer_information') }}</VCardTitle>
                 <VDivider />
                 <VCardText>
-                  <div class="d-flex flex-column gap-3">
+                  <div class="d-flex align-center mb-4">
+                    <VAvatar
+                      color="primary"
+                      variant="tonal"
+                      class="mr-3"
+                    >
+                      <VIcon icon="tabler-user" />
+                    </VAvatar>
                     <div>
-                      <div class="text-caption text-medium-emphasis">
-                        {{ t('sales.buyer_name') }}
+                      <div class="text-body-1 font-weight-medium">
+                        {{ buyer?.name || t('sales.no_buyer') }}
                       </div>
-                      <div class="text-body-1">
-                        {{ sale.buyer?.name || t('sales.no_buyer') }}
-                      </div>
-                    </div>
-
-                    <div v-if="sale.buyer?.email">
-                      <div class="text-caption text-medium-emphasis">
-                        {{ t('sales.buyer_email') }}
-                      </div>
-                      <div class="text-body-1">
-                        {{ sale.buyer.email }}
+                      <div
+                        v-if="buyer?.email"
+                        class="text-caption text-medium-emphasis"
+                      >
+                        {{ buyer.email }}
                       </div>
                     </div>
+                  </div>
 
+                  <VDivider class="my-4" />
+
+                  <div class="d-flex flex-column gap-4">
                     <div v-if="sale.payment_type">
                       <div class="text-caption text-medium-emphasis">
                         {{ t('sales.payment_type') }}
@@ -361,6 +404,17 @@ const refresh = () => {
                       </div>
                     </div>
                   </div>
+
+                  <VDivider class="my-4" />
+
+                  <VBtn
+                    block
+                    color="primary"
+                    prepend-icon="tabler-message-circle"
+                    @click="goToChat"
+                  >
+                    Contactar Comprador
+                  </VBtn>
                 </VCardText>
               </VCard>
             </VCol>

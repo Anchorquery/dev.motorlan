@@ -18,9 +18,9 @@ function motorlan_register_sales_rest_routes() {
         'permission_callback' => 'motorlan_is_user_authenticated',
     ) );
 
-    register_rest_route( $namespace, '/user/sales/(?P<sale_id>\d+)', array(
+    register_rest_route( $namespace, '/user/sales/(?P<uuid>[a-zA-Z0-9-]+)', array(
         'methods'  => WP_REST_Server::READABLE,
-        'callback' => 'motorlan_get_user_sale_callback',
+        'callback' => 'motorlan_get_user_sale_by_uuid_callback',
         'permission_callback' => 'motorlan_is_user_authenticated',
     ) );
 }
@@ -309,23 +309,34 @@ function motorlan_get_user_sales_callback( WP_REST_Request $request ) {
  * @param WP_REST_Request $request Request object.
  * @return WP_REST_Response|WP_Error
  */
-function motorlan_get_user_sale_callback( WP_REST_Request $request ) {
+function motorlan_get_user_sale_by_uuid_callback( WP_REST_Request $request ) {
     $user_id = get_current_user_id();
     if ( ! $user_id ) {
         return new WP_Error( 'rest_not_logged_in', 'Sorry, you are not allowed to do that.', array( 'status' => 401 ) );
     }
 
-    $sale_id = absint( $request['sale_id'] );
-    if ( ! $sale_id ) {
-        return new WP_Error( 'invalid_sale_id', 'Invalid sale identifier.', array( 'status' => 400 ) );
+    $uuid = sanitize_text_field( $request['uuid'] );
+    if ( empty( $uuid ) ) {
+        return new WP_Error( 'invalid_sale_uuid', 'Invalid sale identifier.', array( 'status' => 400 ) );
     }
 
-    $sale_post = get_post( $sale_id );
-    if ( ! $sale_post || 'compra' !== $sale_post->post_type ) {
+    $args = array(
+        'post_type'  => 'compra',
+        'meta_key'   => 'uuid',
+        'meta_value' => $uuid,
+        'posts_per_page' => 1,
+        'post_status' => 'any',
+    );
+    $posts = get_posts( $args );
+
+    if ( empty( $posts ) ) {
         return new WP_Error( 'sale_not_found', 'Sale not found.', array( 'status' => 404 ) );
     }
 
-    $seller_id = function_exists( 'get_field' ) ? get_field( 'vendedor', $sale_id ) : get_post_meta( $sale_id, 'vendedor_id', true );
+    $sale_post = $posts;
+    $sale_id   = $sale_post->ID;
+
+    $seller_id = function_exists( 'get_field' ) ? get_field( 'vendedor_id', $sale_id ) : get_post_meta( $sale_id, 'vendedor_id', true );
     $seller_id = $seller_id ? absint( $seller_id ) : 0;
 
     if ( $seller_id !== $user_id ) {
@@ -334,11 +345,15 @@ function motorlan_get_user_sale_callback( WP_REST_Request $request ) {
 
     $sale_item = motorlan_prepare_sale_item( $sale_id );
     $sale_item = motorlan_enrich_sale_with_motor( $sale_item, $sale_id );
-
+    
     if ( function_exists( 'get_field' ) ) {
         $sale_item['notes']        = get_field( 'notas', $sale_id );
         $sale_item['payment_type'] = get_field( 'tipo_de_pago', $sale_id );
         $sale_item['payment_meta'] = get_fields( $sale_id ) ?: array();
+        $offer_post = get_field('offer', $sale_id);
+        if ($offer_post instanceof WP_Post) {
+            $sale_item['offer'] = motorlan_get_offer_data($offer_post->ID);
+        }
     }
 
     return new WP_REST_Response( array( 'data' => $sale_item ), 200 );
