@@ -56,8 +56,10 @@ function motorlan_prepare_sale_item( $purchase_id ) {
     if ( function_exists( 'get_field' ) ) {
         $publication_post = get_field( 'publicacion', $purchase_id );
     } else {
-        $publication_post = get_post_meta( $purchase_id, 'publicacion', true );
+        $publication_post = get_post_meta( $purchase_id, 'publicaciones', true );
     }
+
+   return $publication_post;
 
     if ( is_object( $publication_post ) && isset( $publication_post->ID ) ) {
         $publication_id = $publication_post->ID;
