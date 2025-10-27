@@ -17,10 +17,10 @@ if ( ! defined( 'WPINC' ) ) {
  */
 function motorlan_register_publicaciones_cpt() {
     $labels = array(
-        'name'               => _x('publicacion', 'post type general name', 'motorlan-api-vue' ),
+        'name'               => _x('Publicaciones', 'post type general name', 'motorlan-api-vue' ),
         'singular_name'      => _x( 'Publicación', 'post type singular name', 'motorlan-api-vue' ),
-        'menu_name'          => _x('publicacion', 'admin menu', 'motorlan-api-vue' ),
-        'name_admin_bar'     => _x( 'Publicación', 'add new on admin bar', 'motorlan-api-vue' ),
+        'menu_name'          => _x('Publicaciones', 'admin menu', 'motorlan-api-vue' ),
+        'name_admin_bar'     => _x( 'Publicaciones', 'add new on admin bar', 'motorlan-api-vue' ),
         'add_new'            => _x( 'Añadir Nueva', 'publicacion', 'motorlan-api-vue' ),
         'add_new_item'       => __( 'Añadir Nueva Publicación', 'motorlan-api-vue' ),
         'new_item'           => __( 'Nueva Publicación', 'motorlan-api-vue' ),
