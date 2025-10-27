@@ -2,10 +2,38 @@
 import type { Publicacion } from '@/interfaces/publicacion'
 
 defineProps<{ publicacion: Publicacion }>()
+const emit = defineEmits(['open-chat'])
 </script>
 
 <template>
   <div class="publicacion-info">
+    <div class="seller-info">
+      <VAvatar
+        size="48"
+        class="mr-4"
+      >
+        <VImg
+          :src="publicacion.author.avatar"
+          :alt="publicacion.author.name"
+        />
+      </VAvatar>
+      <div>
+        <p class="font-weight-bold">
+          {{ publicacion.author.name }}
+        </p>
+        <p class="text-caption">
+          {{ publicacion.author.meta.sales }} ventas | {{ publicacion.author.meta.rating }} valoraciones
+        </p>
+      </div>
+      <VBtn
+        class="ml-auto"
+        variant="outlined"
+        @click="emit('open-chat')"
+      >
+        Chat
+      </VBtn>
+    </div>
+    <VDivider class="my-4" />
     <h3 class="mb-4">
       Información de la publicacion
     </h3>
@@ -55,5 +83,9 @@ defineProps<{ publicacion: Publicacion }>()
 <style scoped>
 .publicacion-info {
   flex: 1 1 300px;
+}
+.seller-info {
+  display: flex;
+  align-items: center;
 }
 </style>
