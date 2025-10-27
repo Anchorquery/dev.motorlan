@@ -8,6 +8,7 @@ import PublicacionInfo from './components/PublicacionInfo.vue'
 import ProductDocs from './components/ProductDocs.vue'
 import RelatedProducts from './components/RelatedProducts.vue'
 import OfferModal from './components/OfferModal.vue'
+import ChatModal from './components/ChatModal.vue'
 import type { Publicacion } from '@/interfaces/publicacion'
 import { createUrl } from '@/@core/composable/createUrl'
 import { useApi } from '@/composables/useApi'
@@ -24,6 +25,7 @@ const { data, isFetching, execute } = useApi<any>(
 onMounted(execute)
 
 const isOfferModalVisible = ref(false)
+const isChatModalVisible = ref(false)
 
 const isOwner = computed(() => {
   if (!userStore.user || !publicacion.value)
@@ -100,7 +102,10 @@ const title = computed(() => {
     </VRow>
 
     <div class="d-flex flex-wrap gap-6 my-8">
-      <PublicacionInfo :publicacion="publicacion" />
+      <PublicacionInfo
+        :publicacion="publicacion"
+        @open-chat="isChatModalVisible = true"
+      />
       <ProductDocs :docs="docs" />
     </div>
 
@@ -109,6 +114,11 @@ const title = computed(() => {
       v-if="isOfferModalVisible"
       :publicacion-id="publicacion.id"
       @close="isOfferModalVisible = false"
+    />
+    <ChatModal
+      v-if="isChatModalVisible"
+      :publicacion="publicacion"
+      @close="isChatModalVisible = false"
     />
   </VContainer>
 
