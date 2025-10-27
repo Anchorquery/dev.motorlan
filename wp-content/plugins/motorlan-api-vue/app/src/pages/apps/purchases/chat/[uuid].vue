@@ -27,6 +27,10 @@ const uuid = route.params.uuid as string
 const chat = usePurchaseChat(uuid)
 
 const purchase = chat.purchase
+const viewerRole = chat.viewerRole
+
+const isBuyer = computed(() => viewerRole.value === 'buyer')
+const isSeller = computed(() => viewerRole.value === 'seller')
 const purchaseLoadError = computed(() => {
   const error = chat.purchaseError.value
 
@@ -45,11 +49,21 @@ const purchaseLoadError = computed(() => {
   return null
 })
 
-const breadcrumbs = computed(() => [
-  { title: 'Compras', to: '/apps/purchases' },
-  { title: 'Detalle de la compra', to: `/apps/purchases/${uuid}` },
-  { title: 'Mensajes de la compra', disabled: true },
-])
+const breadcrumbs = computed(() => {
+  // Si es vendedor, no mostrar el enlace a "Detalle de la compra" (solo el título)
+  if (isSeller.value) {
+    return [
+      { title: 'Compras', to: '/apps/purchases' },
+      { title: 'Mensajes de la compra', disabled: true },
+    ]
+  }
+  // Si es comprador, mostrar todo
+  return [
+    { title: 'Compras', to: '/apps/purchases' },
+    { title: 'Detalle de la compra', to: `/apps/purchases/${uuid}` },
+    { title: 'Mensajes de la compra', disabled: true },
+  ]
+})
 
 const formattedPrice = computed(() => formatCurrency(purchase.value?.motor?.acf?.precio_de_venta))
 const priceLabel = computed(() => formattedPrice.value || 'Consultar precio')
@@ -405,7 +419,9 @@ onBeforeUnmount(() => {
                   color="primary"
                 />
                 <p>
-                  AÃºn no hay mensajes. Inicia la conversaciÃ³n con el vendedor.
+                  Aún no hay mensajes.
+                  <span v-if="isBuyer">Inicia la conversación con el vendedor.</span>
+                  <span v-else>Inicia la conversación con el comprador.</span>
                 </p>
               </div>
 
@@ -475,7 +491,7 @@ onBeforeUnmount(() => {
                     :counter="1000"
                     auto-grow
                     hide-details
-                    label="EscrÃ­bele al vendedor"
+                    :label="isBuyer ? 'Escríbele al vendedor' : 'Escríbele al comprador'"
                     rows="2"
                     class="flex-grow-1"
                     maxlength="1000"
@@ -540,8 +556,9 @@ onBeforeUnmount(() => {
                 </VAvatar>
 
                 <div class="summary-card__product-info">
+                  <!-- Solo el comprador puede ver el enlace al producto -->
                   <RouterLink
-                    v-if="productLink"
+                    v-if="productLink && isBuyer"
                     :to="productLink"
                     class="summary-card__product-title"
                   >
