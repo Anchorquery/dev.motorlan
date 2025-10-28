@@ -9,6 +9,11 @@ if ( ! defined( 'WPINC' ) ) {
     die;
 }
 
+// Ensure publicacion helpers are available
+if ( ! function_exists( 'motorlan_get_publicacion_data' ) ) {
+    require_once MOTORLAN_API_VUE_PATH . 'includes/api/publicaciones/helpers.php';
+}
+
 function motorlan_register_sales_rest_routes() {
     $namespace = 'motorlan/v1';
 
@@ -188,15 +193,15 @@ function motorlan_prepare_sale_item( $purchase_id ) {
  * @return array
  */
 function motorlan_enrich_sale_with_publicacion( $sale_item, $purchase_id ) {
-    if ( ! function_exists( 'motorlan_get_motor_data' ) || ! function_exists( 'get_field' ) ) {
+    if ( ! function_exists( 'motorlan_get_publicacion_data' ) || ! function_exists( 'get_field' ) ) {
         return $sale_item;
     }
 
     $publicacion_post = get_field( 'publicacion', $purchase_id );
     if ( $publicacion_post instanceof WP_Post ) {
-        $sale_item['publicacion'] = motorlan_get_motor_data( $publicacion_post->ID );
+        $sale_item['publicacion'] = motorlan_get_publicacion_data( $publicacion_post->ID );
     } elseif ( is_numeric( $publicacion_post ) && $publicacion_post ) {
-        $sale_item['publicacion'] = motorlan_get_motor_data( (int) $publicacion_post );
+        $sale_item['publicacion'] = motorlan_get_publicacion_data( (int) $publicacion_post );
     }
 
     return $sale_item;

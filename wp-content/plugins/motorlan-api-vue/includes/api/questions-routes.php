@@ -303,7 +303,7 @@ function motorlan_get_received_questions_callback( WP_REST_Request $request ) {
                 'id'            => $qid,
                 'pregunta'      => get_field( 'pregunta', $qid ),
                 'respuesta'     => $respuesta,
-                'motor'         => $formateada,
+                'publicacion'   => $formateada,
                 'question_date' => $question_post->post_date,
                 'user_name'     => $user_display_name,
                 'answer_date'   => $answer_date,

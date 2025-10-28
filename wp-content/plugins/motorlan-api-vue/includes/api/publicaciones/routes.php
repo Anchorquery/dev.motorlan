@@ -9,6 +9,8 @@ if (!defined('WPINC')) {
     die;
 }
 
+require_once __DIR__ . '/callbacks/migrate-publicaciones.php';
+
 /**
  * Register all REST API routes for publicaciones.
  */

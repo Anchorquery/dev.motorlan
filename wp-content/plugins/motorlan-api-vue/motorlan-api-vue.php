@@ -3,7 +3,7 @@
  * Plugin Name: motorlan-api-vue
  * Plugin URI:  https://motorlan.com
  * Description: API para conectar con VUE
- * Version:     1.1
+ * Version:     1.2
  * Author:      Motorlan
  * Author URI:  https://motorlan.com
  */

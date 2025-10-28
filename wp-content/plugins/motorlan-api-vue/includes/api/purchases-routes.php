@@ -1,6 +1,5 @@
 <?php
 /**
-require_once plugin_dir_path(__FILE__) . 'motor-helpers.php';
  * Setup for My Account REST API Routes.
  *
  * @package motorlan-api-vue
@@ -11,7 +10,11 @@ if ( ! defined( 'WPINC' ) ) {
     die;
 }
 
-if ( ! function_exists( 'motorlan_get_motor_data' ) ) {
+// Prefer publicacion helpers; keep motor helpers as fallback if not present.
+if ( ! function_exists( 'motorlan_get_publicacion_data' ) ) {
+    require_once MOTORLAN_API_VUE_PATH . 'includes/api/publicaciones/helpers.php';
+}
+if ( ! function_exists( 'motorlan_get_publicacion_data' ) && ! function_exists( 'motorlan_get_motor_data' ) ) {
     require_once MOTORLAN_API_VUE_PATH . 'includes/api/motor-helpers.php';
 }
 
@@ -279,8 +282,8 @@ function motorlan_register_purchases_rest_routes() {
         'permission_callback' => 'motorlan_is_user_authenticated'
     ) );
 
-    // Route for removing a favorite motor
-    register_rest_route( $namespace, '/purchases/favorites/(?P<motor_id>\\d+)', array(
+    // Route for removing a favorite publicacion
+    register_rest_route( $namespace, '/purchases/favorites/(?P<publicacion_id>\\d+)', array(
         'methods'  => WP_REST_Server::DELETABLE,
         'callback' => 'motorlan_remove_my_favorite_callback',
         'permission_callback' => function () {
@@ -321,17 +324,34 @@ function motorlan_get_my_purchases_callback( $request ) {
             $query->the_post();
             $post_id = get_the_ID();
 
-            $motor_id = get_post_meta($post_id, 'motor', true);
-            $motor_data = null;
-            if ($motor_id) {
-                $motor_data = motorlan_get_motor_data( (int) $motor_id );
+            // Related publicacion (fallback to legacy 'motor' meta)
+            $related = get_field('publicacion', $post_id);
+            if ( ! $related ) {
+                $related = get_post_meta($post_id, 'motor', true);
+            }
+            $publicacion_id = null;
+            if ( $related instanceof WP_Post ) {
+                $publicacion_id = (int) $related->ID;
+            } elseif ( is_array( $related ) && isset( $related['ID'] ) ) {
+                $publicacion_id = (int) $related['ID'];
+            } elseif ( is_numeric( $related ) ) {
+                $publicacion_id = (int) $related;
+            }
+
+            $publicacion_data = null;
+            if ( $publicacion_id ) {
+                if ( function_exists('motorlan_get_publicacion_data') ) {
+                    $publicacion_data = motorlan_get_publicacion_data( $publicacion_id );
+                } elseif ( function_exists('motorlan_get_motor_data') ) {
+                    $publicacion_data = motorlan_get_motor_data( $publicacion_id );
+                }
             }
 
             $data[] = array(
                 'uuid'         => get_field('uuid', $post_id),
                 'title'        => get_the_title(),
                 'fecha_compra' => get_field('fecha_compra', $post_id),
-                'motor'        => $motor_data,
+                'publicacion'  => $publicacion_data,
                 'vendedor'     => get_field('vendedor', $post_id) ?: get_post_meta($post_id, 'vendedor_id', true),
                 'comprador'    => get_field('comprador', $post_id) ?: get_post_meta($post_id, 'comprador_id', true),
                 'estado'       => get_field('estado', $post_id) ?: get_post_meta($post_id, 'estado', true),
@@ -386,10 +406,26 @@ function motorlan_get_my_questions_callback( $request ) {
             $query->the_post();
             $post_id = get_the_ID();
 
-            $motor_post = get_field('motor', $post_id);
-            $motor_data = null;
-            if ($motor_post) {
-                $motor_data = motorlan_get_motor_data( $motor_post );
+            $related = get_field('publicacion', $post_id);
+            if ( ! $related ) {
+                $related = get_field('motor', $post_id);
+            }
+            $publicacion_id = null;
+            if ( $related instanceof WP_Post ) {
+                $publicacion_id = (int) $related->ID;
+            } elseif ( is_array( $related ) && isset( $related['ID'] ) ) {
+                $publicacion_id = (int) $related['ID'];
+            } elseif ( is_numeric( $related ) ) {
+                $publicacion_id = (int) $related;
+            }
+
+            $publicacion_data = null;
+            if ( $publicacion_id ) {
+                if ( function_exists('motorlan_get_publicacion_data') ) {
+                    $publicacion_data = motorlan_get_publicacion_data( $publicacion_id );
+                } elseif ( function_exists('motorlan_get_motor_data') ) {
+                    $publicacion_data = motorlan_get_motor_data( $publicacion_id );
+                }
             }
 
             $data[] = array(
@@ -397,7 +433,7 @@ function motorlan_get_my_questions_callback( $request ) {
                 'title'     => get_the_title(),
                 'pregunta'  => get_field('pregunta', $post_id),
                 'respuesta' => get_field('respuesta', $post_id),
-                'motor'     => $motor_data,
+                'publicacion' => $publicacion_data,
             );
         }
         wp_reset_postdata();
@@ -449,10 +485,26 @@ function motorlan_get_my_opinions_callback( $request ) {
             $query->the_post();
             $post_id = get_the_ID();
 
-            $motor_post = get_field('motor', $post_id);
-            $motor_data = null;
-            if ($motor_post) {
-                $motor_data = motorlan_get_motor_data( $motor_post );
+            $related = get_field('publicacion', $post_id);
+            if ( ! $related ) {
+                $related = get_field('motor', $post_id);
+            }
+            $publicacion_id = null;
+            if ( $related instanceof WP_Post ) {
+                $publicacion_id = (int) $related->ID;
+            } elseif ( is_array( $related ) && isset( $related['ID'] ) ) {
+                $publicacion_id = (int) $related['ID'];
+            } elseif ( is_numeric( $related ) ) {
+                $publicacion_id = (int) $related;
+            }
+
+            $publicacion_data = null;
+            if ( $publicacion_id ) {
+                if ( function_exists('motorlan_get_publicacion_data') ) {
+                    $publicacion_data = motorlan_get_publicacion_data( $publicacion_id );
+                } elseif ( function_exists('motorlan_get_motor_data') ) {
+                    $publicacion_data = motorlan_get_motor_data( $publicacion_id );
+                }
             }
 
             $data[] = array(
@@ -460,7 +512,7 @@ function motorlan_get_my_opinions_callback( $request ) {
                 'title'      => get_the_title(),
                 'valoracion' => get_field('valoracion', $post_id),
                 'comentario' => get_field('comentario', $post_id),
-                'motor'      => $motor_data,
+                'publicacion' => $publicacion_data,
             );
         }
         wp_reset_postdata();
@@ -489,17 +541,21 @@ function motorlan_get_my_favorites_callback( $request ) {
     $page = $request->get_param( 'page' ) ? absint( $request->get_param( 'page' ) ) : 1;
     $per_page = $request->get_param( 'per_page' ) ? absint( $request->get_param( 'per_page' ) ) : 10;
 
-    $favorite_ids = get_user_meta( $user_id, 'favorite_motors', true );
-
+    // Prefer new favorites key; fallback to legacy if empty
+    $favorite_ids = get_user_meta( $user_id, 'motorlan_favorites', true );
     if ( empty( $favorite_ids ) ) {
-        return new WP_REST_Response( array( 'data' => [], 'pagination' => [ 'total' => 0 ] ), 200 );
+        $favorite_ids = get_user_meta( $user_id, 'favorite_motors', true );
+    }
+
+    if ( ! is_array( $favorite_ids ) || empty( $favorite_ids ) ) {
+        return new WP_REST_Response( array( 'data' => [], 'pagination' => [ 'total' => 0, 'totalPages' => 0, 'currentPage' => (int) $page, 'perPage' => (int) $per_page ] ), 200 );
     }
 
     $args = array(
-        'post_type'      => 'motor',
+        'post_type'      => 'publicacion',
         'posts_per_page' => $per_page,
         'paged'          => $page,
-        'post__in'       => $favorite_ids,
+        'post__in'       => array_map( 'intval', $favorite_ids ),
     );
 
     $query = new WP_Query( $args );
@@ -509,12 +565,16 @@ function motorlan_get_my_favorites_callback( $request ) {
         while ( $query->have_posts() ) {
             $query->the_post();
             $post_id = get_the_ID();
-            $data[] = motorlan_get_motor_data( $post_id );
+            if ( function_exists( 'motorlan_get_publicacion_data' ) ) {
+                $data[] = motorlan_get_publicacion_data( $post_id );
+            } elseif ( function_exists( 'motorlan_get_motor_data' ) ) {
+                $data[] = motorlan_get_motor_data( $post_id );
+            }
         }
         wp_reset_postdata();
     }
 
-    $total_favorites = count($favorite_ids);
+    $total_favorites = count( $favorite_ids );
     $max_num_pages = ceil($total_favorites / $per_page);
 
     $pagination = array(
@@ -537,32 +597,40 @@ function motorlan_get_my_favorites_callback( $request ) {
  */
 function motorlan_create_purchase_callback( WP_REST_Request $request ) {
     $user_id  = get_current_user_id();
-    $motor_id = absint( $request->get_param( 'motor_id' ) );
+    // Ahora solo se acepta publicacion_id como parámetro oficial
+    $publicacion_id = absint( $request->get_param( 'publicacion_id' ) );
 
-    if ( ! $motor_id ) {
-        return new WP_Error( 'no_motor', 'Motor ID is required', array( 'status' => 400 ) );
+    if ( ! $publicacion_id ) {
+        return new WP_Error( 'no_publicacion', 'Publicación ID es requerido', array( 'status' => 400 ) );
     }
     $uuid = wp_generate_uuid4();
 
-    $motor_title = get_the_title( $motor_id );
+    $publicacion_title = get_the_title( $publicacion_id );
     $buyer       = get_userdata( $user_id );
     $buyer_name  = $buyer ? $buyer->display_name : '';
 
     $purchase_id = wp_insert_post( array(
         'post_type'   => 'compra',
         'post_status' => 'publish',
-        'post_name'  => 'Compra ' . $motor_title,
-        'post_title'  => $motor_title . ' - ' . $buyer_name,
+        'post_name'  => 'Compra ' . $publicacion_title,
+        'post_title'  => $publicacion_title . ' - ' . $buyer_name,
     ) );
 
     if ( is_wp_error( $purchase_id ) ) {
         return $purchase_id;
     }
 
-    $seller_id = get_post_field( 'post_author', $motor_id );
+    $seller_id = get_post_field( 'post_author', $publicacion_id );
 
     update_field( 'uuid', $uuid, $purchase_id );
-    update_field( 'motor', $motor_id, $purchase_id );
+    // Guardar en el campo nuevo y mantener compatibilidad con el legado
+    if ( function_exists( 'update_field' ) ) {
+        update_field( 'publicacion', $publicacion_id, $purchase_id );
+        update_field( 'motor', $publicacion_id, $purchase_id );
+    } else {
+        update_post_meta( $purchase_id, 'publicacion', $publicacion_id );
+        update_post_meta( $purchase_id, 'motor', $publicacion_id );
+    }
     update_field( 'vendedor', $seller_id, $purchase_id );
     update_field( 'comprador', $user_id, $purchase_id );
     update_field( 'estado', 'pendiente', $purchase_id );
@@ -590,10 +658,19 @@ function motorlan_get_purchase_callback( WP_REST_Request $request ) {
     $purchase_id = $purchases[0]->ID;
 
 
-    $motor_post = get_field( 'motor', $purchase_id );
-    $motor_data = null;
-    if ( $motor_post ) {
-        $motor_data = motorlan_get_motor_data( $motor_post );
+    // Obtener publicacion asociada (o legado 'motor')
+    $related = get_field( 'publicacion', $purchase_id );
+    if ( ! $related ) {
+        $related = get_field( 'motor', $purchase_id );
+    }
+    $publicacion_data = null;
+    if ( $related ) {
+        $publicacion_id = ( $related instanceof WP_Post ) ? $related->ID : ( is_array( $related ) && isset( $related['ID'] ) ? $related['ID'] : (int) $related );
+        if ( function_exists( 'motorlan_get_publicacion_data' ) ) {
+            $publicacion_data = motorlan_get_publicacion_data( $publicacion_id );
+        } elseif ( function_exists( 'motorlan_get_motor_data' ) ) {
+            $publicacion_data = motorlan_get_motor_data( $publicacion_id );
+        }
     }
 
     $participants     = motorlan_get_purchase_participants( $purchase_id );
@@ -638,15 +715,15 @@ function motorlan_get_purchase_callback( WP_REST_Request $request ) {
     }
 
     $published_price = null;
-    if ( is_array( $motor_data ) && isset( $motor_data['acf']['precio_de_venta'] ) && '' !== $motor_data['acf']['precio_de_venta'] ) {
-        $published_price = (float) $motor_data['acf']['precio_de_venta'];
+    if ( is_array( $publicacion_data ) && isset( $publicacion_data['acf']['precio_de_venta'] ) && '' !== $publicacion_data['acf']['precio_de_venta'] ) {
+        $published_price = (float) $publicacion_data['acf']['precio_de_venta'];
     }
 
     $data = array(
         'uuid'         => $uuid,
         'title'        => get_the_title( $purchase_id ),
         'fecha_compra' => get_field( 'fecha_compra', $purchase_id ),
-        'motor'        => $motor_data,
+        'publicacion'  => $publicacion_data,
         'vendedor'     => get_field( 'vendedor', $purchase_id ),
         'comprador'    => get_field( 'comprador', $purchase_id ),
         'estado'       => get_field( 'estado', $purchase_id ),
@@ -770,9 +847,12 @@ function motorlan_add_purchase_opinion_callback( WP_REST_Request $request ) {
     }
 
     $purchase_id = $purchases[0]->ID;
-    $motor_post  = get_field( 'motor', $purchase_id );
-    if ( ! $motor_post ) {
-        return new WP_Error( 'no_motor', 'Purchase without motor', array( 'status' => 400 ) );
+    $related  = get_field( 'publicacion', $purchase_id );
+    if ( ! $related ) {
+        $related = get_field( 'motor', $purchase_id );
+    }
+    if ( ! $related ) {
+        return new WP_Error( 'no_publicacion', 'Purchase without publicacion', array( 'status' => 400 ) );
     }
 
     $opinion_id = wp_insert_post( array(
@@ -785,8 +865,11 @@ function motorlan_add_purchase_opinion_callback( WP_REST_Request $request ) {
         return $opinion_id;
     }
 
+    $publicacion_id = ( $related instanceof WP_Post ) ? $related->ID : ( is_array( $related ) && isset( $related['ID'] ) ? $related['ID'] : (int) $related );
     update_field( 'usuario', get_current_user_id(), $opinion_id );
-    update_field( 'motor', $motor_post->ID, $opinion_id );
+    // Save to new ACF field and keep legacy meta updated
+    update_field( 'publicacion', $publicacion_id, $opinion_id );
+    update_field( 'motor', $publicacion_id, $opinion_id );
     update_field( 'valoracion', $valoracion, $opinion_id );
     update_field( 'comentario', $comentario, $opinion_id );
 
@@ -794,29 +877,37 @@ function motorlan_add_purchase_opinion_callback( WP_REST_Request $request ) {
 }
 
 /**
- * Callback function to remove a motor from the current user's favorites.
+ * Callback function to remove a publicacion from the current user's favorites.
  */
 function motorlan_remove_my_favorite_callback( WP_REST_Request $request ) {
     $user_id = get_current_user_id();
-    $motor_id = absint( $request->get_param( 'motor_id' ) );
+    $publicacion_id = absint( $request->get_param( 'publicacion_id' ) );
 
-    if ( ! $motor_id ) {
-        return new WP_Error( 'no_motor_id', 'Motor ID is required.', array( 'status' => 400 ) );
+    if ( ! $publicacion_id ) {
+        return new WP_Error( 'no_publicacion_id', 'Publicacion ID is required.', array( 'status' => 400 ) );
     }
 
-    $favorite_ids = get_user_meta( $user_id, 'favorite_motors', true );
-
+    // Primary: new favorites meta
+    $favorite_ids = get_user_meta( $user_id, 'motorlan_favorites', true );
     if ( ! is_array( $favorite_ids ) ) {
         $favorite_ids = array();
     }
-
-    $index = array_search( $motor_id, $favorite_ids, true );
-
+    $index = array_search( $publicacion_id, $favorite_ids, true );
     if ( $index !== false ) {
         unset( $favorite_ids[ $index ] );
-        // Re-index the array to prevent issues with JSON encoding if it becomes an object.
         $favorite_ids = array_values( $favorite_ids );
-        update_user_meta( $user_id, 'favorite_motors', $favorite_ids );
+        update_user_meta( $user_id, 'motorlan_favorites', $favorite_ids );
+    }
+
+    // Legacy sync: remove from old favorites if present
+    $legacy_favs = get_user_meta( $user_id, 'favorite_motors', true );
+    if ( is_array( $legacy_favs ) ) {
+        $legacy_idx = array_search( $publicacion_id, $legacy_favs, true );
+        if ( $legacy_idx !== false ) {
+            unset( $legacy_favs[ $legacy_idx ] );
+            $legacy_favs = array_values( $legacy_favs );
+            update_user_meta( $user_id, 'favorite_motors', $legacy_favs );
+        }
     }
 
     return new WP_REST_Response( array( 'success' => true ), 200 );
