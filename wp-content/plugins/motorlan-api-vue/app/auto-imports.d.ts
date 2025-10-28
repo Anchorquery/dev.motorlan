@@ -288,7 +288,6 @@ declare global {
   const usePreferredLanguages: typeof import('@vueuse/core')['usePreferredLanguages']
   const usePreferredReducedMotion: typeof import('@vueuse/core')['usePreferredReducedMotion']
   const usePrevious: typeof import('@vueuse/core')['usePrevious']
-  const useProductChat: typeof import('./src/composables/useProductChat')['useProductChat']
   const useProjection: typeof import('@vueuse/math')['useProjection']
   const usePurchaseChat: typeof import('./src/composables/usePurchaseChat')['usePurchaseChat']
   const usePusherChannel: typeof import('./src/composables/usePusherChannel')['usePusherChannel']
@@ -657,7 +656,6 @@ declare module 'vue' {
     readonly usePreferredLanguages: UnwrapRef<typeof import('@vueuse/core')['usePreferredLanguages']>
     readonly usePreferredReducedMotion: UnwrapRef<typeof import('@vueuse/core')['usePreferredReducedMotion']>
     readonly usePrevious: UnwrapRef<typeof import('@vueuse/core')['usePrevious']>
-    readonly useProductChat: UnwrapRef<typeof import('./src/composables/useProductChat')['useProductChat']>
     readonly useProjection: UnwrapRef<typeof import('@vueuse/math')['useProjection']>
     readonly usePurchaseChat: UnwrapRef<typeof import('./src/composables/usePurchaseChat')['usePurchaseChat']>
     readonly usePusherChannel: UnwrapRef<typeof import('./src/composables/usePusherChannel')['usePusherChannel']>
