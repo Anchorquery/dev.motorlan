@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, onMounted } from 'vue'
+import { computed, ref, onMounted, watchEffect } from 'vue'
 import { useRoute } from 'vue-router'
 import { useUserStore } from '@/@core/stores/user'
 import ProductImage from './components/ProductImage.vue'
@@ -23,6 +23,12 @@ const { data, isFetching, execute } = useApi<any>(
 ).get().json()
 
 onMounted(execute)
+
+watchEffect(() => {
+  if (publicacion.value) {
+    console.log('Publicacion data:', publicacion.value)
+  }
+})
 
 const isOfferModalVisible = ref(false)
 const isChatModalVisible = ref(false)
