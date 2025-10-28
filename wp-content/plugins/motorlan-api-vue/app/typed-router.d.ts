@@ -61,6 +61,7 @@ declare module 'vue-router/auto-routes' {
     'register': RouteRecordInfo<'register', '/register', Record<never, never>, Record<never, never>>,
     'store': RouteRecordInfo<'store', '/store', Record<never, never>, Record<never, never>>,
     'store-slug': RouteRecordInfo<'store-slug', '/store/:slug', { slug: ParamValue<true> }, { slug: ParamValue<false> }>,
+    'store-components-chat-modal': RouteRecordInfo<'store-components-chat-modal', '/store/components/ChatModal', Record<never, never>, Record<never, never>>,
     'store-components-offer-modal': RouteRecordInfo<'store-components-offer-modal', '/store/components/OfferModal', Record<never, never>, Record<never, never>>,
     'store-components-pagination-controls': RouteRecordInfo<'store-components-pagination-controls', '/store/components/PaginationControls', Record<never, never>, Record<never, never>>,
     'store-components-product-details': RouteRecordInfo<'store-components-product-details', '/store/components/ProductDetails', Record<never, never>, Record<never, never>>,

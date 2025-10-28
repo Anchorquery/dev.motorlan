@@ -118,4 +118,11 @@ function motorlan_register_publicaciones_rest_routes() {
         'callback' => 'motorlan_remove_user_favorite',
         'permission_callback' => 'motorlan_is_user_authenticated',
     ]);
+
+    // --- Migration endpoint: Migrar post_type 'publicaciones' => 'publicacion' ---
+    register_rest_route($namespace, '/migrate-publicaciones', [
+        'methods'  => WP_REST_Server::CREATABLE,
+        'callback' => 'motorlan_migrate_publicaciones_callback',
+        'permission_callback' => 'motorlan_is_user_authenticated',
+    ]);
 }
