@@ -41,7 +41,7 @@ const images = computed(() => {
       v-if="images.length"
       :modules="[Navigation, Thumbs]"
       :navigation="true"
-      :loop="true"
+      :loop="images.length > 1"
       :space-between="10"
       :thumbs="{ swiper: thumbsSwiper }"
       class="main-swiper"

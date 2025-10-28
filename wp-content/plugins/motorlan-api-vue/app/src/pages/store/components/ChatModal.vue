@@ -2,6 +2,9 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useProductChat } from '@/composables/useProductChat'
 import type { Publicacion } from '@/interfaces/publicacion'
+import { useUserStore } from '@/@core/stores/user'
+import { getOrCreateGuestId, getStoredGuestName } from '@/utils/guest'
+import { getPrePurchaseRoomKey } from '@/utils/roomKey'
 
 const props = defineProps<{
   publicacion: Publicacion
@@ -9,7 +12,17 @@ const props = defineProps<{
 
 const emit = defineEmits(['close'])
 
-const chat = useProductChat(props.publicacion.id)
+const userStore = useUserStore()
+const guestId = ref<string>('')
+const initialViewerName = ref<string | null>(null)
+
+const viewerId = computed(() => userStore.user?.id ?? guestId.value)
+const roomKey = computed(() => getPrePurchaseRoomKey(props.publicacion.id, viewerId.value))
+
+const chat = useProductChat(props.publicacion.id, {
+  roomKey: roomKey.value,
+  viewerName: initialViewerName.value,
+})
 
 const messagesContainer = ref<HTMLElement | null>(null)
 const messageText = ref('')
@@ -123,6 +136,17 @@ watch(
 )
 
 onMounted(async () => {
+  if (!userStore.user)
+    guestId.value = getOrCreateGuestId()
+  else
+    guestId.value = String(userStore.user.id)
+
+  initialViewerName.value = userStore.user?.display_name ?? getStoredGuestName()
+  if (initialViewerName.value)
+    chat.setViewerName(initialViewerName.value)
+
+  chat.setRoomKey(roomKey.value)
+
   await chat.fetchMessages({ reset: true })
   chat.setupPolling()
   await nextTick(scrollMessagesToBottom)

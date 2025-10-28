@@ -79,7 +79,13 @@ const normalizeMessage = (input: any, fallbackIndex = 0): ProductMessage => {
   }
 }
 
-export function useProductChat(productId: number) {
+export function useProductChat(
+  productId: number,
+  opts?: {
+    roomKey?: string | null
+    viewerName?: string | null
+  },
+) {
   const messages = ref<ProductMessage[]>([])
   const messageStore = new Map<string, ProductMessage>()
 
@@ -97,7 +103,21 @@ export function useProductChat(productId: number) {
 
   const polling = ref<ReturnType<typeof usePolling> | null>(null)
 
-  const endpointUrl = `/wp-json/motorlan/v1/products/${productId}/messages`
+  const roomKey = ref<string | null>(opts?.roomKey ?? null)
+  const viewerNameRef = ref<string | null>(opts?.viewerName ?? null)
+
+  const endpointBase = `/wp-json/motorlan/v1/products/${productId}/messages`
+  const endpointQuery = computed(() => {
+    const params = new URLSearchParams()
+    if (roomKey.value)
+      params.set('room_key', roomKey.value)
+
+    return params.toString()
+  })
+  const endpointUrl = computed(() => {
+    const qs = endpointQuery.value
+    return qs ? `${endpointBase}?${qs}` : endpointBase
+  })
 
   const refreshMessages = () => {
     const currentId = currentUserId.value
@@ -159,7 +179,7 @@ export function useProductChat(productId: number) {
 
   const ensurePolling = () => {
     if (!polling.value) {
-      polling.value = usePolling(endpointUrl, (incoming, meta) => {
+      polling.value = usePolling(endpointUrl.value, (incoming, meta) => {
         if (meta)
           handleMeta(meta)
 
@@ -204,7 +224,7 @@ export function useProductChat(productId: number) {
     loadError.value = null
 
     try {
-      const { data, error } = await useApi<any>(createUrl(endpointUrl)).get().json()
+      const { data, error } = await useApi<any>(createUrl(endpointUrl.value)).get().json()
 
       if (error.value) {
         const status = Number(error.value?.status ?? error.value?.data?.status ?? 0)
@@ -252,7 +272,13 @@ export function useProductChat(productId: number) {
     sendError.value = null
 
     try {
-      const { data, error } = await useApi<any>(createUrl(endpointUrl)).post({ message: trimmed }).json()
+      const payload: Record<string, any> = { message: trimmed }
+      if (roomKey.value)
+        payload.room_key = roomKey.value
+      if (viewerNameRef.value)
+        payload.viewer_name = viewerNameRef.value
+
+      const { data, error } = await useApi<any>(createUrl(endpointBase)).post(payload).json()
 
       if (error.value) {
         const status = Number(error.value?.status ?? error.value?.data?.status ?? 0)
@@ -280,6 +306,14 @@ export function useProductChat(productId: number) {
     }
   }
 
+  const setRoomKey = (value: string | null) => {
+    roomKey.value = value && value.trim().length ? value.trim() : null
+  }
+
+  const setViewerName = (value: string | null) => {
+    viewerNameRef.value = value && value.trim().length ? value.trim() : null
+  }
+
   return {
     messages,
     loadError,
@@ -296,5 +330,7 @@ export function useProductChat(productId: number) {
     sendMessage,
     setupPolling,
     stopPolling,
+    setRoomKey,
+    setViewerName,
   }
 }

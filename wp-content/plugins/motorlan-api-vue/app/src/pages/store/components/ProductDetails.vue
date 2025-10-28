@@ -147,7 +147,7 @@ const handlePurchase = async (confirmed: boolean) => {
     if (error.value)
       throw error.value
     if (res.value)
-      router.push(`/store/compra/${res.value.uuid}`)
+      router.push(`/apps/purchases/${res.value.uuid}`)
   }
   catch (error) {
     console.error(error)

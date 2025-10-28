@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router'
 import { createUrl } from '@/@core/composable/createUrl'
 import { useApi } from '@/composables/useApi'
 import type { Publicacion } from '@/interfaces/publicacion'
+import { useUserStore } from '@/@core/stores/user'
 
 const route = useRoute()
 const uuid = route.params.uuid as string
@@ -39,12 +40,65 @@ const fetchPurchase = async () => {
 
 void fetchPurchase()
 
+// Current user + derived viewer role and publication data
+const userStore = useUserStore()
+const publication = computed<Publicacion | null>(() => {
+  const pub = (purchase.value?.publicacion ?? purchase.value?.motor) as Publicacion | undefined
+  return pub ?? null
+})
+
+const viewerRole = computed<'buyer' | 'seller'>(() => {
+  const raw = String(purchase.value?.viewer_role || '').toLowerCase()
+  if (raw === 'buyer' || raw === 'seller') return raw as 'buyer' | 'seller'
+
+  const currentId = userStore.getUser?.id ?? null
+  const sellerId = Number((purchase.value?.vendedor_id ?? publication.value?.author_id) || 0) || null
+  if (currentId && sellerId && currentId === sellerId) return 'seller'
+  return 'buyer'
+})
+
+const isBuyer = computed(() => viewerRole.value === 'buyer')
+const isSeller = computed(() => viewerRole.value === 'seller')
+
+// Normalize basic user data coming from API
+type BasicUser = { id: number | null; name: string | null; email: string | null; avatar?: string | null }
+const normalizeUser = (input: any): BasicUser => {
+  if (!input) return { id: null, name: null, email: null, avatar: null }
+  if (typeof input === 'number') return { id: input || null, name: null, email: null, avatar: null }
+  const id = Number(input?.ID ?? input?.id ?? 0) || null
+  const name =
+    (typeof input?.display_name === 'string' && input.display_name) ? input.display_name :
+    (typeof input?.name === 'string' && input.name) ? input.name :
+    (typeof input?.user_nicename === 'string' && input.user_nicename) ? input.user_nicename :
+    null
+  const email =
+    (typeof input?.user_email === 'string' && input.user_email) ? input.user_email :
+    (typeof input?.email === 'string' && input.email) ? input.email :
+    null
+  const avatar = typeof input?.avatar === 'string' ? input.avatar : null
+  return { id, name, email, avatar }
+}
+
+const sellerInfo = computed<BasicUser>(() => normalizeUser(publication.value?.author))
+const buyerInfo = computed<BasicUser>(() => normalizeUser(purchase.value?.comprador ?? purchase.value?.comprador_id))
+const partyTitle = computed(() => (isBuyer.value ? 'Datos del vendedor' : 'Datos del comprador'))
+const partyInfo = computed<BasicUser>(() => (isBuyer.value ? sellerInfo.value : buyerInfo.value))
+const partyName = computed(() => partyInfo.value.name || (isBuyer.value ? 'Vendedor' : 'Comprador'))
+const partyAvatar = computed(() => partyInfo.value.avatar || null)
+const partyInitials = computed(() => {
+  const parts = (partyName.value || '').split(' ').filter(Boolean)
+  const initials = parts.slice(0, 2).map((part: string) => part[0]?.toUpperCase()).join('')
+  return initials || (isBuyer.value ? 'V' : 'C')
+})
+const partyEmail = computed(() => (partyInfo.value.email ? String(partyInfo.value.email) : null))
+const partyHasContact = computed(() => Boolean(partyEmail.value))
+
 const opinion = ref({ rating: 0, comment: '' })
 const isSubmittingOpinion = ref(false)
 const opinionSuccess = ref(false)
 const opinionError = ref<string | null>(null)
 
-const motorAcf = computed(() => (purchase.value?.motor?.acf || {}) as Record<string, any>)
+const motorAcf = computed(() => (publication.value?.acf || {}) as Record<string, any>)
 const sellerAcf = computed(() => (purchase.value?.motor?.author?.acf || {}) as Record<string, any>)
 
 const formatProductTitle = (publication?: Publicacion | null) => {
@@ -63,8 +117,8 @@ const formatProductTitle = (publication?: Publicacion | null) => {
 }
 
 const productTitle = computed(() => {
-  const motor = purchase.value?.motor as Publicacion | null | undefined
-  const formatted = formatProductTitle(motor)
+  const motor = publication.value as Publicacion | null | undefined
+  const formatted = formatProductTitle(motor || null)
 
   if (formatted)
     return formatted
@@ -99,7 +153,7 @@ const productTypeLabel = computed(() => {
     }
   }
 
-  const motor = purchase.value?.motor as Publicacion | null | undefined
+  const motor = publication.value as Publicacion | null | undefined
 
   if (Array.isArray(motor?.tipo)) {
     motor?.tipo.forEach(typeItem => pushCandidate(typeItem))
@@ -124,7 +178,7 @@ const productTypeLabel = computed(() => {
   return normalized[0] || null
 })
 const productImage = computed(() => {
-  const image = purchase.value?.motor?.imagen_destacada
+  const image = publication.value?.imagen_destacada as any
   if (!image)
     return null
   if (typeof image === 'string')
@@ -134,7 +188,7 @@ const productImage = computed(() => {
   return image.url || null
 })
 
-const productSlug = computed(() => purchase.value?.motor?.slug)
+const productSlug = computed(() => publication.value?.slug)
 const productLink = computed(() => {
   if (!productSlug.value)
     return null
@@ -696,12 +750,12 @@ const sendOpinion = async () => {
           </VCard>
 
           <VCard class="purchase-card seller-card">
-            <VCardTitle>Datos del vendedor</VCardTitle>
+            <VCardTitle>{{ partyTitle }}</VCardTitle>
             <VCardText>
               <div class="seller-card__header">
                 <VAvatar
-                  v-if="sellerAvatar"
-                  :image="sellerAvatar"
+                  v-if="partyAvatar"
+                  :image="partyAvatar"
                   size="56"
                   class="mr-4"
                 />
@@ -711,10 +765,10 @@ const sendOpinion = async () => {
                   color="primary"
                   class="mr-4"
                 >
-                  <span class="avatar-initials">{{ sellerInitials }}</span>
+                  <span class="avatar-initials">{{ partyInitials }}</span>
                 </VAvatar>
                 <div class="seller-card__identity">
-                  <div class="seller-card__name">{{ sellerName }}</div>
+                  <div class="seller-card__name">{{ partyName }}</div>
                   <div
                     v-if="sellerCompany"
                     class="seller-card__company"
@@ -766,38 +820,12 @@ const sendOpinion = async () => {
                 </div>
               </div>
               <div
-                v-if="sellerHasContact"
+                v-if="partyHasContact"
                 class="seller-card__contact"
               >
                 <a
-                  v-if="sellerPhone && sellerPhoneHref"
-                  :href="sellerPhoneHref"
-                  class="seller-card__contact-item"
-                >
-                  <VIcon
-                    icon="mdi-phone"
-                    size="18"
-                    class="mr-1"
-                  />
-                  {{ sellerPhone }}
-                </a>
-                <a
-                  v-if="sellerWhatsapp && sellerWhatsappHref"
-                  :href="sellerWhatsappHref"
-                  target="_blank"
-                  rel="noopener"
-                  class="seller-card__contact-item"
-                >
-                  <VIcon
-                    icon="mdi-whatsapp"
-                    size="18"
-                    class="mr-1"
-                  />
-                  {{ sellerWhatsapp }}
-                </a>
-                <a
-                  v-if="sellerEmail"
-                  :href="`mailto:${sellerEmail}`"
+                  v-if="partyEmail"
+                  :href="`mailto:${partyEmail}`"
                   class="seller-card__contact-item"
                 >
                   <VIcon
@@ -805,7 +833,7 @@ const sendOpinion = async () => {
                     size="18"
                     class="mr-1"
                   />
-                  {{ sellerEmail }}
+                  {{ partyEmail }}
                 </a>
               </div>
               <div class="seller-card__actions">
@@ -999,7 +1027,7 @@ const sendOpinion = async () => {
           </VCard>
 
           <VCard class="purchase-card messages-card">
-            <VCardTitle>Mensajes con el vendedor</VCardTitle>
+            <VCardTitle>Mensajes con el {{ isBuyer ? 'vendedor' : 'comprador' }}</VCardTitle>
             <VList density="comfortable">
               <VListItem
                 class="messages-item"
@@ -1009,8 +1037,8 @@ const sendOpinion = async () => {
               >
                 <template #prepend>
                   <VAvatar
-                    v-if="sellerAvatar"
-                    :image="sellerAvatar"
+                    v-if="partyAvatar"
+                    :image="partyAvatar"
                     size="40"
                     class="mr-3"
                   />
@@ -1020,10 +1048,10 @@ const sendOpinion = async () => {
                     color="primary"
                     class="mr-3"
                   >
-                    <span class="avatar-initials">{{ sellerInitials }}</span>
+                    <span class="avatar-initials">{{ partyInitials }}</span>
                   </VAvatar>
                 </template>
-                <VListItemTitle>{{ sellerName }}</VListItemTitle>
+                <VListItemTitle>{{ partyName }}</VListItemTitle>
                 <VListItemSubtitle>Ir al chat de la compra</VListItemSubtitle>
                 <template #append>
                   <VIcon

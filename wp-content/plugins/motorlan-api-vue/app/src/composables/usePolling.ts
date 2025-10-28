@@ -19,7 +19,7 @@ export function usePolling(urlBase: string, onData: (data: any[], meta: any | nu
       let url = urlBase
       if (lastTimestamp.value) {
         const params = new URLSearchParams({ since_timestamp: lastTimestamp.value })
-        url += `?${params.toString()}`
+        url += (url.includes('?') ? '&' : '?') + params.toString()
       }
 
       const { data, error } = await useApi<any>(createUrl(url)).get().json()

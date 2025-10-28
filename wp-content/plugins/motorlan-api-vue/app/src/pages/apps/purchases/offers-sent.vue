@@ -182,7 +182,7 @@ const confirmOffer = async (offerId: number) => {
     isDetailDialogOpen.value = false
 
     if (payload?.purchase_uuid)
-      router.push(`/store/compra/${payload.purchase_uuid}`)
+      router.push(`/apps/purchases/${payload.purchase_uuid}`)
 
   }
   catch (error) {
