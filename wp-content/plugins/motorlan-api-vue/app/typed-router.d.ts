@@ -23,6 +23,7 @@ declare module 'vue-router/auto-routes' {
     'apps-chat': RouteRecordInfo<'apps-chat', '/apps/chat', Record<never, never>, Record<never, never>>,
     'apps-favorites-list': RouteRecordInfo<'apps-favorites-list', '/apps/favorites/list', Record<never, never>, Record<never, never>>,
     'apps-inquiries': RouteRecordInfo<'apps-inquiries', '/apps/inquiries', Record<never, never>, Record<never, never>>,
+    'apps-inquiries-components-seller-chat-modal': RouteRecordInfo<'apps-inquiries-components-seller-chat-modal', '/apps/inquiries/components/SellerChatModal', Record<never, never>, Record<never, never>>,
     'apps-invoice-add': RouteRecordInfo<'apps-invoice-add', '/apps/invoice/add', Record<never, never>, Record<never, never>>,
     'apps-invoice-edit-id': RouteRecordInfo<'apps-invoice-edit-id', '/apps/invoice/edit/:id', { id: ParamValue<true> }, { id: ParamValue<false> }>,
     'apps-invoice-list': RouteRecordInfo<'apps-invoice-list', '/apps/invoice/list', Record<never, never>, Record<never, never>>,

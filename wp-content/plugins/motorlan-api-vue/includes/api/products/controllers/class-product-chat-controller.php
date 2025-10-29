@@ -67,6 +67,17 @@ if ( ! class_exists( 'Motorlan_Product_Chat_Controller' ) ) {
                         'callback'            => array( $this, 'get_rooms_by_product' ),
                         'permission_callback' => 'motorlan_is_user_authenticated',
                     ),
+                    array(
+                        'methods'             => WP_REST_Server::CREATABLE,
+                        'callback'            => array( $this, 'mark_room_read' ),
+                        'permission_callback' => 'motorlan_is_user_authenticated',
+                        'args'                => array(
+                            'room_key' => array(
+                                'type'     => 'string',
+                                'required' => true,
+                            ),
+                        ),
+                    ),
                 )
             );
 
@@ -89,6 +100,11 @@ if ( ! class_exists( 'Motorlan_Product_Chat_Controller' ) ) {
             return $wpdb->prefix . 'motorlan_product_messages';
         }
 
+        protected function get_reads_table_name() {
+            global $wpdb;
+            return $wpdb->prefix . 'motorlan_product_room_reads';
+        }
+
         protected function table_exists() {
             global $wpdb;
             $table = $this->get_table_name();
@@ -102,6 +118,20 @@ if ( ! class_exists( 'Motorlan_Product_Chat_Controller' ) ) {
             if ( function_exists( 'motorlan_create_product_messages_table' ) ) {
                 motorlan_create_product_messages_table();
                 return $this->table_exists();
+            }
+            return false;
+        }
+
+        protected function ensure_reads_table_exists() {
+            global $wpdb;
+            $table = $this->get_reads_table_name();
+            $like  = str_replace( array( '_', '%' ), array( '\\_', '\\%' ), $table );
+            $found = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $like ) );
+            if ( $found === $table ) return true;
+            if ( function_exists( 'motorlan_create_product_room_reads_table' ) ) {
+                motorlan_create_product_room_reads_table();
+                $found = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $like ) );
+                return ( $found === $table );
             }
             return false;
         }
@@ -200,6 +230,52 @@ if ( ! class_exists( 'Motorlan_Product_Chat_Controller' ) ) {
                 }
             }
             return $messages;
+        }
+
+        protected function get_last_read_at( $user_id, $product_id, $room_key ) {
+            if ( ! $user_id ) return null;
+            global $wpdb;
+            $table = $this->get_reads_table_name();
+            if ( ! $this->ensure_reads_table_exists() ) return null;
+            $row = $wpdb->get_row( $wpdb->prepare(
+                "SELECT last_read_at FROM {$table} WHERE user_id = %d AND product_id = %d AND room_key = %s",
+                $user_id, $product_id, $room_key
+            ) );
+            return $row ? ( $row->last_read_at ?: null ) : null;
+        }
+
+        protected function set_last_read_now( $user_id, $product_id, $room_key ) {
+            if ( ! $user_id ) return false;
+            global $wpdb;
+            $table = $this->get_reads_table_name();
+            if ( ! $this->ensure_reads_table_exists() ) return false;
+            $now = gmdate( 'Y-m-d H:i:s' );
+            $exists = $wpdb->get_var( $wpdb->prepare(
+                "SELECT COUNT(*) FROM {$table} WHERE user_id = %d AND product_id = %d AND room_key = %s",
+                $user_id, $product_id, $room_key
+            ) );
+            if ( $exists ) {
+                $wpdb->update( $table, array( 'last_read_at' => $now, 'updated_at' => $now ), array( 'user_id' => $user_id, 'product_id' => $product_id, 'room_key' => $room_key ), array( '%s', '%s' ), array( '%d', '%d', '%s' ) );
+            } else {
+                $wpdb->insert( $table, array( 'user_id' => $user_id, 'product_id' => $product_id, 'room_key' => $room_key, 'last_read_at' => $now, 'updated_at' => $now ), array( '%d','%d','%s','%s','%s' ) );
+            }
+            return true;
+        }
+
+        protected function get_unread_count( $product_id, $room_key, $user_id ) {
+            if ( ! $user_id ) return 0;
+            global $wpdb;
+            $messages_table = $this->get_table_name();
+            $reads_table    = $this->get_reads_table_name();
+            if ( ! $this->ensure_table_exists() ) return 0;
+            if ( ! $this->ensure_reads_table_exists() ) return 0;
+            $last_read = $this->get_last_read_at( $user_id, $product_id, $room_key );
+            if ( ! $last_read ) {
+                $sql = $wpdb->prepare( "SELECT COUNT(*) FROM {$messages_table} WHERE product_id = %d AND room_key = %s", $product_id, $room_key );
+                return (int) $wpdb->get_var( $sql );
+            }
+            $sql = $wpdb->prepare( "SELECT COUNT(*) FROM {$messages_table} WHERE product_id = %d AND room_key = %s AND created_at > %s", $product_id, $room_key, $last_read );
+            return (int) $wpdb->get_var( $sql );
         }
 
         protected function persist_message( $product_id, $room_key, $message, $user_id, $sender_role, $display_name, $avatar ) {
@@ -405,16 +481,36 @@ if ( ! class_exists( 'Motorlan_Product_Chat_Controller' ) ) {
             $items = array();
             foreach ( $rooms as $r ) {
                 $pid = (int) $r['product_id'];
-                $items[] = array(
+                $item = array(
                     'product_id' => $pid,
                     'product_title' => get_the_title( $pid ),
                     'product_slug'  => get_post_field( 'post_name', $pid ),
                     'room_key'   => $r['room_key'],
                     'last_at'    => $r['last_at'],
                 );
+                $item['unread'] = $this->get_unread_count( $pid, $r['room_key'], $current_user );
+                $items[] = $item;
             }
 
             return new WP_REST_Response( array( 'data' => $items ), 200 );
+        }
+
+        // Mark messages of a room as read now (seller only or viewer if logged)
+        public function mark_room_read( WP_REST_Request $request ) {
+            $current_user = get_current_user_id();
+            if ( ! $current_user )
+                return new WP_Error( 'unauthenticated', __( 'Debes iniciar sesión.', 'motorlan-api-vue' ), array( 'status' => 401 ) );
+
+            $product_id = absint( $request['id'] );
+            $room_key   = sanitize_text_field( (string) $request->get_param( 'room_key' ) );
+            if ( empty( $room_key ) )
+                return new WP_Error( 'no_room', __( 'room_key es requerido.', 'motorlan-api-vue' ), array( 'status' => 400 ) );
+
+            if ( ! $this->user_can_access_room( $product_id, $room_key, $current_user ) )
+                return new WP_Error( 'forbidden', __( 'No tienes permisos para esta sala.', 'motorlan-api-vue' ), array( 'status' => 403 ) );
+
+            $this->set_last_read_now( $current_user, $product_id, $room_key );
+            return new WP_REST_Response( array( 'success' => true ), 200 );
         }
     }
 }

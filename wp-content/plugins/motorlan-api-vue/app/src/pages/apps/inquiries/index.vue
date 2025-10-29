@@ -3,6 +3,7 @@ import { onMounted, ref, computed } from 'vue'
 import { useApi } from '@/composables/useApi'
 import { createUrl } from '@/@core/composable/createUrl'
 import { useRouter } from 'vue-router'
+import SellerChatModal from './components/SellerChatModal.vue'
 
 interface InquiryItem {
   product_id: number
@@ -10,6 +11,7 @@ interface InquiryItem {
   product_slug: string
   room_key: string
   last_at: string
+  unread?: number
 }
 
 const isLoading = ref(false)
@@ -39,6 +41,25 @@ const hasItems = computed(() => items.value.length > 0)
 const goToProduct = (slug: string, roomKey: string) => {
   router.push({ name: 'store-slug', params: { slug }, query: { open_chat: '1', room_key: roomKey } })
 }
+
+// Table columns
+const headers = [
+  { title: 'Producto', key: 'product' },
+  { title: 'Sala', key: 'room' },
+  { title: 'Último mensaje', key: 'last_at' },
+  { title: 'No leídos', key: 'unread' },
+  { title: 'Acciones', key: 'actions', sortable: false },
+]
+
+// Modal state
+const activeRoom = ref<{ productId: number; roomKey: string; productTitle: string } | null>(null)
+const openReply = (it: InquiryItem) => {
+  activeRoom.value = { productId: it.product_id, roomKey: it.room_key, productTitle: it.product_title }
+}
+const handleMarkedRead = async () => {
+  // refresh list to update unread counts
+  await fetchInquiries()
+}
 </script>
 
 <template>
@@ -53,40 +74,44 @@ const goToProduct = (slug: string, roomKey: string) => {
             </div>
             <VAlert v-else-if="loadError" type="error" variant="tonal">{{ loadError }}</VAlert>
             <div v-else>
-              <VTable v-if="hasItems">
-                <thead>
-                  <tr>
-                    <th>Producto</th>
-                    <th>Room</th>
-                    <th>Último mensaje</th>
-                    <th style="width: 1%"></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="it in items" :key="`${it.product_id}-${it.room_key}`">
-                    <td>
-                      <strong>{{ it.product_title }}</strong>
-                    </td>
-                    <td class="text-medium-emphasis">
-                      {{ it.room_key }}
-                    </td>
-                    <td class="text-medium-emphasis">
-                      {{ it.last_at }}
-                    </td>
-                    <td>
-                      <VBtn size="small" variant="text" color="primary" @click="goToProduct(it.product_slug, it.room_key)">
-                        Ver publicación
-                      </VBtn>
-                    </td>
-                  </tr>
-                </tbody>
-              </VTable>
-              <p v-else class="text-medium-emphasis">Aún no hay conversaciones.</p>
+              <VDataTable
+                :headers="headers"
+                :items="items"
+                class="text-no-wrap"
+              >
+                <template #item.product="{ item }">
+                  <div class="d-flex align-center gap-2">
+                    <span class="font-weight-medium">{{ item.product_title }}</span>
+                  </div>
+                </template>
+                <template #item.room="{ item }">
+                  <code class="text-medium-emphasis">{{ item.room_key }}</code>
+                </template>
+                <template #item.unread="{ item }">
+                  <VBadge v-if="item.unread && item.unread > 0" :content="item.unread" color="error" inline />
+                  <span v-else class="text-disabled">0</span>
+                </template>
+                <template #item.actions="{ item }">
+                  <div class="d-flex align-center">
+                    <VBtn size="small" variant="text" color="primary" @click="openReply(item)">Responder</VBtn>
+                    <VBtn size="small" variant="text" color="secondary" @click="goToProduct(item.product_slug, item.room_key)">Ver publicación</VBtn>
+                  </div>
+                </template>
+              </VDataTable>
+              <p v-if="!hasItems" class="text-medium-emphasis">Aún no hay conversaciones.</p>
             </div>
           </VCardText>
         </VCard>
       </VCol>
     </VRow>
+    <SellerChatModal
+      v-if="activeRoom"
+      :product-id="activeRoom.productId"
+      :room-key="activeRoom.roomKey"
+      :product-title="activeRoom.productTitle"
+      @close="activeRoom = null"
+      @read="handleMarkedRead"
+    />
   </VContainer>
   
 </template>

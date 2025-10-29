@@ -74,12 +74,14 @@ function motorlan_permission_callback_true() {
 
 require_once MOTORLAN_API_VUE_PATH . 'includes/db/db-create-purchase-messages.php';
 require_once MOTORLAN_API_VUE_PATH . 'includes/db/db-create-product-messages.php';
+require_once MOTORLAN_API_VUE_PATH . 'includes/db/db-create-product-room-reads.php';
 require_once MOTORLAN_API_VUE_PATH . 'includes/db/db-create-notifications.php';
 
 register_activation_hook( __FILE__, 'motorlan_create_notifications_table' );
 register_activation_hook( __FILE__, 'motorlan_offers_create_table' );
 register_activation_hook( __FILE__, 'motorlan_create_purchase_messages_table' );
 register_activation_hook( __FILE__, 'motorlan_create_product_messages_table' );
+register_activation_hook( __FILE__, 'motorlan_create_product_room_reads_table' );
 /**
  * Filter the JWT payload to fix the "Not Before" (nbf) claim.
  * This prevents issues with server time synchronization.
