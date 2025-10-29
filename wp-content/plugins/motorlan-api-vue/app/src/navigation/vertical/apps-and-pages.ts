@@ -4,6 +4,13 @@ export default [
     to: { name: 'store' },
     icon: { icon: 'tabler-shopping-cart' },
   },
+  {
+    title: 'Interacciones',
+    icon: { icon: 'tabler-message' },
+    children: [
+      { title: 'Interesados', to: { name: 'apps-inquiries' } },
+    ],
+  },
   // { heading: 'Apps & Pages' },
   {
     title: 'Publicaciones',

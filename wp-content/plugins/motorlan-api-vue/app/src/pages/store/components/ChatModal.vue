@@ -8,6 +8,7 @@ import { getPrePurchaseRoomKey } from '@/utils/roomKey'
 
 const props = defineProps<{
   publicacion: Publicacion
+  roomKey?: string | null
 }>()
 
 const emit = defineEmits(['close'])
@@ -17,7 +18,9 @@ const guestId = ref<string>('')
 const initialViewerName = ref<string | null>(null)
 
 const viewerId = computed(() => userStore.user?.id ?? guestId.value)
-const roomKey = computed(() => getPrePurchaseRoomKey(props.publicacion.id, viewerId.value))
+const defaultRoomKey = computed(() => getPrePurchaseRoomKey(props.publicacion.id, viewerId.value))
+const providedRoomKey = computed(() => props.roomKey || null)
+const roomKey = computed(() => providedRoomKey.value || defaultRoomKey.value)
 
 const chat = useProductChat(props.publicacion.id, {
   roomKey: roomKey.value,

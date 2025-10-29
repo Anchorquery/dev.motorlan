@@ -56,6 +56,32 @@ if ( ! class_exists( 'Motorlan_Product_Chat_Controller' ) ) {
                     ),
                 )
             );
+
+            // List rooms for a product (seller only)
+            register_rest_route(
+                $this->namespace,
+                '/products/(?P<id>\\d+)/rooms',
+                array(
+                    array(
+                        'methods'             => WP_REST_Server::READABLE,
+                        'callback'            => array( $this, 'get_rooms_by_product' ),
+                        'permission_callback' => 'motorlan_is_user_authenticated',
+                    ),
+                )
+            );
+
+            // List inquiries across seller products
+            register_rest_route(
+                $this->namespace,
+                '/seller/inquiries',
+                array(
+                    array(
+                        'methods'             => WP_REST_Server::READABLE,
+                        'callback'            => array( $this, 'get_seller_inquiries' ),
+                        'permission_callback' => 'motorlan_is_user_authenticated',
+                    ),
+                )
+            );
         }
 
         protected function get_table_name() {
@@ -307,6 +333,88 @@ if ( ! class_exists( 'Motorlan_Product_Chat_Controller' ) ) {
                 ),
             ), 201 );
         }
+
+        protected function get_rooms_for_products( $product_ids ) {
+            global $wpdb;
+            if ( empty( $product_ids ) ) return array();
+            $table = $this->get_table_name();
+            $ids_placeholders = implode( ',', array_fill( 0, count( $product_ids ), '%d' ) );
+            $sql = $wpdb->prepare(
+                "SELECT product_id, room_key, MAX(created_at) AS last_at
+                 FROM {$table}
+                 WHERE product_id IN ($ids_placeholders)
+                 GROUP BY product_id, room_key
+                 ORDER BY last_at DESC",
+                $product_ids
+            );
+            $rows = $wpdb->get_results( $sql );
+            if ( ! $rows ) return array();
+
+            $result = array();
+            foreach ( $rows as $row ) {
+                $result[] = array(
+                    'product_id' => (int) $row->product_id,
+                    'room_key'   => (string) $row->room_key,
+                    'last_at'    => $this->format_datetime_for_response( $row->last_at ),
+                );
+            }
+
+            return $result;
+        }
+
+        public function get_rooms_by_product( WP_REST_Request $request ) {
+            $current_user = get_current_user_id();
+            $product_id = absint( $request['id'] );
+
+            $post = get_post( $product_id );
+            if ( ! $post || 'publicacion' !== $post->post_type ) {
+                return new WP_Error( 'not_found', __( 'Publicación no encontrada.', 'motorlan-api-vue' ), array( 'status' => 404 ) );
+            }
+
+            if ( (int) $post->post_author !== (int) $current_user && ! user_can( $current_user, 'manage_options' ) ) {
+                return new WP_Error( 'forbidden', __( 'No tienes permisos para ver estos chats.', 'motorlan-api-vue' ), array( 'status' => 403 ) );
+            }
+
+            $table_ready = $this->ensure_table_exists();
+            $rooms = $table_ready ? $this->get_rooms_for_products( array( $product_id ) ) : array();
+
+            return new WP_REST_Response( array( 'data' => $rooms ), 200 );
+        }
+
+        public function get_seller_inquiries( WP_REST_Request $request ) {
+            $current_user = get_current_user_id();
+            if ( ! $current_user )
+                return new WP_Error( 'unauthenticated', __( 'Debes iniciar sesión.', 'motorlan-api-vue' ), array( 'status' => 401 ) );
+
+            // Get all product IDs authored by the current user
+            $posts = get_posts( array(
+                'post_type'      => 'publicacion',
+                'posts_per_page' => -1,
+                'fields'         => 'ids',
+                'author'         => $current_user,
+                'no_found_rows'  => true,
+            ) );
+
+            if ( empty( $posts ) )
+                return new WP_REST_Response( array( 'data' => array() ), 200 );
+
+            $table_ready = $this->ensure_table_exists();
+            $rooms = $table_ready ? $this->get_rooms_for_products( $posts ) : array();
+
+            // Attach minimal product info
+            $items = array();
+            foreach ( $rooms as $r ) {
+                $pid = (int) $r['product_id'];
+                $items[] = array(
+                    'product_id' => $pid,
+                    'product_title' => get_the_title( $pid ),
+                    'product_slug'  => get_post_field( 'post_name', $pid ),
+                    'room_key'   => $r['room_key'],
+                    'last_at'    => $r['last_at'],
+                );
+            }
+
+            return new WP_REST_Response( array( 'data' => $items ), 200 );
+        }
     }
 }
-

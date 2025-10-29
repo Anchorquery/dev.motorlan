@@ -28,6 +28,10 @@ onMounted(execute);
 
 const isOfferModalVisible = ref(false);
 const isChatModalVisible = ref(false);
+const chatRoomKeyFromQuery = computed(() => {
+  const raw = (route.query.room_key as string) || ''
+  return raw && raw.trim().length ? raw : null
+})
 
 const isOwner = computed(() => {
   if (!userStore.user || !publicacion.value) return false;
@@ -72,6 +76,12 @@ const title = computed(() => {
 
   return parts.join(" ").toUpperCase();
 });
+
+// Autoabrir chat si se pasa ?open_chat=1
+onMounted(() => {
+  if (route.query.open_chat === '1')
+    isChatModalVisible.value = true
+})
 </script>
 
 <template>
@@ -135,6 +145,7 @@ const title = computed(() => {
     <ChatModal
       v-if="isChatModalVisible"
       :publicacion="publicacion"
+      :room-key="chatRoomKeyFromQuery"
       @close="isChatModalVisible = false"
     />
   </VContainer>
