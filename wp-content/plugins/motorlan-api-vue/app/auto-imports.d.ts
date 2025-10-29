@@ -57,6 +57,9 @@ declare global {
   const getActivePinia: typeof import('pinia')['getActivePinia']
   const getCurrentInstance: typeof import('vue')['getCurrentInstance']
   const getCurrentScope: typeof import('vue')['getCurrentScope']
+  const getOrCreateGuestId: typeof import('./src/utils/guest')['getOrCreateGuestId']
+  const getPrePurchaseRoomKey: typeof import('./src/utils/roomKey')['getPrePurchaseRoomKey']
+  const getStoredGuestName: typeof import('./src/utils/guest')['getStoredGuestName']
   const h: typeof import('vue')['h']
   const hexToRgb: typeof import('./src/@core/utils/colorConverter')['hexToRgb']
   const ignorableWatch: typeof import('@vueuse/core')['ignorableWatch']
@@ -137,6 +140,7 @@ declare global {
   const rgbaToHex: typeof import('./src/@core/utils/colorConverter')['rgbaToHex']
   const setActivePinia: typeof import('pinia')['setActivePinia']
   const setMapStoreSuffix: typeof import('pinia')['setMapStoreSuffix']
+  const setStoredGuestName: typeof import('./src/utils/guest')['setStoredGuestName']
   const shallowReactive: typeof import('vue')['shallowReactive']
   const shallowReadonly: typeof import('vue')['shallowReadonly']
   const shallowRef: typeof import('vue')['shallowRef']
@@ -431,6 +435,9 @@ declare module 'vue' {
     readonly getActivePinia: UnwrapRef<typeof import('pinia')['getActivePinia']>
     readonly getCurrentInstance: UnwrapRef<typeof import('vue')['getCurrentInstance']>
     readonly getCurrentScope: UnwrapRef<typeof import('vue')['getCurrentScope']>
+    readonly getOrCreateGuestId: UnwrapRef<typeof import('./src/utils/guest')['getOrCreateGuestId']>
+    readonly getPrePurchaseRoomKey: UnwrapRef<typeof import('./src/utils/roomKey')['getPrePurchaseRoomKey']>
+    readonly getStoredGuestName: UnwrapRef<typeof import('./src/utils/guest')['getStoredGuestName']>
     readonly h: UnwrapRef<typeof import('vue')['h']>
     readonly hexToRgb: UnwrapRef<typeof import('./src/@core/utils/colorConverter')['hexToRgb']>
     readonly ignorableWatch: UnwrapRef<typeof import('@vueuse/core')['ignorableWatch']>
@@ -509,6 +516,7 @@ declare module 'vue' {
     readonly rgbaToHex: UnwrapRef<typeof import('./src/@core/utils/colorConverter')['rgbaToHex']>
     readonly setActivePinia: UnwrapRef<typeof import('pinia')['setActivePinia']>
     readonly setMapStoreSuffix: UnwrapRef<typeof import('pinia')['setMapStoreSuffix']>
+    readonly setStoredGuestName: UnwrapRef<typeof import('./src/utils/guest')['setStoredGuestName']>
     readonly shallowReactive: UnwrapRef<typeof import('vue')['shallowReactive']>
     readonly shallowReadonly: UnwrapRef<typeof import('vue')['shallowReadonly']>
     readonly shallowRef: UnwrapRef<typeof import('vue')['shallowRef']>
