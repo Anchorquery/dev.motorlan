@@ -44,7 +44,39 @@ function motorlan_update_publicacion_by_uuid(WP_REST_Request $request) {
     // This is critical for the post to be 'published', 'draft', etc.
     if (isset($params['status'])) {
         $new_status = sanitize_text_field($params['status']);
-        
+
+        // Si se intenta publicar, validar/balancear stock segun reglas
+        if ($new_status === 'publish') {
+            // Inspeccionar si el usuario envió stock en el payload
+            $payload_acf = [];
+            if (isset($params['acf'])) {
+                $payload_acf = is_string($params['acf']) ? json_decode($params['acf'], true) : $params['acf'];
+                $payload_acf = is_array($payload_acf) ? $payload_acf : [];
+            }
+
+            $payload_has_stock = array_key_exists('stock', $payload_acf);
+            $payload_stock_val = $payload_has_stock ? (int) $payload_acf['stock'] : null;
+
+            // Leer stock actual
+            $current_stock_raw = function_exists('get_field') ? get_field('stock', $post_id) : get_post_meta($post_id, 'stock', true);
+            $current_stock = (int) $current_stock_raw;
+
+            if ($payload_has_stock) {
+                // Si el usuario intenta publicar con stock 0, bloquear
+                if ($payload_stock_val <= 0) {
+                    return new WP_Error('invalid_stock_publish', 'No se puede publicar una publicacin con stock en 0.', ['status' => 400]);
+                }
+            } else {
+                // Si el usuario no lo cambió y el stock actual es 0, setear a 1
+                if ($current_stock <= 0) {
+                    if (function_exists('update_field')) {
+                        update_field('stock', 1, $post_id);
+                    }
+                    update_post_meta($post_id, 'stock', 1);
+                }
+            }
+        }
+
         // Create an array with the data to update the post
         $post_update_data = [
             'ID'          => $post_id,

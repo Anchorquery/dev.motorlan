@@ -58,16 +58,25 @@ function motorlan_prepare_sale_item( $purchase_id ) {
     $purchase_id    = absint( $purchase_id );
     $publication_id = null;
 
- 
-    $publication_post = get_post_meta( $purchase_id,'publicacion', true );
-    
+    // Resolve related publication robustly: try ACF 'publicacion', then legacy 'motor',
+    // and fall back to raw post meta if needed.
+    $related = function_exists( 'get_field' ) ? get_field( 'publicacion', $purchase_id ) : null;
+    if ( ! $related ) {
+        $related = function_exists( 'get_field' ) ? get_field( 'motor', $purchase_id ) : null;
+    }
+    if ( ! $related ) {
+        $related = get_post_meta( $purchase_id, 'publicacion', true );
+    }
+    if ( ! $related ) {
+        $related = get_post_meta( $purchase_id, 'motor', true );
+    }
 
- 
-
-    if ( is_object( $publication_post ) && isset( $publication_post->ID ) ) {
-        $publication_id = $publication_post->ID;
-    } elseif ( is_numeric( $publication_post ) ) {
-        $publication_id = (int) $publication_post;
+    if ( $related instanceof WP_Post && isset( $related->ID ) ) {
+        $publication_id = (int) $related->ID;
+    } elseif ( is_array( $related ) && isset( $related['ID'] ) ) {
+        $publication_id = (int) $related['ID'];
+    } elseif ( is_numeric( $related ) ) {
+        $publication_id = (int) $related;
     }
 
     $price = function_exists( 'get_field' ) ? get_field( 'precio_compra', $purchase_id ) : get_post_meta( $purchase_id, 'precio_compra', true );
@@ -107,6 +116,7 @@ function motorlan_prepare_sale_item( $purchase_id ) {
     $date_label = $raw_date ? $raw_date : get_the_date( 'Y-m-d', $purchase_id );
 
     $publication_slug  = '';
+    // Default to purchase title, but we will override with the publication title when available
     $publication_title = get_the_title( $purchase_id );
     $publication_uuid  = '';
 
@@ -165,6 +175,9 @@ function motorlan_prepare_sale_item( $purchase_id ) {
         'motor_uuid'           => $publication_uuid ?: '',
         'motor_title'          => $publication_title,
         'motor_slug'           => $publication_slug,
+        // Provide publication_* keys for frontend compatibility
+        'publication_title'    => $publication_title,
+        'publication_slug'     => $publication_slug,
         'price'                => $price,
         'price_value'          => $price_value,
         'currency'             => '',
@@ -197,11 +210,21 @@ function motorlan_enrich_sale_with_publicacion( $sale_item, $purchase_id ) {
         return $sale_item;
     }
 
-    $publicacion_post = get_field( 'publicacion', $purchase_id );
-    if ( $publicacion_post instanceof WP_Post ) {
-        $sale_item['publicacion'] = motorlan_get_publicacion_data( $publicacion_post->ID );
-    } elseif ( is_numeric( $publicacion_post ) && $publicacion_post ) {
-        $sale_item['publicacion'] = motorlan_get_publicacion_data( (int) $publicacion_post );
+    // Try new field 'publicacion' first, then legacy 'motor'
+    $related = get_field( 'publicacion', $purchase_id );
+    if ( ! $related ) {
+        $related = get_field( 'motor', $purchase_id );
+        if ( ! $related ) {
+            $related = get_post_meta( $purchase_id, 'motor', true );
+        }
+    }
+
+    if ( $related instanceof WP_Post ) {
+        $sale_item['publicacion'] = motorlan_get_publicacion_data( $related->ID );
+    } elseif ( is_array( $related ) && isset( $related['ID'] ) ) {
+        $sale_item['publicacion'] = motorlan_get_publicacion_data( (int) $related['ID'] );
+    } elseif ( is_numeric( $related ) && $related ) {
+        $sale_item['publicacion'] = motorlan_get_publicacion_data( (int) $related );
     }
 
     return $sale_item;

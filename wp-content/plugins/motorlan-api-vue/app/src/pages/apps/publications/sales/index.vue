@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { useApi } from '@/composables/useApi'
 import { debounce } from '@/utils/debounce'
+import type { ImagenDestacada } from '@/interfaces/publicacion'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -208,13 +209,68 @@ const goToSale = (sale: any) => {
 }
 
 const goToPublication = (sale: any) => {
-  if (sale?.publication_slug) {
-    window.open(`/store/${sale.publication_slug}`, '_blank', 'noopener,noreferrer')
+  const slug = (sale?.publicacion?.slug) || sale?.publication_slug || sale?.motor_slug
+  if (slug) {
+    window.open(`/store/${slug}` , '_blank', 'noopener,noreferrer')
     return
   }
-
   if (sale?.publication_uuid)
     router.push(`/apps/publications/publication/edit/${sale.publication_uuid}`)
+}
+
+// Brands catalog to resolve acf.marca -> name
+type BrandTerm = { term_id: number; name: string; slug: string }
+const { data: brandsResponse, execute: fetchBrands } = useApi<BrandTerm[]>('/wp-json/motorlan/v1/marcas', { immediate: false }).get().json()
+const brands = computed<BrandTerm[]>(() => brandsResponse.value || [])
+const brandById = computed<Record<number, BrandTerm>>(() => Object.fromEntries(brands.value.map(b => [Number(b.term_id), b])))
+const brandBySlug = computed<Record<string, BrandTerm>>(() => Object.fromEntries(brands.value.map(b => [String(b.slug), b])))
+
+onMounted(() => { void fetchBrands() })
+
+const resolveBrandName = (value: any): string | null => {
+  if (!value && value !== 0)
+    return null
+  if (typeof value === 'object') {
+    const name = (value?.name || value?.label || value?.title) as string | undefined
+    if (name && name.trim().length)
+      return name
+    const id = Number(value?.id ?? value?.term_id ?? 0) || null
+    if (id && brandById.value[id])
+      return brandById.value[id].name
+  }
+  const asNum = Number(value)
+  if (Number.isFinite(asNum) && asNum > 0 && brandById.value[asNum])
+    return brandById.value[asNum].name
+  const asStr = String(value)
+  if (brandBySlug.value[asStr])
+    return brandBySlug.value[asStr].name
+  return asStr && asStr !== 'null' && asStr !== 'undefined' ? asStr : null
+}
+
+const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail'): string => {
+  let imageObj: ImagenDestacada | null = null
+  if (Array.isArray(image) && image.length > 0)
+    imageObj = image[0] as ImagenDestacada
+  else if (image && !Array.isArray(image))
+    imageObj = image as ImagenDestacada
+  if (!imageObj)
+    return ''
+  if ((imageObj as any).sizes && (imageObj as any).sizes[size])
+    return (imageObj as any).sizes[size] as string
+  return (imageObj as any).url || ''
+}
+
+const formatPublicationTitle = (pub: any, fallbackTitle?: string): string => {
+  if (!pub) {
+    return fallbackTitle || ''
+  }
+  const acf = pub.acf || {}
+  const parts = [
+    pub.title || fallbackTitle,
+    resolveBrandName(acf.marca),
+    acf.velocidad ? `${acf.velocidad} rpm` : null,
+  ].filter(Boolean) as string[]
+  return parts.join(' • ')
 }
 </script>
 
@@ -305,23 +361,33 @@ const goToPublication = (sale: any) => {
       @update:options="updateOptions"
     >
       <template #item.publication_title="{ item }">
-        <div class="d-flex flex-column">
-          <RouterLink
-            v-if="(item as any).publication_slug"
-            :to="`/store/${(item as any).publication_slug}`"
-            class="text-primary"
-          >
-            {{ (item as any).publication_title }}
-          </RouterLink>
-          <span v-else>
-            {{ (item as any).publication_title }}
-          </span>
-          <small
-            v-if="(item as any).publication_slug"
-            class="text-caption text-medium-emphasis"
-          >
-            /store/{{ (item as any).publication_slug }}
-          </small>
+        <div class="d-flex align-center gap-x-4">
+        {{ item }}
+          <VAvatar
+            v-if="((item as any).publicacion || (item as any).motor)?.imagen_destacada"
+            size="38"
+            variant="tonal"
+            rounded
+            :image="getImageBySize(((item as any).publicacion || (item as any).motor).imagen_destacada, 'thumbnail')"
+          />
+          <div class="d-flex flex-column">
+            <RouterLink
+              v-if="((item as any).publicacion || (item as any).motor)?.slug || (item as any).publication_slug || (item as any).motor_slug"
+              :to="`/store/${((item as any).publicacion || (item as any).motor)?.slug || (item as any).publication_slug || (item as any).motor_slug}`"
+              class="text-primary text-body-1 font-weight-medium"
+            >
+              {{ formatPublicationTitle(((item as any).publicacion || (item as any).motor), (item as any).publication_title || (item as any).motor_title) }}
+            </RouterLink>
+            <span v-else class="text-body-1 font-weight-medium">
+              {{ formatPublicationTitle(((item as any).publicacion || (item as any).motor), (item as any).publication_title || (item as any).motor_title) }}
+            </span>
+            <span
+              v-if="((item as any).publicacion || (item as any).motor)?.acf?.tipo_o_referencia"
+              class="text-caption text-medium-emphasis"
+            >
+              Ref: {{ ((item as any).publicacion || (item as any).motor).acf.tipo_o_referencia }}
+            </span>
+          </div>
         </div>
       </template>
 

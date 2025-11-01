@@ -347,6 +347,11 @@ function motorlan_get_my_purchases_callback( $request ) {
                 }
             }
 
+            // Extra purchase meta used in list view
+            $tipo_venta   = get_post_meta( $post_id, 'tipo_venta', true );
+            $offer_id_raw = get_post_meta( $post_id, 'offer_id', true );
+            $offer_id     = $offer_id_raw ? (int) $offer_id_raw : 0;
+
             $data[] = array(
                 'uuid'         => get_field('uuid', $post_id),
                 'title'        => get_the_title(),
@@ -355,6 +360,8 @@ function motorlan_get_my_purchases_callback( $request ) {
                 'vendedor'     => get_field('vendedor', $post_id) ?: get_post_meta($post_id, 'vendedor_id', true),
                 'comprador'    => get_field('comprador', $post_id) ?: get_post_meta($post_id, 'comprador_id', true),
                 'estado'       => get_field('estado', $post_id) ?: get_post_meta($post_id, 'estado', true),
+                'tipo_venta'   => $tipo_venta ?: '',
+                'offer_id'     => $offer_id,
             );
         }
         wp_reset_postdata();
@@ -632,9 +639,24 @@ function motorlan_create_purchase_callback( WP_REST_Request $request ) {
         update_post_meta( $purchase_id, 'motor', $publicacion_id );
     }
     update_field( 'vendedor', $seller_id, $purchase_id );
+    // Save both buyer fields for compatibility and admin visibility
     update_field( 'comprador', $user_id, $purchase_id );
-    update_field( 'estado', 'pendiente', $purchase_id );
+    update_field( 'usuario', $user_id, $purchase_id );
+
+    // Save purchase price: default to the publication sale price
+    $purchase_price = function_exists( 'get_field' ) ? get_field( 'precio_de_venta', $publicacion_id ) : get_post_meta( $publicacion_id, 'precio_de_venta', true );
+    if ( $purchase_price !== '' && $purchase_price !== null ) {
+        $purchase_price = (float) $purchase_price;
+        update_field( 'precio_compra', $purchase_price, $purchase_id );
+        // keep meta in sync for consumers that read it directly
+        update_post_meta( $purchase_id, 'precio_compra', $purchase_price );
+    }
+
+    // Use the ACF key for pending state
+    update_field( 'estado', 'pending', $purchase_id );
     update_field( 'fecha_compra', current_time( 'd/m/Y' ), $purchase_id );
+    // mark as direct sale by default
+    update_post_meta( $purchase_id, 'tipo_venta', 'direct' );
 
     return new WP_REST_Response( array( 'uuid' => $uuid ), 201 );
 }

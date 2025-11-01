@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue'
+import { ref, watch, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { createUrl } from '@/@core/composable/createUrl'
 import { useApi } from '@/composables/useApi'
@@ -10,8 +10,9 @@ const router = useRouter()
 const normalizeStatus = (status: string) => status?.toLowerCase() ?? ''
 
 const headers = [
-  { title: 'Publicacion', key: 'motor' },
+  { title: 'Publicación', key: 'publicacion' },
   { title: 'Fecha de Compra', key: 'fecha_compra' },
+  { title: 'Tipo', key: 'tipo_compra' },
   { title: 'Estado', key: 'estado' },
   { title: 'Acciones', key: 'actions', sortable: false },
 ]
@@ -79,6 +80,17 @@ const purchases = computed(() => {
   return Array.isArray(raw) ? raw.filter(Boolean) : []
 })
 
+// Fetch brand terms to resolve brand name from acf.marca (id or slug)
+type BrandTerm = { term_id: number; name: string; slug: string }
+const { data: brandsResponse, execute: fetchBrands } = useApi<BrandTerm[]>(createUrl('/wp-json/motorlan/v1/marcas'), { immediate: false }).get().json()
+const brands = computed<BrandTerm[]>(() => brandsResponse.value || [])
+const brandById = computed<Record<number, BrandTerm>>(() => Object.fromEntries(brands.value.map(b => [Number(b.term_id), b])))
+const brandBySlug = computed<Record<string, BrandTerm>>(() => Object.fromEntries(brands.value.map(b => [String(b.slug), b])))
+
+onMounted(() => {
+  void fetchBrands()
+})
+
 const totalPurchases = computed(() => {
   if (purchasesData.value?.pagination?.total != null)
     return purchasesData.value.pagination.total
@@ -107,6 +119,53 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
     return imageObj.sizes[size] as string
 
   return imageObj.url || ''
+}
+
+// Helpers to render publication title + specs
+const resolveBrandName = (value: any): string | null => {
+  if (!value && value !== 0)
+    return null
+  // Objects like { id, name }
+  if (typeof value === 'object') {
+    const name = (value?.name || value?.label || value?.title) as string | undefined
+    if (name && name.trim().length)
+      return name
+
+    const id = Number(value?.id ?? value?.term_id ?? 0) || null
+    if (id && brandById.value[id])
+      return brandById.value[id].name
+  }
+  // Numeric id
+  const asNum = Number(value)
+  if (Number.isFinite(asNum) && asNum > 0 && brandById.value[asNum])
+    return brandById.value[asNum].name
+  // Slug
+  const asStr = String(value)
+  if (brandBySlug.value[asStr])
+    return brandBySlug.value[asStr].name
+  return asStr && asStr !== 'null' && asStr !== 'undefined' ? asStr : null
+}
+
+const formatPublicationTitle = (pub: any): string => {
+  if (!pub)
+    return ''
+  const acf = pub.acf || {}
+  const parts = [
+    pub.title,
+    resolveBrandName(acf.marca),
+    acf.velocidad ? `${acf.velocidad} rpm` : null,
+  ].filter(Boolean) as string[]
+  return parts.join(' • ')
+}
+
+const resolvePurchaseType = (item: any): { text: string; color: string } => {
+  const raw = String(item?.tipo_venta || '').toLowerCase()
+  const offerId = Number(item?.offer_id || 0)
+  if (offerId)
+    return { text: 'Oferta', color: 'info' }
+  if (raw === 'rent' || raw === 'alquiler' || raw === 'rental')
+    return { text: 'Alquiler', color: 'primary' }
+  return { text: 'Directa', color: 'success' }
 }
 </script>
 
@@ -150,25 +209,32 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
       class="text-no-wrap"
       @update:options="updateOptions"
     >
-      <!-- publicacion -->
-      <template #item.motor="{ item }">
+      <!-- Publicación -->
+      <template #item.publicacion="{ item }">
         <div
-          v-if="item.motor"
+          v-if="item.publicacion || item.motor"
           class="d-flex align-center gap-x-4"
         >
           <VAvatar
-            v-if="item.motor.imagen_destacada"
+            v-if="(item.publicacion || item.motor)?.imagen_destacada"
             size="38"
             variant="tonal"
             rounded
-            :image="getImageBySize(item.motor.imagen_destacada, 'thumbnail')"
+            :image="getImageBySize((item.publicacion || item.motor).imagen_destacada, 'thumbnail')"
           />
           <div class="d-flex flex-column">
             <span
               class="text-body-1 font-weight-medium text-high-emphasis cursor-pointer"
-              @click="router.push(`/apps/publications/publication/edit/${item.motor.uuid}`)"
-            >{{ item.motor.title }}</span>
-            <span class="text-body-2">{{ item.motor.acf.marca?.name }}</span>
+              @click="() => {
+                const slug = (item.publicacion || item.motor)?.slug
+                if (slug)
+                  router.push({ name: 'store-slug', params: { slug } })
+              }"
+            >{{ formatPublicationTitle(item.publicacion || item.motor) }}</span>
+            <span
+              v-if="(item.publicacion || item.motor)?.acf?.tipo_o_referencia"
+              class="text-body-2 text-medium-emphasis"
+            >Ref: {{ (item.publicacion || item.motor).acf.tipo_o_referencia }}</span>
           </div>
         </div>
       </template>
@@ -176,6 +242,16 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
       <!-- fecha_compra -->
       <template #item.fecha_compra="{ item }">
         <span class="text-body-1 text-high-emphasis">{{ item.fecha_compra }}</span>
+      </template>
+
+      <!-- tipo_compra -->
+      <template #item.tipo_compra="{ item }">
+        <VChip
+          v-bind="resolvePurchaseType(item)"
+          density="default"
+          label
+          size="small"
+        />
       </template>
 
       <!-- estado -->
@@ -190,8 +266,20 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
 
       <!-- Actions -->
       <template #item.actions="{ item }">
-        <IconBtn @click="router.push(`/apps/purchases/${item.uuid}`)">
+        <IconBtn
+          class="me-1"
+          @click="router.push(`/apps/purchases/${item.uuid}`)"
+        >
           <VIcon icon="tabler-eye" />
+        </IconBtn>
+        <IconBtn
+          :disabled="!(item.publicacion || item.motor)?.slug"
+          @click="() => {
+            const slug = (item.publicacion || item.motor)?.slug
+            if (slug) router.push({ name: 'store-slug', params: { slug } })
+          }"
+        >
+          <VIcon icon="tabler-external-link" />
         </IconBtn>
       </template>
 

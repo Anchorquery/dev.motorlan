@@ -38,9 +38,23 @@ function motorlan_create_publicacion_callback(WP_REST_Request $request) {
         $slug = sanitize_title($params['slug']);
     }
 
+    $requested_status = sanitize_text_field($params['status'] ?? 'draft');
+
+    // Validar que no se publique con stock en 0
+    if ($requested_status === 'publish') {
+        $incoming_stock = null;
+        if (isset($acf_data['stock'])) {
+            $incoming_stock = (int) $acf_data['stock'];
+        }
+
+        if ($incoming_stock === null || $incoming_stock <= 0) {
+            return new WP_Error('invalid_stock_publish', 'No se puede publicar una publicacin con stock en 0.', ['status' => 400]);
+        }
+    }
+
     $post_data = [
         'post_title'  => sanitize_text_field($params['title']),
-        'post_status' => sanitize_text_field($params['status'] ?? 'draft'),
+        'post_status' => $requested_status,
         'post_type'   =>'publicacion',
         'post_author' => get_current_user_id(),
     ];

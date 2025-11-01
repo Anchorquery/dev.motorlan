@@ -32,11 +32,38 @@ function motorlan_build_publicaciones_query_args($params) {
         'servomotores', 'regulacion_electronica_drivers', 'precio_de_venta', 'precio_negociable', 'uuid','estado_del_articulo'
     ];
 
+    // Helper to parse range strings like "10-50"
+    $parse_range = function($value) {
+        if (!is_string($value)) return null;
+        $parts = array_map('trim', explode('-', $value));
+        if (count($parts) !== 2) return null;
+        $min = is_numeric($parts[0]) ? (float)$parts[0] : null;
+        $max = is_numeric($parts[1]) ? (float)$parts[1] : null;
+        if ($min === null || $max === null) return null;
+        return [$min, $max];
+    };
+
     foreach ($filterable_fields as $field) {
         if (!empty($params[$field])) {
+            $raw_value = $params[$field];
+
+            // Support numeric range filtering for specific fields
+            if (in_array($field, ['par_nominal', 'velocidad', 'potencia'], true)) {
+                $range = $parse_range($raw_value);
+                if ($range) {
+                    $meta_query[] = [
+                        'key'     => $field,
+                        'value'   => [$range[0], $range[1]],
+                        'compare' => 'BETWEEN',
+                        'type'    => 'NUMERIC',
+                    ];
+                    continue;
+                }
+            }
+
             $meta_query[] = [
                 'key'     => $field,
-                'value'   => sanitize_text_field($params[$field]),
+                'value'   => sanitize_text_field($raw_value),
                 'compare' => $field === 'tipo_o_referencia' ? 'LIKE' : '=',
             ];
         }

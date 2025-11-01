@@ -655,10 +655,15 @@ function motorlan_handle_confirm_offer($request) {
 
     if (function_exists('update_field')) {
         update_field('stock', $new_stock, $offer->publication_id);
-        update_field('publicar_acf', 'paused', $offer->publication_id);
+        // Solo pausar cuando el stock llegue a 0
+        if ($new_stock === 0) {
+            update_field('publicar_acf', 'paused', $offer->publication_id);
+        }
     }
     update_post_meta($offer->publication_id, 'stock', $new_stock);
-    update_post_meta($offer->publication_id, 'publicar_acf', 'paused');
+    if ($new_stock === 0) {
+        update_post_meta($offer->publication_id, 'publicar_acf', 'paused');
+    }
 
     $confirmed_at = current_time('mysql');
 

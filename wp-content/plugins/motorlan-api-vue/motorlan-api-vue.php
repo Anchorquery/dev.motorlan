@@ -41,6 +41,7 @@ require_once MOTORLAN_API_VUE_PATH . 'includes/api/product-messages-routes.php';
 
 require_once MOTORLAN_API_VUE_PATH . 'includes/classes/class-motorlan-notification-manager.php';
 require_once MOTORLAN_API_VUE_PATH . 'includes/admin/admin-mods.php';
+require_once MOTORLAN_API_VUE_PATH . 'includes/admin/acf-purchases-sync.php';
 require_once MOTORLAN_API_VUE_PATH . 'includes/vue-app-setup.php';
 require_once MOTORLAN_API_VUE_PATH . 'includes/cron/cron-jobs.php';
 require_once MOTORLAN_API_VUE_PATH . 'includes/db/db-setup.php';

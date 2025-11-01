@@ -29,9 +29,24 @@ const searchTerm = ref('')
 const order = ref<string | null>(t('store.order_options.recents'))
 const selectedTipo = ref<string | null>(null)
 
-const parOptions = computed(() => [t('store.par_options.range1'), t('store.par_options.range2')])
-const potenciaOptions = computed(() => [t('store.potencia_options.range1'), t('store.potencia_options.range2')])
-const velocidadOptions = computed(() => [t('store.velocidad_options.range1'), t('store.velocidad_options.range2')])
+// Options with display labels and machine values (min-max)
+const parOptions = computed(() => [
+  { title: '0-5', value: '0-5' },
+  { title: '5-20', value: '5-20' },
+  { title: '20-50', value: '20-50' },
+  { title: '>50', value: '50-999999' },
+])
+const potenciaOptions = computed(() => [
+  { title: '0-100 kW / hasta 75 CV', value: '0-100' },
+  { title: '100-300 kW / de 75 hasta 135 CV', value: '100-300' },
+  { title: 'mayor que 300 kW / de 135 hasta 400 CV', value: '300-999999' },
+])
+const velocidadOptions = computed(() => [
+  { title: '0-1.500 rpm', value: '0-1500' },
+  { title: '1.500-3.000 rpm', value: '1500-3000' },
+  { title: '3.000-5.000 rpm', value: '3000-5000' },
+  { title: 'mayor que 5.000 rpm', value: '5000-999999' },
+])
 const technologyOptions = computed(() => [t('store.technology_options.dc'), t('store.technology_options.ac')])
 const orderOptions = computed(() => [t('store.order_options.recents'), t('store.order_options.price_asc'), t('store.order_options.price_desc')])
 
@@ -54,21 +69,14 @@ const publicacionesApiUrl = computed(() => {
     [t('store.order_options.price_desc')]: { orderby: 'price', order: 'desc' },
   }
 
-  const selectedBrandSlug = computed(() => {
-    if (!selectedBrand.value)
-      return null
-    const brand = marcas.value.find((m: Term) => m.term_id === selectedBrand.value)
-
-    return brand ? brand.slug : null
-  })
-
   const queryParams = {
     per_page: itemsPerPage.value,
     page: page.value,
     status: 'publish',
-    s: searchTerm.value,
+    search: searchTerm.value,
     tipo: selectedTipo.value,
-    marca: selectedBrandSlug.value,
+    // pass brand by term_id as stored in ACF meta
+    marca: selectedBrand.value,
     estado_del_articulo: selectedState.value,
     potencia: selectedPotencia.value,
     velocidad: selectedVelocidad.value,
