@@ -90,7 +90,7 @@ add_filter('script_loader_tag', 'add_module_type_to_vite_scripts', 10, 3);
 
 function motorlan_vue_app_shortcode() {
     motorlan_enqueue_vue_app();
-    return '<div id="app"></div>';
+    return '<div id="app" class="motorlan-app"></div>';
 }
 add_shortcode('motorlan_vue_app', 'motorlan_vue_app_shortcode');
 
@@ -136,4 +136,5 @@ function motorlan_dequeue_theme_styles() {
         }
     }
 }
-add_action('wp_enqueue_scripts', 'motorlan_dequeue_theme_styles', 999);
+// La siguiente acción está comentada porque actualmente no queremos eliminar los estilos del tema principal.
+// add_action('wp_enqueue_scripts', 'motorlan_dequeue_theme_styles', 999);
