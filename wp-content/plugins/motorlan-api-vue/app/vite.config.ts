@@ -120,7 +120,7 @@ export default ({ mode }) => {
     },
     proxy: {
       '/wp-json': {
-        target: 'https://dev.motorlan.test',
+        target: 'http://dev.motorlan.es',
         changeOrigin: true,
         secure: false,
       },
