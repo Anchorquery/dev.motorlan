@@ -14,4 +14,4 @@ const app = createApp(App)
 registerPlugins(app)
 
 // Mount vue app
-app.mount('#app')
+app.mount('#motorlan-app')

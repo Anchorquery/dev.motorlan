@@ -16,6 +16,7 @@ const clearCookie = (name: string) => {
 export const useApi = createFetch({
   baseUrl: baseURL,
   options: {
+    credentials: 'include',
     async beforeFetch({ options }) {
       const nextOptions: RequestInit = { ...options }
       const token = getToken()

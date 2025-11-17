@@ -11,11 +11,22 @@ const messages = Object.fromEntries(
 
 let _i18n: any = null
 
+const getServerLanguage = () => {
+  if (typeof window === 'undefined')
+    return null
+
+  const wpData = (window as any)?.wpData
+  return wpData?.language ?? wpData?.language_locale ?? null
+}
+
 export const getI18n = () => {
   if (_i18n === null) {
+    const serverLanguage = getServerLanguage()
+    const defaultLocale = serverLanguage ?? themeConfig.app.i18n.defaultLocale
+
     _i18n = createI18n({
       legacy: false,
-      locale: cookieRef('language', themeConfig.app.i18n.defaultLocale).value,
+      locale: cookieRef('language', defaultLocale).value,
       fallbackLocale: 'en',
       messages,
     })

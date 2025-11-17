@@ -1,5 +1,47 @@
 <?php
 
+function motorlan_get_language_info() {
+    $locale = get_locale();
+
+    if (defined('ICL_LANGUAGE_CODE') && ICL_LANGUAGE_CODE) {
+        $language_code = ICL_LANGUAGE_CODE;
+    } elseif (function_exists('pll_current_language')) {
+        $language_code = pll_current_language();
+    } else {
+        $language_parts = preg_split('/[-_]/', $locale);
+        $language_code = $language_parts[0] ?? '';
+    }
+
+    $language_code = strtolower($language_code ?: 'en');
+
+    $available_languages = [];
+    if (function_exists('icl_get_languages')) {
+        $languages = icl_get_languages('skip_missing=0&orderby=code');
+        if (is_array($languages)) {
+            foreach ($languages as $lang) {
+                $code = isset($lang['language_code']) ? strtolower($lang['language_code']) : (isset($lang['code']) ? strtolower($lang['code']) : '');
+                $available_languages[] = [
+                    'code' => $code,
+                    'locale' => $lang['default_locale'] ?? '',
+                    'native_name' => $lang['native_name'] ?? $lang['translated_name'] ?? '',
+                    'translated_name' => $lang['translated_name'] ?? '',
+                    'flag_url' => $lang['country_flag_url'] ?? '',
+                    'active' => !empty($lang['active']),
+                ];
+            }
+        }
+        $available_languages = array_values(array_filter($available_languages, function ($language) {
+            return !empty($language['code']);
+        }));
+    }
+
+    return [
+        'current' => $language_code,
+        'locale' => $locale ?: '',
+        'available' => $available_languages,
+    ];
+}
+
 function motorlan_enqueue_vue_app() {
     // URL del servidor de desarrollo de Vite
     $vite_dev_server = 'http://localhost:5173/';
@@ -14,6 +56,8 @@ function motorlan_enqueue_vue_app() {
     wp_enqueue_script('wp-data-bridge');
 
     // 2. Preparar y adjuntar los datos
+    $language_info = motorlan_get_language_info();
+
     $user_data = [
         'is_logged_in' => is_user_logged_in(),
         'user' => null,
@@ -33,6 +77,9 @@ function motorlan_enqueue_vue_app() {
         'nonce' => wp_create_nonce('wp_rest'),
         'rest_nonce' => wp_create_nonce('wp_rest'),
         'user_data' => $user_data,
+        'language' => $language_info['current'],
+        'language_locale' => $language_info['locale'],
+        'languages' => $language_info['available'],
     ]);
 
 
@@ -88,9 +135,26 @@ function add_module_type_to_vite_scripts($tag, $handle, $src) {
 }
 add_filter('script_loader_tag', 'add_module_type_to_vite_scripts', 10, 3);
 
-function motorlan_vue_app_shortcode() {
+function motorlan_vue_app_shortcode($atts = []) {
+    $atts = shortcode_atts([
+        'route' => '',
+    ], $atts, 'motorlan_vue_app');
+
     motorlan_enqueue_vue_app();
-    return '<div id="app"></div>';
+
+    $route = trim((string) $atts['route']);
+    $routeScript = '';
+
+    if ($route !== '') {
+        $route = ltrim($route, '#/');
+        $hash = '#/' . $route;
+        $routeScript = sprintf(
+            '<script>if (!window.location.hash || window.location.hash === \'#/\' || window.location.hash === \'\') window.location.hash = \'%s\';</script>',
+            esc_js($hash)
+        );
+    }
+
+    return $routeScript . '<div id="motorlan-app" class="motorlan-app-root"></div>';
 }
 add_shortcode('motorlan_vue_app', 'motorlan_vue_app_shortcode');
 
