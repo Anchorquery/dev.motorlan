@@ -9,7 +9,7 @@ import { useApi } from '@/composables/useApi'
 
 import { useUserStore } from '@/@core/stores/user'
 
-const props = defineProps<{ publicacion: Publicacion }>()
+const props = defineProps<{ publicacion: Publicacion; disableActions?: boolean }>()
 
 
 // Estado de favorito
@@ -111,6 +111,7 @@ const isOwner = computed(() => {
   if (!userStore.getUser?.id) return false
   return props.publicacion.author?.id === userStore.getUser.id
 })
+const actionsAvailable = computed(() => !props.disableActions && isLoggedIn.value && !isOwner.value)
 
 const isNegotiable = computed(() => {
   const val = props.publicacion.acf.precio_negociable
@@ -324,32 +325,39 @@ const removeOffer = async () => {
     </div>
 
     <div class="d-flex flex-wrap gap-4 mb-6">
-      <VBtn
-        v-if="!isOwner"
-        color="error"
-        class="px-6 flex-grow-1 action-btn"
-        @click="isConfirmDialogOpen = true"
+      <template v-if="actionsAvailable">
+        <VBtn
+          color="error"
+          class="px-6 flex-grow-1 action-btn"
+          @click="isConfirmDialogOpen = true"
+        >
+          Comprar
+        </VBtn>
+        <VBtn
+          v-if="isNegotiable"
+          variant="outlined"
+          color="error"
+          class="px-6 flex-grow-1 action-btn"
+          @click="openOfferDialog"
+        >
+          {{ offer ? 'Editar oferta' : 'Hacer una oferta' }}
+        </VBtn>
+        <VBtn
+          v-if="offer && isNegotiable"
+          variant="text"
+          color="error"
+          class="px-6 flex-grow-1 action-btn"
+          @click="removeOffer"
+        >
+          Quitar oferta
+        </VBtn>
+      </template>
+      <div
+        v-else
+        class="public-store-cta pa-4 text-body-2"
       >
-        Comprar
-      </VBtn>
-      <VBtn
-        v-if="isNegotiable && !isOwner"
-        variant="outlined"
-        color="error"
-        class="px-6 flex-grow-1 action-btn"
-        @click="openOfferDialog"
-      >
-        {{ offer ? 'Editar oferta' : 'Hacer una oferta' }}
-      </VBtn>
-      <VBtn
-        v-if="offer && isNegotiable && !isOwner"
-        variant="text"
-        color="error"
-        class="px-6 flex-grow-1 action-btn"
-        @click="removeOffer"
-      >
-        Quitar oferta
-      </VBtn>
+        Inicia sesión como cliente para contactar al vendedor, hacer ofertas o comprar este equipo.
+      </div>
     </div>
 
     <VDialog
@@ -440,5 +448,12 @@ const removeOffer = async () => {
 
 .detail-item {
   margin-bottom: 0.5rem;
+}
+.public-store-cta {
+  border-radius: 4px;
+  border: 1px solid rgba(255, 69, 58, 0.2);
+  background-color: rgba(255, 69, 58, 0.08);
+  color: #d32f2f;
+  width: 100%;
 }
 </style>

@@ -211,7 +211,7 @@ const goToSale = (sale: any) => {
 const goToPublication = (sale: any) => {
   const slug = (sale?.publicacion?.slug) || sale?.publication_slug || sale?.motor_slug
   if (slug) {
-    window.open(`/store/${slug}` , '_blank', 'noopener,noreferrer')
+    window.open(`/public-store/${slug}` , '_blank', 'noopener,noreferrer')
     return
   }
   if (sale?.publication_uuid)
@@ -373,7 +373,7 @@ const formatPublicationTitle = (pub: any, fallbackTitle?: string): string => {
           <div class="d-flex flex-column">
             <RouterLink
               v-if="((item as any).publicacion || (item as any).motor)?.slug || (item as any).publication_slug || (item as any).motor_slug"
-              :to="`/store/${((item as any).publicacion || (item as any).motor)?.slug || (item as any).publication_slug || (item as any).motor_slug}`"
+              :to="`/public-store/${((item as any).publicacion || (item as any).motor)?.slug || (item as any).publication_slug || (item as any).motor_slug}`"
               class="text-primary text-body-1 font-weight-medium"
             >
               {{ formatPublicationTitle(((item as any).publicacion || (item as any).motor), (item as any).publication_title || (item as any).motor_title) }}

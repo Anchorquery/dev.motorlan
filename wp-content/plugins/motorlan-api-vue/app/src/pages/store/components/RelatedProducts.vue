@@ -94,7 +94,7 @@ const resolveProductType = (publication: Publicacion) => {
           <VBtn
             color="error"
             class="rounded-pill px-6"
-            :to="'/store/' + publicacion.slug"
+            :to="'/public-store/' + publicacion.slug"
           >
             + INFO
           </VBtn>
@@ -137,4 +137,3 @@ const resolveProductType = (publication: Publicacion) => {
   font-weight: 600;
 }
 </style>
-

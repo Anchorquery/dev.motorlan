@@ -36,7 +36,7 @@ const generateTitle = (publicacion: Publicacion) => {
             <VBtn
               color="error"
               class="rounded-pill px-6"
-              :to="`/store/${publicacion.slug}`"
+              :to="`/public-store/${publicacion.slug}`"
             >
               + INFO
             </VBtn>
@@ -77,4 +77,3 @@ const generateTitle = (publicacion: Publicacion) => {
   font-size: 24px;
 }
 </style>
-

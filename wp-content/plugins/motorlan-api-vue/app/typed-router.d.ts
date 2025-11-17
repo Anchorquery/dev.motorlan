@@ -53,6 +53,8 @@ declare module 'vue-router/auto-routes' {
     'forgot-password': RouteRecordInfo<'forgot-password', '/forgot-password', Record<never, never>, Record<never, never>>,
     'login': RouteRecordInfo<'login', '/login', Record<never, never>, Record<never, never>>,
     'not-authorized': RouteRecordInfo<'not-authorized', '/not-authorized', Record<never, never>, Record<never, never>>,
+    'public-store': RouteRecordInfo<'public-store', '/public-store', Record<never, never>, Record<never, never>>,
+    'public-store-slug': RouteRecordInfo<'public-store-slug', '/public-store/:slug', { slug: ParamValue<true> }, { slug: ParamValue<false> }>,
     'register': RouteRecordInfo<'register', '/register', Record<never, never>, Record<never, never>>,
     'store': RouteRecordInfo<'store', '/store', Record<never, never>, Record<never, never>>,
     'store-slug': RouteRecordInfo<'store-slug', '/store/:slug', { slug: ParamValue<true> }, { slug: ParamValue<false> }>,

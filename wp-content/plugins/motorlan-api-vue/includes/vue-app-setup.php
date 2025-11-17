@@ -200,4 +200,4 @@ function motorlan_dequeue_theme_styles() {
         }
     }
 }
-add_action('wp_enqueue_scripts', 'motorlan_dequeue_theme_styles', 999);
+//add_action('wp_enqueue_scripts', 'motorlan_dequeue_theme_styles', 999);
