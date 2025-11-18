@@ -130,7 +130,7 @@ const login = async () => {
         if (route.query.to)
           router.replace(String(route.query.to))
         else
-          router.replace({ path: '/store' })
+          router.replace({ path: '/apps/purchases/purchases' })
       }
     })
   }

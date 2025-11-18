@@ -25,7 +25,7 @@ export const setupGuards = (router: _RouterTyped<RouteNamedMap & { [key: string]
      */
     if (to.meta.unauthenticatedOnly) {
       if (isLoggedIn)
-        return { name: 'store', replace: true }
+        return { name: 'apps-purchases-purchases', replace: true }
       else
         return undefined
     }

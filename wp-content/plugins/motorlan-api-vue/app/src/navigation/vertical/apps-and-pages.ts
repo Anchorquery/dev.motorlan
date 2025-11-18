@@ -1,9 +1,9 @@
 export default [
-  {
-    title: 'Motors Shop',
-    to: { name: 'store' },
-    icon: { icon: 'tabler-shopping-cart' },
-  },
+  // {
+  //   title: 'Motors Shop',
+  //   to: { name: 'store' },
+  //   icon: { icon: 'tabler-shopping-cart' },
+  // },
   {
     title: 'Interacciones',
     icon: { icon: 'tabler-message' },
