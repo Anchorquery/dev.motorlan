@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Publicacion } from '@/interfaces/publicacion'
+import { formatCurrency } from '@/utils/formatCurrency'
 
 defineProps<{ publicaciones: Publicacion[]; loading: boolean }>()
 
@@ -36,12 +37,12 @@ const generateTitle = (publicacion: Publicacion) => {
             <VBtn
               color="error"
               class="rounded-pill px-6"
-              :to="`/public-store/${publicacion.slug}`"
+              :to="`/${publicacion.slug}`"
             >
               + INFO
             </VBtn>
             <div class="price text-error font-weight-bold">
-              {{ publicacion.acf.precio_de_venta ? `${publicacion.acf.precio_de_venta} €` : 'Consultar precio' }}
+              {{ formatCurrency(publicacion.acf.precio_de_venta) || 'Consultar precio' }}
             </div>
           </div>
         </div>

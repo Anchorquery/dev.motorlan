@@ -80,6 +80,8 @@ function motorlan_enqueue_vue_app() {
         'language' => $language_info['current'],
         'language_locale' => $language_info['locale'],
         'languages' => $language_info['available'],
+        'session_endpoint' => rest_url('motorlan/v1/session'),
+        'login_endpoint' => rest_url('wp/v2/custom/login'),
     ]);
 
 

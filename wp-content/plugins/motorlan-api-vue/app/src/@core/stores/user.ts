@@ -25,6 +25,17 @@ export const useUserStore = defineStore('user', {
     isLoading: (state) => state.loading,
   },
   actions: {
+    setFromBootstrap(user: Partial<User> | null, isLoggedIn: boolean) {
+      this.user = user
+        ? {
+            id: user.id ?? 0,
+            email: user.email ?? '',
+            display_name: user.display_name ?? (user as any).displayName ?? '',
+          }
+        : null
+      this.isLoggedIn = Boolean(isLoggedIn) && Boolean(this.user?.id)
+      this.loading = false
+    },
     async fetchUserSession() {
       this.loading = true
       try {

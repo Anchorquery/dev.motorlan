@@ -1,19 +1,21 @@
 <script setup lang="ts">
 // @ts-nocheck
 import { ref, computed, onMounted, watch } from 'vue'
+import { RouterLink } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useApi } from '@/composables/useApi'
 import { debounce } from '@/utils/debounce'
+import type { ImagenDestacada } from '@/interfaces/publicacion'
 
 const { t } = useI18n()
 
 const headers = [
-  { title: 'Publicacion', key: 'publication_title' },
-  { title: 'Ofertante', key: 'user_name' },
-  { title: 'Monto', key: 'offer_amount' },
-  { title: 'Fecha', key: 'offer_date' },
-  { title: 'Estado', key: 'status' },
-  { title: 'Acciones', key: 'actions', sortable: false },
+  { title: 'Publicacion', value: 'publication_title' },
+  { title: 'Ofertante', value: 'user_name' },
+  { title: 'Monto', value: 'offer_amount' },
+  { title: 'Fecha', value: 'offer_date' },
+  { title: 'Estado', value: 'status' },
+  { title: 'Acciones', value: 'actions', sortable: false },
 ]
 
 const searchQuery = ref('')
@@ -105,10 +107,17 @@ watch(
 
 onMounted(() => {
   fetchOffers()
+  void fetchBrands()
 })
 
 const offers = computed(() => (offersData.value?.data || offersData.value || []).filter(Boolean))
 const totalOffers = computed(() => (offersData.value?.pagination?.total) || 0)
+
+type BrandTerm = { term_id: number; name: string; slug: string }
+const { data: brandsResponse, execute: fetchBrands } = useApi<BrandTerm[]>('/wp-json/motorlan/v1/marcas', { immediate: false }).get().json()
+const brands = computed<BrandTerm[]>(() => brandsResponse.value || [])
+const brandById = computed<Record<number, BrandTerm>>(() => Object.fromEntries(brands.value.map(b => [Number(b.term_id), b])))
+const brandBySlug = computed<Record<string, BrandTerm>>(() => Object.fromEntries(brands.value.map(b => [String(b.slug), b])))
 
 const replaceOfferInTable = (updatedOffer: any) => {
   if (!updatedOffer || !offersData.value)
@@ -210,6 +219,56 @@ const formatTimeRemaining = (seconds?: number | null) => {
   return `${minutes} min`
 }
 
+const resolveBrandName = (value: any): string | null => {
+  if (!value && value !== 0)
+    return null
+  if (typeof value === 'object') {
+    const name = (value?.name || value?.label || value?.title) as string | undefined
+    if (name && name.trim().length)
+      return name
+    const id = Number(value?.id ?? value?.term_id ?? 0) || null
+    if (id && brandById.value[id])
+      return brandById.value[id].name
+  }
+  const asNum = Number(value)
+  if (Number.isFinite(asNum) && asNum > 0 && brandById.value[asNum])
+    return brandById.value[asNum].name
+  const asStr = String(value)
+  if (brandBySlug.value[asStr])
+    return brandBySlug.value[asStr].name
+  return asStr && asStr !== 'null' && asStr !== 'undefined' ? asStr : null
+}
+
+const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail'): string => {
+  let imageObj: ImagenDestacada | null = null
+  if (Array.isArray(image) && image.length > 0)
+    imageObj = image[0] as ImagenDestacada
+  else if (image && !Array.isArray(image))
+    imageObj = image as ImagenDestacada
+  if (!imageObj)
+    return ''
+  if ((imageObj as any).sizes && (imageObj as any).sizes[size])
+    return (imageObj as any).sizes[size] as string
+  return (imageObj as any).url || ''
+}
+
+const formatPublicationTitle = (pub: any, fallbackTitle?: string): string => {
+  if (!pub)
+    return fallbackTitle || ''
+  const acf = pub.acf || {}
+  const parts = [
+    pub.title || fallbackTitle,
+    resolveBrandName(acf.marca),
+    acf.velocidad ? `${acf.velocidad} rpm` : null,
+    acf.potencia ? `${acf.potencia} kW` : null,
+  ].filter(Boolean) as string[]
+  return parts.join(' · ')
+}
+
+const getPublicationEntity = (item: any) => (item?.publicacion || item?.motor || null)
+const getPublicationSlug = (item: any) =>
+  getPublicationEntity(item)?.slug || item?.publication_slug || item?.motor_slug || ''
+
 const resolveStatus = (status: string) => {
   if (status === 'accepted_pending_confirmation')
     return { text: 'Esperando confirmación', color: 'info' }
@@ -290,8 +349,41 @@ const resolveStatus = (status: string) => {
       :items-length="totalOffers"
       :loading="isTableLoading || isSearching"
       class="text-no-wrap"
+      item-value="id"
       @update:options="updateOptions"
     >
+      <template #item.publication_title="{ item }">
+        <div class="d-flex align-center gap-x-4">
+          <VAvatar
+            v-if="getPublicationEntity(item)?.imagen_destacada"
+            size="38"
+            variant="tonal"
+            rounded
+            :image="getImageBySize(getPublicationEntity(item)?.imagen_destacada, 'thumbnail')"
+          />
+          <div class="d-flex flex-column">
+            <RouterLink
+              v-if="getPublicationSlug(item)"
+              :to="`/${getPublicationSlug(item)}`"
+              class="text-primary text-body-1 font-weight-medium"
+            >
+              {{ formatPublicationTitle(getPublicationEntity(item), item.publication_title) }}
+            </RouterLink>
+            <span
+              v-else
+              class="text-body-1 font-weight-medium"
+            >
+              {{ formatPublicationTitle(getPublicationEntity(item), item.publication_title) }}
+            </span>
+            <span
+              v-if="getPublicationEntity(item)?.acf?.tipo_o_referencia"
+              class="text-caption text-medium-emphasis"
+            >
+              Ref: {{ getPublicationEntity(item).acf.tipo_o_referencia }}
+            </span>
+          </div>
+        </div>
+      </template>
       <template #item.offer_amount="{ item }">
         <span>{{ formatCurrency(item.offer_amount) }}</span>
       </template>

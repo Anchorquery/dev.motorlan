@@ -86,7 +86,7 @@ const purchaseModeLabel = computed(() => {
 
 const goToPublication = () => {
   if (motor.value?.slug)
-    window.open(`/public-store/${motor.value.slug}`, '_blank', 'noopener,noreferrer')
+    window.open(`/${motor.value.slug}`, '_blank', 'noopener,noreferrer')
   else if (motor.value?.uuid)
     router.push(`/apps/publications/publication/edit/${motor.value.uuid}`)
 }

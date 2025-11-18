@@ -94,7 +94,7 @@ const resolveProductType = (publication: Publicacion) => {
           <VBtn
             color="error"
             class="rounded-pill px-6"
-            :to="'/public-store/' + publicacion.slug"
+            :to="'/' + publicacion.slug"
           >
             + INFO
           </VBtn>

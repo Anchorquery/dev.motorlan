@@ -141,7 +141,7 @@ const totalQuestions = computed(() => questionsData.value?.pagination.total || 0
 
         <!-- Actions -->
         <template #item.actions="{ item }">
-          <IconBtn @click="$router.push(`/public-store/${item.publicacion.slug}`)">
+          <IconBtn @click="$router.push(`/${item.publicacion.slug}`)">
             <VIcon icon="tabler-eye" />
           </IconBtn>
         </template>

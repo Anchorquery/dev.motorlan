@@ -15,13 +15,13 @@ const statusFilter = ref('all')
 const dateRange = ref('')
 
 const headers = computed(() => [
-  { title: t('sales.publication'), key: 'publication_title', sortable: false },
-  { title: t('sales.buyer'), key: 'buyer_name', sortable: false },
-  { title: t('sales.type'), key: 'type', sortable: false },
-  { title: t('sales.price'), key: 'price_value', sortable: true },
-  { title: t('sales.date'), key: 'date', sortable: true },
-  { title: t('sales.status'), key: 'status', sortable: false },
-  { title: t('sales.actions'), key: 'actions', sortable: false },
+  { title: t('sales.publication'), value: 'publication_title', sortable: false },
+  { title: t('sales.buyer'), value: 'buyer_name', sortable: false },
+  { title: t('sales.type'), value: 'type', sortable: false },
+  { title: t('sales.price'), value: 'price_value', sortable: true },
+  { title: t('sales.date'), value: 'date', sortable: true },
+  { title: t('sales.status'), value: 'status', sortable: false },
+  { title: t('sales.actions'), value: 'actions', sortable: false },
 ])
 
 const typeOptions = computed(() => [
@@ -211,7 +211,7 @@ const goToSale = (sale: any) => {
 const goToPublication = (sale: any) => {
   const slug = (sale?.publicacion?.slug) || sale?.publication_slug || sale?.motor_slug
   if (slug) {
-    window.open(`/public-store/${slug}` , '_blank', 'noopener,noreferrer')
+    window.open(`/${slug}` , '_blank', 'noopener,noreferrer')
     return
   }
   if (sale?.publication_uuid)
@@ -362,7 +362,7 @@ const formatPublicationTitle = (pub: any, fallbackTitle?: string): string => {
     >
       <template #item.publication_title="{ item }">
         <div class="d-flex align-center gap-x-4">
-        {{ item }}
+      
           <VAvatar
             v-if="((item as any).publicacion || (item as any).motor)?.imagen_destacada"
             size="38"
@@ -373,7 +373,7 @@ const formatPublicationTitle = (pub: any, fallbackTitle?: string): string => {
           <div class="d-flex flex-column">
             <RouterLink
               v-if="((item as any).publicacion || (item as any).motor)?.slug || (item as any).publication_slug || (item as any).motor_slug"
-              :to="`/public-store/${((item as any).publicacion || (item as any).motor)?.slug || (item as any).publication_slug || (item as any).motor_slug}`"
+              :to="`/${((item as any).publicacion || (item as any).motor)?.slug || (item as any).publication_slug || (item as any).motor_slug}`"
               class="text-primary text-body-1 font-weight-medium"
             >
               {{ formatPublicationTitle(((item as any).publicacion || (item as any).motor), (item as any).publication_title || (item as any).motor_title) }}

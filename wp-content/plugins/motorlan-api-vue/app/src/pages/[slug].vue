@@ -11,6 +11,8 @@ import ChatModal from '@/pages/store/components/ChatModal.vue'
 import type { Publicacion } from '@/interfaces/publicacion'
 import { createUrl } from '@/@core/composable/createUrl'
 import { useApi } from '@/composables/useApi'
+import { formatCurrency } from '@/utils/formatCurrency'
+import { useUserStore } from '@/@core/stores/user'
 
 definePage({
   meta: {
@@ -18,9 +20,6 @@ definePage({
     public: true,
   },
 })
-
-import { useRouter } from 'vue-router'
-import { useUserStore } from '@/@core/stores/user'
 
 const route = useRoute()
 const slug = route.params.slug as string
@@ -79,6 +78,8 @@ const title = computed(() => {
   return parts.join(' ').toUpperCase()
 })
 
+const priceLabel = computed(() => formatCurrency(publicacion.value?.acf?.precio_de_venta) ?? 'Consultar precio')
+
 onMounted(() => {
   if (route.query.open_chat === '1')
     isChatModalVisible.value = true
@@ -97,11 +98,7 @@ const isLoggedIn = computed(() => !!userStore.getUser?.id)
             {{ title }}
           </h1>
           <div class="text-h4 text-error font-weight-bold">
-            {{
-              publicacion.acf.precio_de_venta
-                ? `${publicacion.acf.precio_de_venta}�'�`
-                : 'Consultar precio'
-            }}
+            {{ priceLabel }}
           </div>
         </div>
       </VCol>

@@ -1169,7 +1169,7 @@ const sendOpinion = async () => {
       <VCardActions class="justify-center">
         <VBtn
           color="primary"
-          :to="{ name: 'public-store' }"
+          :to="{ path: '/' }"
         >
           Ir a la tienda
         </VBtn>

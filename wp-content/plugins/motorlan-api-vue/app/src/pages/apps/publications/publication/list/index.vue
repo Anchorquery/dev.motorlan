@@ -10,11 +10,11 @@ const { t } = useI18n()
 const router = useRouter()
 
 const headers = [
-  { title: t('publication_list.publication'), key: 'publicacion' },
-  { title: t('publication_list.reference'), key: 'referencia' },
-  { title: t('publication_list.price'), key: 'precio' },
-  { title: t('publication_list.status'), key: 'status' },
-  { title: t('publication_list.actions'), key: 'actions', sortable: false },
+  { title: t('publication_list.publication'), value: 'publicacion' },
+  { title: t('publication_list.reference'), value: 'referencia' },
+  { title: t('publication_list.price'), value: 'precio' },
+  { title: t('publication_list.status'), value: 'status' },
+  { title: t('publication_list.actions'), value: 'actions', sortable: false },
 ]
 
 const selectedStatus = ref()
@@ -240,7 +240,6 @@ const changeStatus = () => {
 }
 
 const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail'): string => {
-  console.log(image)
   let imageObj: ImagenDestacada | null = null
 
   if (Array.isArray(image) && image.length > 0)
@@ -251,8 +250,30 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
   if (!imageObj)
     return ''
 
-  if (imageObj.sizes && imageObj.sizes[size])
-    return imageObj.sizes[size] as string
+  const hrefFromSizes = (sizes: any) => {
+    if (!sizes)
+      return null
+
+    if (Array.isArray(sizes)) {
+      const match = sizes.find(sizeItem => sizeItem?.name === size || sizeItem?.slug === size)
+      return match?.url || match?.src || null
+    }
+
+    if (typeof sizes === 'object') {
+      const sizeEntry = sizes[size]
+      if (sizeEntry && typeof sizeEntry === 'object')
+        return sizeEntry.url || sizeEntry.src || null
+
+      if (typeof sizeEntry === 'string')
+        return sizeEntry
+    }
+
+    return null
+  }
+
+  const sizedUrl = hrefFromSizes(imageObj.sizes)
+  if (sizedUrl)
+    return sizedUrl
 
   return imageObj.url || ''
 }

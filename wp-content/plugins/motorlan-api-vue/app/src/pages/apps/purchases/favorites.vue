@@ -87,7 +87,7 @@ const removeFavorite = async (motorId: number) => {
 }
 
 const goToDetail = (item: Publicacion) => {
-  router.push(`/public-store/${item.slug}`)
+  router.push(`/${item.slug}`)
 }
 
 const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail'): string => {

@@ -20,6 +20,7 @@ declare module 'vue-router/auto-routes' {
   export interface RouteNamedMap {
     'root': RouteRecordInfo<'root', '/', Record<never, never>, Record<never, never>>,
     '$error': RouteRecordInfo<'$error', '/:error(.*)', { error: ParamValue<true> }, { error: ParamValue<false> }>,
+    'slug': RouteRecordInfo<'slug', '/:slug', { slug: ParamValue<true> }, { slug: ParamValue<false> }>,
     'access-control': RouteRecordInfo<'access-control', '/access-control', Record<never, never>, Record<never, never>>,
     'apps-chat': RouteRecordInfo<'apps-chat', '/apps/chat', Record<never, never>, Record<never, never>>,
     'apps-favorites-list': RouteRecordInfo<'apps-favorites-list', '/apps/favorites/list', Record<never, never>, Record<never, never>>,
@@ -55,7 +56,6 @@ declare module 'vue-router/auto-routes' {
     'login': RouteRecordInfo<'login', '/login', Record<never, never>, Record<never, never>>,
     'not-authorized': RouteRecordInfo<'not-authorized', '/not-authorized', Record<never, never>, Record<never, never>>,
     'public-store': RouteRecordInfo<'public-store', '/public-store', Record<never, never>, Record<never, never>>,
-    'public-store-slug': RouteRecordInfo<'public-store-slug', '/public-store/:slug', { slug: ParamValue<true> }, { slug: ParamValue<false> }>,
     'register': RouteRecordInfo<'register', '/register', Record<never, never>, Record<never, never>>,
     'store': RouteRecordInfo<'store', '/store', Record<never, never>, Record<never, never>>,
     'store-slug': RouteRecordInfo<'store-slug', '/store/:slug', { slug: ParamValue<true> }, { slug: ParamValue<false> }>,

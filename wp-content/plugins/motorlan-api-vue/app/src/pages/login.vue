@@ -17,6 +17,7 @@ import { themeConfig } from '@themeConfig'
 import { useApi } from '@/composables/useApi'
 import { useToast } from '@/composables/useToast'
 import { requiredValidator } from '@core/utils/validators'
+import { useUserStore } from '@/@core/stores/user'
 
 const authThemeImg = useGenerateImageVariant(authV2LoginIllustrationLight, authV2LoginIllustrationDark, authV2LoginIllustrationBorderedLight, authV2LoginIllustrationBorderedDark, true)
 
@@ -52,6 +53,29 @@ const credentials = ref({
   username: '',
   password: '',
 })
+
+const loginSyncWithWordPress = async () => {
+  const loginUrl = window.wpData?.login_endpoint || '/wp-json/wp/v2/custom/login'
+  try {
+    const response = await fetch(loginUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-WP-Nonce': window.wpData?.rest_nonce || '',
+      },
+      body: JSON.stringify({
+        username: credentials.value.username,
+        password: credentials.value.password,
+      }),
+      credentials: 'include',
+    })
+    if (!response.ok) {
+      console.warn('Unable to sync WordPress session', await response.text())
+    }
+  } catch (error) {
+    console.error('Error syncing WordPress session', error)
+  }
+}
 
 const login = async () => {
   isSubmitting.value = true
@@ -109,6 +133,14 @@ const login = async () => {
       nicename: user_nicename,
       role: user_nicename, // Add the role to the user data
     }
+
+    await loginSyncWithWordPress()
+
+    const userStore = useUserStore()
+    userStore.setFromBootstrap(
+      { id: profileData.id ?? 0, email: user_email, display_name: user_display_name },
+      true
+    )
 
     // Grant abilities based on role
     const userAbilities = [{ action: 'manage', subject: 'all' }]
