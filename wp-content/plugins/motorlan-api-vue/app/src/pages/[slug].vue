@@ -8,6 +8,7 @@ import ProductDocs from '@/pages/store/components/ProductDocs.vue'
 import RelatedProducts from '@/pages/store/components/RelatedProducts.vue'
 import OfferModal from '@/pages/store/components/OfferModal.vue'
 import ChatModal from '@/pages/store/components/ChatModal.vue'
+import LoginModal from '@/pages/store/components/LoginModal.vue'
 import type { Publicacion } from '@/interfaces/publicacion'
 import { createUrl } from '@/@core/composable/createUrl'
 import { useApi } from '@/composables/useApi'
@@ -34,7 +35,9 @@ const { data, isFetching, execute } = useApi<any>(
 onMounted(execute)
 
 const isOfferModalVisible = ref(false)
+
 const isChatModalVisible = ref(false)
+const isLoginModalVisible = ref(false)
 const chatRoomKeyFromQuery = computed(() => {
   const raw = (route.query.room_key as string) || ''
   return raw && raw.trim().length ? raw : null
@@ -87,6 +90,12 @@ onMounted(() => {
 
 const userStore = useUserStore()
 const isLoggedIn = computed(() => !!userStore.getUser?.id)
+
+onMounted(() => {
+  if (!isLoggedIn.value) {
+    userStore.fetchUserSession()
+  }
+})
 </script>
 
 <template>
@@ -106,12 +115,20 @@ const isLoggedIn = computed(() => !!userStore.getUser?.id)
     <VRow>
       <VCol cols="12" md="7">
         <ProductImage :publicacion="publicacion" />
-        <div class="mt-6">
-          <PublicacionInfo :publicacion="publicacion" />
-        </div>
+        <VRow class="mt-6">
+          <VCol cols="12" md="6">
+            <PublicacionInfo :publicacion="publicacion" />
+          </VCol>
+          <VCol cols="12" md="6">
+            <ProductDocs :docs="docs" />
+          </VCol>
+        </VRow>
       </VCol>
       <VCol cols="12" md="5">
-        <ProductDetails :publicacion="publicacion" :disable-actions="true" />
+        <ProductDetails 
+          :publicacion="publicacion" 
+          @login="isLoginModalVisible = true"
+        />
         <div class="d-flex align-center mb-4" v-if="publicacion.author">
           <VAvatar size="48" class="mr-4">
             <VImg :src="publicacion.author.avatar" :alt="publicacion.author.name || 'Vendedor'" />
@@ -127,33 +144,11 @@ const isLoggedIn = computed(() => !!userStore.getUser?.id)
             Abrir chat
           </VBtn>
         </div>
-        <VAlert
-          v-if="!isLoggedIn"
-          color="primary"
-          border="start"
-          variant="tonal"
-          class="mb-6 mt-2"
-        >
-          <div class="d-flex flex-column gap-2">
-            <p class="text-body-1 mb-1">
-              Para contactar al vendedor, hacer ofertas o comprar necesitas una cuenta.
-            </p>
-            <div class="public-store-cta-actions">
-              <RouterLink class="mr-3" :to="{ name: 'login' }">
-                <VBtn color="primary" variant="tonal">Iniciar sesión</VBtn>
-              </RouterLink>
-              <RouterLink :to="{ name: 'register' }">
-                <VBtn color="primary" variant="outlined">Registrarse</VBtn>
-              </RouterLink>
-            </div>
-          </div>
-        </VAlert>
       </VCol>
     </VRow>
 
-    <div class="d-flex flex-wrap gap-6 my-8">
-      <ProductDocs :docs="docs" />
-    </div>
+
+
 
     <RelatedProducts :current-id="publicacion.id" />
     <OfferModal
@@ -167,12 +162,14 @@ const isLoggedIn = computed(() => !!userStore.getUser?.id)
       :room-key="chatRoomKeyFromQuery"
       @close="isChatModalVisible = false"
     />
+    <LoginModal
+      v-model:isDialogVisible="isLoginModalVisible"
+    />
   </VContainer>
 
   <div v-else-if="isFetching" class="text-center pa-12">
     <VProgressCircular indeterminate size="64" />
   </div>
-
   <VCard v-else class="pa-8 text-center">
     <VCardText>Publicación no encontrada</VCardText>
   </VCard>

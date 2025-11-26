@@ -5,13 +5,17 @@ import { createUrl } from '@/@core/composable/createUrl'
 import { useRouter } from 'vue-router'
 import SellerChatModal from './components/SellerChatModal.vue'
 
+// Interface matching the expected API response (extended for new requirements)
 interface InquiryItem {
   product_id: number
   product_title: string
   product_slug: string
+  product_image?: any // Image object or string
   room_key: string
   last_at: string
   unread?: number
+  user_name?: string
+  user_avatar?: string
 }
 
 const isLoading = ref(false)
@@ -44,10 +48,8 @@ const goToProduct = (slug: string, roomKey: string) => {
 
 // Table columns
 const headers = [
-  { title: 'Producto', key: 'product' },
-  { title: 'Sala', key: 'room' },
-  { title: 'Último mensaje', key: 'last_at' },
-  { title: 'No leídos', key: 'unread' },
+  { title: 'Usuario', key: 'user' },
+  { title: 'Publicación', key: 'product' },
   { title: 'Acciones', key: 'actions', sortable: false },
 ]
 
@@ -60,6 +62,34 @@ const handleMarkedRead = async () => {
   // refresh list to update unread counts
   await fetchInquiries()
 }
+
+// Helper to get image URL (simplified version of the one in publications)
+const getImageUrl = (image: any, size = 'thumbnail'): string => {
+  if (!image) return ''
+  if (typeof image === 'string') return image
+  
+  // Handle WP image object structure
+  let imageObj = image
+  if (Array.isArray(image) && image.length > 0) imageObj = image[0]
+  
+  if (imageObj.sizes) {
+    if (Array.isArray(imageObj.sizes)) {
+      const match = imageObj.sizes.find((s: any) => s.name === size || s.slug === size)
+      if (match) return match.url || match.src
+    } else if (typeof imageObj.sizes === 'object') {
+      const sizeEntry = imageObj.sizes[size]
+      if (sizeEntry) return sizeEntry.url || sizeEntry.src || sizeEntry
+    }
+  }
+  
+  return imageObj.url || imageObj.src || ''
+}
+
+const getInitials = (value: string): string => {
+  if (!value) return 'U'
+  const parts = value.split(' ').filter(Boolean)
+  return parts.slice(0, 2).map(part => part.toUpperCase()).join('') || 'U'
+}
 </script>
 
 <template>
@@ -67,38 +97,84 @@ const handleMarkedRead = async () => {
     <VRow>
       <VCol cols="12">
         <VCard class="pa-6">
-          <VCardTitle>Interacciones de interés (pre-compra)</VCardTitle>
-          <VCardText>
-            <div v-if="isLoading" class="d-flex justify-center">
+          <VCardTitle class="mb-4">Interacciones de interés (pre-compra)</VCardTitle>
+          <VCardText class="pa-0">
+            <div v-if="isLoading" class="d-flex justify-center py-8">
               <VProgressCircular color="primary" indeterminate size="32" width="3" />
             </div>
-            <VAlert v-else-if="loadError" type="error" variant="tonal">{{ loadError }}</VAlert>
+            <VAlert v-else-if="loadError" type="error" variant="tonal" class="ma-4">{{ loadError }}</VAlert>
             <div v-else>
               <VDataTable
                 :headers="headers"
                 :items="items"
                 class="text-no-wrap"
+                hover
               >
-                <template #item.product="{ item }">
-                  <div class="d-flex align-center gap-2">
-                    <span class="font-weight-medium">{{ item.product_title }}</span>
+                <!-- User Column -->
+                <template #item.user="{ item }">
+                  <div class="d-flex align-center gap-3">
+                    <VAvatar size="38" variant="tonal" color="primary">
+                      <VImg v-if="item.user_avatar" :src="item.user_avatar" />
+                      <span v-else>{{ getInitials(item.user_name || 'Usuario') }}</span>
+                    </VAvatar>
+                    <div class="d-flex flex-column">
+                      <span class="font-weight-medium text-high-emphasis">{{ item.user_name || 'Usuario desconocido' }}</span>
+                      <span class="text-caption text-medium-emphasis">Interesado</span>
+                    </div>
                   </div>
                 </template>
-                <template #item.room="{ item }">
-                  <code class="text-medium-emphasis">{{ item.room_key }}</code>
+
+                <!-- Product Column -->
+                <template #item.product="{ item }">
+                  <div class="d-flex align-center gap-3">
+                    <VAvatar
+                      rounded
+                      variant="tonal"
+                      size="48"
+                      :image="getImageUrl(item.product_image)"
+                      icon="tabler-photo"
+                    />
+                    <div class="d-flex flex-column">
+                      <span class="font-weight-medium text-high-emphasis text-body-1">{{ item.product_title }}</span>
+                      <!-- Optional: Add more details if available, e.g. price or brand -->
+                    </div>
+                  </div>
                 </template>
-                <template #item.unread="{ item }">
-                  <VBadge v-if="item.unread && item.unread > 0" :content="item.unread" color="error" inline />
-                  <span v-else class="text-disabled">0</span>
-                </template>
+
+                <!-- Actions Column -->
                 <template #item.actions="{ item }">
-                  <div class="d-flex align-center">
-                    <VBtn size="small" variant="text" color="primary" @click="openReply(item)">Responder</VBtn>
-                    <VBtn size="small" variant="text" color="secondary" @click="goToProduct(item.product_slug, item.room_key)">Ver publicación</VBtn>
+                  <div class="d-flex align-center gap-2">
+                    <VBtn
+                      prepend-icon="tabler-message-circle"
+                      size="small"
+                      color="primary"
+                      @click="openReply(item)"
+                    >
+                      Responder
+                    </VBtn>
+                    
+                    <VTooltip location="top" text="Ver publicación">
+                      <template #activator="{ props }">
+                        <IconBtn
+                          v-bind="props"
+                          size="small"
+                          color="secondary"
+                          @click="goToProduct(item.product_slug, item.room_key)"
+                        >
+                          <VIcon icon="tabler-external-link" />
+                        </IconBtn>
+                      </template>
+                    </VTooltip>
+                  </div>
+                </template>
+                
+                <template #no-data>
+                  <div class="d-flex flex-column align-center justify-center py-8 text-medium-emphasis">
+                    <VIcon icon="tabler-message-off" size="48" class="mb-4 text-disabled" />
+                    <p>Aún no hay conversaciones.</p>
                   </div>
                 </template>
               </VDataTable>
-              <p v-if="!hasItems" class="text-medium-emphasis">Aún no hay conversaciones.</p>
             </div>
           </VCardText>
         </VCard>
@@ -113,8 +189,8 @@ const handleMarkedRead = async () => {
       @read="handleMarkedRead"
     />
   </VContainer>
-  
 </template>
 
 <style scoped>
+/* Optional: Add specific styles if needed, but Vuetify classes should handle most */
 </style>

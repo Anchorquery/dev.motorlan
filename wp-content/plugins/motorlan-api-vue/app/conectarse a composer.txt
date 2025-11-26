@@ -1,0 +1,7 @@
+/opt/plesk/php/7.4/bin/php /usr/lib64/plesk-9.0/composer.phar require tymon/jwt-auth
+
+/opt/plesk/php/7.4/bin/php artisan jwt:secret
+
+composer !4qSC~alypi5Tt1p
+
+self-update --1

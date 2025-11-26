@@ -658,6 +658,21 @@ function motorlan_create_purchase_callback( WP_REST_Request $request ) {
     // mark as direct sale by default
     update_post_meta( $purchase_id, 'tipo_venta', 'direct' );
 
+    // Notify seller
+    $notification_manager = new Motorlan_Notification_Manager();
+    $notification_manager->create_notification(
+        $seller_id,
+        'new_purchase',
+        "Nueva compra de {$buyer_name} en \"{$publicacion_title}\"",
+        "El usuario {$buyer_name} ha iniciado una compra para tu publicación.",
+        array(
+            'purchase_uuid' => $uuid,
+            'purchase_id'   => $purchase_id,
+            'url'           => '/purchases/' . $uuid,
+        ),
+        array( 'web', 'email' )
+    );
+
     return new WP_REST_Response( array( 'uuid' => $uuid ), 201 );
 }
 

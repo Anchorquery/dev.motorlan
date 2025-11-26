@@ -41,7 +41,7 @@ export const useApi = createFetch({
         headers.set('Content-Type', 'application/json')
       if (token)
         headers.set('Authorization', `Bearer ${token}`)
-      const nonce = (window as any)?.wpData?.nonce
+      const nonce = (window as any)?.wpData?.nonce || (window as any)?.wpData?.rest_nonce
       if (nonce)
         headers.set('X-WP-Nonce', nonce)
       return { options: { ...nextOptions, headers } }

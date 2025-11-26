@@ -202,7 +202,8 @@
       "recents": "Recientes",
       "price_asc": "Precio asc",
       "price_desc": "Precio desc"
-    }
+    },
+    "login_to_interact": "Inicia sesión como cliente para contactar al vendedor, hacer ofertas o comprar este equipo."
   },
   "add_publication": {
     "title": "Añadir Nueva Publicación",
@@ -512,7 +513,8 @@
     "login_button": "Iniciar sesión",
     "new_platform": "¿Nuevo en nuestra plataforma?",
     "create_account": "Crear una cuenta",
-    "or": "o"
+    "or": "o",
+    "login_to_interact": "Inicia sesión como cliente para contactar al vendedor, hacer ofertas o comprar este equipo."
   },
   "register": {
     "title": "La aventura comienza aquí 🚀",

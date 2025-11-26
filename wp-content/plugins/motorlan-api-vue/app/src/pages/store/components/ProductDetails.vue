@@ -7,9 +7,13 @@ import ConfirmDialog from '@/components/dialogs/ConfirmDialog.vue'
 import type { Publicacion } from '@/interfaces/publicacion'
 import { useApi } from '@/composables/useApi'
 
+import { useI18n } from 'vue-i18n'
 import { useUserStore } from '@/@core/stores/user'
 
 const props = defineProps<{ publicacion: Publicacion; disableActions?: boolean }>()
+const emit = defineEmits<{ (e: 'login'): void }>()
+
+const { t } = useI18n()
 
 
 // Estado de favorito
@@ -353,10 +357,18 @@ const removeOffer = async () => {
         </VBtn>
       </template>
       <div
-        v-else
-        class="public-store-cta pa-4 text-body-2"
+        v-else-if="!isLoggedIn"
+        class="public-store-cta pa-4 text-body-2 d-flex align-center justify-space-between flex-wrap gap-2"
       >
-        Inicia sesión como cliente para contactar al vendedor, hacer ofertas o comprar este equipo.
+        <span>{{ t('login.login_to_interact') }}</span>
+        <VBtn
+          size="small"
+          color="error"
+          variant="text"
+          @click="$emit('login')"
+        >
+          {{ t('login.login_button') }}
+        </VBtn>
       </div>
     </div>
 

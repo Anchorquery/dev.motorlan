@@ -61,7 +61,7 @@ const loginSyncWithWordPress = async () => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-WP-Nonce': window.wpData?.rest_nonce || '',
+        'X-WP-Nonce': window.wpData?.rest_nonce || window.wpData?.nonce || '',
       },
       body: JSON.stringify({
         username: credentials.value.username,

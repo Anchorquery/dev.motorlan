@@ -489,6 +489,22 @@ if ( ! class_exists( 'Motorlan_Purchase_Chat_Controller' ) ) {
 				$new_message = $persisted;
 			}
 
+            // Notify the other party
+            $receiver_id = ( $sender_role === 'seller' ) ? $participants['buyer_id'] : $participants['seller_id'];
+            $notification_manager = new Motorlan_Notification_Manager();
+            $notification_manager->create_notification(
+                $receiver_id,
+                'new_message',
+                "Nuevo mensaje de {$display_name}",
+                wp_trim_words( $message, 10, '...' ),
+                array(
+                    'purchase_uuid' => $request['uuid'],
+                    'purchase_id'   => $purchase_id,
+                    'url'           => '/purchases/' . $request['uuid'],
+                ),
+                array( 'web', 'email' )
+            );
+
 			$response_message                    = $this->format_message( $new_message, $current_user_id );
 			$response_message['is_current_user'] = true;
 

@@ -481,12 +481,70 @@ if ( ! class_exists( 'Motorlan_Product_Chat_Controller' ) ) {
             $items = array();
             foreach ( $rooms as $r ) {
                 $pid = (int) $r['product_id'];
+                
+                // Construct full title with ACF fields
+                $base_title = get_the_title( $pid );
+                $ref   = get_field( 'tipo_o_referencia', $pid );
+                $power = get_field( 'potencia', $pid );
+                $speed = get_field( 'velocidad', $pid );
+                
+                $full_title_parts = array( $base_title );
+                if ( $ref ) $full_title_parts[] = $ref;
+                if ( $power ) $full_title_parts[] = $power; // Assuming it includes unit or is just number
+                if ( $speed ) $full_title_parts[] = $speed;
+                
+                $full_title = implode( ' ', $full_title_parts );
+
+                // Get Image
+                $image = get_field( 'motor_image', $pid );
+
+                // Get Viewer Info
+                $viewer_name = '';
+                $viewer_avatar = '';
+                
+                list( $key_pid, $viewer_id ) = $this->parse_room_key( $r['room_key'] );
+                
+                // Try to get from User ID first
+                if ( is_numeric( $viewer_id ) ) {
+                    $user = get_user_by( 'id', $viewer_id );
+                    if ( $user ) {
+                        $viewer_name = $user->display_name;
+                        $viewer_avatar = get_avatar_url( $user->ID );
+                    }
+                }
+                
+                // Fallback: Get from messages table (useful for guests or if user deleted/not found)
+                if ( empty( $viewer_name ) ) {
+                     global $wpdb;
+                     $table = $this->get_table_name();
+                     // Get the most recent message from a viewer in this room
+                     $sql = $wpdb->prepare(
+                         "SELECT display_name, avatar FROM {$table} 
+                          WHERE product_id = %d AND room_key = %s AND sender_role = 'viewer' 
+                          ORDER BY created_at DESC LIMIT 1",
+                         $pid, $r['room_key']
+                     );
+                     $viewer_row = $wpdb->get_row( $sql );
+                     if ( $viewer_row ) {
+                         $viewer_name = $viewer_row->display_name;
+                         $viewer_avatar = $viewer_row->avatar;
+                     }
+                }
+                
+                // Final fallback
+                if ( empty( $viewer_name ) ) {
+                    $viewer_name = __( 'Usuario', 'motorlan-api-vue' );
+                }
+
                 $item = array(
-                    'product_id' => $pid,
-                    'product_title' => get_the_title( $pid ),
+                    'product_id'    => $pid,
+                    'product_title' => $full_title,
                     'product_slug'  => get_post_field( 'post_name', $pid ),
-                    'room_key'   => $r['room_key'],
-                    'last_at'    => $r['last_at'],
+                    'product_image' => $image,
+                    'room_key'      => $r['room_key'],
+                    'last_at'       => $r['last_at'],
+                    'user_name'     => $viewer_name,
+                    'user_avatar'   => $viewer_avatar,
                 );
                 $item['unread'] = $this->get_unread_count( $pid, $r['room_key'], $current_user );
                 $items[] = $item;

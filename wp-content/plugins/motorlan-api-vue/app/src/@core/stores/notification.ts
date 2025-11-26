@@ -9,7 +9,7 @@ export const useNotificationStore = defineStore('notification', {
 
   actions: {
     async fetchNotifications() {
-      const { data, error } = await useApi('/notifications').get().json<Notification[]>()
+      const { data, error } = await useApi('/motorlan/v1/notifications').get().json<Notification[]>()
       if (error.value) {
         console.error('Error fetching notifications:', error.value)
         return
@@ -19,13 +19,13 @@ export const useNotificationStore = defineStore('notification', {
     },
 
     async markNotificationsAsRead(notificationIds: number[]) {
-      const { error } = await useApi('/notifications/read').post({ notification_ids: notificationIds }).json()
+      const { error } = await useApi('/motorlan/v1/notifications/read').post({ notification_ids: notificationIds }).json()
 
       if (error.value) {
         console.error('Error marking notifications as read:', error.value)
         return
       }
-      
+
       // Update the state locally
       this.notifications.forEach(notification => {
         if (notificationIds.includes(notification.id))

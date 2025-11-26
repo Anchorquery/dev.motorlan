@@ -394,6 +394,26 @@ function motorlan_handle_create_offer($request) {
     $offer = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table_name WHERE id = %d", $offer_id));
     $offer_payload = motorlan_offers_prepare_offer_item($offer);
 
+    // Notify seller
+    $seller_id = (int) $publication->post_author;
+    $buyer = get_userdata($user_id);
+    $buyer_name = $buyer ? $buyer->display_name : 'Usuario';
+    $publication_title = get_the_title($post_id);
+
+    $notification_manager = new Motorlan_Notification_Manager();
+    $notification_manager->create_notification(
+        $seller_id,
+        'new_offer',
+        "Nueva oferta de {$buyer_name}",
+        "Has recibido una oferta de {$amount}€ por \"{$publication_title}\"",
+        array(
+            'offer_id'       => $offer_id,
+            'publication_id' => $post_id,
+            'url'            => '/offers/received',
+        ),
+        array( 'web', 'email' )
+    );
+
     return new WP_REST_Response(array(
         'success' => true,
         'message' => 'Oferta enviada correctamente. El vendedor será notificado para revisarla.',
