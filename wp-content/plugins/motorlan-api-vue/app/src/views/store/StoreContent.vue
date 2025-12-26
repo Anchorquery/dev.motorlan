@@ -54,11 +54,9 @@ const itemsPerPage = ref(9)
 const page = ref(1)
 
 // -- Data Fetching --
-const { data: brandsData } = useApi<Term[]>(createUrl('/wp-json/motorlan/v1/marcas')).get().json()
-const marcas = computed(() => brandsData.value || [])
-
+// -- Data Fetching --
+const marcas = ref<Term[]>([])
 const tipos = ref<Term[]>([])
-
 
 const publicacionesApiUrl = computed(() => {
   const baseUrl = '/wp-json/motorlan/v1/store/publicaciones'
@@ -111,10 +109,40 @@ const applyFilters = async () => {
 watch([selectedBrand, selectedState, typeModel, selectedTechnology, selectedPar, selectedPotencia, selectedVelocidad, searchTerm, order, selectedTipo, page, itemsPerPage], applyFilters, { deep: true })
 
 onMounted(async () => {
-  const { data: tiposData } = await useApi<any>(createUrl('/wp-json/motorlan/v1/tipos')).get().json()
-  if (tiposData.value) {
-    tipos.value = Array.isArray(tiposData.value) ? tiposData.value : (tiposData.value.data || [])
+  // Fetch Brands
+  try {
+    console.log('Fetching Marcas...')
+    const { data: brandsData, error: brandsError, execute: executeBrands } = useApi<any>('/wp-json/motorlan/v1/marcas', { immediate: false }).get().json()
+    await executeBrands()
+    console.log('Marcas API result:', brandsData.value)
+    if (brandsError.value) console.error('Marcas API Error:', brandsError.value)
+    
+    if (brandsData.value) {
+      const raw = brandsData.value
+      marcas.value = Array.isArray(raw) ? raw : (raw.data || [])
+      console.log('Marcas assigned:', marcas.value)
+    }
+  } catch (e) {
+    console.error('Exception fetching marcas:', e)
   }
+
+  // Fetch Types
+  try {
+    console.log('Fetching Tipos...')
+    const { data: tiposData, error: tiposError, execute: executeTipos } = useApi<any>('/wp-json/motorlan/v1/tipos', { immediate: false }).get().json()
+    await executeTipos()
+     console.log('Tipos API result:', tiposData.value)
+     if (tiposError.value) console.error('Tipos API Error:', tiposError.value)
+
+    if (tiposData.value) {
+      const raw = tiposData.value
+      tipos.value = Array.isArray(raw) ? raw : (raw.data || [])
+       console.log('Tipos assigned:', tipos.value)
+    }
+  } catch (e) {
+     console.error('Exception fetching tipos:', e)
+  }
+
   applyFilters() // Initial data load
 })
 

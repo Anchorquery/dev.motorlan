@@ -104,6 +104,13 @@ function motorlan_update_publicacion_by_uuid(WP_REST_Request $request) {
     // --- Handle ACF Fields ---
     $acf_data = isset($params['acf']) ? (is_string($params['acf']) ? json_decode($params['acf'], true) : $params['acf']) : [];
     
+    $checkbox_acf_fields = ['servomotores', 'regulacion_electronica_drivers'];
+    foreach ($checkbox_acf_fields as $checkbox_field) {
+        if (array_key_exists($checkbox_field, $acf_data)) {
+            $acf_data[$checkbox_field] = motorlan_normalize_checkbox_acf_value($post_id, $checkbox_field, $acf_data[$checkbox_field]);
+        }
+    }
+
     // --- Update ACF Fields Individually ---
     if (!empty($acf_data)) {
         if (isset($acf_data['marca'])) update_field('marca', $acf_data['marca'], $post_id);

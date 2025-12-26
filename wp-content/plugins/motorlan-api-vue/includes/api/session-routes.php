@@ -81,9 +81,9 @@ function motorlan_register_user_callback(WP_REST_Request $request) {
     $username = sanitize_text_field($params['username']);
     $email = sanitize_email($params['email']);
     $password = $params['password'];
-    $name = isset($params['name']) ? sanitize_text_field($params['name']) : '';
     $first_name = isset($params['first_name']) ? sanitize_text_field($params['first_name']) : '';
     $last_name = isset($params['last_name']) ? sanitize_text_field($params['last_name']) : '';
+    $name = isset($params['name']) ? sanitize_text_field($params['name']) : '';
 
     if (empty($username) || empty($email) || empty($password)) {
         return new WP_REST_Response(['message' => 'Username, email, and password are required.'], 400);
@@ -108,8 +108,12 @@ function motorlan_register_user_callback(WP_REST_Request $request) {
         $name_parts = preg_split('/\s+/', trim($name));
         if (!empty($name_parts)) {
             $first_name = array_shift($name_parts);
-            $last_name = implode(' ', $name_parts);
+            $last_name = trim(implode(' ', $name_parts));
         }
+    }
+
+    if (empty($first_name) && !empty($name)) {
+        $first_name = $name;
     }
 
     $display_name = trim(implode(' ', array_filter([$first_name, $last_name])));
@@ -158,6 +162,10 @@ function motorlan_register_user_callback(WP_REST_Request $request) {
         );
     }
 
+    if (function_exists('wp_send_new_user_notifications')) {
+        wp_send_new_user_notifications($user_id, 'user');
+    }
+
     return new WP_REST_Response(['message' => 'User registered successfully.'], 200);
 }
 
@@ -193,7 +201,7 @@ function get_user_profile_data() {
 
     $profile_data = [
         'personal_data' => [
-            'nombre' => $user_data->first_name,
+            'nombre' => $user_data->first_name ?: $user_data->display_name,
             'apellidos' => $user_data->last_name,
             'email' => $user_data->user_email,
             'telefono' => $user_meta['telefono'][0] ?? '',

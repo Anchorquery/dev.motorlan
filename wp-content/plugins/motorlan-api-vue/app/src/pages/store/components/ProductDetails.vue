@@ -108,6 +108,9 @@ const offerAmount = ref<number | null>(null)
 const offerMessage = ref('')
 const offer = ref<any | null>(null)
 const isSubmittingOffer = ref(false)
+const isPurchasing = ref(false)
+const purchaseSuccess = ref(false)
+const purchaseError = ref<string | null>(null)
 
 const userStore = useUserStore()
 const isLoggedIn = computed(() => userStore.getIsLoggedIn)
@@ -147,15 +150,37 @@ const handlePurchase = async (confirmed: boolean) => {
   if (!confirmed)
     return
 
+  isPurchasing.value = true
+  purchaseError.value = null
   try {
-    const { data: res, error } = await useApi('/wp-json/motorlan/v1/purchases').post({ publicacion_id: props.publicacion.id }).json()
-    if (error.value)
-      throw error.value
-    if (res.value)
-      router.push(`/apps/purchases/${res.value.uuid}`)
+    const purchaseRequest = useApi('/wp-json/motorlan/v1/purchases', { immediate: false })
+      .post({ publicacion_id: props.publicacion.id })
+      .json()
+
+    await purchaseRequest.execute()
+
+    if (purchaseRequest.error.value)
+      throw purchaseRequest.error.value
+
+    const res = purchaseRequest.data.value
+
+    if (res && res.uuid) {
+      purchaseSuccess.value = true
+      setTimeout(() => {
+        router.push(`/apps/purchases/${res.uuid}`)
+      }, 1500)
+    }
+    else {
+      console.error('Purchase response is missing uuid', res)
+      purchaseError.value = 'La respuesta de la compra es inválida.'
+    }
   }
-  catch (error) {
+  catch (error: any) {
     console.error(error)
+    purchaseError.value = error.data?.message || 'Hubo un error al procesar la compra.'
+  }
+  finally {
+    isPurchasing.value = false
   }
 }
 
@@ -333,6 +358,7 @@ const removeOffer = async () => {
         <VBtn
           color="error"
           class="px-6 flex-grow-1 action-btn"
+          :loading="isPurchasing"
           @click="isConfirmDialogOpen = true"
         >
           Comprar
@@ -411,7 +437,7 @@ const removeOffer = async () => {
     </VDialog>
 
     <ConfirmDialog
-      v-model:is-dialog-visible="isConfirmDialogOpen"
+      v-model:isDialogVisible="isConfirmDialogOpen"
       confirmation-question="¿Confirmar compra?"
       confirm-title="Compra realizada"
       confirm-msg="Redirigiendo..."
@@ -419,6 +445,42 @@ const removeOffer = async () => {
       cancel-msg="Operación cancelada"
       @confirm="handlePurchase"
     />
+
+    <!-- Purchase Success Dialog -->
+    <VDialog
+      v-model="purchaseSuccess"
+      max-width="500"
+      persistent
+    >
+      <VCard>
+        <VCardText class="text-center px-10 py-6">
+          <VBtn
+            icon
+            variant="outlined"
+            color="success"
+            class="my-4"
+            style=" block-size: 88px;inline-size: 88px; pointer-events: none;"
+          >
+            <VIcon
+              icon="tabler-check"
+              size="38"
+            />
+          </VBtn>
+
+          <h1 class="text-h4 mb-4">
+            ¡Compra realizada!
+          </h1>
+
+          <p>En breve serás redirigido a los detalles de tu compra.</p>
+
+          <VProgressLinear
+            indeterminate
+            color="primary"
+            class="mb-4"
+          />
+        </VCardText>
+      </VCard>
+    </VDialog>
 
     <VSnackbar
       v-model="shareSnackbar"
@@ -433,6 +495,14 @@ const removeOffer = async () => {
       location="top right"
     >
       Debes registrarte para hacer una oferta
+    </VSnackbar>
+    <VSnackbar
+      v-model="purchaseError"
+      color="error"
+      location="top right"
+      :timeout="5000"
+    >
+      {{ purchaseError }}
     </VSnackbar>
   </div>
 </template>

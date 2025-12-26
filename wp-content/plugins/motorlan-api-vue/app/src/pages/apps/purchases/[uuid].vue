@@ -12,28 +12,23 @@ const uuid = route.params.uuid as string
 const purchase = ref()
 const isPurchaseLoading = ref(true)
 const purchaseError = ref<string | null>(null)
-const { get } = useApi<any>(createUrl(`/wp-json/motorlan/v1/purchases/${uuid}`))
-
 const fetchPurchase = async () => {
   isPurchaseLoading.value = true
   purchaseError.value = null
 
   try {
-    const { data, error } = await get().json()
+    const request = useApi<any>(createUrl(`/wp-json/motorlan/v1/purchases/${uuid}`), { immediate: false }).get().json()
+    await request.execute()
 
-    if (error.value) {
-      purchase.value = undefined
-      purchaseError.value = error.value.message || 'No pudimos cargar la información de la compra.'
-      return
+    if (request.error.value) {
+      throw new Error(request.error.value.message || 'Error fetching purchase')
     }
 
-    purchase.value = data.value?.data
-  }
-  catch (err: any) {
+    purchase.value = request.data.value?.data
+  } catch (err: any) {
     purchase.value = undefined
     purchaseError.value = err?.message || 'Ocurrió un error al consultar la compra.'
-  }
-  finally {
+  } finally {
     isPurchaseLoading.value = false
   }
 }

@@ -658,6 +658,26 @@ function motorlan_create_purchase_callback( WP_REST_Request $request ) {
     // mark as direct sale by default
     update_post_meta( $purchase_id, 'tipo_venta', 'direct' );
 
+    // Stock management
+    $stock = get_field( 'stock', $publicacion_id );
+    if ( null === $stock || '' === $stock ) {
+        $stock = 1;
+    } else {
+        $stock = (int) $stock;
+    }
+
+    if ( $stock > 0 ) {
+        $new_stock = $stock - 1;
+        update_field( 'stock', $new_stock, $publicacion_id );
+
+        if ( 0 === $new_stock ) {
+            wp_update_post( array(
+                'ID' => $publicacion_id,
+                'post_status' => 'draft'
+            ) );
+        }
+    }
+
     // Notify seller
     $notification_manager = new Motorlan_Notification_Manager();
     $notification_manager->create_notification(

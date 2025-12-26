@@ -84,32 +84,51 @@ const login = async () => {
     errors.value = { username: undefined, password: undefined }
     genericError.value = null
 
-    const { data, error } = await useApi('/wp-json/jwt-auth/v1/token')
-      .post({
+    console.log('Logging in with fetch...')
+    const loginUrl = '/wp-json/jwt-auth/v1/token'
+    
+    const response = await fetch(loginUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
         username: credentials.value.username,
         password: credentials.value.password,
-      })
-      .json()
+      }),
+    })
 
-    if (error.value) {
-      const errorData = error.value.data
-      if (errorData && errorData.errors) {
-        errors.value = errorData.errors
-      }
-      else {
-        genericError.value = errorData?.message || error.value.message || 'An unknown error occurred. Please try again.'
-      }
+    const responseData = await response.json().catch(() => ({}))
+    console.log('Login attempt:', { status: response.status, data: responseData })
 
+    if (!response.ok) {
+       // Validate structure of error response usually sent by WP JWT Auth
+       // It normally sends { code: "...", message: "...", data: { status: 403 } } or similar
+       if (responseData.message) {
+          genericError.value = responseData.message
+       } else if (responseData.code) {
+          genericError.value = `Login failed: ${responseData.code}`
+       } else {
+          genericError.value = 'An unknown error occurred. Please try again.'
+       }
+       return
+    }
+
+    // Safety check for token
+    if (!responseData || !responseData.token) {
+      console.error('Login successful but no token received', responseData)
+      genericError.value = 'No access token received from server.'
       return
     }
 
-    const { token, user_display_name, user_email, user_nicename } = data.value
+    const { token, user_display_name, user_email, user_nicename } = responseData
 
     // Store the token in a cookie
     useCookie('accessToken').value = token
     localStorage.setItem('accessToken', token)
 
     // Use native fetch to ensure the new token is used immediately
+    console.log('Fetching profile...')
     const profileResponse = await fetch('/wp-json/motorlan/v1/profile', {
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -119,12 +138,14 @@ const login = async () => {
 
     if (!profileResponse.ok) {
       const errorData = await profileResponse.json().catch(() => ({}))
+      console.error('Profile fetch failed', profileResponse.status, errorData)
       genericError.value = errorData.message || `Error al obtener el perfil: ${profileResponse.statusText}`
       
       return
     }
 
     const profileData = await profileResponse.json()
+    console.log('Profile data:', profileData)
 
     // Store user data in a cookie
     useCookie('userData').value = {
@@ -148,13 +169,15 @@ const login = async () => {
     ability.update(userAbilities)
     useCookie('userAbilityRules').value = userAbilities
 
-    const { nombre, apellidos } = profileData.personal_data
+    const { nombre, apellidos } = profileData.personal_data || {}
 
     // Redirect to `to` query if exist or redirect to index route
     // ❗ nextTick is required to wait for DOM updates and later redirect
     await nextTick(() => {
       showToast('Logueo exitoso')
-      if (!nombre || !apellidos) {
+      // Check if personal_data exists and has required fields
+      if (!profileData.personal_data || !nombre || !apellidos) {
+         // If personal_data is missing entirely, we might want to warn too, or just check the fields if it exists
         showToast('Por favor, completa tu perfil para continuar.', 'warning')
         router.replace({ name: 'apps-user-account' })
       }
@@ -167,8 +190,8 @@ const login = async () => {
     })
   }
   catch (err: any) {
-    console.error(err)
-    genericError.value = err.data?.message || 'Failed to connect to the server. Please check your connection or contact support.'
+    console.error('Login Error Catch:', err)
+    genericError.value = err.data?.message || err.message || 'Failed to connect to the server. Please check your connection or contact support.'
   }
   finally {
     isSubmitting.value = false

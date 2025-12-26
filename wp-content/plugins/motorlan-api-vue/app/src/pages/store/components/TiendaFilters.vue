@@ -8,10 +8,10 @@ interface Term {
 defineProps<{
   marcas: Term[]
   tipos: Term[]
-  technologyOptions: string[]
-  parOptions: string[]
-  potenciaOptions: string[]
-  velocidadOptions: string[]
+  technologyOptions: any[]
+  parOptions: any[]
+  potenciaOptions: any[]
+  velocidadOptions: any[]
 }>()
 
 const typeModel = defineModel<string>('typeModel')
@@ -65,7 +65,8 @@ const selectedTipo = defineModel<string | null>('selectedTipo')
 
 <style>
 .filters {
-  width: 300px;
+  width: min(100%, 300px);
+  box-sizing: border-box;
 }
 
 .filters .v-icon,
@@ -81,5 +82,10 @@ const selectedTipo = defineModel<string | null>('selectedTipo')
 .filters .v-divider {
   border-color: #da291c !important;
 }
-</style>
 
+@media (max-width: 960px) {
+  .filters {
+    width: 100%;
+  }
+}
+</style>

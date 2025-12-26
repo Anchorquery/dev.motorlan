@@ -69,7 +69,7 @@ const formatCurrency = (value: number | string | null | undefined) => {
 
   return new Intl.NumberFormat('es-VE', {
     style: 'currency',
-    currency: 'USD',
+    currency: 'EUR',
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(numericValue)

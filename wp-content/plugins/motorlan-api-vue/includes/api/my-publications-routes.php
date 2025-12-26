@@ -152,9 +152,15 @@ function motorlan_build_my_publications_query_args($params) {
  * @return array The formatted publication data.
  */
 function motorlan_format_publication_item($post_id) {
+    $uuid = get_post_meta($post_id, 'uuid', true);
+    if (empty($uuid)) {
+        $uuid = function_exists('wp_generate_uuid4') ? wp_generate_uuid4() : uniqid('', true);
+        update_post_meta($post_id, 'uuid', $uuid);
+    }
+
     $publication_item = [
         'id'               => $post_id,
-        'uuid'             => get_post_meta($post_id, 'uuid', true),
+        'uuid'             => $uuid,
         'title'            => get_the_title($post_id),
         'slug'             => get_post_field('post_name', $post_id),
         'status'           => get_field('publicar_acf', $post_id),

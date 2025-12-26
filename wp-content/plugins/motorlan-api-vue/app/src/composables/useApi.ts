@@ -1,7 +1,21 @@
 import { createFetch } from '@vueuse/core'
 import { parse } from 'cookie-es'
 
-const baseURL = import.meta.env.VITE_API_BASE_URL
+const getSiteBaseUrl = () => {
+  if (typeof window === 'undefined')
+    return ''
+
+  const wpSiteUrl = (window as any)?.wpData?.site_url
+  if (typeof wpSiteUrl === 'string' && wpSiteUrl.trim().length)
+    return wpSiteUrl.trim()
+
+  return window.location.origin
+}
+
+const envBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim() ?? ''
+const baseURL = envBaseUrl.length ? envBaseUrl : getSiteBaseUrl()
+const TOKEN_HEADER = 'X-Motorlan-New-Access-Token'
+const TOKEN_EXPIRES_HEADER = 'X-Motorlan-New-Access-Token-Expires'
 
 const getToken = () => {
   if (typeof document === 'undefined') return null
@@ -11,6 +25,18 @@ const getToken = () => {
 
 const clearCookie = (name: string) => {
   document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`
+}
+
+const updateStoredToken = (token: string, expires?: string) => {
+  if (typeof document === 'undefined' || !token) return
+
+  const expiration = expires ? new Date(expires) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+  const secure = (typeof window !== 'undefined' && window.location.protocol === 'https:') ? ' Secure;' : ''
+  document.cookie = `accessToken=${token}; path=/; expires=${expiration.toUTCString()};${secure}`
+
+  if (typeof localStorage !== 'undefined') {
+    localStorage.setItem('accessToken', token)
+  }
 }
 
 export const useApi = createFetch({
@@ -54,6 +80,14 @@ export const useApi = createFetch({
         window.location.href = '/login'
       }
       return {}
+    },
+    async afterFetch({ response }) {
+      const newToken = response?.headers?.get(TOKEN_HEADER)
+      const expires = response?.headers?.get(TOKEN_EXPIRES_HEADER)
+      if (newToken) {
+        updateStoredToken(newToken, expires || undefined)
+      }
+      return { response }
     },
   },
 })

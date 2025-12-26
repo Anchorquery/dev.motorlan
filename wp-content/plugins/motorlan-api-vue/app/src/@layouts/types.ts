@@ -105,6 +105,12 @@ export interface I18nLanguage {
   isRTL: boolean
 }
 
+export type NotificationData = {
+  url?: string
+  offer_id?: number
+  [key: string]: unknown
+}
+
 // avatar | text | icon
 // Thanks: https://stackoverflow.com/a/60617060/10796681
 export type Notification = {
@@ -114,6 +120,7 @@ export type Notification = {
   time: string
   color?: string
   isSeen: boolean
+  data?: NotificationData
 } & (
   | { img: string; text?: never; icon?: never }
   | { img?: never; text: string; icon?: never }

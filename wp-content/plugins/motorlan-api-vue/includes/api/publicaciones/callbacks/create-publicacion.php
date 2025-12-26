@@ -94,9 +94,15 @@ function motorlan_create_publicacion_callback(WP_REST_Request $request) {
     // --- Update ACF Fields ---
     // Asegurarse de que los campos requeridos y opcionales se guarden correctamente.
     // El bucle foreach ya debería manejar esto, pero vamos a ser explícitos para los campos clave.
+    $checkbox_acf_fields = ['servomotores', 'regulacion_electronica_drivers'];
     foreach ($acf_data as $key => $value) {
         // Sanear el valor si es un string
         $sanitized_value = is_string($value) ? sanitize_text_field($value) : $value;
+
+        if (in_array($key, $checkbox_acf_fields, true)) {
+            $sanitized_value = motorlan_normalize_checkbox_acf_value($post_id, $key, $sanitized_value);
+        }
+
         update_field($key, $sanitized_value, $post_id);
     }
 

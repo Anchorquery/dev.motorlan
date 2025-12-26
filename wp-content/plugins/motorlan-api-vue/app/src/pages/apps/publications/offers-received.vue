@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // @ts-nocheck
 import { ref, computed, onMounted, watch } from 'vue'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useApi } from '@/composables/useApi'
 import { debounce } from '@/utils/debounce'
@@ -27,6 +27,22 @@ const statusFilter = ref('')
 const dateRange = ref('')
 const isDetailDialogOpen = ref(false)
 const selectedOffer = ref<any | null>(null)
+const router = useRouter()
+const route = useRoute()
+
+const snackbarState = ref({
+  show: false,
+  message: '',
+  type: 'success' as 'success' | 'error',
+})
+
+const showSnackbar = (message: string, type: 'success' | 'error' = 'success') => {
+  snackbarState.value = {
+    show: true,
+    message,
+    type,
+  }
+}
 
 const statusOptions = [
   { title: 'Todos', value: '' },
@@ -36,6 +52,18 @@ const statusOptions = [
   { title: 'Rechazados', value: 'rejected' },
   { title: 'Expirados', value: 'expired' },
 ]
+
+const queryOfferId = computed(() => {
+  const raw = route.query.offer_id
+  if (!raw)
+    return null
+
+  const value = Array.isArray(raw) ? raw[0] : raw
+  const parsed = Number(value)
+  return Number.isNaN(parsed) ? null : parsed
+})
+
+const openedQueryOfferId = ref<number | null>(null)
 
 const dateRangeParams = computed(() => {
   if (!dateRange.value)
@@ -113,6 +141,27 @@ onMounted(() => {
 const offers = computed(() => (offersData.value?.data || offersData.value || []).filter(Boolean))
 const totalOffers = computed(() => (offersData.value?.pagination?.total) || 0)
 
+watch(
+  [offers, queryOfferId],
+  ([currentOffers, offerId]) => {
+    if (!offerId || openedQueryOfferId.value === offerId)
+      return
+
+    const match = currentOffers?.find((offer: any) => offer?.id === offerId)
+    if (!match)
+      return
+
+    openedQueryOfferId.value = offerId
+    selectedOffer.value = match
+    isDetailDialogOpen.value = true
+
+    const newQuery = { ...route.query }
+    delete newQuery.offer_id
+    router.replace({ query: newQuery }).catch(() => {})
+  },
+  { immediate: true }
+)
+
 type BrandTerm = { term_id: number; name: string; slug: string }
 const { data: brandsResponse, execute: fetchBrands } = useApi<BrandTerm[]>('/wp-json/motorlan/v1/marcas', { immediate: false }).get().json()
 const brands = computed<BrandTerm[]>(() => brandsResponse.value || [])
@@ -173,9 +222,15 @@ const updateOfferStatus = async (offerId: number, status: 'accepted' | 'rejected
         isDetailDialogOpen.value = false
       }
     }
+
+    const successMessage = payload?.message || (status === 'accepted' ? 'Oferta aceptada' : 'Oferta rechazada')
+    showSnackbar(successMessage, 'success')
   }
   catch (error) {
     console.error(error)
+    const err = error as any
+    const errorMessage = err?.data?.message || err?.message || 'No fue posible actualizar la oferta.'
+    showSnackbar(errorMessage, 'error')
   }
   finally {
     updatingOfferId.value = null
@@ -516,5 +571,14 @@ const resolveStatus = (status: string) => {
         </VCardActions>
       </VCard>
     </VDialog>
+
+    <VSnackbar
+      v-model="snackbarState.show"
+      :color="snackbarState.type"
+      location="top right"
+      elevation="6"
+    >
+      {{ snackbarState.message }}
+    </VSnackbar>
   </VCard>
 </template>

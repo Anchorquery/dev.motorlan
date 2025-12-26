@@ -16,15 +16,28 @@ if (!defined('WPINC')) {
  * @return array Arguments for WP_Query.
  */
 function motorlan_build_publicaciones_query_args($params) {
+    $requested_status = !empty($params['status']) ? sanitize_text_field($params['status']) : null;
+
     $args = [
         'post_type'      => 'publicacion',
         'posts_per_page' => !empty($params['per_page']) ? absint($params['per_page']) : 10,
         'paged'          => !empty($params['page']) ? absint($params['page']) : 1,
-        'post_status'    => 'any',
+        'post_status'    => !empty($params['post_status']) ? sanitize_text_field($params['post_status']) : 'publish',
     ];
 
     $meta_query = ['relation' => 'AND'];
     $tax_query = ['relation' => 'AND'];
+
+    $stock_filter_min = isset($params['stock_min']) ? max(0, intval($params['stock_min'])) : 1;
+    $should_filter_stock = $requested_status === null || $requested_status === 'publish';
+    if ($should_filter_stock) {
+        $meta_query[] = [
+            'key'     => 'stock',
+            'value'   => $stock_filter_min,
+            'compare' => '>=',
+            'type'    => 'NUMERIC',
+        ];
+    }
 
     $filterable_fields = [
         'marca', 'tipo_o_referencia', 'potencia', 'velocidad', 'par_nominal', 'voltaje', 'intensidad',
@@ -201,6 +214,47 @@ function motorlan_get_post_id_by_uuid($uuid) {
     ];
     $query = new WP_Query($args);
     return $query->have_posts() ? $query->posts[0] : null;
+}
+
+/**
+ * Normalize checkbox field values that store arrays of choices.
+ *
+ * When the UI sends plain booleans (true/false or 0/1) for these fields, convert
+ * them into the matching choice arrays that ACF expects.
+ *
+ * @param int    $post_id    Post ID where the field lives.
+ * @param string $field_name Field name.
+ * @param mixed  $value      Incoming value.
+ * @return mixed
+ */
+function motorlan_normalize_checkbox_acf_value($post_id, $field_name, $value) {
+    if (!function_exists('get_field_object')) {
+        return $value;
+    }
+
+    if (is_array($value)) {
+        return $value;
+    }
+
+    if ($value === null) {
+        return [];
+    }
+
+    if (is_bool($value) || in_array($value, [0, 1, '0', '1'], true)) {
+        $field_object = get_field_object($field_name, $post_id);
+        if (!$field_object || empty($field_object['choices'])) {
+            return $value;
+        }
+
+        $choices = array_keys($field_object['choices']);
+        if (empty($choices)) {
+            return $value;
+        }
+
+        return (bool) $value ? [$choices[0]] : [];
+    }
+
+    return $value;
 }
 
 /**

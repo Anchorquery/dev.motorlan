@@ -108,21 +108,21 @@ function motorlan_enqueue_vue_app() {
             'motorlan-vue-app-css',
             plugin_dir_url(__FILE__) . '../app/dist/css/style.css',
             [],
-            '1.0.0',
+            MOTORLAN_API_VUE_VERSION,
             'all'
         );
         wp_enqueue_style(
             'motorlan-vue-app-loader-css',
             plugin_dir_url(__FILE__) . '../app/dist/loader.css',
             [],
-            '1.0.0',
+            MOTORLAN_API_VUE_VERSION,
             'all'
         );
         wp_enqueue_script(
             'motorlan-vue-app-js',
             plugin_dir_url(__FILE__) . '../app/dist/js/app.js',
             ['wp-data-bridge'], // Depende del puente
-            '1.0.0',
+            MOTORLAN_API_VUE_VERSION,
             true
         );
     }

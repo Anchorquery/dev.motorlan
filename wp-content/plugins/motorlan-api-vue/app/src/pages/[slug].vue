@@ -116,10 +116,10 @@ onMounted(() => {
       <VCol cols="12" md="7">
         <ProductImage :publicacion="publicacion" />
         <VRow class="mt-6">
-          <VCol cols="12" md="6">
+          <VCol cols="12" :md="docs.length ? 6 : 12">
             <PublicacionInfo :publicacion="publicacion" />
           </VCol>
-          <VCol cols="12" md="6">
+          <VCol v-if="docs.length" cols="12" md="6">
             <ProductDocs :docs="docs" />
           </VCol>
         </VRow>

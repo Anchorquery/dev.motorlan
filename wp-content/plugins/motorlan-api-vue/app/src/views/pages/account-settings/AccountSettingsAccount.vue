@@ -14,7 +14,7 @@ const accountData = {
   country: 'USA',
   language: 'English',
   timezone: '(GMT-11:00) International Date Line West',
-  currency: 'USD',
+  currency: 'EUR',
 }
 
 const refInputEl = ref<HTMLElement>()
@@ -91,7 +91,7 @@ const timezones = [
 ]
 
 const currencies = [
-  'USD',
+  'EUR',
   'EUR',
   'GBP',
   'AUD',

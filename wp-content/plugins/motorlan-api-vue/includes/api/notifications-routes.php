@@ -107,5 +107,6 @@ function motorlan_format_notification_for_api( $notification ) {
         'isSeen'   => (bool) $notification['is_read'],
         'icon'     => 'tabler-bell', // Default icon, can be customized based on type
         'color'    => 'primary',     // Default color
+        'data'     => $notification['data'] ?? null,
     ];
 }
