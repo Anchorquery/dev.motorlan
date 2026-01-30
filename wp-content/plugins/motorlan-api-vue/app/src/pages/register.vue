@@ -34,7 +34,8 @@ definePage({
 })
 
 const form = ref({
-  name: '',
+  first_name: '',
+  last_name: '',
   username: '',
   email: '',
   password: '',
@@ -50,34 +51,7 @@ const isCheckingUsername = ref(false)
 const usernameError = ref<string | null>(null)
 const showSuccessNotification = ref(false)
 
-const checkUsernameAvailability = async () => {
-  if (!form.value.username) {
-    usernameError.value = null
-    
-    return
-  }
-  isCheckingUsername.value = true
-  usernameError.value = null
-  try {
-    const { data, error } = await useApi('/wp-json/motorlan/v1/check-username', {
-      method: 'POST',
-      body: JSON.stringify({ username: form.value.username }),
-    }).json()
 
-    if (error.value) {
-      usernameError.value = 'Error al verificar el nombre de usuario.'
-    }
-    else if (data.value && !data.value.available) {
-      usernameError.value = data.value.message || 'El nombre de usuario no esta disponible.'
-    }
-  }
-  catch (e) {
-    usernameError.value = 'Error al conectar con el servidor.'
-  }
-  finally {
-    isCheckingUsername.value = false
-  }
-}
 
 const register = async () => {
   if (!form.value.privacyPolicies) {
@@ -92,8 +66,9 @@ const register = async () => {
   const { data, error } = await useApi('/wp-json/motorlan/v1/register', {
     method: 'POST',
     body: JSON.stringify({
-      name: form.value.name,
-      username: form.value.username,
+      first_name: form.value.first_name,
+      last_name: form.value.last_name,
+      username: form.value.email,
       email: form.value.email,
       password: form.value.password,
     }),
@@ -104,13 +79,9 @@ const register = async () => {
   if (error.value) {
     const errorMessage = error.value.data?.message || 'Ocurrio un error al registrar la cuenta.'
     const loweredMessage = errorMessage.toLowerCase()
-    if (loweredMessage.includes('name')) {
-      errors.value.name = errorMessage
-    }
-    else if (loweredMessage.includes('username')) {
-      errors.value.username = errorMessage
-    }
-    else if (loweredMessage.includes('email')) {
+    
+    // Asignar errores específicos si es posible, o mostrar genérico
+    if (loweredMessage.includes('email')) {
       errors.value.email = errorMessage
     }
     else {
@@ -138,61 +109,25 @@ const onSubmit = () => {
 </script>
 
 <template>
-  <RouterLink to="/">
-    <div class="auth-logo d-flex align-center gap-x-3">
-      <VNodeRenderer :nodes="themeConfig.app.logo" />
-      <h1 class="auth-title">
-        {{ themeConfig.app.title }}
-      </h1>
-    </div>
-  </RouterLink>
-
   <VRow
     no-gutters
     class="auth-wrapper bg-surface"
   >
     <VCol
-      md="8"
-      class="d-none d-md-flex"
-    >
-      <div class="position-relative bg-background w-100 me-0">
-        <div
-          class="d-flex align-center justify-center w-100 h-100"
-          style="padding-inline: 100px;"
-        >
-          <VImg
-            max-width="500"
-            :src="imageVariant"
-            class="auth-illustration mt-16 mb-2"
-          />
-        </div>
-
-        <img
-          class="auth-footer-mask"
-          :src="authThemeMask"
-          alt="auth-footer-mask"
-          height="280"
-          width="100"
-        >
-      </div>
-    </VCol>
-
-    <VCol
       cols="12"
-      md="4"
-      class="auth-card-v2 d-flex align-center justify-center"
-      style="background-color: rgb(var(--v-theme-surface));"
+      class="auth-card-v2 d-flex flex-column align-center justify-center h-screen"
+      style="background: linear-gradient(to bottom right, rgb(var(--v-theme-surface)), rgba(var(--v-theme-primary), 0.05));"
     >
       <VCard
         flat
         :max-width="500"
-        class="mt-12 mt-sm-0 pa-4"
+        class="pa-6 pa-sm-8 elevation-10 rounded-xl"
       >
         <VCardText>
-          <h4 class="text-h4 mb-1">
+          <h4 class="text-h4 font-weight-bold mb-1">
             {{ t('register.title') }}
           </h4>
-          <p class="mb-0">
+          <p class="mb-0 text-body-1 text-medium-emphasis">
             {{ t('register.subtitle') }}
           </p>
         </VCardText>
@@ -202,7 +137,8 @@ const onSubmit = () => {
             v-if="genericError"
             color="error"
             variant="tonal"
-            class="mb-4"
+            class="mb-6 rounded-lg"
+            icon="tabler-alert-triangle"
           >
             {{ genericError }}
           </VAlert>
@@ -212,28 +148,30 @@ const onSubmit = () => {
           >
             <VRow>
 
-              <!-- Name -->
-              <VCol cols="12">
+              <!-- First Name -->
+              <VCol cols="12" md="6">
                 <VTextField
-                  v-model="form.name"
+                  v-model="form.first_name"
                   :rules="[requiredValidator]"
                   autofocus
-                  :label="t('register.name')"
-                  placeholder="John Doe"
-                  :error-messages="errors.name"
+                  :label="t('register.first_name')"
+                  placeholder="John"
+                  variant="outlined"
+                  density="comfortable"
+                  :error-messages="errors.first_name"
                 />
               </VCol>
 
-              <!-- Username -->
-              <VCol cols="12">
+              <!-- Last Name -->
+              <VCol cols="12" md="6">
                 <VTextField
-                  v-model="form.username"
+                  v-model="form.last_name"
                   :rules="[requiredValidator]"
-                  :label="t('register.username')"
-                  placeholder="Johndoe"
-                  :error-messages="errors.username || usernameError"
-                  :loading="isCheckingUsername"
-                  @blur="checkUsernameAvailability"
+                  :label="t('register.last_name')"
+                  placeholder="Doe"
+                  variant="outlined"
+                  density="comfortable"
+                  :error-messages="errors.last_name"
                 />
               </VCol>
 
@@ -245,6 +183,8 @@ const onSubmit = () => {
                   :label="t('register.email')"
                   type="email"
                   placeholder="johndoe@email.com"
+                  variant="outlined"
+                  density="comfortable"
                   :error-messages="errors.email"
                 />
               </VCol>
@@ -258,6 +198,8 @@ const onSubmit = () => {
                   placeholder="************"
                   :type="isPasswordVisible ? 'text' : 'password'"
                   autocomplete="password"
+                  variant="outlined"
+                  density="comfortable"
                   :append-inner-icon="isPasswordVisible ? 'tabler-eye-off' : 'tabler-eye'"
                   :error-messages="errors.password"
                   @click:append-inner="isPasswordVisible = !isPasswordVisible"
@@ -274,10 +216,10 @@ const onSubmit = () => {
                     for="privacy-policy"
                     style="opacity: 1;"
                   >
-                    <span class="me-1 text-high-emphasis">{{ t('register.agree_to') }}</span>
+                    <span class="me-1 text-medium-emphasis">{{ t('register.agree_to') }}</span>
                     <a
                       href="javascript:void(0)"
-                      class="text-primary"
+                      class="text-primary font-weight-medium text-decoration-none"
                     >{{ t('register.privacy_policy') }}</a>
                   </VLabel>
                 </div>
@@ -285,8 +227,11 @@ const onSubmit = () => {
                 <VBtn
                   block
                   type="submit"
+                  size="large"
+                  rounded="lg"
                   :loading="isSubmitting"
-                  :disabled="isSubmitting || isCheckingUsername || !!usernameError"
+                  :disabled="isSubmitting"
+                  class="font-weight-bold text-uppercase letter-spacing-1 hover-lift"
                 >
                   {{ t('register.sign_up') }}
                 </VBtn>
@@ -297,31 +242,16 @@ const onSubmit = () => {
                 cols="12"
                 class="text-center text-base"
               >
-                <span class="d-inline-block">{{ t('register.already_account') }}</span>
+                <span class="d-inline-block text-body-2 text-medium-emphasis">{{ t('register.already_account') }}</span>
                 <RouterLink
-                  class="text-primary ms-1 d-inline-block"
+                  class="text-primary font-weight-semibold ms-1 d-inline-block text-decoration-none"
                   :to="{ name: 'login' }"
                 >
                   {{ t('register.sign_in_instead') }}
                 </RouterLink>
               </VCol>
 
-              <VCol
-                cols="12"
-                class="d-flex align-center"
-              >
-                <VDivider />
-                <span class="mx-4">{{ t('register.or') }}</span>
-                <VDivider />
-              </VCol>
 
-              <!-- auth providers -->
-              <VCol
-                cols="12"
-                class="text-center"
-              >
-                <AuthProvider />
-              </VCol>
             </VRow>
           </VForm>
         </VCardText>
@@ -339,4 +269,13 @@ const onSubmit = () => {
 
 <style lang="scss">
 @use "@core/scss/template/pages/page-auth";
+
+.hover-lift {
+  transition: transform 0.2s, box-shadow 0.2s;
+  
+  &:not(:disabled):hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(var(--v-theme-primary), 0.3);
+  }
+}
 </style>

@@ -1,6 +1,6 @@
 <script lang="ts" setup>
-import type { ChatOut } from '@db/apps/chat/types'
-import { useChatStore } from '@/views/apps/chat/useChatStore'
+import type { ChatOut } from '@/plugins/fake-api/handlers/apps/chat/types'
+import { useChatStore } from './useChatStore'
 
 const store = useChatStore()
 
@@ -79,14 +79,14 @@ const msgGroups = computed(() => {
       class="chat-group d-flex align-start"
       :class="[{
         'flex-row-reverse': msgGrp.senderId !== contact.id,
-        'mb-6': msgGroups.length - 1 !== index,
+        'mb-8': msgGroups.length - 1 !== index,
       }]"
     >
       <div
         class="chat-avatar"
         :class="msgGrp.senderId !== contact.id ? 'ms-4' : 'me-4'"
       >
-        <VAvatar size="32">
+        <VAvatar size="38" class="elevation-2">
           <VImg :src="msgGrp.senderId === contact.id ? contact.avatar : store.profileUser?.avatar" />
         </VAvatar>
       </div>
@@ -97,51 +97,73 @@ const msgGroups = computed(() => {
         <div
           v-for="(msgData, msgIndex) in msgGrp.messages"
           :key="msgData.time"
-          class="chat-content py-2 px-4 elevation-2"
-          style="background-color: rgb(var(--v-theme-surface));"
+          class="chat-content py-3 px-5 elevation-1 position-relative"
+          style="max-width: 100%; width: fit-content;"
+          :style="msgGrp.senderId === contact.id ? 'background-color: rgb(var(--v-theme-surface));' : ''"
           :class="[
-            msgGrp.senderId === contact.id ? 'chat-left' : 'bg-primary text-white chat-right',
+            msgGrp.senderId === contact.id ? 'chat-left text-high-emphasis' : 'bg-primary text-white chat-right',
             msgGrp.messages.length - 1 !== msgIndex ? 'mb-2' : 'mb-1',
           ]"
         >
-          <p class="mb-0 text-base">
-            {{ msgData.message }}
-          </p>
+          <p class="mb-0 text-body-1" style="white-space: pre-wrap;">{{ msgData.message }}</p>
         </div>
-        <div :class="{ 'text-right': msgGrp.senderId !== contact.id }">
+        <div 
+            class="d-flex align-center mt-1"
+            :class="{ 'flex-row-reverse': msgGrp.senderId !== contact.id, 'justify-end': msgGrp.senderId !== contact.id }"
+        >
+          <span 
+            class="text-caption text-disabled" 
+            :class="msgGrp.senderId !== contact.id ? 'me-2' : 'ms-2'"
+            style="font-size: 0.7rem;"
+          >
+            {{ formatDate(msgGrp.messages[msgGrp.messages.length - 1].time, { hour: 'numeric', minute: 'numeric' }) }}
+          </span>
           <VIcon
             v-if="msgGrp.senderId !== contact.id"
             size="16"
             :color="resolveFeedbackIcon(msgGrp.messages[msgGrp.messages.length - 1].feedback).color"
+            class="opacity-80"
           >
             {{ resolveFeedbackIcon(msgGrp.messages[msgGrp.messages.length - 1].feedback).icon }}
           </VIcon>
-          <span class="text-sm ms-2 text-disabled">{{ formatDate(msgGrp.messages[msgGrp.messages.length - 1].time, { hour: 'numeric', minute: 'numeric' }) }}</span>
         </div>
       </div>
     </div>
   </div>
 </template>
 
-<style lang=scss>
+<style lang="scss">
 .chat-log {
   .chat-body {
-    max-inline-size: calc(100% - 6.75rem);
+    max-inline-size: 75%;
 
     .chat-content {
-      border-end-end-radius: 6px;
-      border-end-start-radius: 6px;
-
+      border-radius: 12px;
       p {
         overflow-wrap: anywhere;
+        line-height: 1.5;
       }
 
       &.chat-left {
-        border-start-end-radius: 6px;
+        border-start-end-radius: 12px;
+        border-end-end-radius: 12px;
+        border-start-start-radius: 4px; 
+        border-end-start-radius: 12px;
+        
+        // Premium look tweaks
+        &:first-child { border-start-start-radius: 12px; }
+        &:last-child { border-end-start-radius: 4px; }
       }
 
       &.chat-right {
-        border-start-start-radius: 6px;
+        border-start-start-radius: 12px;
+        border-end-start-radius: 12px;
+        border-start-end-radius: 12px;
+        border-end-end-radius: 4px;
+
+         // Premium look tweaks
+        &:first-child { border-start-end-radius: 12px; }
+        &:last-child { border-end-end-radius: 4px; }
       }
     }
   }

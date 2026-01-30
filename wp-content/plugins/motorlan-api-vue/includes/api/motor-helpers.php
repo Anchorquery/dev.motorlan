@@ -54,6 +54,10 @@ if ( ! function_exists( 'motorlan_get_motor_data' ) ) {
             $fields = get_fields( $motor_id );
             if ( is_array( $fields ) ) {
                 $data['acf'] = $fields;
+                // Remove price if it exists
+                if (isset($data['acf']['precio_de_venta'])) {
+                    unset($data['acf']['precio_de_venta']);
+                }
             }
         }
 

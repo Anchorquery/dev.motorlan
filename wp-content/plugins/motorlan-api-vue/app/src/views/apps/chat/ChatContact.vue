@@ -1,7 +1,7 @@
 <script lang="ts" setup>
-import type { ChatContact, ChatContactWithChat } from '@db/apps/chat/types'
-import { useChat } from '@/views/apps/chat/useChat'
-import { useChatStore } from '@/views/apps/chat/useChatStore'
+import type { ChatContact, ChatContactWithChat } from '@/plugins/fake-api/handlers/apps/chat/types'
+import { useChat } from './useChat'
+import { useChatStore } from './useChatStore'
 
 interface Props {
   isChatContact?: boolean
@@ -53,8 +53,18 @@ const isChatContactActive = computed(() => {
       </VAvatar>
     </VBadge>
     <div class="flex-grow-1 ms-4 overflow-hidden">
-      <p class="text-base text-high-emphasis mb-0">
+      <p class="text-base text-high-emphasis mb-0 d-flex align-center gap-2">
         {{ props.user.fullName }}
+        <VChip
+          v-if="props.user.role === 'guest'"
+          color="primary"
+          size="x-small"
+          label
+          variant="tonal"
+          class="px-2"
+        >
+          Invitado
+        </VChip>
       </p>
       <p class="mb-0 text-truncate text-body-2">
         {{ props.isChatContact && 'chat' in props.user ? props.user.chat.lastMessage.message : props.user.about }}

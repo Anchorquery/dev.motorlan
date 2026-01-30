@@ -4,6 +4,7 @@ import { can } from '@layouts/plugins/casl'
 import { useLayoutConfigStore } from '@layouts/stores/config'
 import type { NavLink } from '@layouts/types'
 import { getComputedNavLinkToProp, getDynamicI18nProps, isNavLinkActive } from '@layouts/utils'
+import { useRouter } from 'vue-router'
 
 defineProps<{
   item: NavLink
@@ -11,6 +12,7 @@ defineProps<{
 
 const configStore = useLayoutConfigStore()
 const hideTitleAndBadge = configStore.isVerticalNavMini()
+const router = useRouter()
 </script>
 
 <template>
@@ -22,11 +24,11 @@ const hideTitleAndBadge = configStore.isVerticalNavMini()
     <Component
       :is="item.to ? 'RouterLink' : 'a'"
       v-bind="getComputedNavLinkToProp(item)"
-      :class="{ 'router-link-active router-link-exact-active': isNavLinkActive(item, $router) }"
+      :class="{ 'router-link-active router-link-exact-active': isNavLinkActive(item, router) }"
     >
       <Component
         :is="layoutConfig.app.iconRenderer || 'div'"
-        v-bind="item.icon || layoutConfig.verticalNav.defaultNavItemIconProps"
+        v-bind="(typeof item.icon === 'object' && item.icon !== null ? item.icon : { icon: item.icon }) as Record<string, unknown>"
         class="nav-item-icon"
       />
       <TransitionGroup name="transition-slide-x">

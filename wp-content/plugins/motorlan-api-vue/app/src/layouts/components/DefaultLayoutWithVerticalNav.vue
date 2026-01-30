@@ -18,9 +18,16 @@ import { VerticalNavLayout } from '@layouts'
   <VerticalNavLayout :nav-items="navItems">
 
 
+    <template #navbar-right>
+      <NavBarNotifications />
+      <NavbarThemeSwitcher />
+      <NavbarShortcuts />
+      <NavBarI18n :languages="themeConfig.app.i18n.langConfig" />
+    </template>
+
     <template #before-vertical-nav-items>
       <div class="px-5">
-        <SidebarNotifications />
+        <!-- Sidebar items if any -->
       </div>
     </template>
 

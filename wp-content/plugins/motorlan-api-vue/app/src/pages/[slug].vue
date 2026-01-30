@@ -1,19 +1,16 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
-import { useRoute } from 'vue-router'
-import ProductImage from '@/pages/store/components/ProductImage.vue'
-import ProductDetails from '@/pages/store/components/ProductDetails.vue'
-import PublicacionInfo from '@/pages/store/components/PublicacionInfo.vue'
-import ProductDocs from '@/pages/store/components/ProductDocs.vue'
-import RelatedProducts from '@/pages/store/components/RelatedProducts.vue'
-import OfferModal from '@/pages/store/components/OfferModal.vue'
-import ChatModal from '@/pages/store/components/ChatModal.vue'
-import LoginModal from '@/pages/store/components/LoginModal.vue'
-import type { Publicacion } from '@/interfaces/publicacion'
-import { createUrl } from '@/@core/composable/createUrl'
-import { useApi } from '@/composables/useApi'
-import { formatCurrency } from '@/utils/formatCurrency'
-import { useUserStore } from '@/@core/stores/user'
+import { computed, ref, onMounted } from "vue";
+import { useRoute } from "vue-router";
+import { useUserStore } from "@/@core/stores/user";
+import ProductImage from "@/pages/store/components/ProductImage.vue";
+import { createFetch } from '@vueuse/core'
+import { createUrl } from "@/@core/composable/createUrl";
+import ProductDetails from "@/pages/store/components/ProductDetails.vue";
+import PublicacionInfo from "@/pages/store/components/PublicacionInfo.vue";
+import ProductDocs from "@/pages/store/components/ProductDocs.vue";
+import RelatedProducts from "@/pages/store/components/RelatedProducts.vue";
+import ChatModal from "@/pages/store/components/ChatModal.vue";
+import type { Publicacion } from "@/interfaces/publicacion";
 
 definePage({
   meta: {
@@ -22,79 +19,110 @@ definePage({
   },
 })
 
-const route = useRoute()
-const slug = route.params.slug as string
+const route = useRoute();
+const slug = route.params.slug as string;
+const userStore = useUserStore();
 
-const { data, isFetching, execute } = useApi<any>(
+// Define a public API client that bypasses the global useApi (which forces auth headers and redirects on 401)
+// This ensures the product page is truly public even if the user has an expired token in their cookies.
+const usePublicApi = createFetch({
+  baseUrl: (import.meta.env.VITE_API_BASE_URL?.trim() ?? '') || ((window as any)?.wpData?.site_url ?? window.location.origin),
+  options: {
+      async onFetchError({ error }) {
+          console.error('Public API Error:', error);
+          return { error };
+      }
+  },
+})
+
+const { data, isFetching, execute } = usePublicApi<any>(
   createUrl(`/wp-json/motorlan/v1/publicaciones/${slug}`),
   { immediate: false }
 )
   .get()
-  .json()
+  .json();
 
-onMounted(execute)
+onMounted(execute);
 
-const isOfferModalVisible = ref(false)
-
-const isChatModalVisible = ref(false)
-const isLoginModalVisible = ref(false)
+const isChatModalVisible = ref(false);
 const chatRoomKeyFromQuery = computed(() => {
   const raw = (route.query.room_key as string) || ''
   return raw && raw.trim().length ? raw : null
 })
 
+const isOwner = computed(() => {
+  if (!userStore.user || !publicacion.value) return false;
+
+  return Number(userStore.user.id) === Number(publicacion.value.author.id);
+});
+
 const publicacion = computed(() => {
-  if (!data.value?.data) return undefined
+  if (!data.value?.data) return undefined;
 
   return {
     ...data.value.data,
     imagen_destacada: data.value.imagen_destacada,
-  } as Publicacion
-})
+  } as Publicacion;
+});
 
 const docs = computed(() => {
-  const raw = publicacion.value?.acf?.documentacion_adicional
-  if (!raw || !Array.isArray(raw)) return []
+  const raw = publicacion.value?.acf?.documentacion_adicional;
+  if (!raw || !Array.isArray(raw)) return [];
 
   return raw
     .filter((d: any) => d && d.archivo && d.archivo.url)
     .map((d: any) => ({
-      title: d.nombre || d.archivo.title || 'Documento',
+      title: d.nombre || d.archivo.title || "Documento",
       url: d.archivo.url,
-    }))
-})
+    }));
+});
 
 const title = computed(() => {
-  if (!publicacion.value) return ''
+  if (!publicacion.value) return "";
+
+  // Nomenclature: Tipo de producto_Marca_Tipo/modelo_Potencia o Par_Velocidad
+  
+  // 1. Tipo
+  const tipo = publicacion.value.tipo && publicacion.value.tipo.length > 0 ? publicacion.value.tipo[0].name : '';
+  
+  // 2. Marca
+  const marca = (publicacion.value as any).marca_name || '';
+
+  // 3. Modelo
+  const modelo = publicacion.value.acf.tipo_o_referencia || '';
+
+  // 4. Potencia o Par
+  let powerOrTorque = '';
+  if (publicacion.value.acf.potencia) {
+      powerOrTorque = `${publicacion.value.acf.potencia} kW`;
+  } else if (publicacion.value.acf.par_nominal) {
+      powerOrTorque = `${publicacion.value.acf.par_nominal} Nm`;
+  }
+
+  // 5. Velocidad
+  const velocidad = publicacion.value.acf.velocidad
+      ? `${publicacion.value.acf.velocidad} rpm`
+      : '';
 
   const parts = [
-    publicacion.value.title,
-    publicacion.value.acf.tipo_o_referencia,
-    publicacion.value.acf.potencia
-      ? `${publicacion.value.acf.potencia} kW`
-      : null,
-    publicacion.value.acf.velocidad
-      ? `${publicacion.value.acf.velocidad} rpm`
-      : null,
-  ].filter(Boolean)
+    tipo,
+    marca,
+    modelo,
+    powerOrTorque,
+    velocidad,
+  ].filter(p => !!p && String(p).trim() !== '');
 
-  return parts.join(' ').toUpperCase()
-})
+  return parts.join(' ').toUpperCase();
+});
 
-const priceLabel = computed(() => formatCurrency(publicacion.value?.acf?.precio_de_venta) ?? 'Consultar precio')
+const getInitials = (value: string): string => {
+  const parts = value.split(' ').filter(Boolean)
+  return parts.slice(0, 2).map(part => part.charAt(0).toUpperCase()).join('') || 'U'
+}
 
 onMounted(() => {
   if (route.query.open_chat === '1')
     isChatModalVisible.value = true
-})
-
-const userStore = useUserStore()
-const isLoggedIn = computed(() => !!userStore.getUser?.id)
-
-onMounted(() => {
-  if (!isLoggedIn.value) {
-    userStore.fetchUserSession()
-  }
 })
 </script>
 
@@ -102,86 +130,70 @@ onMounted(() => {
   <VContainer v-if="publicacion" fluid>
     <VRow>
       <VCol cols="12">
-        <div class="d-flex justify-space-between mb-4 title-price">
-          <h1 class="text-h4 mb-0">
-            {{ title }}
-          </h1>
-          <div class="text-h4 text-error font-weight-bold">
-            {{ priceLabel }}
-          </div>
-        </div>
+        <h1 class="text-h4 mb-4">
+          {{ title }}
+        </h1>
       </VCol>
     </VRow>
     <VRow>
       <VCol cols="12" md="7">
         <ProductImage :publicacion="publicacion" />
-        <VRow class="mt-6">
-          <VCol cols="12" :md="docs.length ? 6 : 12">
-            <PublicacionInfo :publicacion="publicacion" />
-          </VCol>
-          <VCol v-if="docs.length" cols="12" md="6">
-            <ProductDocs :docs="docs" />
-          </VCol>
-        </VRow>
       </VCol>
       <VCol cols="12" md="5">
-        <ProductDetails 
-          :publicacion="publicacion" 
-          @login="isLoginModalVisible = true"
-        />
-        <div class="d-flex align-center mb-4" v-if="publicacion.author">
-          <VAvatar size="48" class="mr-4">
-            <VImg :src="publicacion.author.avatar" :alt="publicacion.author.name || 'Vendedor'" />
+        <!-- Seller row with chat button above the buy button -->
+
+
+        <ProductDetails :publicacion="publicacion" @open-chat="isChatModalVisible = true" />
+                <div class="d-flex align-center mb-4" v-if="publicacion.author">
+          <VAvatar size="48" class="mr-4" :color="publicacion.author.avatar ? undefined : 'primary'">
+            <VImg v-if="publicacion.author.avatar" :src="publicacion.author.avatar" :alt="publicacion.author.name || 'Vendedor'" />
+            <span v-else class="text-h6 font-weight-bold text-white">
+              {{ getInitials((publicacion.author.first_name || publicacion.author.last_name) ? `${publicacion.author.first_name || ''} ${publicacion.author.last_name || ''}`.trim() : 'Vendedor') }}
+            </span>
           </VAvatar>
           <div>
-            <p class="font-weight-bold mb-0">{{ publicacion.author.name || 'Vendedor' }}</p>
+            <p class="font-weight-bold mb-0">
+              {{ (publicacion.author.first_name || publicacion.author.last_name) 
+                  ? `${publicacion.author.first_name || ''} ${publicacion.author.last_name || ''}`.trim()
+                  : 'Vendedor'
+              }}
+            </p>
             <p class="text-caption mb-0">
               {{ Number(publicacion.author.acf?.ventas || 0) }} ventas |
               {{ Number(publicacion.author.acf?.calificacion || 0) }} valoraciones
             </p>
           </div>
-          <VBtn class="ml-auto" color="primary" variant="outlined" @click="isChatModalVisible = true">
-            Abrir chat
-          </VBtn>
+
         </div>
       </VCol>
     </VRow>
 
-
-
+    <VRow class="my-6" align="stretch">
+      <VCol cols="12" md="7" class="d-flex">
+        <PublicacionInfo :publicacion="publicacion" />
+      </VCol>
+      <VCol cols="12" md="5" class="d-flex">
+        <ProductDocs :docs="docs" />
+      </VCol>
+    </VRow>
 
     <RelatedProducts :current-id="publicacion.id" />
-    <OfferModal
-      v-if="isOfferModalVisible"
-      :publicacion-id="publicacion.id"
-      @close="isOfferModalVisible = false"
-    />
     <ChatModal
       v-if="isChatModalVisible"
       :publicacion="publicacion"
       :room-key="chatRoomKeyFromQuery"
       @close="isChatModalVisible = false"
     />
-    <LoginModal
-      v-model:isDialogVisible="isLoginModalVisible"
-    />
   </VContainer>
 
   <div v-else-if="isFetching" class="text-center pa-12">
     <VProgressCircular indeterminate size="64" />
   </div>
+
   <VCard v-else class="pa-8 text-center">
     <VCardText>Publicación no encontrada</VCardText>
   </VCard>
 </template>
 
 <style scoped>
-.title-price {
-  align-items: baseline;
-}
-.public-store-cta-actions {
-  display: flex;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-}
 </style>

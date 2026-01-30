@@ -1,4 +1,4 @@
-import type { RouteRecordRaw } from 'vue-router/auto'
+import type { RouteRecordRaw } from 'vue-router'
 
 // Redirects
 export const redirects: RouteRecordRaw[] = [

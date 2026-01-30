@@ -1,7 +1,7 @@
 import { setupLayouts } from 'virtual:meta-layouts'
 import type { App } from 'vue'
 
-import type { RouteRecordRaw } from 'vue-router/auto'
+import type { RouteLocationNormalized, RouteRecordRaw } from 'vue-router'
 
 import { createRouter, createWebHashHistory } from 'vue-router/auto'
 
@@ -21,13 +21,13 @@ function recursiveLayouts(route: RouteRecordRaw): RouteRecordRaw {
 
 const router = createRouter({
   history: createWebHashHistory(import.meta.env.BASE_URL),
-  scrollBehavior(to) {
+  scrollBehavior(to: RouteLocationNormalized) {
     if (to.hash)
       return { el: to.hash, behavior: 'smooth', top: 60 }
 
     return { top: 0 }
   },
-  extendRoutes: pages => [
+  extendRoutes: (pages: RouteRecordRaw[]) => [
     ...redirects,
     ...[
       ...pages,
@@ -36,7 +36,7 @@ const router = createRouter({
   ],
 })
 
-setupGuards(router)
+setupGuards(router as any)
 
 export { router }
 

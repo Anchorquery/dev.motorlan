@@ -198,10 +198,10 @@ export function useProductChat(
     const instance = ensurePolling()
 
     if (lastServerTimestamp.value)
-      instance.sync(lastServerTimestamp.value)
+      instance?.sync(lastServerTimestamp.value)
 
     if (!isPollingActive.value) {
-      instance.start()
+      instance?.start()
       isPollingActive.value = true
     }
   }
@@ -259,7 +259,7 @@ export function useProductChat(
     }
   }
 
-  const sendMessage = async (rawMessage: string) => {
+  const sendMessage = async (rawMessage: string, meta?: { email?: string; name?: string }) => {
     if (isSending.value || isLocked.value)
       return
 
@@ -275,8 +275,14 @@ export function useProductChat(
       const payload: Record<string, any> = { message: trimmed }
       if (roomKey.value)
         payload.room_key = roomKey.value
-      if (viewerNameRef.value)
-        payload.viewer_name = viewerNameRef.value
+
+      // Prioritize meta name, then ref, then null
+      const vName = meta?.name || viewerNameRef.value
+      if (vName)
+        payload.viewer_name = vName
+
+      if (meta?.email)
+        payload.guest_email = meta.email
 
       const { data, error } = await useApi<any>(createUrl(endpointBase)).post(payload).json()
 

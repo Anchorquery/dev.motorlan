@@ -40,6 +40,14 @@ const toggleIsOverlayNavActive = useToggle(isOverlayNavActive)
 // We want to show overlay if overlay nav is visible and want to hide overlay if overlay is hidden and vice versa.
 syncRef(isOverlayNavActive, isLayoutOverlayVisible)
 
+// 👉 Lock scroll when overlay nav is active
+watch(isOverlayNavActive, val => {
+  if (val)
+    document.body.classList.add('layout-vertical-nav-overlay-active')
+  else
+    document.body.classList.remove('layout-vertical-nav-overlay-active')
+})
+
 // watch(isOverlayNavActive, value => {
 //   // Sync layout overlay with overlay nav
 //   isLayoutOverlayVisible.value = value
@@ -93,23 +101,44 @@ const verticalNavAttrs = computed(() => {
           <slot name="before-vertical-nav-items" />
         </template>
         <template #after-nav-items>
-          <VBtn
-            class="ma-4"
-            icon
-            variant="text"
-            @click="logout"
-          >
-            <VIcon icon="tabler-logout" />
-          </VBtn>
+          <div class="pa-4 mt-auto border-t">
+            <UserProfile />
+          </div>
         </template>
       </VerticalNav>
     </component>
     <div class="layout-content-wrapper">
       <header
         class="layout-navbar"
-        :class="[{ 'navbar-blur': false}]"
+        :class="[{ 'navbar-blur': true }]"
       >
+        <div class="navbar-content-container">
+          <div class="d-flex align-center h-100 px-4 flex-grow-1">
+            <template v-if="configStore.isLessThanOverlayNavBreakpoint">
+              <VBtn
+                icon
+                variant="text"
+                color="default"
+                class="ms-n3"
+                size="large"
+                aria-label="Toggle Navigation"
+                @click="toggleIsOverlayNavActive(true)"
+              >
+                <VIcon
+                  size="28"
+                  icon="tabler-menu-2"
+                />
+              </VBtn>
+            </template>
+            <VSpacer />
+            
+            <slot name="navbar" />
 
+            <div class="d-flex align-center gap-x-2">
+              <slot name="navbar-right" />
+            </div>
+          </div>
+        </div>
       </header>
       <main class="layout-page-content">
         <div class="page-content-container">
@@ -213,6 +242,27 @@ const verticalNavAttrs = computed(() => {
     &.visible {
       opacity: 1;
       pointer-events: auto;
+    }
+  }
+
+  // 👉 Navbar styling
+  .layout-navbar {
+    position: sticky;
+    top: 0;
+    width: 100%;
+    z-index: variables.$layout-vertical-nav-layout-navbar-z-index;
+    background-color: rgb(var(--v-theme-surface));
+    transition: transform 0.2s ease-in-out;
+
+    .navbar-content-container {
+      height: variables.$layout-vertical-nav-navbar-height;
+      display: flex;
+      align-items: center;
+    }
+
+    &.navbar-blur {
+      backdrop-filter: blur(8px);
+      background-color: rgba(var(--v-theme-surface), 0.85);
     }
   }
 

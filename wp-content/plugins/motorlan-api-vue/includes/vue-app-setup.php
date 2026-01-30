@@ -69,6 +69,7 @@ function motorlan_enqueue_vue_app() {
             'id' => $current_user->ID,
             'email' => $current_user->user_email,
             'display_name' => $current_user->display_name,
+            'is_admin' => in_array('administrator', (array) $current_user->roles),
         ];
     }
 

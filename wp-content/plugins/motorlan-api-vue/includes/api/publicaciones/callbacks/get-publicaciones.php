@@ -17,7 +17,38 @@ if (!defined('WPINC')) {
  */
 function motorlan_get_publicaciones_callback($request) {
     $args = motorlan_build_publicaciones_query_args($request->get_params());
+    // Check for custom search arg
+    $custom_type_search = isset($args['motorlan_custom_search_tipo']) ? $args['motorlan_custom_search_tipo'] : null;
+    unset($args['motorlan_custom_search_tipo']); // Clean up so WP_Query doesn't complain
+
+    // Define filters
+    $join_filter = function($join) use ($custom_type_search) {
+        global $wpdb;
+        if ($custom_type_search) {
+             $join .= " LEFT JOIN {$wpdb->postmeta} AS mt_custom_type ON ({$wpdb->posts}.ID = mt_custom_type.post_id AND mt_custom_type.meta_key = 'tipo_o_referencia') ";
+        }
+        return $join;
+    };
+
+    $where_filter = function($where) use ($custom_type_search) {
+        if ($custom_type_search) {
+            // Remove ., -, /, and spaces from the DB value for comparison
+            $where .= " AND REPLACE(REPLACE(REPLACE(REPLACE(mt_custom_type.meta_value, '-', ''), '.', ''), '/', ''), ' ', '') LIKE '%" . esc_sql($custom_type_search) . "%' ";
+        }
+        return $where;
+    };
+
+    if ($custom_type_search) {
+        add_filter('posts_join', $join_filter);
+        add_filter('posts_where', $where_filter);
+    }
+
     $query = new WP_Query($args);
+
+    if ($custom_type_search) {
+        remove_filter('posts_join', $join_filter);
+        remove_filter('posts_where', $where_filter);
+    }
 
     $publicaciones_data = [];
     if ($query->have_posts()) {

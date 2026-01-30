@@ -1,6 +1,7 @@
 {
   "Motors Shop": "Motorren Denda",
   "UI Elements": "UI Elementuak",
+
   "Forms & Tables": "Formularioak eta Taulak",
   "Pages": "Orrialdeak",
   "Charts & Maps": "Grafikoak eta Mapak",
@@ -167,8 +168,32 @@
   "Compras": "Erosketak",
   "Preguntas": "Galderak",
   "Opiniones": "Iritziak",
-  "Favoritos": "Gogokoak",
+  "Favoritos": "Gogokoenak",
+  "Publicaciones": "Argitalpenak",
+  "Ventas": "Salmentak",
+  "Perfil": "Profila",
+  "Cuenta": "Kontua",
+  "Estadísticas": "Estatistikak",
+  "Tipo": "Mota",
+  "custom": {
+    "unknown": "Ezezaguna",
+    "draft": "Zirriborroa",
+    "published": "Argitaratua",
+    "paused": "Pausatua",
+    "pending": "Onartzeko zain"
+  },
   "store": {
+    "filters": {
+      "others_tooltip": "Arratoia gainetik pasatutakon, 'Escobillas, encoder...",
+      "product_type": "Produktu mota",
+      "power_label": "Potentzia",
+      "speed_label": "Abiadura",
+      "torque_label": "PAR (Nm)",
+      "brands_label": "Markak",
+      "state_label": "Egoera",
+      "type_model_label": "Mota / eredua",
+      "responsibility_note": "GARRANTZITSUA: Motorlanek ez du bere gain hartzen saltzailearen eta eroslearen artean zuzenean saltzen diren ekipoen ardura, aurretik bere tailer espezializatuan azterketa egin gabe."
+    },
     "par_options": {
       "range1": "0-50",
       "range2": "50-100"
@@ -182,17 +207,18 @@
       "range2": "1500 rpm"
     },
     "technology_options": {
-      "dc": "Korronte Zuzena (C.C.)",
-      "ac": "Korronte Alternoa (C.A.)"
+      "dc": "Zuzena (C.C.)",
+      "ac": "Alternoa (C.A.)"
     },
     "order_options": {
-      "recents": "Berrienak",
-      "price_asc": "Prezioa gorantz",
-      "price_desc": "Prezioa beherantz"
-    }
+      "recents": "Azkenak",
+      "price_asc": "Prezioa gora",
+      "price_desc": "Prezioa behera"
+    },
+    "login_to_interact": "Hasi saioa bezero gisa saltzailearekin harremanetan jartzeko, eskaintzak egiteko edo ekipo hau erosteko."
   },
-  "add_motor": {
-    "title": "Gehitu {postType} Berria",
+  "add_publication": {
+    "title": "Gehitu Argitalpen Berria",
     "step": "{currentStep}. pausoa 3tik",
     "buttons": {
       "discard": "Baztertu",
@@ -204,8 +230,8 @@
       "request_warranty": "Bermea Eskatu"
     },
     "post_details": {
-      "section_title": "{postType}-aren Xehetasunak",
-      "publication_type": "Argitalpen Mota",
+      "section_title": "Argitalpenaren Xehetasunak",
+      "type": "Argitalpen Mota",
       "title": "Argitalpenaren Izenburua",
       "title_placeholder": "Izenburua",
       "reference": "Mota edo Erreferentzia",
@@ -237,32 +263,32 @@
       "stock": "Stocka",
       "stock_placeholder": "1",
       "negotiable_price": "Prezio Negoziagarria",
-      "publish_acf": "Argitaratu (ACF)",
+      "publish_acf": "Argitalpenaren egoera",
       "publish_status_publish": "Argitaratu",
       "publish_status_draft": "Zirriborroa"
     },
     "post_type_options": {
-        "motor": "Motorra",
-        "regulator": "Erregulatzailea",
-        "other_spare_part": "Beste Ordezko Pieza"
+      "motor": "Motorra",
+      "regulator": "Erregulatzailea",
+      "other_spare_part": "Beste Ordezko Pieza"
     },
     "condition_options": {
-        "new": "Berria",
-        "used": "Erabilia",
-        "restored": "Berrezarria"
+      "new": "Berria",
+      "used": "Erabilia",
+      "restored": "Berrezarria"
     },
     "country_options": {
-        "spain": "Espainia",
-        "portugal": "Portugal",
-        "france": "Frantzia"
+      "spain": "Espainia",
+      "portugal": "Portugal",
+      "france": "Frantzia"
     },
     "boolean_options": {
-        "yes": "Bai",
-        "no": "Ez"
+      "yes": "Bai",
+      "no": "Ez"
     },
     "power_supply_options": {
-        "dc": "Korronte Zuzena (C.C.)",
-        "ac": "Korronte Alternoa (C.A.)"
+      "dc": "Zuzena (C.C.)",
+      "ac": "Alternoa (C.A.)"
     },
     "media": {
       "main_image": "Irudi Nagusia",
@@ -302,8 +328,235 @@
       "warranty_skipped_info": "Argitalpena bermerik gabe.",
       "post_id_not_found_error": "Errorea: Ez da argitalpenaren IDa aurkitu.",
       "warranty_request_success": "Bermea ondo eskatu da. Argitalpena eginda.",
-      "warranty_request_error": "Errorea bermea eskatzean: {message}"
+      "warranty_request_error": "Errorea bermea eskatzean: {message}",
+      "login_required": "Saioa hasi behar duzu jarraitzeko.",
+      "fetch_brands_error": "Ezin izan dira markak kargatu.",
+      "fetch_categories_error": "Ezin izan dira kategoriak kargatu.",
+      "fetch_types_error": "Ezin izan dira motak kargatu."
     }
+  },
+  "publication_list": {
+    "publication": "Argitalpena",
+    "reference": "Erreferentzia",
+    "price": "Prezioa",
+    "status": "Egoera",
+    "actions": "Ekintzak",
+    "questions": "Galderak",
+    "filters": "Iragazkiak",
+    "search_publication": "Bilatu Argitalpena",
+    "export": "Esportatu",
+    "add_publication": "Gehitu Argitalpena",
+    "delete": "Ezabatu",
+    "duplicate": "Bikoiztu",
+    "publish": "Argitaratu",
+    "pause": "Pausatu",
+    "move_to_draft": "Mugitu Zirriborrora",
+    "deleting_publication": "Argitalpena ezabatzen...",
+    "duplicating_publication": "Argitalpena bikoizten...",
+    "publishing_publication": "Argitalpena argitaratzen...",
+    "pausing_publication": "Argitalpena pausatzen...",
+    "moving_to_draft": "Zirriborrora mugitzen...",
+    "updating_status": "Egoera eguneratzen...",
+    "delete_dialog_title": "Berretsi Ezabatzea",
+    "delete_dialog_text": "Ziur zaude argitalpen hau ezabatu nahi duzula? Ekintza hau ezin da desegin.",
+    "cancel": "Utzi",
+    "confirm_delete": "Ezabatu",
+    "duplicate_dialog_title": "Berretsi Bikoiztea",
+    "duplicate_dialog_text": "Ziur zaude argitalpen hau bikoiztu nahi duzula?",
+    "confirm_duplicate": "Bikoiztu",
+    "status_dialog_title": "Berretsi Egoera Aldaketa",
+    "status_dialog_text": "Ziur zaude argitalpen honen egoera aldatu nahi duzula?",
+    "confirm_status": "Onartu",
+    "status_options": {
+      "published": "Argitaratua",
+      "draft": "Zirriborroa",
+      "paused": "Pausatua",
+      "sold": "Salduta",
+      "pending": "Onartzeko zain",
+      "unknown": "Ezezaguna"
+    },
+    "delete_selected": "Ezabatu Hautatutakoak",
+    "deleting_selected_publications": "Hautatutako argitalpenak ezabatzen...",
+    "delete_selected_dialog_title": "Berretsi Ezabatzea",
+    "delete_selected_dialog_text": "Ziur zaude hautatutako {count} argitalpenak ezabatu nahi dituzula? Ekintza hau ezin da desegin."
+  },
+  "select_publication_type": {
+    "title": "Hautatu Argitalpen Mota",
+    "subtitle": "Aukeratu zer produktu mota gehitu nahi duzun dendara.",
+    "motor_title": "Motorra",
+    "motor_description": "Argitaratu motor elektriko bat, bere xehetasun tekniko guztiekin: potentzia, abiadura, etab.",
+    "regulator_title": "Erregulatzailea",
+    "regulator_description": "Argitaratu erregulatzaile edo driver bat, bere zehaztapen teknikoekin.",
+    "other_spare_part_title": "Beste Ordezko Pieza",
+    "other_spare_part_description": "Argitaratu erlazionatutako beste edozein ordezko pieza edo osagai."
+  },
+  "edit_publication": {
+    "title": "Editatu Argitalpena",
+    "fetch_error": "Ezin izan da argitalpena kargatu.",
+    "discard": "Baztertu",
+    "update_publication": "Eguneratu Argitalpena",
+    "section_title": "Argitalpenaren Xehetasunak",
+    "publication_title": "Argitalpenaren Izenburua",
+    "publication_title_placeholder": "Izenburua",
+    "reference": "Mota edo Erreferentzia",
+    "reference_placeholder": "Erreferentzia",
+    "brand": "Marka",
+    "category": "Kategoria",
+    "type": "Mota",
+    "power": "Potentzia (kW)",
+    "power_placeholder": "100",
+    "speed": "Abiadura (rpm)",
+    "speed_placeholder": "3000",
+    "torque": "Pare Nominala (Nm)",
+    "torque_placeholder": "50",
+    "voltage": "Tentsioa (V)",
+    "voltage_placeholder": "220",
+    "intensity": "Intentsitatea (A)",
+    "intensity_placeholder": "10",
+    "country": "Herrialdea (kokapena)",
+    "province": "Probintzia",
+    "province_placeholder": "Madril",
+    "condition": "Artikuluaren Egoera",
+    "price": "Salmenta Prezioa (€)",
+    "price_placeholder": "1000",
+    "stock": "Stocka",
+    "stock_placeholder": "1",
+    "negotiable_price": "Prezio Negoziagarria",
+    "rent_option": "Alokatzeko Aukera",
+    "power_supply_type": "Elikatze Mota",
+    "servomotors": "Serbomotorrak",
+    "electronic_regulation": "Erregulazio Elektronikoa/Driverrak",
+    "description": "Deskribapena",
+    "description_placeholder": "Argitalpenaren deskribapena",
+    "images_section_title": "Argitalpenaren Irudiak",
+    "main_image": "Irudi Nagusia",
+    "image_gallery": "Irudi Galeria",
+    "additional_documentation_section_title": "Dokumentazio Gehigarria",
+    "document_name": "Dokumentuaren Izena",
+    "document_name_placeholder": "Erabiltzailearen eskuliburua",
+    "upload_file": "Fitxategia Igo",
+    "add_document": "Dokumentua Gehitu",
+    "update_success": "Argitalpena ondo eguneratu da.",
+    "update_error": "Errorea argitalpena eguneratzean: {message}",
+    "required_fields_error": "Mesedez, bete derrigorrezko eremu guztiak.",
+    "save_draft": "Gorde Zirriborroa"
+  },
+  "questions": {
+    "page_title": "Argitalpenaren Galderak",
+    "publication": "Argitalpena",
+    "question": "Galdera",
+    "answer": "Erantzuna",
+    "question_date": "Galdera data",
+    "answer_date": "Erantzun data",
+    "status": "Egoera",
+    "actions": "Ekintzak",
+    "search_placeholder": "Bilatu galdera...",
+    "answered": "Erantzunda",
+    "pending": "Zain",
+    "reply_to_question": "Erantzun galderari",
+    "your_answer": "Zure erantzuna",
+    "cancel": "Utzi",
+    "reply": "Erantzun",
+    "fetch_error": "Errorea galderak kargatzean.",
+    "answer_empty_error": "Erantzuna ezin da hutsik egon.",
+    "answer_success": "Erantzuna ondo bidali da.",
+    "answer_error": "Errorea erantzuna bidaltzean.",
+    "my_questions": "Nire Galderak",
+    "no_questions": "Oraindik ez dago galderarik argitalpen honetarako.",
+    "no_questions_received": "Oraindik ez duzu galderarik jaso."
+  },
+  "sales": {
+    "publication": "Argitalpena",
+    "buyer": "Eroslea",
+    "buyer_name": "Eroslea",
+    "buyer_email": "Eroslearen posta",
+    "price": "Prezioa",
+    "date": "Data",
+    "search_placeholder": "Bilatu salmenta...",
+    "type": "Mota",
+    "type_options": {
+      "sale": "Salmenta",
+      "rent": "Alokairua"
+    },
+    "status": "Egoera",
+    "actions": "Ekintzak",
+    "filters": {
+      "status": "Egoera",
+      "date_range": "Data tartea",
+      "clear": "Garbitu iragazkiak"
+    },
+    "status_options": {
+      "all": "Egoera guztiak",
+      "completed": "Ondatuta",
+      "pending": "Zain",
+      "processing": "Prozesuan",
+      "cancelled": "Utzitakoa",
+      "refunded": "Itzulita",
+      "expired": "Iraungita"
+    },
+    "status_labels": {
+      "completed": "Ondatuta",
+      "pending": "Zain",
+      "processing": "Prozesuan",
+      "cancelled": "Utzitakoa",
+      "refunded": "Itzulita",
+      "expired": "Iraungita",
+      "unknown": "Ezezaguna"
+    },
+    "view_sale": "Ikusi salmenta",
+    "view_publication": "Ikusi argitalpena",
+    "no_buyer": "Eroslerik gabe",
+    "sale_detail_title": "Salmentaren xehetasuna",
+    "refresh": "Berritu",
+    "back_to_list": "Itzuli salmentetara",
+    "detail_error": "Ezin izan dugu salmentaren xehetasuna kargatu.",
+    "detail_not_found": "Ez da salmenta aurkitu.",
+    "summary": "Laburpena",
+    "motor_information": "Motorraren informazioa",
+    "buyer_information": "Eroslearen informazioa",
+    "payment_type": "Ordainketa mota",
+    "notes": "Oharrak",
+    "sale_identifier": "Salmentaren identifikatzailea",
+    "motor_brand": "Marka",
+    "motor_power": "Potentzia",
+    "fetch_error": "Errorea salmentak kargatzean.",
+    "my_sales": "Nire Salmentak",
+    "no_sales_yet": "Oraindik ez duzu salmentarik egin."
+  },
+  "login": {
+    "welcome": "Sarrera Motorlan-era",
+    "subtitle": "Hasi saioa zure motorrak eta ordezko piezak kudeatzeko.",
+    "username": "Erabiltzailea",
+    "password": "Pasahitza",
+    "login_button": "Saioa hasi",
+    "new_platform": "Berria gure plataforman?",
+    "create_account": "Sortu kontu bat",
+    "or": "edo",
+    "login_to_interact": "Hasi saioa bezero gisa saltzailearekin harremanetan jartzeko, eskaintzak egiteko edo ekipo hau erosteko."
+  },
+  "register": {
+    "title": "Sortu zure kontua",
+    "subtitle": "Bat egin motor industrialen kudeaketarako plataforma liderrarekin.",
+    "name": "Izena",
+    "username": "Erabiltzailea",
+    "email": "Posta elektronikoa",
+    "password": "Pasahitza",
+    "agree_to": "Onartzen dut",
+    "privacy_policy": "pribatutasun politika eta baldintzak",
+    "sign_up": "Erregistratu",
+    "already_account": "Dagoeneko baduzu kontu bat?",
+    "sign_in_instead": "Hasi saioa horren ordez",
+    "or": "edo"
+  },
+  "inquiries": {
+    "title": "Interesatuak",
+    "search_placeholder": "Bilatu erabiltzailearen edo argitalpenaren arabera...",
+    "user": "Erabiltzailea",
+    "publication": "Argitalpena",
+    "actions": "Ekintzak",
+    "load_error": "Ezin izan dira elkarrizketak kargatu",
+    "no_data_title": "Ez dago elkarrizketarik",
+    "no_data_text": "Oraindik ez duzu interes kontsultarik jaso."
   },
   "notifications": {
     "title": "Notifications",
@@ -359,5 +612,13 @@
         "item": "Balorazioa"
       }
     }
-  }
+  },
+  "Gestión de Ventas": "Salmenten Kudeaketa",
+  "Mis Publicaciones": "Nire Argitalpenak",
+  "Interesados": "Interesatuak",
+  "Gestión de Compras": "Erosketen Kudeaketa",
+  "Mis Compras": "Nire Erosketak",
+  "Mi Cuenta": "Nire Kontua",
+  "Ofertas Recibidas": "Jasotako Eskaintzak",
+  "Ofertas Enviadas": "Bidalitako Eskaintzak"
 }

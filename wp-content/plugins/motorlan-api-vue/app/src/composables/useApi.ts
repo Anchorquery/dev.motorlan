@@ -41,8 +41,10 @@ const updateStoredToken = (token: string, expires?: string) => {
 
 export const useApi = createFetch({
   baseUrl: baseURL,
-  options: {
+  fetchOptions: {
     credentials: 'include',
+  },
+  options: {
     async beforeFetch({ options }) {
       const nextOptions: RequestInit = { ...options }
       const token = getToken()
@@ -74,6 +76,15 @@ export const useApi = createFetch({
     },
     async onFetchError({ response }) {
       if (response && response.status === 401) {
+        // Si estamos en un entorno con WordPress y el bootstrap dice que estamos logueados,
+        // no redirigimos inmediatamente, podría ser un fallo puntual del JWT que el backend puede resolver.
+        const isWpLoggedIn = (window as any)?.wpData?.user_data?.is_logged_in
+
+        if (isWpLoggedIn) {
+          console.warn('API returned 401 but WordPress session is active. Avoiding redirect.')
+          return {}
+        }
+
         clearCookie('userData')
         clearCookie('accessToken')
         clearCookie('userAbilityRules')

@@ -168,19 +168,19 @@
   "Preguntas": "Preguntas",
   "Opiniones": "Opiniones",
   "Favoritos": "Favoritos",
-  "Ofertas Recibidas": "Ofertas Recibidas",
-  "Ofertas Enviadas": "Ofertas Enviadas",
   "Publicaciones": "Publicaciones",
   "Ventas": "Ventas",
   "Perfil": "Perfil",
   "Cuenta": "Cuenta",
   "Estadísticas": "Estadísticas",
   "Tipo": "Tipo",
-  "custom": {
-    "unknown": "Desconocido",
-    "draft": "Borrador",
-    "published": "Publicado"
-  },
+    "custom": {
+      "unknown": "Desconocido",
+      "draft": "Borrador",
+      "published": "Publicado",
+      "paused": "Pausado",
+      "pending": "Pendiente de aprobación"
+    },
   "store": {
     "par_options": {
       "range1": "0-50",
@@ -203,7 +203,18 @@
       "price_asc": "Precio asc",
       "price_desc": "Precio desc"
     },
-    "login_to_interact": "Inicia sesión como cliente para contactar al vendedor, hacer ofertas o comprar este equipo."
+    "login_to_interact": "Inicia sesión como cliente para contactar al vendedor, hacer ofertas o comprar este equipo.",
+    "filters": {
+      "others_tooltip": "Escobillas, encoder...",
+      "product_type": "Tipo de producto",
+      "power_label": "Potencia",
+      "speed_label": "Velocidad",
+      "torque_label": "PAR (Nm)",
+      "brands_label": "Marcas",
+      "state_label": "Estado",
+      "type_model_label": "Tipo / modelo",
+      "responsibility_note": "IMPORTANTE: Motorlan no se hace responsable de aquellos equipos que se vendan directamente entre vendedor-comprador sin una revisión previa en su taller especializado."
+    }
   },
   "add_publication": {
     "title": "Añadir Nueva Publicación",
@@ -316,7 +327,11 @@
       "warranty_skipped_info": "Publicación sin garantía.",
       "post_id_not_found_error": "Error: No se ha encontrado el ID de la publicación.",
       "warranty_request_success": "Garantía solicitada con éxito. Publicación realizada.",
-      "warranty_request_error": "Error al solicitar la garantía: {message}"
+      "warranty_request_error": "Error al solicitar la garantía: {message}",
+      "login_required": "Debes iniciar sesión para continuar.",
+      "fetch_brands_error": "No se pudieron cargar las marcas.",
+      "fetch_categories_error": "No se pudieron cargar las categorías.",
+      "fetch_types_error": "No se pudieron cargar los tipos."
     }
   },
   "publication_list": {
@@ -356,6 +371,7 @@
       "draft": "Borrador",
       "paused": "Pausado",
       "sold": "Vendido",
+      "pending": "Pendiente",
       "unknown": "Desconocido"
     },
     "delete_selected": "Eliminar Seleccionados",
@@ -375,6 +391,7 @@
   },
   "edit_publication": {
     "title": "Editar Publicación",
+    "fetch_error": "No se pudo cargar la publicación.",
     "discard": "Descartar",
     "update_publication": "Actualizar Publicación",
     "section_title": "Detalles de la Publicación",
@@ -506,8 +523,8 @@
     "no_sales_yet": "Aún no has realizado ninguna venta."
   },
   "login": {
-    "welcome": "¡Bienvenido a {title}! 👋🏻",
-    "subtitle": "Por favor, inicia sesión en tu cuenta y comienza la aventura",
+    "welcome": "Acceso a Motorlan",
+    "subtitle": "Inicia sesión para gestionar tus motores y repuestos.",
     "username": "Usuario",
     "password": "Contraseña",
     "login_button": "Iniciar sesión",
@@ -517,9 +534,11 @@
     "login_to_interact": "Inicia sesión como cliente para contactar al vendedor, hacer ofertas o comprar este equipo."
   },
   "register": {
-    "title": "La aventura comienza aquí 🚀",
-    "subtitle": "¡Haz que la gestión de tu aplicación sea fácil y divertida!",
+    "title": "Crea tu cuenta",
+    "subtitle": "Únete a la plataforma líder en gestión de motores industriales.",
     "name": "Nombre",
+    "first_name": "Nombre",
+    "last_name": "Apellido",
     "username": "Usuario",
     "email": "Correo electrónico",
     "password": "Contraseña",
@@ -529,6 +548,16 @@
     "already_account": "¿Ya tienes una cuenta?",
     "sign_in_instead": "Inicia sesión en su lugar",
     "or": "o"
+  },
+  "inquiries": {
+    "title": "Interesados",
+    "search_placeholder": "Buscar por usuario o publicación...",
+    "user": "Usuario",
+    "publication": "Publicación",
+    "actions": "Acciones",
+    "load_error": "No se pudieron cargar las conversaciones",
+    "no_data_title": "No hay conversaciones",
+    "no_data_text": "Aún no has recibido consultas de interés."
   },
   "notifications": {
     "title": "Notificaciones",
@@ -587,5 +616,13 @@
         "item": "Calificación"
       }
     }
-  }
+  },
+  "Gestión de Ventas": "Gestión de Ventas",
+  "Mis Publicaciones": "Mis Publicaciones",
+  "Interesados": "Interesados",
+  "Gestión de Compras": "Gestión de Compras",
+  "Mis Compras": "Mis Compras",
+  "Mi Cuenta": "Mi Cuenta",
+  "Ofertas Recibidas": "Ofertas Recibidas",
+  "Ofertas Enviadas": "Ofertas Enviadas"
 }

@@ -37,9 +37,9 @@ const parOptions = computed(() => [
   { title: '>50', value: '50-999999' },
 ])
 const potenciaOptions = computed(() => [
-  { title: '0-100 kW / hasta 75 CV', value: '0-100' },
-  { title: '100-300 kW / de 75 hasta 135 CV', value: '100-300' },
-  { title: 'mayor que 300 kW / de 135 hasta 400 CV', value: '300-999999' },
+  { title: '0-100 kW / 0-75 CV', value: '0-100' },
+  { title: '100-300 kW / 75-135 CV', value: '100-300' },
+  { title: '> 300 kW / > 135 CV', value: '300-999999' },
 ])
 const velocidadOptions = computed(() => [
   { title: '0-1.500 rpm', value: '0-1500' },
@@ -80,7 +80,7 @@ const publicacionesApiUrl = computed(() => {
     velocidad: selectedVelocidad.value,
     par_nominal: selectedPar.value,
     tipo_de_alimentacion: selectedTechnology.value,
-    tipo_o_referencia: typeModel.value,
+    tipo_o_referencia: typeModel.value ? typeModel.value.replace(/[\.\-\/\s]/g, '') : '',
     ...(order.value ? sortOptions[order.value] : {}),
   }
 
@@ -92,8 +92,10 @@ const publicacionesApiUrl = computed(() => {
   return `${baseUrl}?${filteredParams}`
 })
 
-const { data: publicacionesData, isFetching: loading, execute: fetchPublicaciones } = useApi<any>(publicacionesApiUrl, { immediate: false }).get().json()
-const isSearching = ref(false)
+const { data: publicacionesData, isFetching, execute: fetchPublicaciones } = useApi<any>(publicacionesApiUrl, { immediate: false }).get().json()
+const isSearching = ref(true)
+
+const isLoading = computed(() => isFetching.value || isSearching.value)
 
 const applyFilters = async () => {
   isSearching.value = true
@@ -195,7 +197,7 @@ const search = () => {
 
         <PublicacionItems
           :publicaciones="publicaciones"
-          :loading="isSearching"
+          :loading="isLoading"
         />
 
         <PaginationControls

@@ -55,12 +55,16 @@ function motorlan_register_garantia_rest_routes() {
     register_rest_route( $namespace, '/garantias/publicacion/(?P<uuid>[a-zA-Z0-9-]+)', array(
         'methods'             => WP_REST_Server::READABLE,
         'callback'            => 'motorlan_get_garantia_by_publicacion_uuid',
-        'permission_callback' => 'motorlan_permission_callback_true',
+        'permission_callback' => 'motorlan_is_user_authenticated',
     ) );
 }
 add_action( 'rest_api_init', 'motorlan_register_garantia_rest_routes' );
 
 function motorlan_get_garantia_by_publicacion_uuid( WP_REST_Request $request ) {
+    $current_user_id = get_current_user_id();
+    if ( ! $current_user_id ) {
+        return new WP_Error( 'rest_not_logged_in', 'Sorry, you are not allowed to do that.', array( 'status' => 401 ) );
+    }
     $uuid = $request->get_param('uuid');
     $post_id = motorlan_get_post_id_by_uuid($uuid);
 
@@ -84,7 +88,18 @@ function motorlan_get_garantia_by_publicacion_uuid( WP_REST_Request $request ) {
 
     $query->the_post();
     $garantia_id = get_the_ID();
-    
+
+    $publication_author_id = (int) get_post_field( 'post_author', $post_id );
+    $garantia_author_id = (int) get_post_field( 'post_author', $garantia_id );
+    if (
+        ! current_user_can( 'manage_options' )
+        && $current_user_id !== $publication_author_id
+        && $current_user_id !== $garantia_author_id
+    ) {
+        wp_reset_postdata();
+        return new WP_Error( 'forbidden', 'No tienes permisos para ver esta garantía.', array( 'status' => 403 ) );
+    }
+
     $garantia_data = array(
         'id' => $garantia_id,
         'garantia_status' => get_field('garantia_status', $garantia_id),

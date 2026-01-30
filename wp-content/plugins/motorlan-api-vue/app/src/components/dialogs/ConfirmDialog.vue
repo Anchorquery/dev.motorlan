@@ -8,9 +8,10 @@ interface Props {
   cancelMsg: string
 }
 
-type Emit =
-  | ((e: 'update:isDialogVisible', value: boolean) => void)
-  | ((e: 'confirm', value: boolean) => void)
+interface Emit {
+  (e: 'update:isDialogVisible', value: boolean): void
+  (e: 'confirm', value: boolean): void
+}
 
 const props = defineProps<Props>()
 

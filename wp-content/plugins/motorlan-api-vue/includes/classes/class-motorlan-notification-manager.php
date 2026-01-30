@@ -56,7 +56,23 @@ class Motorlan_Notification_Manager {
     }
 
     /**
+     * Obtiene el número de notificaciones no leídas de un usuario.
+     *
+     * @param int $user_id ID del usuario.
+     * @return int Número de notificaciones no leídas.
+     */
+    public function get_unread_count( $user_id ) {
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'motorlan_notifications';
+
+        $query = $wpdb->prepare( "SELECT COUNT(*) FROM {$table_name} WHERE user_id = %d AND is_read = 0", $user_id );
+        
+        return (int) $wpdb->get_var( $query );
+    }
+
+    /**
      * Obtiene las notificaciones de un usuario.
+
      *
      * @param int $user_id ID del usuario.
      * @param array $args Argumentos de consulta (p. ej., ['per_page' => 10, 'status' => 'unread']).

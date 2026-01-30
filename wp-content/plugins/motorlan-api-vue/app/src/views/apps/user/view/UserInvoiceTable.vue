@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import type { Invoice } from '@db/apps/invoice/types'
+import type { Invoice } from '@/plugins/fake-api/handlers/dashboard/invoice/types'
+import { avatarText } from '@core/utils/formatters'
 
 const searchQuery = ref('')
 const selectedStatus = ref()
@@ -28,7 +29,7 @@ const headers = [
 ]
 
 // 👉 Fetch Invoices
-const { data: invoiceData, execute: fetchInvoices } = await useApi<any>(createUrl('/apps/invoice', {
+const { data: invoiceData, execute: fetchInvoices } = await useApi<any>(createUrl('/dashboard/invoice', {
   query: {
     q: searchQuery,
     status: selectedStatus,
@@ -76,7 +77,7 @@ const computedMoreList = computed(() => {
 // 👉 Delete Invoice
 // 👉 Delete Invoice
 const deleteInvoice = async (id: number) => {
-  await $api(`/apps/invoice/${id}`, { method: 'DELETE' })
+  await $api(`/dashboard/invoice/${id}`, { method: 'DELETE' })
 
   fetchInvoices()
 }
@@ -132,7 +133,7 @@ const deleteInvoice = async (id: number) => {
       >
         <!-- id -->
         <template #item.id="{ item }">
-          <RouterLink :to="{ name: 'apps-invoice-preview-id', params: { id: item.id } }">
+          <RouterLink :to="{ name: 'dashboard-invoice-preview-id', params: { id: item.id } }">
             #{{ item.id }}
           </RouterLink>
         </template>
@@ -181,7 +182,7 @@ const deleteInvoice = async (id: number) => {
             <VIcon icon="tabler-trash" />
           </IconBtn>
 
-          <IconBtn :to="{ name: 'apps-invoice-preview-id', params: { id: item.id } }">
+          <IconBtn :to="{ name: 'dashboard-invoice-preview-id', params: { id: item.id } }">
             <VIcon icon="tabler-eye" />
           </IconBtn>
 

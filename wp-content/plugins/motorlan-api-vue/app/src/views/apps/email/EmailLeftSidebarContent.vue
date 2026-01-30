@@ -55,14 +55,14 @@ const folders: ComputedRef<Folder[]> = computed(() => [
   {
     title: 'Inbox',
     prependIcon: 'tabler-mail',
-    to: { name: 'apps-email' },
+    to: { name: 'dashboard-email' },
     badge: { content: inboxEmails.value, color: 'primary' },
   },
   {
     title: 'Sent',
     prependIcon: 'tabler-send',
     to: {
-      name: 'apps-email-filter',
+      name: 'dashboard-email-filter',
       params: { filter: 'sent' },
     },
   },
@@ -70,7 +70,7 @@ const folders: ComputedRef<Folder[]> = computed(() => [
     title: 'Draft',
     prependIcon: 'tabler-edit',
     to: {
-      name: 'apps-email-filter',
+      name: 'dashboard-email-filter',
       params: { filter: 'draft' },
     },
     badge: { content: draftEmails.value, color: 'warning' },
@@ -79,7 +79,7 @@ const folders: ComputedRef<Folder[]> = computed(() => [
     title: 'Starred',
     prependIcon: 'tabler-star',
     to: {
-      name: 'apps-email-filter',
+      name: 'dashboard-email-filter',
       params: { filter: 'starred' },
     },
     badge: { content: starredEmails.value, color: 'success' },
@@ -88,7 +88,7 @@ const folders: ComputedRef<Folder[]> = computed(() => [
     title: 'Spam',
     prependIcon: 'tabler-alert-circle',
     to: {
-      name: 'apps-email-filter',
+      name: 'dashboard-email-filter',
       params: { filter: 'spam' },
     },
     badge: { content: spamEmails.value, color: 'error' },
@@ -97,7 +97,7 @@ const folders: ComputedRef<Folder[]> = computed(() => [
     title: 'Trash',
     prependIcon: 'tabler-trash',
     to: {
-      name: 'apps-email-filter',
+      name: 'dashboard-email-filter',
       params: { filter: 'trashed' },
     },
   },
@@ -108,7 +108,7 @@ const labels: Label[] = [
     title: 'Personal',
     color: 'success',
     to: {
-      name: 'apps-email-label',
+      name: 'dashboard-email-label',
       params: { label: 'personal' },
     },
   },
@@ -116,7 +116,7 @@ const labels: Label[] = [
     title: 'Company',
     color: 'primary',
     to: {
-      name: 'apps-email-label',
+      name: 'dashboard-email-label',
       params: { label: 'company' },
     },
   },
@@ -124,7 +124,7 @@ const labels: Label[] = [
     title: 'Important',
     color: 'warning',
     to: {
-      name: 'apps-email-label',
+      name: 'dashboard-email-label',
       params: { label: 'important' },
     },
   },
@@ -132,7 +132,7 @@ const labels: Label[] = [
     title: 'Private',
     color: 'error',
     to: {
-      name: 'apps-email-label',
+      name: 'dashboard-email-label',
       params: { label: 'private' },
     },
   },

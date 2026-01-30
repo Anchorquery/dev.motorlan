@@ -173,11 +173,13 @@
   "Cuenta": "Account",
   "Estadísticas": "Statistics",
   "Tipo": "Type",
-  "custom": {
-    "unknown": "Unknown",
-    "draft": "Draft",
-    "published": "Published"
-  },
+    "custom": {
+      "unknown": "Unknown",
+      "draft": "Draft",
+      "published": "Published",
+      "paused": "Paused",
+      "pending": "Pending Approval"
+    },
   "store": {
     "par_options": {
       "range1": "0-50",
@@ -312,7 +314,11 @@
       "warranty_skipped_info": "Publication without warranty.",
       "post_id_not_found_error": "Error: Publication ID not found.",
       "warranty_request_success": "Warranty requested successfully. Publication made.",
-      "warranty_request_error": "Error requesting warranty: {message}"
+      "warranty_request_error": "Error requesting warranty: {message}",
+      "login_required": "You must log in to continue.",
+      "fetch_brands_error": "Unable to load brands.",
+      "fetch_categories_error": "Unable to load categories.",
+      "fetch_types_error": "Unable to load types."
     }
   },
   "publication_list": {
@@ -352,6 +358,7 @@
       "draft": "Draft",
       "paused": "Paused",
       "sold": "Sold",
+      "pending": "Pending",
       "unknown": "Unknown"
     },
     "delete_selected": "Delete Selected",
@@ -371,6 +378,7 @@
   },
   "edit_publication": {
     "title": "Edit Publication",
+    "fetch_error": "Unable to load the publication.",
     "discard": "Discard",
     "update_publication": "Update Publication",
     "section_title": "Publication Details",
@@ -501,6 +509,33 @@
     "my_sales": "My Sales",
     "no_sales_yet": "You have not made any sales yet."
   },
+  "login": {
+    "welcome": "Access to Motorlan",
+    "subtitle": "Log in to manage your motors and spare parts.",
+    "username": "Username",
+    "password": "Password",
+    "login_button": "Log in",
+    "new_platform": "New to our platform?",
+    "create_account": "Create an account",
+    "or": "or",
+    "login_to_interact": "Log in as a customer to contact the seller, make offers or buy this equipment."
+  },
+  "register": {
+    "title": "Create your account",
+    "subtitle": "Join the leading platform for industrial motor management.",
+    "name": "Name",
+    "first_name": "First Name",
+    "last_name": "Last Name",
+    "username": "Username",
+    "email": "Email",
+    "password": "Password",
+    "agree_to": "I agree to the",
+    "privacy_policy": "privacy policy and terms",
+    "sign_up": "Sign up",
+    "already_account": "Already have an account?",
+    "sign_in_instead": "Log in instead",
+    "or": "or"
+  },
   "notifications": {
     "title": "Notifications",
     "new_count": "{count} New",
@@ -558,5 +593,13 @@
         "item": "item"
       }
     }
-  }
+  },
+  "Gestión de Ventas": "Sales Management",
+  "Mis Publicaciones": "My Publications",
+  "Interesados": "Inquiries",
+  "Gestión de Compras": "Purchases Management",
+  "Mis Compras": "My Purchases",
+  "Mi Cuenta": "My Account",
+  "Ofertas Recibidas": "Offers Received",
+  "Ofertas Enviadas": "Offers Sent"
 }

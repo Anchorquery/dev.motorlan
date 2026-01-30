@@ -24,10 +24,6 @@ const formatProductTitle = (publication: Publicacion) => {
   return parts.join(' ').toUpperCase()
 }
 
-import { formatCurrency } from '@/utils/formatCurrency'
-
-const formatPriceLabel = (publication: Publicacion) => formatCurrency(publication?.acf?.precio_de_venta) || 'Consultar precio'
-
 const resolveProductType = (publication: Publicacion) => {
   const candidates: string[] = []
 
@@ -87,9 +83,6 @@ const resolveProductType = (publication: Publicacion) => {
           </div>
           <div class="text-caption text-medium-emphasis mb-3 motor-type">
             {{ resolveProductType(publicacion) }}
-          </div>
-          <div class="text-h6 text-error font-weight-bold mb-4">
-            {{ formatPriceLabel(publicacion) }}
           </div>
           <VBtn
             color="error"

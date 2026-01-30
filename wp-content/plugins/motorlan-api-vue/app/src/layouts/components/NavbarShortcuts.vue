@@ -4,19 +4,19 @@ const shortcuts = [
     icon: 'tabler-file-dollar',
     title: 'Invoice App',
     subtitle: 'Manage Accounts',
-    to: { name: 'apps-invoice-list' },
+    to: { name: 'dashboard-invoice-list' },
   },
   {
     icon: 'tabler-user',
     title: 'Users',
     subtitle: 'Manage Users',
-    to: { name: 'apps-user-list' },
+    to: { name: 'dashboard-user-list' },
   },
   {
     icon: 'tabler-users',
     title: 'Role Management',
     subtitle: 'Permission',
-    to: { name: 'apps-roles' },
+    to: { name: 'dashboard-roles' },
   },
   {
     icon: 'tabler-settings',

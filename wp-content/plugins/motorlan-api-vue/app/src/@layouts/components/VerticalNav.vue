@@ -124,7 +124,7 @@ const hideTitleAndIcon = configStore.isVerticalNavMini(isHovered)
       :update-is-vertical-nav-scrolled="updateIsVerticalNavScrolled"
     >
       <PerfectScrollbar
-        :key="configStore.isAppRTL"
+        :key="String(configStore.isAppRTL)"
         tag="ul"
         class="nav-items"
         :options="{ wheelPropagation: false }"
@@ -164,11 +164,11 @@ const hideTitleAndIcon = configStore.isVerticalNavMini(isHovered)
 
 // 👉 Vertical Nav
 .layout-vertical-nav {
-  position: absolute;
+  position: fixed;
   z-index: variables.$layout-vertical-nav-z-index;
   display: flex;
   flex-direction: column;
-  block-size: 100%;
+  block-size: 100vh;
   inline-size: variables.$layout-vertical-nav-width;
   inset-block-start: 0;
   inset-inline-start: 0;

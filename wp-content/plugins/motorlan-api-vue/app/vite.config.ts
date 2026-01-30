@@ -74,6 +74,7 @@ export default ({ mode }) => {
           './src/utils/',
           './src/plugins/*/composables/*',
         ],
+        dts: true,
         vueTemplate: true,
 
         // ℹ️ Disabled to avoid confusion & accidental usage

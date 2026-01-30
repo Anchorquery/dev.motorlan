@@ -23,60 +23,25 @@ definePage({
 </script>
 
 <template>
-  <RouterLink to="/">
-    <div class="auth-logo d-flex align-center gap-x-3">
-      <VNodeRenderer :nodes="themeConfig.app.logo" />
-      <h1 class="auth-title">
-        {{ themeConfig.app.title }}
-      </h1>
-    </div>
-  </RouterLink>
-
   <VRow
-    class="auth-wrapper bg-surface"
     no-gutters
+    class="auth-wrapper bg-surface"
   >
     <VCol
-      md="8"
-      class="d-none d-md-flex"
-    >
-      <div class="position-relative bg-background w-100 me-0">
-        <div
-          class="d-flex align-center justify-center w-100 h-100"
-          style="padding-inline: 150px;"
-        >
-          <VImg
-            max-width="468"
-            :src="authThemeImg"
-            class="auth-illustration mt-16 mb-2"
-          />
-        </div>
-
-        <img
-          class="auth-footer-mask"
-          :src="authThemeMask"
-          alt="auth-footer-mask"
-          height="280"
-          width="100"
-        >
-      </div>
-    </VCol>
-
-    <VCol
       cols="12"
-      md="4"
-      class="d-flex align-center justify-center"
+      class="auth-card-v2 d-flex flex-column align-center justify-center h-screen"
+      style="background: linear-gradient(to bottom right, rgb(var(--v-theme-surface)), rgba(var(--v-theme-primary), 0.05));"
     >
       <VCard
         flat
         :max-width="500"
-        class="mt-12 mt-sm-0 pa-4"
+        class="pa-6 pa-sm-8 elevation-10 rounded-xl"
       >
         <VCardText>
-          <h4 class="text-h4 mb-1">
+          <h4 class="text-h4 font-weight-bold mb-1">
             Forgot Password? 🔒
           </h4>
-          <p class="mb-0">
+          <p class="mb-0 text-body-1 text-medium-emphasis">
             Enter your email and we'll send you instructions to reset your password
           </p>
         </VCardText>
@@ -92,6 +57,8 @@ definePage({
                   label="Email"
                   type="email"
                   placeholder="johndoe@email.com"
+                  variant="outlined"
+                  density="comfortable"
                 />
               </VCol>
 
@@ -100,6 +67,9 @@ definePage({
                 <VBtn
                   block
                   type="submit"
+                  size="large"
+                  rounded="lg"
+                  class="font-weight-bold text-uppercase letter-spacing-1 hover-lift"
                 >
                   Send Reset Link
                 </VBtn>
@@ -108,7 +78,7 @@ definePage({
               <!-- back to login -->
               <VCol cols="12">
                 <RouterLink
-                  class="d-flex align-center justify-center"
+                  class="d-flex align-center justify-center text-primary font-weight-semibold text-decoration-none"
                   :to="{ name: 'login' }"
                 >
                   <VIcon
@@ -129,4 +99,13 @@ definePage({
 
 <style lang="scss">
 @use "@core/scss/template/pages/page-auth.scss";
+
+.hover-lift {
+  transition: transform 0.2s, box-shadow 0.2s;
+  
+  &:not(:disabled):hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(var(--v-theme-primary), 0.3);
+  }
+}
 </style>

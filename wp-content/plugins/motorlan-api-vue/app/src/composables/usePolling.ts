@@ -12,7 +12,7 @@ import { createUrl } from '@/@core/composable/createUrl'
 export function usePolling(urlBase: string, onData: (data: any[], meta: any | null) => void, intervalMs = 3000) {
   const isRunning = ref(false)
   const lastTimestamp = ref<string | null>(null)
-  let timer: ReturnType<typeof window.setInterval> | null = null
+  let timer: number | null = null
 
   const fetchUpdates = async () => {
     try {

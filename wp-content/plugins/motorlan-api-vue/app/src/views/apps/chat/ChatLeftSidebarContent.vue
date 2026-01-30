@@ -1,9 +1,9 @@
 <script lang="ts" setup>
 import { PerfectScrollbar } from 'vue3-perfect-scrollbar'
-import type { ChatContact as TypeChatContact } from '@db/apps/chat/types'
+import type { ChatContact as TypeChatContact } from '@/plugins/fake-api/handlers/apps/chat/types'
 import { useChat } from './useChat'
-import ChatContact from '@/views/apps/chat/ChatContact.vue'
-import { useChatStore } from '@/views/apps/chat/useChatStore'
+import ChatContact from './ChatContact.vue'
+import { useChatStore } from './useChatStore'
 
 const props = defineProps<{
   search: string
@@ -27,19 +27,20 @@ const store = useChatStore()
   <!-- 👉 Chat list header -->
   <div
     v-if="store.profileUser"
-    class="chat-list-header"
+    class="chat-list-header d-flex align-center px-4 py-3 bg-surface border-b"
   >
     <VBadge
       dot
       location="bottom right"
-      offset-x="3"
-      offset-y="3"
+      offset-x="2"
+      offset-y="2"
       :color="resolveAvatarBadgeVariant(store.profileUser.status)"
       bordered
+      class="me-3"
     >
       <VAvatar
-        size="40"
-        class="cursor-pointer"
+        size="44"
+        class="cursor-pointer elevation-1"
         @click="$emit('showUserProfile')"
       >
         <VImg
@@ -49,17 +50,23 @@ const store = useChatStore()
       </VAvatar>
     </VBadge>
 
-    <AppTextField
+    <VTextField
       id="search"
       v-model="search"
-      placeholder="Search..."
+      placeholder="Buscar..."
       prepend-inner-icon="tabler-search"
-      class="ms-4 me-1 chat-list-search"
+      density="compact"
+      variant="outlined"
+      class="chat-list-search flex-grow-1"
+      hide-details
+      rounded="pill"
+      bg-color="surface"
     />
 
     <IconBtn
       v-if="$vuetify.display.smAndDown"
       @click="$emit('close')"
+      class="ms-2"
     >
       <VIcon
         icon="tabler-x"
@@ -67,17 +74,16 @@ const store = useChatStore()
       />
     </IconBtn>
   </div>
-  <VDivider />
-
+  
   <PerfectScrollbar
     tag="ul"
-    class="d-flex flex-column gap-y-1 chat-contacts-list px-3 py-2 list-none"
+    class="d-flex flex-column gap-y-1 chat-contacts-list px-3 py-3 list-none flex-grow-1"
     :options="{ wheelPropagation: false }"
   >
-    <li class="list-none">
-      <h5 class="chat-contact-header text-primary text-h5">
-        Chats
-      </h5>
+    <li class="list-none mb-2 mt-1">
+      <span class="chat-contact-header text-uppercase text-caption font-weight-bold text-medium-emphasis ps-4">
+        Chats Recientes
+      </span>
     </li>
 
     <ChatContact
@@ -85,52 +91,53 @@ const store = useChatStore()
       :key="`chat-${contact.id}`"
       :user="contact"
       is-chat-contact
+      class="mb-1 rounded-lg"
       @click="$emit('openChatOfContact', contact.id)"
     />
 
-    <span
+    <div
       v-show="!store.chatsContacts.length"
-      class="no-chat-items-text text-disabled"
-    >No chats found</span>
-    <li class="list-none pt-2">
-      <h5 class="chat-contact-header text-primary text-h5">
-        Contacts
-      </h5>
+      class="no-chat-items-text text-disabled text-center py-4 text-caption"
+    >
+      No hay chats recientes
+    </div>
+
+    <li class="list-none mt-4 mb-2">
+      <span class="chat-contact-header text-uppercase text-caption font-weight-bold text-medium-emphasis ps-4">
+        Contactos
+      </span>
     </li>
 
     <ChatContact
       v-for="contact in store.contacts"
       :key="`chat-${contact.id}`"
       :user="contact"
+      class="mb-1 rounded-lg"
       @click="$emit('openChatOfContact', contact.id)"
     />
 
-    <span
+    <div
       v-show="!store.contacts.length"
-      class="no-chat-items-text text-disabled"
-    >No contacts found</span>
+      class="no-chat-items-text text-disabled text-center py-4 text-caption"
+    >
+      No hay contactos encontrados
+    </div>
   </PerfectScrollbar>
 </template>
 
 <style lang="scss">
 .chat-contacts-list {
-  --chat-content-spacing-x: 16px;
-
-  padding-block-end: 0.75rem;
+  --chat-content-spacing-x: 12px;
 
   .chat-contact-header {
-    margin-block: 0.5rem 0.25rem;
-  }
-
-  .chat-contact-header,
-  .no-chat-items-text {
-    margin-inline: var(--chat-content-spacing-x);
+    letter-spacing: 0.08em;
   }
 }
 
 .chat-list-search {
-  .v-field--focused {
-    box-shadow: none !important;
+  .v-field__outline__start,
+  .v-field__outline__end {
+    border-color: rgba(var(--v-border-color), var(--v-border-opacity)) !important;
   }
 }
 </style>

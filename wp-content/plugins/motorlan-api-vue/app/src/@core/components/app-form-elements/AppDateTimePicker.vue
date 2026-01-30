@@ -20,6 +20,10 @@ defineOptions({
 
 const props = defineProps({
   autofocus: Boolean,
+  modelValue: {
+    type: [String, Date, Array] as PropType<string | Date | Date[] | null>,
+    default: null,
+  },
   counter: [Boolean, Number, String] as PropType<true | number | string>,
   counterValue: Function as PropType<(value: any) => number>,
   prefix: String,
@@ -144,7 +148,7 @@ const elementId = computed (() => {
 
     <VInput
       v-bind="{ ...inputProps, ...rootAttrs }"
-      :model-value="modelValue"
+      :model-value="props.modelValue"
       :hide-details="props.hideDetails"
       :class="[{
         'v-text-field--prefixed': props.prefix,
@@ -174,7 +178,7 @@ const elementId = computed (() => {
                 v-if="!isInlinePicker"
                 v-bind="compAttrs"
                 ref="refFlatPicker"
-                :model-value="modelValue"
+                :model-value="props.modelValue"
                 :placeholder="props.placeholder"
                 :readonly="isReadonly.value"
                 class="flat-picker-custom-style h-100 w-100"
@@ -187,7 +191,7 @@ const elementId = computed (() => {
               <!-- simple input for inline prop -->
               <input
                 v-if="isInlinePicker"
-                :value="modelValue"
+                :value="props.modelValue"
                 :placeholder="props.placeholder"
                 :readonly="isReadonly.value"
                 class="flat-picker-custom-style h-100 w-100"
@@ -204,7 +208,7 @@ const elementId = computed (() => {
       v-if="isInlinePicker"
       v-bind="compAttrs"
       ref="refFlatPicker"
-      :model-value="modelValue"
+      :model-value="props.modelValue"
       @update:model-value="emitModelValue"
       @on-open="isCalendarOpen = true"
       @on-close="isCalendarOpen = false"

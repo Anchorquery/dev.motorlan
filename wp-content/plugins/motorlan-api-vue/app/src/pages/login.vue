@@ -14,7 +14,6 @@ import authV2MaskDark from '@images/pages/misc-mask-dark.png'
 import authV2MaskLight from '@images/pages/misc-mask-light.png'
 import { VNodeRenderer } from '@layouts/components/VNodeRenderer'
 import { themeConfig } from '@themeConfig'
-import { useApi } from '@/composables/useApi'
 import { useToast } from '@/composables/useToast'
 import { requiredValidator } from '@core/utils/validators'
 import { useUserStore } from '@/@core/stores/user'
@@ -54,14 +53,27 @@ const credentials = ref({
   password: '',
 })
 
+interface UserData {
+  displayName: string
+  email: string
+  nicename: string
+  role: string
+}
+
+interface AbilityRule {
+  action: string
+  subject: string
+}
+
 const loginSyncWithWordPress = async () => {
-  const loginUrl = window.wpData?.login_endpoint || '/wp-json/wp/v2/custom/login'
+  const wpData = (window as typeof window & { wpData?: { login_endpoint?: string; rest_nonce?: string; nonce?: string } }).wpData
+  const loginUrl = wpData?.login_endpoint || '/wp-json/wp/v2/custom/login'
   try {
     const response = await fetch(loginUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-WP-Nonce': window.wpData?.rest_nonce || window.wpData?.nonce || '',
+        'X-WP-Nonce': wpData?.rest_nonce || wpData?.nonce || '',
       },
       body: JSON.stringify({
         username: credentials.value.username,
@@ -124,7 +136,7 @@ const login = async () => {
     const { token, user_display_name, user_email, user_nicename } = responseData
 
     // Store the token in a cookie
-    useCookie('accessToken').value = token
+    useCookie<string>('accessToken').value = token
     localStorage.setItem('accessToken', token)
 
     // Use native fetch to ensure the new token is used immediately
@@ -148,7 +160,7 @@ const login = async () => {
     console.log('Profile data:', profileData)
 
     // Store user data in a cookie
-    useCookie('userData').value = {
+    useCookie<UserData>('userData').value = {
       displayName: user_display_name,
       email: user_email,
       nicename: user_nicename,
@@ -164,10 +176,10 @@ const login = async () => {
     )
 
     // Grant abilities based on role
-    const userAbilities = [{ action: 'manage', subject: 'all' }]
+    const userAbilities: AbilityRule[] = [{ action: 'manage', subject: 'all' }]
 
     ability.update(userAbilities)
-    useCookie('userAbilityRules').value = userAbilities
+    useCookie<AbilityRule[]>('userAbilityRules').value = userAbilities
 
     const { nombre, apellidos } = profileData.personal_data || {}
 
@@ -179,13 +191,13 @@ const login = async () => {
       if (!profileData.personal_data || !nombre || !apellidos) {
          // If personal_data is missing entirely, we might want to warn too, or just check the fields if it exists
         showToast('Por favor, completa tu perfil para continuar.', 'warning')
-        router.replace({ name: 'apps-user-account' })
+        router.replace({ name: 'dashboard-user-account' })
       }
       else {
         if (route.query.to)
           router.replace(String(route.query.to))
         else
-          router.replace({ path: '/apps/purchases/purchases' })
+          router.replace({ path: '/dashboard/purchases/purchases' })
       }
     })
   }
@@ -208,60 +220,25 @@ const onSubmit = () => {
 </script>
 
 <template>
-  <RouterLink to="/">
-    <div class="auth-logo d-flex align-center gap-x-3">
-      <VNodeRenderer :nodes="themeConfig.app.logo" />
-      <h1 class="auth-title">
-        {{ themeConfig.app.title }}
-      </h1>
-    </div>
-  </RouterLink>
-
   <VRow
     no-gutters
     class="auth-wrapper bg-surface"
   >
     <VCol
-      md="8"
-      class="d-none d-md-flex"
-    >
-      <div class="position-relative bg-background w-100 me-0">
-        <div
-          class="d-flex align-center justify-center w-100 h-100"
-          style="padding-inline: 6.25rem;"
-        >
-          <VImg
-            max-width="613"
-            :src="authThemeImg"
-            class="auth-illustration mt-16 mb-2"
-          />
-        </div>
-
-        <img
-          class="auth-footer-mask"
-          :src="authThemeMask"
-          alt="auth-footer-mask"
-          height="280"
-          width="100"
-        >
-      </div>
-    </VCol>
-
-    <VCol
       cols="12"
-      md="4"
-      class="auth-card-v2 d-flex align-center justify-center"
+      class="auth-card-v2 d-flex flex-column align-center justify-center h-screen"
+      style="background: linear-gradient(to bottom right, rgb(var(--v-theme-surface)), rgba(var(--v-theme-primary), 0.05));"
     >
       <VCard
         flat
         :max-width="500"
-        class="mt-12 mt-sm-0 pa-4"
+        class="pa-6 pa-sm-8 elevation-10 rounded-xl"
       >
         <VCardText>
-          <h4 class="text-h4 mb-1">
+          <h4 class="text-h4 font-weight-bold mb-1">
             {{ t('login.welcome', { title: themeConfig.app.title }) }}
           </h4>
-          <p class="mb-0">
+          <p class="mb-0 text-body-1 text-medium-emphasis">
             {{ t('login.subtitle') }}
           </p>
         </VCardText>
@@ -271,7 +248,8 @@ const onSubmit = () => {
             v-if="genericError"
             color="error"
             variant="tonal"
-            class="mb-4"
+            class="mb-6 rounded-lg"
+            icon="tabler-alert-triangle"
           >
             <div v-html="genericError" />
           </VAlert>
@@ -285,12 +263,15 @@ const onSubmit = () => {
               <VCol cols="12">
                 <VTextField
                   v-model="credentials.username"
-                  :label="t('login.username')"
-                  placeholder="johndoe"
-                  type="text"
+                  :label="t('register.email')"
+                  placeholder="johndoe@email.com"
+                  type="email"
                   autofocus
+                  variant="outlined"
+                  density="comfortable"
                   :rules="[requiredValidator]"
                   :error-messages="errors.username"
+                  class="mb-1"
                 />
               </VCol>
 
@@ -303,18 +284,24 @@ const onSubmit = () => {
                   :rules="[requiredValidator]"
                   :type="isPasswordVisible ? 'text' : 'password'"
                   autocomplete="password"
+                  variant="outlined"
+                  density="comfortable"
                   :error-messages="errors.password"
                   :append-inner-icon="isPasswordVisible ? 'tabler-eye-off' : 'tabler-eye'"
                   @click:append-inner="isPasswordVisible = !isPasswordVisible"
+                  class="mb-1"
                 />
 
-                <div class="d-flex align-center flex-wrap justify-space-between my-6" />
+                <div class="d-flex align-center flex-wrap justify-space-between mt-2 mb-6" />
 
                 <VBtn
                   block
                   type="submit"
+                  size="large"
+                  rounded="lg"
                   :loading="isSubmitting"
                   :disabled="isSubmitting"
+                  class="font-weight-bold text-uppercase letter-spacing-1 hover-lift"
                 >
                   {{ t('login.login_button') }}
                 </VBtn>
@@ -325,28 +312,16 @@ const onSubmit = () => {
                 cols="12"
                 class="text-center"
               >
-                <span>{{ t('login.new_platform') }}</span>
+                <span class="text-body-2 text-medium-emphasis">{{ t('login.new_platform') }}</span>
                 <RouterLink
-                  class="text-primary ms-1"
+                  class="text-primary font-weight-semibold ms-1 text-decoration-none"
                   :to="{ name: 'register' }"
                 >
                   {{ t('login.create_account') }}
                 </RouterLink>
               </VCol>
-              <VCol
-                cols="12"
-                class="d-flex align-center"
-              >
-                <VDivider />
-                <span class="mx-4">{{ t('login.or') }}</span>
-                <VDivider />
-              </VCol>
 
-              <!-- auth providers -->
-              <VCol
-                cols="12"
-                class="text-center"
-              />
+
             </VRow>
           </VForm>
         </VCardText>
@@ -357,4 +332,13 @@ const onSubmit = () => {
 
 <style lang="scss">
 @use "@core/scss/template/pages/page-auth";
+
+.hover-lift {
+  transition: transform 0.2s, box-shadow 0.2s;
+  
+  &:not(:disabled):hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(var(--v-theme-primary), 0.3);
+  }
+}
 </style>

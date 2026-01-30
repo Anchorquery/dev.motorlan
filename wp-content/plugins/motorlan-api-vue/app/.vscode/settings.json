@@ -27,6 +27,9 @@
   "[vue]": {
     "editor.defaultFormatter": "dbaeumer.vscode-eslint",
   },
+  // TypeScript
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true,
   // Extension: Volar
   "volar.preview.port": 3000,
   "volar.completion.preferredTagNameCase": "pascal",

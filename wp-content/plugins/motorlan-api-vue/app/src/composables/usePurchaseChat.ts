@@ -183,10 +183,10 @@ export function usePurchaseChat(uuid: string) {
     const instance = ensurePolling()
 
     if (lastServerTimestamp.value)
-      instance.sync(lastServerTimestamp.value)
+      instance?.sync(lastServerTimestamp.value)
 
     if (!isPollingActive.value) {
-      instance.start()
+      instance?.start()
       isPollingActive.value = true
     }
   }

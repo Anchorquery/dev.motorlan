@@ -581,7 +581,25 @@ function motorlan_handle_update_offer_status($request) {
 
         $updated_offer = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table_name WHERE id = %d", $offer_id));
 
+        // Notify Buyer
+        $buyer_id = (int) $offer->user_id;
+        $publication_title = get_the_title($offer->publication_id);
+        $notification_manager = new Motorlan_Notification_Manager();
+        $notification_manager->create_notification(
+            $buyer_id,
+            'offer_accepted',
+            "¡Oferta aceptada para \"{$publication_title}\"!",
+            "El vendedor ha aceptado tu oferta. Tienes 24 horas para confirmar la compra.",
+            array(
+                'offer_id'       => $offer_id,
+                'publication_id' => $offer->publication_id,
+                'url'            => '/offers/sent',
+            ),
+            array( 'web', 'email' )
+        );
+
         return new WP_REST_Response(array(
+
             'success' => true,
             'message' => 'Oferta aceptada. El comprador debe confirmar en las próximas 24 horas.',
             'data' => motorlan_offers_prepare_offer_item($updated_offer),

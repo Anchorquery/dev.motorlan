@@ -3,6 +3,11 @@
 /**
  * Handles API requests to the Fagor Automation product downloads API.
  */
+// If this file is called directly, abort.
+if ( ! defined( 'WPINC' ) ) {
+    die;
+}
+
 class FagorApi {
 
     /**
@@ -14,11 +19,16 @@ class FagorApi {
     public function getProducts(array $params = []): ?array {
         $url = 'https://fagorautomation.test/wp/v2/productos/descargas';
 
-        // Build the query string.
-        $queryString = http_build_query($params);
-
-        // Construct the full URL.
-        $fullUrl = $url . $queryString;
+        // Build the full URL.
+        $fullUrl = $url;
+        if ( ! empty( $params ) ) {
+            if ( function_exists( 'add_query_arg' ) ) {
+                $fullUrl = add_query_arg( $params, $url );
+            } else {
+                $queryString = http_build_query( $params );
+                $fullUrl = $url . '?' . $queryString;
+            }
+        }
 
         // Perform the API request using file_get_contents.
         $response = file_get_contents($fullUrl);
@@ -39,24 +49,3 @@ class FagorApi {
         return $data;
     }
 }
-
-// Example usage (for testing):
-if (isset($_GET['action']) && $_GET['action'] === 'get_products') {
-    $api = new FagorApi();
-    $params = [
-        'sistemas' => '12345', // Example system ID
-        'perPage' => 10,      // Example number of items per page
-    ];
-
-    $products = $api->getProducts($params);
-
-    if ($products) {
-        echo '<pre>';
-        print_r($products);
-        echo '</pre>';
-    } else {
-        echo 'Error fetching products.';
-    }
-}
-
-?>

@@ -60,7 +60,7 @@ const images = computed(() => {
       v-if="images.length > 1"
       @swiper="thumbsSwiper = $event"
       :space-between="10"
-      :slides-per-view="4"
+      :slides-per-view="6"
       :watch-slides-progress="true"
       class="thumbs-swiper mt-2"
     >
@@ -127,4 +127,33 @@ const images = computed(() => {
   background: #EEF1F4;
   border-radius: 8px;
 }
+
+/* Custom Swiper Navigation */
+:deep(.swiper-button-next),
+:deep(.swiper-button-prev) {
+  background-color: white;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+  color: #da291c;
+  transition: all 0.3s ease;
+  
+  &:after {
+    font-size: 18px;
+    font-weight: bold;
+  }
+
+  &:hover {
+    background-color: #da291c;
+    color: white;
+    transform: scale(1.1);
+  }
+}
+
+:deep(.swiper-button-disabled) {
+  opacity: 0;
+  pointer-events: none;
+}
+
 </style>

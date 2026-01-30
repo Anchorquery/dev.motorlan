@@ -1,10 +1,10 @@
 import type { PartialDeep } from 'type-fest'
-import type { Email } from '@db/apps/email/types'
+import type { Email } from '@db/dashboard/email/types'
 
 export type MoveEmailToAction = 'inbox' | 'spam' | 'trash'
 
 export const useEmail = () => {
-  const route = useRoute('apps-email-filter')
+  const route = useRoute('dashboard-email-filter')
 
   const updateEmails = async (ids: Email['id'][], data: PartialDeep<Email>) => {
     await $api('apps/email', {
@@ -14,7 +14,7 @@ export const useEmail = () => {
   }
 
   const updateEmailLabels = async (ids: Email['id'][], label: Email['labels'][number]) => {
-    await $api('/apps/email', {
+    await $api('/dashboard/email', {
       method: 'POST',
       body: { ids, label },
     })

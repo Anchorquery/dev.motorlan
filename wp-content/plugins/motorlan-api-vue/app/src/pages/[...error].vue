@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { useGenerateImageVariant } from '@core/composable/useGenerateImageVariant'
-import misc404 from '@images/pages/404.png'
 import miscMaskDark from '@images/pages/misc-mask-dark.png'
 import miscMaskLight from '@images/pages/misc-mask-light.png'
+import { useGenerateImageVariant } from '@core/composable/useGenerateImageVariant'
 
 const authThemeMask = useGenerateImageVariant(miscMaskLight, miscMaskDark)
 
@@ -17,29 +16,30 @@ definePage({
 
 <template>
   <div class="misc-wrapper">
-    <ErrorHeader
-      status-code="404"
-      title="Page Not Found ⚠️"
-      description="We couldn't find the page you are looking for."
-    />
+    <div class="misc-center-content text-center mb-12">
+      <!-- Premium 404 Typography -->
+      <h1 class="text-h1 font-weight-bold text-primary mb-2" style="font-size: 8rem; line-height: 1;">
+        404
+      </h1>
+      <h4 class="text-h4 font-weight-medium mb-2 text-high-emphasis">
+        Página no encontrada
+      </h4>
+      <p class="text-body-1 mb-6 text-medium-emphasis" style="max-width: 400px; margin: 0 auto;">
+        Lo sentimos, no pudimos encontrar la página que buscas. Puede que haya sido movida o eliminada.
+      </p>
 
-    <VBtn
-      to="/"
-      class="mb-11"
-    >
-      Back to Home
-    </VBtn>
-
-    <!-- 👉 Image -->
-    <div class="misc-avatar w-100 text-center">
-      <VImg
-        :src="misc404"
-        alt="error 404"
-        :max-height="$vuetify.display.smAndDown ? 350 : 500"
-        class="mx-auto"
-      />
+      <VBtn
+        to="/"
+        prepend-icon="tabler-arrow-left"
+        size="large"
+        rounded="pill"
+        elevation="2"
+      >
+        Volver al Inicio
+      </VBtn>
     </div>
 
+    <!-- Background Mask -->
     <img
       class="misc-footer-img d-none d-md-block"
       :src="authThemeMask"
@@ -51,4 +51,8 @@ definePage({
 
 <style lang="scss">
 @use "@core/scss/template/pages/misc.scss";
+
+.misc-center-content {
+  z-index: 1;
+}
 </style>

@@ -17,18 +17,17 @@ declare global {
   }
 }
 
-export default function (_app: App) {
+export default async function (_app: App) {
   const userStore = useUserStore()
   const bootstrapData = window.wpData?.user_data
 
-  if (bootstrapData) {
+  if (bootstrapData?.user) {
     userStore.setFromBootstrap(
-      bootstrapData.user ?? null,
+      bootstrapData.user,
       Boolean(bootstrapData.is_logged_in)
     )
-  }
-
-  if (!bootstrapData?.is_logged_in) {
-    userStore.fetchUserSession()
+  } else {
+    // Si no hay bootstrap (entorno local independiente), intentamos fetchUserSession
+    await userStore.fetchUserSession()
   }
 }

@@ -52,12 +52,18 @@ export interface Publicacion {
     precio_de_venta: number
     [key: string]: any
   }
+  marca_name?: string
   status: string
   categories: { name: string }[]
   tipo: { name: string }[]
   author: {
     id: number
     name: string
+    first_name?: string
+    last_name?: string
+    nickname?: string
+    user_login?: string
+    avatar?: string
     acf: {
       calificacion: number
       ventas: number

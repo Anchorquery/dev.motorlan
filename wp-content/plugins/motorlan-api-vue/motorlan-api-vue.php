@@ -4,7 +4,7 @@
  * Plugin URI:  https://motorlan.com
  * Description: API para conectar con VUE
  * Version:     1.2
- * Author:      Motorlan
+ * Author:      Adaki - Daniel H
  * Author URI:  https://motorlan.com
  */
 
@@ -31,6 +31,7 @@ require_once MOTORLAN_API_VUE_PATH . 'includes/custom-field/acf-setup-garantia.p
 require_once MOTORLAN_API_VUE_PATH . 'includes/custom-field/acf-setup-purchases.php';
 
 require_once MOTORLAN_API_VUE_PATH . 'includes/api/publicaciones-routes.php';
+require_once MOTORLAN_API_VUE_PATH . 'includes/api/profile-routes.php';
 require_once MOTORLAN_API_VUE_PATH . 'includes/api/garantia-routes.php';
 require_once MOTORLAN_API_VUE_PATH . 'includes/api/motor-helpers.php';
 require_once MOTORLAN_API_VUE_PATH . 'includes/api/purchases-routes.php';
@@ -40,6 +41,7 @@ require_once MOTORLAN_API_VUE_PATH . 'includes/api/session-routes.php';
 require_once MOTORLAN_API_VUE_PATH . 'includes/api/sales-routes.php';
 require_once MOTORLAN_API_VUE_PATH . 'includes/api/notifications-routes.php';
 require_once MOTORLAN_API_VUE_PATH . 'includes/api/my-publications-routes.php';
+require_once MOTORLAN_API_VUE_PATH . 'includes/api/admin-approval-routes.php';
 require_once MOTORLAN_API_VUE_PATH . 'includes/api/product-messages-routes.php';
 
 require_once MOTORLAN_API_VUE_PATH . 'includes/classes/class-motorlan-notification-manager.php';
@@ -56,7 +58,10 @@ require_once MOTORLAN_API_VUE_PATH . 'includes/db/db-setup.php';
 
 // CORS headers
 function motorlan_add_cors_headers() {
-    header('Access-Control-Allow-Origin: *');
+    $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+    $allow_origin = $origin ?: home_url();
+    header('Access-Control-Allow-Origin: ' . $allow_origin);
+    header('Vary: Origin');
     header('Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS');
     header('Access-Control-Allow-Headers: Content-Type, X-Requested-With, X-WP-Nonce, Authorization');
     header('Access-Control-Allow-Credentials: true');

@@ -35,13 +35,14 @@ const credentials = ref({
 })
 
 const loginSyncWithWordPress = async () => {
-  const loginUrl = window.wpData?.login_endpoint || '/wp-json/wp/v2/custom/login'
+  const wpData = (window as any).wpData
+  const loginUrl = wpData?.login_endpoint || '/wp-json/wp/v2/custom/login'
   try {
     const response = await fetch(loginUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-WP-Nonce': window.wpData?.rest_nonce || window.wpData?.nonce || '',
+        'X-WP-Nonce': wpData?.rest_nonce || wpData?.nonce || '',
       },
       body: JSON.stringify({
         username: credentials.value.username,
@@ -64,7 +65,7 @@ const login = async () => {
     errors.value = { username: undefined, password: undefined }
     genericError.value = null
 
-    const { data, error } = await useApi('/wp-json/jwt-auth/v1/token')
+    const { data, error } = await useApi<any>('/wp-json/jwt-auth/v1/token')
       .post({
         username: credentials.value.username,
         password: credentials.value.password,
@@ -86,7 +87,7 @@ const login = async () => {
     const { token, user_display_name, user_email, user_nicename } = data.value
 
     // Store the token in a cookie
-    useCookie('accessToken').value = token
+    useCookie<string>('accessToken').value = token
     localStorage.setItem('accessToken', token)
 
     // Use native fetch to ensure the new token is used immediately
@@ -107,7 +108,7 @@ const login = async () => {
     const profileData = await profileResponse.json()
 
     // Store user data in a cookie
-    useCookie('userData').value = {
+    useCookie<any>('userData').value = {
       displayName: user_display_name,
       email: user_email,
       nicename: user_nicename,
@@ -126,7 +127,7 @@ const login = async () => {
     const userAbilities = [{ action: 'manage', subject: 'all' }]
 
     ability.update(userAbilities)
-    useCookie('userAbilityRules').value = userAbilities
+    useCookie<any>('userAbilityRules').value = userAbilities
 
     showToast('Logueo exitoso')
     

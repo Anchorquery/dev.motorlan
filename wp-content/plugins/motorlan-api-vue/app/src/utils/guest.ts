@@ -34,6 +34,26 @@ export function setStoredGuestName(name: string, storageKey = 'ml_guest_name') {
   }
 }
 
+export function getStoredGuestEmail(storageKey = 'ml_guest_email'): string | null {
+  try {
+    const existing = localStorage.getItem(storageKey)
+    return existing && existing.trim().length ? existing.trim() : null
+  }
+  catch {
+    return null
+  }
+}
+
+export function setStoredGuestEmail(email: string, storageKey = 'ml_guest_email') {
+  try {
+    if (email && email.trim().length)
+      localStorage.setItem(storageKey, email.trim())
+  }
+  catch {
+    // ignore
+  }
+}
+
 function createSimpleId(): string {
   // Lightweight UUID-like generator (not cryptographically strong)
   const s4 = () => Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1)

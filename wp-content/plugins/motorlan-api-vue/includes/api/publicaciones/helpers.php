@@ -74,11 +74,22 @@ function motorlan_build_publicaciones_query_args($params) {
                 }
             }
 
-            $meta_query[] = [
-                'key'     => $field,
-                'value'   => sanitize_text_field($raw_value),
-                'compare' => $field === 'tipo_o_referencia' ? 'LIKE' : '=',
-            ];
+            if ($field === 'tipo_o_referencia') {
+                // Custom handling for 'tipo_o_referencia' to ignore special characters (., -, /, spaces)
+                // We strip these characters from the search term here.
+                // The actual SQL modification will be handled in the query execution via posts_join/posts_where filters
+                // relying on $args['motorlan_custom_search_tipo'].
+                $clean_value = preg_replace('/[\.\-\/\s]/', '', $raw_value);
+                if (!empty($clean_value)) {
+                    $args['motorlan_custom_search_tipo'] = $clean_value;
+                }
+            } else {
+                 $meta_query[] = [
+                    'key'     => $field,
+                    'value'   => sanitize_text_field($raw_value),
+                    'compare' => '=',
+                ];
+            }
         }
     }
 
@@ -153,7 +164,12 @@ function motorlan_get_publicacion_data($post_id) {
         'author'       => $user ? [
             'id' => $author_id,
             'name' => $user->display_name,
+            'first_name' => $user->first_name,
+            'last_name' => $user->last_name,
+            'nickname' => $user->nickname,
+            'user_login' => $user->user_login,
             'email' => $user->user_email,
+            'avatar' => get_avatar_url($author_id),
         ] : null,
         'categories'   => motorlan_get_post_taxonomy_details($post_id, 'categoria'),
         'tipo'         => motorlan_get_post_taxonomy_details($post_id, 'tipo'),
@@ -161,11 +177,33 @@ function motorlan_get_publicacion_data($post_id) {
         'imagen_destacada' => get_field('motor_image', $post_id, true),
     ];
 
+    // Remove price from ACF if it exists, to prevent it from being returned to the frontend.
+    if (isset($publicacion_item['acf']['precio_de_venta'])) {
+        unset($publicacion_item['acf']['precio_de_venta']);
+    }
+
     // Forzar la obtención de la marca si get_fields() no la incluye.
     if (empty($publicacion_item['acf']['marca'])) {
         $marca_id = get_field('marca', $post_id);
         if ($marca_id) {
             $publicacion_item['acf']['marca'] = $marca_id;
+        }
+    }
+    
+    // Enrich marca with name if it is an ID
+    if (!empty($publicacion_item['acf']['marca'])) {
+        $marca_val = $publicacion_item['acf']['marca'];
+        if (is_numeric($marca_val)) {
+            $term = get_term($marca_val);
+            if ($term && !is_wp_error($term)) {
+                $publicacion_item['marca_name'] = $term->name;
+            }
+        } elseif (is_object($marca_val) && isset($marca_val->name)) {
+            $publicacion_item['marca_name'] = $marca_val->name;
+        } elseif (is_array($marca_val) && isset($marca_val['name'])) {
+            $publicacion_item['marca_name'] = $marca_val['name'];
+        } elseif (is_string($marca_val) && !is_numeric($marca_val)) {
+            $publicacion_item['marca_name'] = $marca_val;
         }
     }
 

@@ -99,59 +99,129 @@ export default {
 </script>
 
 <template>
-  <VDialog v-model="dialogVisible" max-width="500px" persistent>
-    <VCard>
-      <VCardTitle>Cambiar Contraseña</VCardTitle>
-      <VCardText>
+  <VDialog
+    v-model="dialogVisible"
+    max-width="500px"
+    persistent
+  >
+    <VCard class="motor-card-enhanced overflow-visible">
+      <VCardTitle class="pa-6 pb-0">
+        <span class="text-h5 text-premium-title">Cambiar Contraseña</span>
+      </VCardTitle>
+
+      <VCardText class="pa-6">
         <VForm ref="form">
           <!-- Step 1: Enter new password -->
           <div v-if="step === 1">
-            <VTextField
+            <p class="text-body-2 text-muted mb-6">
+              Elige una contraseña segura que no uses en otros sitios.
+            </p>
+            <AppTextField
               v-model="newPassword"
               label="Nueva Contraseña"
               type="password"
+              placeholder="············"
               :rules="[requiredValidator, passwordValidator]"
               class="mb-4"
             />
-            <VTextField
+            <AppTextField
               v-model="confirmPassword"
               label="Confirmar Nueva Contraseña"
               type="password"
+              placeholder="············"
               :rules="[requiredValidator, () => confirmedValidator(confirmPassword, newPassword)]"
             />
           </div>
 
           <!-- Step 2: Enter verification code -->
           <div v-if="step === 2">
-            <p class="mb-4">
-              Hemos enviado un código de verificación a tu correo electrónico. Por favor, introdúcelo a continuación.
-            </p>
-            <VTextField
+            <div class="d-flex align-center gap-3 mb-6">
+              <VAvatar
+                color="primary"
+                variant="tonal"
+                size="48"
+              >
+                <VIcon
+                  icon="tabler-mail-opened"
+                  size="24"
+                />
+              </VAvatar>
+              <div>
+                <h6 class="text-h6 font-weight-bold">Verifica tu correo</h6>
+                <p class="text-body-2 mb-0">
+                  Hemos enviado un código a tu email.
+                </p>
+              </div>
+            </div>
+            <AppTextField
               v-model="verificationCode"
               label="Código de Verificación"
+              placeholder="000000"
               :rules="[requiredValidator]"
             />
           </div>
 
           <!-- Step 3: Success message -->
-          <div v-if="step === 3">
-            <p class="text-success">{{ successMessage }}</p>
+          <div
+            v-if="step === 3"
+            class="text-center py-4"
+          >
+            <VAvatar
+              color="success"
+              variant="tonal"
+              size="72"
+              class="mb-4"
+            >
+              <VIcon
+                icon="tabler-check"
+                size="40"
+              />
+            </VAvatar>
+            <h5 class="text-h5 font-weight-bold mb-2">¡Todo listo!</h5>
+            <p class="text-body-1 text-success mb-0">
+              {{ successMessage }}
+            </p>
           </div>
 
-          <VAlert v-if="errorMessage" type="error" class="mt-4">
+          <VAlert
+            v-if="errorMessage"
+            type="error"
+            variant="tonal"
+            class="mt-4"
+          >
             {{ errorMessage }}
           </VAlert>
         </VForm>
       </VCardText>
-      <VCardActions>
+
+      <VCardActions class="pa-6 pt-0">
         <VSpacer />
-        <VBtn color="secondary" @click="closeDialog">
+        <VBtn
+          variant="tonal"
+          color="secondary"
+          class="rounded-pill"
+          @click="closeDialog"
+        >
           {{ step === 3 ? 'Cerrar' : 'Cancelar' }}
         </VBtn>
-        <VBtn v-if="step === 1" color="primary" :loading="isLoading" @click="requestVerificationCode">
+        <VBtn
+          v-if="step === 1"
+          color="primary"
+          variant="elevated"
+          class="rounded-pill px-6"
+          :loading="isLoading"
+          @click="requestVerificationCode"
+        >
           Enviar Código
         </VBtn>
-        <VBtn v-if="step === 2" color="primary" :loading="isLoading" @click="verifyCodeAndChangePassword">
+        <VBtn
+          v-if="step === 2"
+          color="primary"
+          variant="elevated"
+          class="rounded-pill px-6"
+          :loading="isLoading"
+          @click="verifyCodeAndChangePassword"
+        >
           Cambiar Contraseña
         </VBtn>
       </VCardActions>

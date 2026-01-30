@@ -15,7 +15,12 @@ const isChangePasswordDialogVisible = ref(false)
 const isSaving = ref(false)
 const { showToast } = useToast()
 const isUploadingAvatar = ref(false)
-const { data: userProfile, execute: fetchUserProfile, isFetching: isLoading } = useApi('/wp-json/motorlan/v1/profile').json<UserProfile>()
+const {
+  data: userProfile,
+  error: userProfileError,
+  execute: fetchUserProfile,
+  isFetching: isLoading,
+} = useApi('/wp-json/motorlan/v1/profile', { immediate: false }).get().json<UserProfile>()
 
 const isCompany = ref(false)
 
@@ -66,29 +71,64 @@ watch(isCompany, (isCompanyValue) => {
   }
 })
 
+const resizeImage = (file: File, maxWidth = 800, maxHeight = 800): Promise<Blob> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.readAsDataURL(file)
+    reader.onload = (event) => {
+      const img = new Image()
+      img.src = event.target?.result as string
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        let width = img.width
+        let height = img.height
+
+        if (width > height) {
+          if (width > maxWidth) {
+            height *= maxWidth / width
+            width = maxWidth
+          }
+        }
+        else {
+          if (height > maxHeight) {
+            width *= maxHeight / height
+            height = maxHeight
+          }
+        }
+
+        canvas.width = width
+        canvas.height = height
+        const ctx = canvas.getContext('2d')
+        ctx?.drawImage(img, 0, 0, width, height)
+
+        canvas.toBlob((blob) => {
+          if (blob) resolve(blob)
+          else reject(new Error('Canvas to Blob failed'))
+        }, 'image/jpeg', 0.8)
+      }
+      img.onerror = reject
+    }
+    reader.onerror = reject
+  })
+}
+
 const handleAvatarUpload = async (file: File) => {
   if (!file) return
 
-  const formData = new FormData()
-  formData.append('avatar', file)
-
-  // Append other profile data to the form data so the backend can process it all at once
-  if (userProfile.value) {
-    formData.append('personal_data', JSON.stringify(personalFormData.value))
-    formData.append('company_data', JSON.stringify(companyFormData.value))
-  }
-
-  isUploadingAvatar.value = true
-
-  const apiCall = useApi('/wp-json/motorlan/v1/profile', { immediate: false }).post(formData).json()
-
   try {
+    isUploadingAvatar.value = true
+
+    // Resize image client-side to improve speed and reliability
+    const resizedBlob = await resizeImage(file)
+    const formData = new FormData()
+    formData.append('avatar', resizedBlob, 'avatar.jpg')
+
+    const apiCall = useApi('/wp-json/motorlan/v1/profile', { immediate: false }).post(formData).json()
     await apiCall.execute()
 
     if (apiCall.error.value) {
       const errorMessage = apiCall.error.value.data?.message || 'Error al actualizar el avatar'
       showToast(errorMessage, 'error')
-      console.error('Error uploading avatar:', apiCall.error.value)
     }
     else if (apiCall.data.value && userProfile.value) {
       userProfile.value.personal_data.avatar = apiCall.data.value.avatar
@@ -97,7 +137,7 @@ const handleAvatarUpload = async (file: File) => {
   }
   catch (e) {
     console.error('Fatal error during avatar upload:', e)
-    showToast('Ha ocurrido un error crítico al subir la imagen.', 'error')
+    showToast('Ha ocurrido un error al procesar la imagen.', 'error')
   }
   finally {
     isUploadingAvatar.value = false
@@ -105,7 +145,14 @@ const handleAvatarUpload = async (file: File) => {
 }
 
 
-onMounted(fetchUserProfile)
+onMounted(async () => {
+  await fetchUserProfile()
+  if (userProfileError.value) {
+    const errorMessage = userProfileError.value.data?.message || 'Error al cargar el perfil'
+    showToast(errorMessage, 'error')
+    console.error('Error fetching profile data:', userProfileError.value)
+  }
+})
 
 const saveProfileData = async () => {
   if (!profileForm.value) return
@@ -161,16 +208,27 @@ const saveProfileData = async () => {
 <template>
   <VRow>
     <VCol cols="12">
-      <VCard :loading="isLoading" class="profile-card">
-        <VCardText class="d-flex flex-column align-center">
-          <div class="avatar-container">
+      <VCard
+        :loading="isLoading"
+        class="profile-card motor-card-enhanced overflow-visible"
+      >
+        <VCardText class="d-flex flex-column align-center pa-6">
+          <div class="avatar-container mt-n16">
             <VAvatar
               size="120"
-              class="avatar-center"
+              class="avatar-center border-4 border-white shadow-lg"
+              color="primary"
+              variant="tonal"
             >
               <VImg :src="userProfile?.personal_data.avatar || '/placeholder.png'" />
-              <div v-if="isUploadingAvatar" class="avatar-upload-overlay">
-                <VProgressCircular indeterminate color="primary" />
+              <div
+                v-if="isUploadingAvatar"
+                class="avatar-upload-overlay"
+              >
+                <VProgressCircular
+                  indeterminate
+                  color="white"
+                />
               </div>
             </VAvatar>
             <DropZone
@@ -178,50 +236,94 @@ const saveProfileData = async () => {
               :multiple="false"
               @file-added="handleAvatarUpload"
             />
-            <VBtn icon variant="tonal" class="avatar-edit-button">
-              <VIcon icon="tabler-pencil" />
+            <VBtn
+              icon
+              variant="elevated"
+              color="white"
+              size="small"
+              class="avatar-edit-button rounded-circle"
+            >
+              <VIcon
+                icon="tabler-camera"
+                size="18"
+                color="primary"
+              />
             </VBtn>
           </div>
-          <h5 class="text-h5 mt-4">
-            {{ userProfile?.personal_data.nombre }} {{ userProfile?.personal_data.apellidos }}
-          </h5>
-          <span class="text-body-1">{{ userProfile?.personal_data.email }}</span>
+          <div class="text-center mt-4">
+            <h4 class="text-h4 text-premium-title mb-1">
+              {{ userProfile?.personal_data.nombre }} {{ userProfile?.personal_data.apellidos }}
+            </h4>
+            <div class="d-flex align-center justify-center gap-2">
+              <VIcon
+                icon="tabler-mail"
+                size="16"
+                class="text-muted"
+              />
+              <span class="text-body-1 text-medium-emphasis">{{ userProfile?.personal_data.email }}</span>
+            </div>
+          </div>
         </VCardText>
 
-        <VForm ref="profileForm" @submit.prevent="saveProfileData">
-          <VCardText>
+        <VDivider />
+
+        <VForm
+          ref="profileForm"
+          @submit.prevent="saveProfileData"
+        >
+          <VCardText class="pa-6">
+            <div class="d-flex align-center gap-2 mb-6">
+              <VIcon
+                icon="tabler-user"
+                color="primary"
+              />
+              <span class="text-h6 font-weight-bold">Información Personal</span>
+            </div>
+
             <VRow>
-              <VCol cols="12" md="6">
-                <VTextField
+              <VCol
+                cols="12"
+                md="6"
+              >
+                <AppTextField
                   v-model="personalFormData.nombre"
                   label="Nombre"
+                  placeholder="Tu nombre"
                   :rules="[requiredValidator]"
-                  class="mb-4"
                 />
               </VCol>
-              <VCol cols="12" md="6">
-                <VTextField
+              <VCol
+                cols="12"
+                md="6"
+              >
+                <AppTextField
                   v-model="personalFormData.apellidos"
                   label="Apellidos"
+                  placeholder="Tus apellidos"
                   :rules="[requiredValidator]"
-                  class="mb-4"
                 />
               </VCol>
-              <VCol cols="12" md="6">
-                <VTextField
+              <VCol
+                cols="12"
+                md="6"
+              >
+                <AppTextField
                   v-model="personalFormData.email"
                   label="Email"
                   type="email"
+                  placeholder="tu@email.com"
                   :rules="[requiredValidator, emailValidator]"
-                  class="mb-4"
                 />
               </VCol>
-              <VCol cols="12" md="6">
-                <VTextField
+              <VCol
+                cols="12"
+                md="6"
+              >
+                <AppTextField
                   v-model="personalFormData.telefono"
                   label="Teléfono"
+                  placeholder="+34 000 000 000"
                   :rules="[requiredValidator]"
-                  class="mb-4"
                 />
               </VCol>
             </VRow>
@@ -229,87 +331,129 @@ const saveProfileData = async () => {
 
           <VDivider />
 
-          <VCardText>
-            <div class="d-flex align-center gap-2">
-              <VSwitch v-model="isCompany" label="¿Eres una empresa?" />
+          <VCardText class="pa-6">
+            <div class="d-flex align-center justify-space-between mb-4">
+              <div class="d-flex align-center gap-2">
+                <VIcon
+                  icon="tabler-building"
+                  color="primary"
+                />
+                <span class="text-h6 font-weight-bold">Información de Empresa</span>
+              </div>
+              <VSwitch
+                v-model="isCompany"
+                label="¿Eres una empresa?"
+                density="compact"
+                hide-details
+              />
             </div>
 
-            <div v-if="isCompany" class="mt-4">
-              <p class="text-sm-caption mb-4">
-                Los campos marcados con (*) son obligatorios.
-              </p>
-              <VRow>
-                <VCol cols="12" md="6">
-                  <VTextField
-                    v-model="companyFormData.nombre"
-                    label="Nombre de la empresa *"
-                    :rules="isCompany ? [requiredValidator] : []"
-                    class="mb-4"
-                  />
-                </VCol>
-                <VCol cols="12" md="6">
-                  <VTextField
-                    v-model="companyFormData.cif_nif"
-                    label="CIF / NIF *"
-                    :rules="isCompany ? [requiredValidator] : []"
-                    class="mb-4"
-                  />
-                </VCol>
-                <VCol cols="12">
-                  <VTextField
-                    v-model="companyFormData.direccion"
-                    label="Dirección *"
-                    :rules="isCompany ? [requiredValidator] : []"
-                    class="mb-4"
-                  />
-                </VCol>
-                <VCol cols="12" md="6">
-                  <VTextField
-                    v-model="companyFormData.cp"
-                    label="C.P. *"
-                    :rules="isCompany ? [requiredValidator] : []"
-                    class="mb-4"
-                  />
-                </VCol>
-                <VCol cols="12" md="6">
-                  <VTextField
-                    v-model="companyFormData.persona_contacto"
-                    label="Persona de contacto *"
-                    :rules="isCompany ? [requiredValidator] : []"
-                    class="mb-4"
-                  />
-                </VCol>
-                <VCol cols="12" md="6">
-                  <VTextField
-                    v-model="companyFormData.email_contacto"
-                    label="Email de contacto *"
-                    type="email"
-                    :rules="isCompany ? [requiredValidator, emailValidator] : []"
-                    class="mb-4"
-                  />
-                </VCol>
-                <VCol cols="12" md="6">
-                  <VTextField
-                    v-model="companyFormData.tel_contacto"
-                    label="Tel. de contacto *"
-                    :rules="isCompany ? [requiredValidator] : []"
-                    class="mb-4"
-                  />
-                </VCol>
-              </VRow>
-            </div>
+            <VExpandTransition>
+              <div v-if="isCompany">
+                <p class="text-body-2 text-muted mb-6">
+                  Completa los datos de tu empresa para facturación y contacto comercial. Los campos con <span class="text-error">*</span> son obligatorios.
+                </p>
+                <VRow>
+                  <VCol
+                    cols="12"
+                    md="6"
+                  >
+                    <AppTextField
+                      v-model="companyFormData.nombre"
+                      label="Nombre de la empresa *"
+                      placeholder="Empresa S.L."
+                      :rules="isCompany ? [requiredValidator] : []"
+                    />
+                  </VCol>
+                  <VCol
+                    cols="12"
+                    md="6"
+                  >
+                    <AppTextField
+                      v-model="companyFormData.cif_nif"
+                      label="CIF / NIF *"
+                      placeholder="A00000000"
+                      :rules="isCompany ? [requiredValidator] : []"
+                    />
+                  </VCol>
+                  <VCol cols="12">
+                    <AppTextField
+                      v-model="companyFormData.direccion"
+                      label="Dirección *"
+                      placeholder="Calle, Número, Piso, Puerta"
+                      :rules="isCompany ? [requiredValidator] : []"
+                    />
+                  </VCol>
+                  <VCol
+                    cols="12"
+                    md="6"
+                  >
+                    <AppTextField
+                      v-model="companyFormData.cp"
+                      label="C.P. *"
+                      placeholder="00000"
+                      :rules="isCompany ? [requiredValidator] : []"
+                    />
+                  </VCol>
+                  <VCol
+                    cols="12"
+                    md="6"
+                  >
+                    <AppTextField
+                      v-model="companyFormData.persona_contacto"
+                      label="Persona de contacto *"
+                      placeholder="Nombre del responsable"
+                      :rules="isCompany ? [requiredValidator] : []"
+                    />
+                  </VCol>
+                  <VCol
+                    cols="12"
+                    md="6"
+                  >
+                    <AppTextField
+                      v-model="companyFormData.email_contacto"
+                      label="Email de contacto *"
+                      type="email"
+                      placeholder="empresa@email.com"
+                      :rules="isCompany ? [requiredValidator, emailValidator] : []"
+                    />
+                  </VCol>
+                  <VCol
+                    cols="12"
+                    md="6"
+                  >
+                    <AppTextField
+                      v-model="companyFormData.tel_contacto"
+                      label="Tel. de contacto *"
+                      placeholder="+34 000 000 000"
+                      :rules="isCompany ? [requiredValidator] : []"
+                    />
+                  </VCol>
+                </VRow>
+              </div>
+            </VExpandTransition>
           </VCardText>
 
-          <VCardText>
-            <div class="d-flex gap-4">
-              <VBtn color="primary" :loading="isSaving" type="submit">
-                Guardar Cambios
-              </VBtn>
-              <VBtn variant="tonal" color="secondary" :disabled="isSaving" @click="isChangePasswordDialogVisible = true">
-                Cambiar Contraseña
-              </VBtn>
-            </div>
-          </VCardText>
+          <VCardActions class="pa-6 pt-0">
+            <VBtn
+              color="primary"
+              variant="elevated"
+              :loading="isSaving"
+              type="submit"
+              class="px-8 rounded-pill"
+            >
+              Guardar Cambios
+            </VBtn>
+            <VBtn
+              variant="tonal"
+              color="secondary"
+              :disabled="isSaving"
+              class="rounded-pill"
+              @click="isChangePasswordDialogVisible = true"
+            >
+              Cambiar Contraseña
+            </VBtn>
+          </VCardActions>
         </VForm>
       </VCard>
     </VCol>

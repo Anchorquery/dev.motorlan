@@ -1,6 +1,8 @@
 import type { RouteNamedMap, _RouterTyped } from 'unplugin-vue-router'
 import { canNavigate } from '@layouts/plugins/casl'
 
+import { useUserStore } from '@/@core/stores/user'
+
 export const setupGuards = (router: _RouterTyped<RouteNamedMap & { [key: string]: any }>) => {
   // 👉 router.beforeEach
   // Docs: https://router.vuejs.org/guide/advanced/navigation-guards.html#global-before-guards
@@ -16,7 +18,8 @@ export const setupGuards = (router: _RouterTyped<RouteNamedMap & { [key: string]
      * Check if user is logged in by checking if token & user data exists in local storage
      * Feel free to update this logic to suit your needs
      */
-    const isLoggedIn = !!useCookie('userData').value
+    const userStore = useUserStore()
+    const isLoggedIn = !!useCookie('userData').value || userStore.getIsLoggedIn
 
     /*
       If user is logged in and is trying to access login like page, redirect to home
@@ -25,14 +28,14 @@ export const setupGuards = (router: _RouterTyped<RouteNamedMap & { [key: string]
      */
     if (to.meta.unauthenticatedOnly) {
       if (isLoggedIn)
-        return { name: 'apps-purchases-purchases', replace: true }
+        return { name: 'dashboard-purchases-purchases', replace: true }
       else
         return undefined
     }
 
     // If the user is logged in and is trying to access the account page, allow it.
     // This is to prevent a redirect loop for new users who need to complete their profile.
-    if (to.name === 'apps-user-account' && isLoggedIn)
+    if (to.name === 'dashboard-user-account' && isLoggedIn)
       return undefined
 
     if (!isLoggedIn) {

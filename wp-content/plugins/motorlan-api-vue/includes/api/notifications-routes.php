@@ -31,7 +31,14 @@ add_action( 'rest_api_init', function () {
         ],
     ] );
 
+    register_rest_route( 'motorlan/v1', '/notifications/unread-count', [
+        'methods'             => WP_REST_Server::READABLE,
+        'callback'            => 'motorlan_get_notifications_unread_count',
+        'permission_callback' => 'motorlan_is_user_authenticated',
+    ] );
+
     register_rest_route( 'motorlan/v1', '/notifications/read', [
+
         'methods'             => WP_REST_Server::EDITABLE,
         'callback'            => 'motorlan_mark_notifications_as_read',
         'permission_callback' => 'motorlan_is_user_authenticated',
@@ -73,7 +80,23 @@ function motorlan_get_notifications( WP_REST_Request $request ) {
 }
 
 /**
+ * Callback to get unread notifications count.
+ *
+ * @param WP_REST_Request $request
+ * @return WP_REST_Response
+ */
+function motorlan_get_notifications_unread_count( WP_REST_Request $request ) {
+    $user_id = get_current_user_id();
+    
+    $notification_manager = new Motorlan_Notification_Manager();
+    $count = $notification_manager->get_unread_count( $user_id );
+
+    return new WP_REST_Response( [ 'count' => $count ], 200 );
+}
+
+/**
  * Callback to mark notifications as read.
+
  *
  * @param WP_REST_Request $request
  * @return WP_REST_Response

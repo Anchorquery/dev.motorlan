@@ -1,26 +1,44 @@
 {
+  // Force IDE Reload
   "compilerOptions": {
     "target": "ESNext",
     "useDefineForClassFields": true,
-    "module": "NodeNext",
-    "moduleResolution": "node",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
     "strict": true,
     "jsx": "preserve",
     "sourceMap": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
     "esModuleInterop": true,
-    "lib": ["ESNext", "DOM"],
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
     "skipLibCheck": true,
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"],
+      "@themeConfig": ["themeConfig.ts"],
+      "@core": ["src/@core/index.ts"],
       "@core/*": ["src/@core/*"],
+      "@layouts": ["src/@layouts/index.ts"],
       "@layouts/*": ["src/@layouts/*"],
-      "@styles/*": ["src/styles/*"],
-      "@axios/*": ["src/plugins/axios/*"]
+      "@images/*": ["src/assets/images/*"],
+      "@styles/*": ["src/assets/styles/*"],
+      "@configured-variables": ["src/assets/styles/variables/_template.scss"],
+      "@db/*": ["src/plugins/fake-api/handlers/*"],
+      "@api-utils/*": ["src/plugins/fake-api/utils/*"],
+      "@axios/*": ["src/plugins/axios/*"],
+      "virtual:meta-layouts": ["node_modules/vite-plugin-vue-meta-layouts/dist/client.mjs"]
     }
   },
-  "include": ["src/**/*.ts", "src/**/*.d.ts", "src/**/*.tsx", "src/**/*.vue", "src/env.d.ts"],
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.d.ts",
+    "src/**/*.tsx",
+    "src/**/*.vue",
+    "src/env.d.ts",
+    "auto-imports.d.ts",
+    "components.d.ts",
+    "typed-router.d.ts"
+  ],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

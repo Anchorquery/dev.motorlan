@@ -9,7 +9,14 @@ const onSearch = () => emit('search')
 
 <template>
   <div class="search-bar-wrapper mb-6">
-    <h2 class="text-h5 text-error font-weight-bold mb-4">COMPRA VENTA DE MOTORES ELÉCTRICOS INDUSTRIALES</h2>
+    <div class="mb-6">
+      <h2 class="text-h4 text-error font-weight-bold mb-1 letter-spacing-tight">
+        COMPRA VENTA DE MOTORES ELÉCTRICOS INDUSTRIALES
+      </h2>
+      <h3 class="text-h6 text-secondary font-weight-medium opacity-70">
+        MOTORES, REGULADORES, REPUESTOS Y MUCHO MÁS
+      </h3>
+    </div>
     <div class="top-bar">
       <VTextField
         v-model="searchTerm"

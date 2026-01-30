@@ -59,6 +59,7 @@ declare global {
   const getCurrentScope: typeof import('vue')['getCurrentScope']
   const getOrCreateGuestId: typeof import('./src/utils/guest')['getOrCreateGuestId']
   const getPrePurchaseRoomKey: typeof import('./src/utils/roomKey')['getPrePurchaseRoomKey']
+  const getStoredGuestEmail: typeof import('./src/utils/guest')['getStoredGuestEmail']
   const getStoredGuestName: typeof import('./src/utils/guest')['getStoredGuestName']
   const h: typeof import('vue')['h']
   const hexToRgb: typeof import('./src/@core/utils/colorConverter')['hexToRgb']
@@ -140,6 +141,7 @@ declare global {
   const rgbaToHex: typeof import('./src/@core/utils/colorConverter')['rgbaToHex']
   const setActivePinia: typeof import('pinia')['setActivePinia']
   const setMapStoreSuffix: typeof import('pinia')['setMapStoreSuffix']
+  const setStoredGuestEmail: typeof import('./src/utils/guest')['setStoredGuestEmail']
   const setStoredGuestName: typeof import('./src/utils/guest')['setStoredGuestName']
   const shallowReactive: typeof import('vue')['shallowReactive']
   const shallowReadonly: typeof import('vue')['shallowReadonly']
@@ -437,6 +439,7 @@ declare module 'vue' {
     readonly getCurrentScope: UnwrapRef<typeof import('vue')['getCurrentScope']>
     readonly getOrCreateGuestId: UnwrapRef<typeof import('./src/utils/guest')['getOrCreateGuestId']>
     readonly getPrePurchaseRoomKey: UnwrapRef<typeof import('./src/utils/roomKey')['getPrePurchaseRoomKey']>
+    readonly getStoredGuestEmail: UnwrapRef<typeof import('./src/utils/guest')['getStoredGuestEmail']>
     readonly getStoredGuestName: UnwrapRef<typeof import('./src/utils/guest')['getStoredGuestName']>
     readonly h: UnwrapRef<typeof import('vue')['h']>
     readonly hexToRgb: UnwrapRef<typeof import('./src/@core/utils/colorConverter')['hexToRgb']>
@@ -516,6 +519,7 @@ declare module 'vue' {
     readonly rgbaToHex: UnwrapRef<typeof import('./src/@core/utils/colorConverter')['rgbaToHex']>
     readonly setActivePinia: UnwrapRef<typeof import('pinia')['setActivePinia']>
     readonly setMapStoreSuffix: UnwrapRef<typeof import('pinia')['setMapStoreSuffix']>
+    readonly setStoredGuestEmail: UnwrapRef<typeof import('./src/utils/guest')['setStoredGuestEmail']>
     readonly setStoredGuestName: UnwrapRef<typeof import('./src/utils/guest')['setStoredGuestName']>
     readonly shallowReactive: UnwrapRef<typeof import('vue')['shallowReactive']>
     readonly shallowReadonly: UnwrapRef<typeof import('vue')['shallowReadonly']>

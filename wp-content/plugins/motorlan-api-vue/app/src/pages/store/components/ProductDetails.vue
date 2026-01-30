@@ -3,25 +3,36 @@ import { onMounted, ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 // Ajustes correctos de imports según la estructura del proyecto
 // Ajuste final de imports según la estructura real del proyecto
-import ConfirmDialog from '@/components/dialogs/ConfirmDialog.vue'
 import type { Publicacion } from '@/interfaces/publicacion'
 import { useApi } from '@/composables/useApi'
-
-import { useI18n } from 'vue-i18n'
 import { useUserStore } from '@/@core/stores/user'
+import { createUrl } from '@/@core/composable/createUrl'
 
 const props = defineProps<{ publicacion: Publicacion; disableActions?: boolean }>()
-const emit = defineEmits<{ (e: 'login'): void }>()
+const emit = defineEmits(['open-chat'])
 
-const { t } = useI18n()
+const brand = computed(() => (props.publicacion as any).marca_name || '-')
 
 
 // Estado de favorito
 const isFavorite = ref(false)
 const isLoadingFavorite = ref(false)
 
+const userStore = useUserStore()
+const bootstrapUserId = computed(() => (window as any)?.wpData?.user_data?.user?.id)
+const isLoggedIn = computed(() =>
+  userStore.getIsLoggedIn
+  || Boolean(userStore.getUser?.id)
+  || Boolean(userStore.user?.id)
+  || Boolean(bootstrapUserId.value),
+)
+
 onMounted(async () => {
-  if (userStore.getIsLoggedIn) {
+  
+  if (!isLoggedIn.value)
+    await userStore.fetchUserSession()
+
+  if (isLoggedIn.value) {
     try {
       const { data: favorites, error } = await useApi('/wp-json/motorlan/v1/favorites').get().json()
       if (error.value)
@@ -34,7 +45,24 @@ onMounted(async () => {
     }
   }
 })
-const sellerName = computed(() => props.publicacion.author?.name || 'N/A')
+const sellerName = computed(() => {
+  const auth = props.publicacion.author
+  if (!auth) return 'Vendedor'
+  
+  const firstName = auth.first_name || ''
+  const lastName = auth.last_name || ''
+  const fullName = `${firstName} ${lastName}`.trim()
+
+  // Only return if we have at least one name part, otherwise default to 'Vendedor'
+  // Avoid showing emails or technical names (nickname/user_login)
+  return fullName || 'Vendedor'
+})
+
+const getInitials = (value: string): string => {
+  if (!value || value === 'Vendedor') return 'V'
+  const parts = value.split(' ').filter(Boolean)
+  return parts.slice(0, 2).map(part => part.charAt(0).toUpperCase()).join('')
+}
 const sellerRating = computed(() => {
   const val = Number(props.publicacion.author?.acf?.calificacion)
   return Number.isFinite(val) ? val : null
@@ -49,12 +77,6 @@ const location = computed(() => {
     return `${pais} / ${provincia}`
   return pais || provincia || ''
 })
-const price = computed(() =>
-  props.publicacion.acf.precio_de_venta
-    ? `${props.publicacion.acf.precio_de_venta} €`
-    : 'Consultar precio',
-)
-
 const negotiableLabel = computed(() => {
   const val = props.publicacion.acf.precio_negociable
   if (typeof val === 'string')
@@ -63,20 +85,12 @@ const negotiableLabel = computed(() => {
 })
 
 const categories = computed(() => props.publicacion.categories.map((c: any) => c.name).join(', '))
-const brand = computed(() =>
-  typeof props.publicacion.acf.marca === 'object'
-    // @ts-ignore
-    ? (props.publicacion.acf.marca as any)?.name
-    : props.publicacion.acf.name || ''
-)
 
 const productTitleUpper = computed(() => (props.publicacion.title ? props.publicacion.title.toUpperCase() : ''))
 
 const toggleFavorite = async () => {
-  if (!userStore.getIsLoggedIn || isLoadingFavorite.value) {
-    if (!userStore.getIsLoggedIn) loginSnackbar.value = true
+  if (isLoadingFavorite.value)
     return
-  }
 
   isLoadingFavorite.value = true
   try {
@@ -102,23 +116,19 @@ const toggleFavorite = async () => {
 }
 
 const shareSnackbar = ref(false)
-const loginSnackbar = ref(false)
 const isOfferDialogOpen = ref(false)
+
 const offerAmount = ref<number | null>(null)
 const offerMessage = ref('')
 const offer = ref<any | null>(null)
 const isSubmittingOffer = ref(false)
-const isPurchasing = ref(false)
-const purchaseSuccess = ref(false)
-const purchaseError = ref<string | null>(null)
 
-const userStore = useUserStore()
-const isLoggedIn = computed(() => userStore.getIsLoggedIn)
+
 const isOwner = computed(() => {
   if (!userStore.getUser?.id) return false
   return props.publicacion.author?.id === userStore.getUser.id
 })
-const actionsAvailable = computed(() => !props.disableActions && isLoggedIn.value && !isOwner.value)
+const actionsAvailable = computed(() => !props.disableActions && !isOwner.value)
 
 const isNegotiable = computed(() => {
   const val = props.publicacion.acf.precio_negociable
@@ -144,51 +154,12 @@ const share = () => {
 }
 
 const router = useRouter()
-const isConfirmDialogOpen = ref(false)
 
-const handlePurchase = async (confirmed: boolean) => {
-  if (!confirmed)
-    return
-
-  isPurchasing.value = true
-  purchaseError.value = null
-  try {
-    const purchaseRequest = useApi('/wp-json/motorlan/v1/purchases', { immediate: false })
-      .post({ publicacion_id: props.publicacion.id })
-      .json()
-
-    await purchaseRequest.execute()
-
-    if (purchaseRequest.error.value)
-      throw purchaseRequest.error.value
-
-    const res = purchaseRequest.data.value
-
-    if (res && res.uuid) {
-      purchaseSuccess.value = true
-      setTimeout(() => {
-        router.push(`/apps/purchases/${res.uuid}`)
-      }, 1500)
-    }
-    else {
-      console.error('Purchase response is missing uuid', res)
-      purchaseError.value = 'La respuesta de la compra es inválida.'
-    }
-  }
-  catch (error: any) {
-    console.error(error)
-    purchaseError.value = error.data?.message || 'Hubo un error al procesar la compra.'
-  }
-  finally {
-    isPurchasing.value = false
-  }
+const openChatModal = () => {
+  emit('open-chat')
 }
 
 const openOfferDialog = () => {
-  if (!isLoggedIn.value) {
-    loginSnackbar.value = true
-    return
-  }
   isOfferDialogOpen.value = true
 }
 
@@ -264,13 +235,12 @@ const removeOffer = async () => {
         <span class="text-body-2 font-weight-medium">Compartir</span>
       </div>
     </div>
-    <VDivider class="mb-6" />
+    <VDivider class="mb-6 opacity-20" />
 
-    <VCard class="mb-6 detail-card">
+    <VCard class="mb-6 detail-card product-detail-card-enhanced pa-4">
       <VCardText>
         <div class="mb-4">
           <h3 class="text-h6 mb-1">{{ productTitleUpper }}</h3>
-          <div class="text-h5 font-weight-bold">{{ price }}</div>
         </div>
         <VRow class="motor-details" dense>
           <VCol cols="12" sm="6">
@@ -306,7 +276,7 @@ const removeOffer = async () => {
           <VCol cols="12" sm="6">
             <div class="detail-item d-flex align-center">
               <VIcon icon="tabler-user" class="mr-1" />
-              <span>{{ sellerName || 'N/A' }}</span>
+              <span class="text-truncate" style="max-width: 150px;" :title="sellerName">{{ sellerName }}</span>
               <VRating
                 v-if="sellerRating !== null"
                 class="ml-2"
@@ -358,10 +328,9 @@ const removeOffer = async () => {
         <VBtn
           color="error"
           class="px-6 flex-grow-1 action-btn"
-          :loading="isPurchasing"
-          @click="isConfirmDialogOpen = true"
+          @click="openChatModal"
         >
-          Comprar
+          Consultar precio
         </VBtn>
         <VBtn
           v-if="isNegotiable"
@@ -382,105 +351,62 @@ const removeOffer = async () => {
           Quitar oferta
         </VBtn>
       </template>
-      <div
-        v-else-if="!isLoggedIn"
-        class="public-store-cta pa-4 text-body-2 d-flex align-center justify-space-between flex-wrap gap-2"
-      >
-        <span>{{ t('login.login_to_interact') }}</span>
-        <VBtn
-          size="small"
-          color="error"
-          variant="text"
-          @click="$emit('login')"
-        >
-          {{ t('login.login_button') }}
-        </VBtn>
-      </div>
     </div>
 
     <VDialog
       v-model="isOfferDialogOpen"
-      width="400"
+      width="460"
+      persistent
     >
-      <VCard>
-        <VCardTitle>{{ offer ? 'Editar oferta' : 'Hacer una oferta' }}</VCardTitle>
+      <VCard class="offer-modal">
+        <VCardTitle class="d-flex align-center justify-space-between">
+          <div class="d-flex align-center gap-2">
+            <VIcon icon="tabler-gavel" color="error" />
+            <span>{{ offer ? 'Editar oferta' : 'Hacer una oferta' }}</span>
+          </div>
+          <VBtn icon="tabler-x" variant="text" @click="isOfferDialogOpen = false" />
+        </VCardTitle>
         <VCardText>
+          <p class="text-body-2 mb-3">
+            Tu oferta quedará pendiente hasta que el vendedor la acepte. Si la acepta,
+            tendrás 24 horas para completar la compra.
+          </p>
           <VTextField
             v-model.number="offerAmount"
-            label="Monto"
+            label="Monto de la oferta"
             type="number"
-            :rules="[v => !v || v < Number(props.publicacion.acf.precio_de_venta) || 'Debe ser menor al precio']"
+            class="mt-4"
+            :rules="[v => !v || v < Number(props.publicacion.acf.precio_de_venta) || 'Oferta inválida']"
           />
           <VTextarea
             v-model="offerMessage"
-            label="Justificación"
+            label="Mensaje al vendedor"
             class="mt-4"
+            rows="3"
           />
-        </VCardText>
-        <VCardActions>
-          <VSpacer />
-          <VBtn
-            color="primary"
-           :loading="isSubmittingOffer"
-           @click="submitOffer"
-         >
-           Enviar
-         </VBtn>
-          <VBtn
-            variant="text"
-            @click="isOfferDialogOpen = false"
+          <VAlert
+            type="info"
+            variant="tonal"
+            class="mt-4"
           >
-            Cancelar
+            No se cobrará nada hasta que el vendedor acepte tu oferta.
+          </VAlert>
+        </VCardText>
+        <VCardActions class="px-6 pb-6">
+          <VBtn
+            color="error"
+            variant="flat"
+            :loading="isSubmittingOffer"
+            class="flex-grow-1"
+            @click="submitOffer"
+          >
+            Enviar oferta
           </VBtn>
         </VCardActions>
       </VCard>
     </VDialog>
 
-    <ConfirmDialog
-      v-model:isDialogVisible="isConfirmDialogOpen"
-      confirmation-question="¿Confirmar compra?"
-      confirm-title="Compra realizada"
-      confirm-msg="Redirigiendo..."
-      cancel-title="Cancelado"
-      cancel-msg="Operación cancelada"
-      @confirm="handlePurchase"
-    />
 
-    <!-- Purchase Success Dialog -->
-    <VDialog
-      v-model="purchaseSuccess"
-      max-width="500"
-      persistent
-    >
-      <VCard>
-        <VCardText class="text-center px-10 py-6">
-          <VBtn
-            icon
-            variant="outlined"
-            color="success"
-            class="my-4"
-            style=" block-size: 88px;inline-size: 88px; pointer-events: none;"
-          >
-            <VIcon
-              icon="tabler-check"
-              size="38"
-            />
-          </VBtn>
-
-          <h1 class="text-h4 mb-4">
-            ¡Compra realizada!
-          </h1>
-
-          <p>En breve serás redirigido a los detalles de tu compra.</p>
-
-          <VProgressLinear
-            indeterminate
-            color="primary"
-            class="mb-4"
-          />
-        </VCardText>
-      </VCard>
-    </VDialog>
 
     <VSnackbar
       v-model="shareSnackbar"
@@ -488,21 +414,6 @@ const removeOffer = async () => {
       location="top right"
     >
       Enlace copiado al portapapeles
-    </VSnackbar>
-    <VSnackbar
-      v-model="loginSnackbar"
-      color="error"
-      location="top right"
-    >
-      Debes registrarte para hacer una oferta
-    </VSnackbar>
-    <VSnackbar
-      v-model="purchaseError"
-      color="error"
-      location="top right"
-      :timeout="5000"
-    >
-      {{ purchaseError }}
     </VSnackbar>
   </div>
 </template>
@@ -531,11 +442,7 @@ const removeOffer = async () => {
 .detail-item {
   margin-bottom: 0.5rem;
 }
-.public-store-cta {
-  border-radius: 4px;
-  border: 1px solid rgba(255, 69, 58, 0.2);
-  background-color: rgba(255, 69, 58, 0.08);
-  color: #d32f2f;
-  width: 100%;
+.offer-modal {
+  border-radius: 16px;
 }
 </style>

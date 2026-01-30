@@ -1,55 +1,61 @@
 export default [
-  // {
-  //   title: 'Motors Shop',
-  //   to: { name: 'store' },
-  //   icon: { icon: 'tabler-shopping-cart' },
-  // },
+  { heading: 'Gestión de Ventas' },
   {
-    title: 'Interacciones',
-    icon: { icon: 'tabler-message' },
-    children: [
-      { title: 'Interesados', to: { name: 'apps-inquiries' } },
-    ],
+    title: 'Mis Publicaciones',
+    icon: { icon: 'tabler-list' },
+    to: 'dashboard-publications-publication-list',
   },
-  // { heading: 'Apps & Pages' },
   {
-    title: 'Publicaciones',
-    icon: { icon: 'tabler-file-text' },
-    children: [
-      { title: 'List', to: 'apps-publications-publication-list' },
-      { title: 'Ventas', to: 'apps-publications-sales' },
-      { title: 'Ofertas Recibidas', to: 'apps-publications-offers-received' },
-    ],
+    title: 'Ventas',
+    icon: { icon: 'tabler-currency-euro' },
+    to: 'dashboard-publications-sales',
+  },
+  {
+    title: 'Ofertas Recibidas',
+    icon: { icon: 'tabler-tag' },
+    to: 'dashboard-publications-offers-received',
+  },
+  {
+    title: 'Preguntas',
+    icon: { icon: 'tabler-message-question' },
+    to: { name: 'dashboard-questions-list' },
+  },
+  {
+    title: 'Interesados',
+    icon: { icon: 'tabler-users' },
+    to: { name: 'dashboard-inquiries' },
   },
 
-
-  // {
-  //   title: 'Invoice',
-  //   icon: { icon: 'tabler-file-invoice' },
-
-  //   children: [
-  //     { title: 'List', to: 'apps-invoice-list' },
-  //     { title: 'Preview', to: { name: 'apps-invoice-preview-id', params: { id: '5036' } } },
-  //     { title: 'Edit', to: { name: 'apps-invoice-edit-id', params: { id: '5036' } } },
-  //     { title: 'Add', to: 'apps-invoice-add' },
-  //   ],
-  // },
+  { heading: 'Gestión de Compras' },
   {
-    title: 'Compras',
-    icon: { icon: 'tabler-user-circle' },
-    children: [
-      { title: 'Compras', to: 'apps-purchases-purchases' },
-      { title: 'Ofertas Enviadas', to: 'apps-purchases-offers-sent' },
-      // { title: 'Opiniones', to: 'apps-purchases-opinions' },
-      { title: 'Favoritos', to: 'apps-purchases-favorites' },
-    ],
+    title: 'Mis Compras',
+    icon: { icon: 'tabler-shopping-bag' },
+    to: 'dashboard-purchases-purchases',
   },
+  {
+    title: 'Ofertas Enviadas',
+    icon: { icon: 'tabler-send' },
+    to: 'dashboard-purchases-offers-sent',
+  },
+  {
+    title: 'Favoritos',
+    icon: { icon: 'tabler-heart' },
+    to: { name: 'dashboard-favorites-list' },
+  },
+
+  { heading: 'Mi Cuenta' },
   {
     title: 'Perfil',
     icon: { icon: 'tabler-user' },
-    children: [
-      { title: 'Cuenta', to: { name: 'apps-user-account' } },
-      // { title: 'Estadísticas', to: { name: 'apps-user-stats' } },
-    ],
+    to: { name: 'dashboard-user-account' },
+  },
+
+  { heading: 'Administración', action: 'manage', subject: 'all' },
+  {
+    title: 'Aprobaciones',
+    icon: { icon: 'tabler-check' },
+    to: { name: 'dashboard-admin-approvals' },
+    action: 'manage',
+    subject: 'all',
   },
 ]

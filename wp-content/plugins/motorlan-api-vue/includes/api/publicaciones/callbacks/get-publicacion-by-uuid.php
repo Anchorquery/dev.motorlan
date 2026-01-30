@@ -23,9 +23,10 @@ function motorlan_get_publicacion_by_uuid(WP_REST_Request $request) {
         return new WP_Error('not_found', 'Publicación no encontrada', ['status' => 404]);
     }
 
-    // Security check: ensure the current user is the author of the post.
+    // Security check: allow only the author or admins.
     $post_author_id = get_post_field('post_author', $post_id);
-    if (get_current_user_id() != $post_author_id) {
+    $is_admin = current_user_can('manage_options');
+    if (get_current_user_id() != $post_author_id && !$is_admin) {
         return new WP_Error('forbidden', 'No tienes permiso para ver esta publicación', ['status' => 403]);
     }
 

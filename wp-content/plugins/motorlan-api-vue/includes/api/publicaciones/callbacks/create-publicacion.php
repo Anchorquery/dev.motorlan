@@ -39,16 +39,22 @@ function motorlan_create_publicacion_callback(WP_REST_Request $request) {
     }
 
     $requested_status = sanitize_text_field($params['status'] ?? 'draft');
+    $is_admin = current_user_can('administrator');
+
+    // Si el usuario no es admin, forzar estado 'pending' si intentaba publicar
+    if (!$is_admin && $requested_status === 'publish') {
+        $requested_status = 'pending';
+    }
 
     // Validar que no se publique con stock en 0
-    if ($requested_status === 'publish') {
+    if ($requested_status === 'publish' || $requested_status === 'pending') {
         $incoming_stock = null;
         if (isset($acf_data['stock'])) {
             $incoming_stock = (int) $acf_data['stock'];
         }
 
         if ($incoming_stock === null || $incoming_stock <= 0) {
-            return new WP_Error('invalid_stock_publish', 'No se puede publicar una publicacin con stock en 0.', ['status' => 400]);
+            return new WP_Error('invalid_stock_publish', 'No se puede publicar una publicación con stock en 0.', ['status' => 400]);
         }
     }
 
@@ -66,6 +72,28 @@ function motorlan_create_publicacion_callback(WP_REST_Request $request) {
     $post_id = wp_insert_post($post_data);
     if (is_wp_error($post_id)) {
         return $post_id;
+    }
+
+    // --- Notifications ---
+    if ($requested_status === 'pending' && !$is_admin) {
+        if (class_exists('Motorlan_Notification_Manager')) {
+            $notification_manager = new Motorlan_Notification_Manager();
+            $admins = get_users(['role' => 'administrator']);
+            foreach ($admins as $admin) {
+                $notification_manager->create_notification(
+                    $admin->ID,
+                    'pending_approval',
+                    'Nueva publicación pendiente',
+                    'El usuario ' . wp_get_current_user()->display_name . ' ha creado una nueva publicación que requiere tu aprobación.',
+                    [
+                        'post_id' => $post_id,
+                        'author_id' => get_current_user_id(),
+                        'url' => '/dashboard/admin/approvals', // URL de la nueva sección admin
+                    ],
+                    ['web', 'email']
+                );
+            }
+        }
     }
 
     // --- Assign UUID ---

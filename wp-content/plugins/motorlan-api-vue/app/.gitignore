@@ -41,3 +41,8 @@ public/mockServiceWorker.js
 # Env files
 .env*
 !.env.example
+
+# Auto-generated types
+auto-imports.d.ts
+components.d.ts
+typed-router.d.ts
