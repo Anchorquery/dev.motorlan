@@ -115,6 +115,10 @@ class Motorlan_Notification_Manager {
             }
         }
 
+        if ( ! is_array( $results ) ) {
+            return [];
+        }
+
         return $results;
     }
 

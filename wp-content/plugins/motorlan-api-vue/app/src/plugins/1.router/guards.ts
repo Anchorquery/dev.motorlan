@@ -2,11 +2,12 @@ import type { RouteNamedMap, _RouterTyped } from 'unplugin-vue-router'
 import { canNavigate } from '@layouts/plugins/casl'
 
 import { useUserStore } from '@/@core/stores/user'
+import { watch } from 'vue'
 
 export const setupGuards = (router: _RouterTyped<RouteNamedMap & { [key: string]: any }>) => {
   // 👉 router.beforeEach
   // Docs: https://router.vuejs.org/guide/advanced/navigation-guards.html#global-before-guards
-  router.beforeEach(to => {
+  router.beforeEach(async to => {
     /*
      * If it's a public route, continue navigation. This kind of pages are allowed to visited by login & non-login users. Basically, without any restrictions.
      * Examples of public routes are, 404, under maintenance, etc.
@@ -19,6 +20,31 @@ export const setupGuards = (router: _RouterTyped<RouteNamedMap & { [key: string]
      * Feel free to update this logic to suit your needs
      */
     const userStore = useUserStore()
+
+    if (userStore.isLoading) {
+      await new Promise<void>(resolve => {
+        const unwatch = watch(
+          () => userStore.isLoading,
+          loading => {
+            if (!loading) {
+              unwatch()
+              resolve()
+            }
+          },
+        )
+        // Check immediate again just in case
+        if (!userStore.isLoading) {
+          unwatch()
+          resolve()
+        }
+        // Safety timeout
+        setTimeout(() => {
+          unwatch()
+          resolve()
+        }, 2000)
+      })
+    }
+
     const isLoggedIn = !!useCookie('userData').value || userStore.getIsLoggedIn
 
     /*

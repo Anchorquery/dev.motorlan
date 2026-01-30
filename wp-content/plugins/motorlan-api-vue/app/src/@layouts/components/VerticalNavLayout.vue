@@ -4,6 +4,7 @@ import { useLayoutConfigStore } from '@layouts/stores/config'
 import type { VerticalNavItems } from '@layouts/types'
 import { useRouter } from 'vue-router'
 import { useToast } from '@/composables/useToast'
+import UserProfile from '@/layouts/components/UserProfile.vue'
 
 const router = useRouter()
 const { isToastVisible, toastMessage, toastColor } = useToast()

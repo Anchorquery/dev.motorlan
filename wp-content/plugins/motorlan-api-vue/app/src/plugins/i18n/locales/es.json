@@ -143,6 +143,9 @@
   "checkout": "finalizar compra",
   "Payment": "Pago",
   "Swiper": "Swiper",
+  "Administración": "Administración",
+  "Aprobaciones": "Aprobaciones",
+  "Ventas Realizadas": "Ventas Realizadas",
   "Product": "Producto",
   "Category": "Categoría",
   "Order": "Pedido",
@@ -229,6 +232,7 @@
       "request_warranty": "Solicitar Garantía"
     },
     "post_details": {
+      "motor_section_title": "Detalles del Motor",
       "section_title": "Detalles de la Publicación",
       "type": "Tipo de Publicación",
       "title": "Título de la publicación",

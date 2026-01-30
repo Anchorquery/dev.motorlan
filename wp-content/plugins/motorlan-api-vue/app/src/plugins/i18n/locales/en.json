@@ -142,6 +142,9 @@
   "checkout": "checkout",
   "Payment": "Payment",
   "Swiper": "Swiper",
+  "Administración": "Administration",
+  "Aprobaciones": "Approvals",
+  "Ventas Realizadas": "Sales Made",
   "Product": "Product",
   "Category": "Category",
   "Order": "Order",
@@ -216,6 +219,7 @@
       "request_warranty": "Request Warranty"
     },
     "post_details": {
+      "motor_section_title": "Motor Details",
       "section_title": "Publication Details",
       "type": "Publication Type",
       "title": "Publication Title",

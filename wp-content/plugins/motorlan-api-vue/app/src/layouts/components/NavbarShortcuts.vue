@@ -29,5 +29,5 @@ const shortcuts = [
 </script>
 
 <template>
-  <Shortcuts :shortcuts="shortcuts" />
+  <!-- <Shortcuts :shortcuts="shortcuts" /> -->
 </template>

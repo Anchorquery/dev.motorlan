@@ -126,7 +126,7 @@ function motorlan_format_notification_for_api( $notification ) {
         'id'       => (int) $notification['id'],
         'title'    => $notification['title'],
         'subtitle' => $notification['message'],
-        'time'     => human_time_diff( strtotime( $notification['created_at'] ), current_time( 'timestamp' ) ) . ' ago',
+        'time'     => ( ! empty( $notification['created_at'] ) && strtotime( $notification['created_at'] ) ) ? human_time_diff( strtotime( $notification['created_at'] ), current_time( 'timestamp' ) ) . ' ago' : '',
         'isSeen'   => (bool) $notification['is_read'],
         'icon'     => 'tabler-bell', // Default icon, can be customized based on type
         'color'    => 'primary',     // Default color
