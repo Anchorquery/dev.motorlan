@@ -1,4 +1,3 @@
-<!-- ❗Errors in the form are set on line 60 -->
 <script setup lang="ts">
 import { nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -37,6 +36,7 @@ const route = useRoute()
 const router = useRouter()
 const ability = useAbility()
 const { showToast } = useToast()
+const userStore = useUserStore()
 
 const errors = ref<Record<string, string | undefined>>({
   username: undefined,
@@ -53,40 +53,9 @@ const credentials = ref({
   password: '',
 })
 
-interface UserData {
-  displayName: string
-  email: string
-  nicename: string
-  role: string
-}
-
 interface AbilityRule {
   action: string
   subject: string
-}
-
-const loginSyncWithWordPress = async () => {
-  const wpData = (window as typeof window & { wpData?: { login_endpoint?: string; rest_nonce?: string; nonce?: string } }).wpData
-  const loginUrl = wpData?.login_endpoint || '/wp-json/wp/v2/custom/login'
-  try {
-    const response = await fetch(loginUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-WP-Nonce': wpData?.rest_nonce || wpData?.nonce || '',
-      },
-      body: JSON.stringify({
-        username: credentials.value.username,
-        password: credentials.value.password,
-      }),
-      credentials: 'include',
-    })
-    if (!response.ok) {
-      console.warn('Unable to sync WordPress session', await response.text())
-    }
-  } catch (error) {
-    console.error('Error syncing WordPress session', error)
-  }
 }
 
 const login = async () => {
@@ -96,100 +65,54 @@ const login = async () => {
     errors.value = { username: undefined, password: undefined }
     genericError.value = null
 
-    console.log('Logging in with fetch...')
-    const loginUrl = '/wp-json/jwt-auth/v1/token'
-    
-    const response = await fetch(loginUrl, {
+    // Use new WordPress session-based login endpoint
+    const response = await fetch('/wp-json/motorlan/v1/login', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
+      credentials: 'include', // Important: include cookies
       body: JSON.stringify({
         username: credentials.value.username,
         password: credentials.value.password,
+        remember: true,
       }),
     })
 
     const responseData = await response.json().catch(() => ({}))
-    console.log('Login attempt:', { status: response.status, data: responseData })
 
-    if (!response.ok) {
-       // Validate structure of error response usually sent by WP JWT Auth
-       // It normally sends { code: "...", message: "...", data: { status: 403 } } or similar
-       if (responseData.message) {
-          genericError.value = responseData.message
-       } else if (responseData.code) {
-          genericError.value = `Login failed: ${responseData.code}`
-       } else {
-          genericError.value = 'An unknown error occurred. Please try again.'
-       }
-       return
-    }
-
-    // Safety check for token
-    if (!responseData || !responseData.token) {
-      console.error('Login successful but no token received', responseData)
-      genericError.value = 'No access token received from server.'
+    if (!response.ok || !responseData.success) {
+      genericError.value = responseData.message || 'An unknown error occurred. Please try again.'
       return
     }
 
-    const { token, user_display_name, user_email, user_nicename } = responseData
+    const { user, profile } = responseData
 
-    // Store the token in a cookie
-    useCookie<string>('accessToken').value = token
-    localStorage.setItem('accessToken', token)
-
-    // Use native fetch to ensure the new token is used immediately
-    console.log('Fetching profile...')
-    const profileResponse = await fetch('/wp-json/motorlan/v1/profile', {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    })
-
-    if (!profileResponse.ok) {
-      const errorData = await profileResponse.json().catch(() => ({}))
-      console.error('Profile fetch failed', profileResponse.status, errorData)
-      genericError.value = errorData.message || `Error al obtener el perfil: ${profileResponse.statusText}`
-      
-      return
-    }
-
-    const profileData = await profileResponse.json()
-    console.log('Profile data:', profileData)
-
-    // Store user data in a cookie
-    useCookie<UserData>('userData').value = {
-      displayName: user_display_name,
-      email: user_email,
-      nicename: user_nicename,
-      role: user_nicename, // Add the role to the user data
-    }
-
-    await loginSyncWithWordPress()
-
-    const userStore = useUserStore()
+    // Update Pinia store with user data
     userStore.setFromBootstrap(
-      { id: profileData.id ?? 0, email: user_email, display_name: user_display_name },
+      {
+        id: user.id,
+        email: user.email,
+        display_name: user.display_name,
+        is_admin: user.is_admin,
+      },
       true
     )
 
     // Grant abilities based on role
-    const userAbilities: AbilityRule[] = [{ action: 'manage', subject: 'all' }]
+    const userAbilities: AbilityRule[] = user.is_admin
+      ? [{ action: 'manage', subject: 'all' }]
+      : [{ action: 'read', subject: 'all' }]
 
     ability.update(userAbilities)
-    useCookie<AbilityRule[]>('userAbilityRules').value = userAbilities
 
-    const { nombre, apellidos } = profileData.personal_data || {}
+    // Check if profile is complete
+    const { nombre, apellidos } = profile?.personal_data || {}
 
-    // Redirect to `to` query if exist or redirect to index route
-    // ❗ nextTick is required to wait for DOM updates and later redirect
     await nextTick(() => {
-      showToast('Logueo exitoso')
-      // Check if personal_data exists and has required fields
-      if (!profileData.personal_data || !nombre || !apellidos) {
-         // If personal_data is missing entirely, we might want to warn too, or just check the fields if it exists
+      showToast('Inicio de sesión exitoso')
+
+      if (!profile?.personal_data || !nombre || !apellidos) {
         showToast('Por favor, completa tu perfil para continuar.', 'warning')
         router.replace({ name: 'dashboard-user-account' })
       }
@@ -202,8 +125,8 @@ const login = async () => {
     })
   }
   catch (err: any) {
-    console.error('Login Error Catch:', err)
-    genericError.value = err.data?.message || err.message || 'Failed to connect to the server. Please check your connection or contact support.'
+    console.error('Login Error:', err)
+    genericError.value = err.message || 'Failed to connect to the server. Please check your connection.'
   }
   finally {
     isSubmitting.value = false
@@ -292,7 +215,14 @@ const onSubmit = () => {
                   class="mb-1"
                 />
 
-                <div class="d-flex align-center flex-wrap justify-space-between mt-2 mb-6" />
+                <div class="d-flex align-center flex-wrap justify-space-between mt-2 mb-6">
+                  <RouterLink
+                    class="text-primary text-sm"
+                    :to="{ name: 'forgot-password' }"
+                  >
+                    {{ t('login.forgot_password') }}
+                  </RouterLink>
+                </div>
 
                 <VBtn
                   block
@@ -320,8 +250,6 @@ const onSubmit = () => {
                   {{ t('login.create_account') }}
                 </RouterLink>
               </VCol>
-
-
             </VRow>
           </VForm>
         </VCardText>
@@ -335,7 +263,7 @@ const onSubmit = () => {
 
 .hover-lift {
   transition: transform 0.2s, box-shadow 0.2s;
-  
+
   &:not(:disabled):hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(var(--v-theme-primary), 0.3);

@@ -180,9 +180,34 @@
     "draft": "Zirriborroa",
     "published": "Argitaratua",
     "paused": "Pausatua",
-    "pending": "Onartzeko zain"
+    "pending": "Berrikusten"
+  },
+  "admin_approvals": {
+    "title": "Onartzeko zain daudenak",
+    "subtitle": "Erabiltzaileen argitalpen-eskaerak berrikusi eta kudeatu.",
+    "approve_success": "Argitalpena onartu da",
+    "approve_error": "Errorea argitalpena onartzean",
+    "reject_success": "Argitalpena ezetsi da",
+    "reject_error": "Errorea argitalpena ezeztatzean",
+    "no_data_title": "Ez dago onartzeko zain dagoen argitalpenik",
+    "no_data_subtitle": "Dena egunean dago oraindik.",
+    "buttons": {
+      "approve": "Onartu",
+      "reject": "Ukatu",
+      "cancel": "Utzi",
+      "confirm_reject": "Berretsi Ukapena"
+    },
+    "reject_dialog": {
+      "title": "Argitalpena Ukatu",
+      "text": "Adierazi zergatik ez den argitalpen hau onartzen. Erabiltzaileak informazio hau jasoko du.",
+      "reason_label": "Ukapenaren arrazoia",
+      "reason_placeholder": "Adibidez: Deskribapeneko zehaztapen teknikoak falta dira."
+    }
   },
   "store": {
+    "contact_modal": {
+      "default_message": "Kaixo, argitalpenaren prezioa jakitea interesatzen zait"
+    },
     "filters": {
       "others_tooltip": "Arratoia gainetik pasatutakon, 'Escobillas, encoder...",
       "product_type": "Produktu mota",
@@ -372,7 +397,7 @@
       "draft": "Zirriborroa",
       "paused": "Pausatua",
       "sold": "Salduta",
-      "pending": "Onartzeko zain",
+      "pending": "Berrikusten",
       "unknown": "Ezezaguna"
     },
     "delete_selected": "Ezabatu Hautatutakoak",
@@ -439,7 +464,9 @@
     "update_success": "Argitalpena ondo eguneratu da.",
     "update_error": "Errorea argitalpena eguneratzean: {message}",
     "required_fields_error": "Mesedez, bete derrigorrezko eremu guztiak.",
-    "save_draft": "Gorde Zirriborroa"
+    "save_draft": "Gorde Zirriborroa",
+    "status_title": "Egoera",
+    "pending_review_warning": "Zure argitalpena berrikusten ari da eta ezin da editatu administratzaile batek onartu edo ukatu arte."
   },
   "questions": {
     "page_title": "Argitalpenaren Galderak",
@@ -529,6 +556,7 @@
     "username": "Erabiltzailea",
     "password": "Pasahitza",
     "login_button": "Saioa hasi",
+    "forgot_password": "Pasahitza ahaztu duzu?",
     "new_platform": "Berria gure plataforman?",
     "create_account": "Sortu kontu bat",
     "or": "edo",

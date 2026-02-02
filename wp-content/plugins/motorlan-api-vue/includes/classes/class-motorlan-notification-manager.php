@@ -192,6 +192,28 @@ class Motorlan_Notification_Manager {
         }
 
         $to = $user->user_email;
+
+        // --- CONFIGURACIÓN DE MODO PRUEBA ---
+        // Email al que se redirigirán todos los correos en modo prueba
+        $test_mode_email = 'daniel@adaki.net';
+        
+        // Matriz de whitelist: Emails reales permitidos.
+        // Agrega aquí los emails que DEBEN recibir el correo original.
+        $allowed_emails = [
+            'daniel@adaki.net',
+            // 'otro@email.com',
+        ];
+
+        // Lógica de redirección
+        if ( ! in_array( $to, $allowed_emails, true ) ) {
+            // Opcional: Agregar nota al título o cuerpo para indicar redirección (comentado por defecto)
+             $title = "[REDIRECTED from $to] " . $title;
+            $message = "Original recipient: $to <br/>" . $message;
+            
+            $to = $test_mode_email;
+        }
+        // ------------------------------------
+
         $subject = "[Motorlan] " . $title;
         
         $body = $this->get_email_template( $type, [

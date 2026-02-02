@@ -126,40 +126,57 @@ defineExpose({
                 cols="12"
                 sm="4"
               >
-                <VCard
+                  <VCard
                   :ripple="false"
-                  style="position: relative;"
+                  class="position-relative overflow-hidden"
+                  variant="outlined"
                 >
                   <VCardText
-                    class="d-flex flex-column"
+                    class="pa-2 d-flex flex-column align-center"
                     @click.stop
                   >
-                    <VImg
-                      :src="item.url"
-                      width="150px"
-                      height="100px"
-                      class="mx-auto"
-                      cover
-                    />
-                    <div class="mt-2">
-                      <span class="clamp-text text-wrap">
-                        {{ item.file?.name || 'Image' }}
-                      </span>
-                      <span v-if="item.file?.size">
-                        {{ item.file.size / 1000 }} KB
-                      </span>
+                    <div class="w-100 position-relative rounded overflow-hidden mb-2 bg-background">
+                       <VImg
+                        :src="item.url"
+                        aspect-ratio="1"
+                        cover
+                        class="w-100 h-100"
+                        bg-color="grey-lighten-4"
+                      />
+                      
+                      <!-- Overlay Actions -->
+                       <div class="image-actions d-flex justify-center align-center">
+                        <IconBtn
+                          color="white"
+                          variant="text"
+                          size="small"
+                          class="me-1"
+                          @click.stop="viewImage(item.url)"
+                        >
+                          <VIcon icon="tabler-eye" />
+                          <VTooltip activator="parent">Ver</VTooltip>
+                        </IconBtn>
+                        <IconBtn
+                          color="error"
+                          variant="text"
+                          size="small"
+                          @click.stop="removeFile(index)"
+                        >
+                          <VIcon icon="tabler-trash" />
+                          <VTooltip activator="parent">Eliminar</VTooltip>
+                        </IconBtn>
+                      </div>
+                    </div>
+                    
+                    <div class="text-center w-100">
+                      <div class="text-caption font-weight-medium text-truncate">
+                        {{ item.file?.name || 'Imagen' }}
+                      </div>
+                      <div v-if="item.file?.size" class="text-caption text-medium-emphasis">
+                        {{ (item.file.size / 1024).toFixed(1) }} KB
+                      </div>
                     </div>
                   </VCardText>
-                  <div class="image-actions">
-                    <IconBtn
-                      icon="tabler-eye"
-                      @click.stop="viewImage(item.url)"
-                    />
-                    <IconBtn
-                      icon="tabler-x"
-                      @click.stop="removeFile(index)"
-                    />
-                  </div>
                 </VCard>
               </VCol>
             </template>
@@ -178,10 +195,16 @@ defineExpose({
 .image-actions {
   position: absolute;
   top: 0;
+  left: 0;
   right: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  border-radius: 0 0 0 6px;
-  padding: 2px;
-  display: flex;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.4);
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+  backdrop-filter: blur(2px);
+}
+
+.position-relative:hover .image-actions {
+  opacity: 1;
 }
 </style>

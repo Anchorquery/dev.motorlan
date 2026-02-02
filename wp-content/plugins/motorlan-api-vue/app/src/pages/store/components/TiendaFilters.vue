@@ -208,11 +208,11 @@ const customTypeModel = computed({
     </div>
 
     <!-- Disabled when Text search is active -->
-    <AppSelect v-model="selectedPar" :label="t('store.filters.torque_label')" placeholder="Seleccionar PAR (Nm)" :items="parOptions" class="mb-4" variant="outlined" color="error" clearable :disabled="isTypeModelActive" />
+    <AppSelect v-model="selectedBrand" :label="t('store.filters.brands_label')" placeholder="Seleccionar marcas" :items="marcas" item-title="name" item-value="term_id" class="mb-4" variant="outlined" color="error" clearable />
     <AppSelect v-model="selectedPotencia" :label="t('store.filters.power_label')" placeholder="Seleccionar potencia" :items="potenciaOptions" class="mb-4" variant="outlined" color="error" clearable :disabled="isTypeModelActive" />
+    <AppSelect v-model="selectedPar" :label="t('store.filters.torque_label')" placeholder="Seleccionar PAR (Nm)" :items="parOptions" class="mb-4" variant="outlined" color="error" clearable :disabled="isTypeModelActive" />
     <AppSelect v-model="selectedVelocidad" :label="t('store.filters.speed_label')" placeholder="Seleccionar velocidad" :items="velocidadOptions" class="mb-4" variant="outlined" color="error" clearable :disabled="isTypeModelActive" />
     
-    <AppSelect v-model="selectedBrand" :label="t('store.filters.brands_label')" placeholder="Seleccionar marcas" :items="marcas" item-title="name" item-value="term_id" class="mb-4" variant="outlined" color="error" clearable />
     <AppSelect v-model="selectedState" :label="t('store.filters.state_label')" placeholder="Seleccionar estado" item-title="name" item-value="value"  :items="[{'name':'Nuevo', 'value':'new'},{'name':'Usado', 'value':'used'},{'name':'Reacondicionado', 'value':'restored'}]" class="mb-4" variant="outlined" color="error" clearable />
   
     <div class="mt-6 text-caption text-error font-weight-bold" style="line-height: 1.2;">

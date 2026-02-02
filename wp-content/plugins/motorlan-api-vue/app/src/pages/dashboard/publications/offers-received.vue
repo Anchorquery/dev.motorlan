@@ -696,7 +696,7 @@ const resolveStatus = (status: string) => {
     <VSnackbar
       v-model="snackbarState.show"
       :color="snackbarState.type"
-      location="top right"
+      location="top end"
       elevation="6"
     >
       {{ snackbarState.message }}

@@ -20,12 +20,21 @@ const emit = defineEmits(['close'])
 const userStore = useUserStore()
 const guestId = ref<string>('')
 const initialViewerName = ref<string | null>(null)
+const isSuccess = ref(false)
+
+import { useI18n } from 'vue-i18n'
+const { t } = useI18n()
 
 // Guest Form State
 import { getStoredGuestEmail, setStoredGuestEmail, setStoredGuestName } from '@/utils/guest'
 const formName = ref('')
 const formEmail = ref('')
-const formMessage = ref('')
+const formMessage = ref(t('store.default_message') || t('contact_modal.default_message'))
+
+watch(() => t('store.default_message'), (newVal) => {
+  formMessage.value = newVal || t('contact_modal.default_message')
+})
+
 const formAgreed = ref(false)
 const showGuestForm = computed(() => {
   // Show form if:
@@ -65,8 +74,20 @@ const handleGuestSubmit = async () => {
     email: formEmail.value, 
     name: formName.value 
   })
+
+  // Save to local storage that price was requested
+  try {
+    const history = JSON.parse(localStorage.getItem('motorlan_requested_prices') || '[]')
+    if (!history.includes(props.publicacion.id)) {
+      history.push(props.publicacion.id)
+      localStorage.setItem('motorlan_requested_prices', JSON.stringify(history))
+    }
+  } catch (e) {
+    console.error('Error saving to localStorage', e)
+  }
   
-  // Clear form (optional, as view will switch)
+  // Show success view
+  isSuccess.value = true
 }
 
 // Brand Data Fetching
@@ -351,8 +372,59 @@ onBeforeUnmount(() => {
         <span>Por tu seguridad, no compartas datos de contacto directo.</span>
       </div>
 
+      <!-- Success View -->
+      <VCardText v-if="isSuccess" class="pa-8 bg-background flex-grow-1 d-flex flex-column align-center justify-center text-center overflow-y-auto">
+        <div class="mb-6 rounded-circle bg-primary-lighten-5 pa-6 elevation-1 d-inline-flex">
+          <VIcon icon="tabler-mail-check" size="64" color="primary" />
+        </div>
+        
+        <h3 class="text-h5 font-weight-bold mb-2 text-high-emphasis">
+          ¡Consulta enviada con éxito!
+        </h3>
+        
+        <p class="text-body-1 text-medium-emphasis mb-8" style="max-width: 400px;">
+          Hemos enviado tu mensaje al vendedor. Recibirás una copia de la consulta en tu correo electrónico<br><strong>{{ formEmail }}</strong>.
+        </p>
+
+        <VCard
+          flat
+          border
+          class="w-100 pa-4 mb-6 bg-surface-container-low rounded-xl text-start"
+        >
+          <div class="d-flex gap-4 align-start">
+            <VIcon icon="tabler-user-plus" color="primary" size="24" class="mt-1" />
+            <div>
+              <p class="text-subtitle-2 font-weight-bold mb-1 text-high-emphasis">
+                ¿Quieres hacer seguimiento?
+              </p>
+              <p class="text-caption text-medium-emphasis mb-3">
+                Regístrate ahora para guardar tu historial de chats, marcar favoritos y recibir alertas de nuevos productos.
+              </p>
+              <VBtn
+                variant="outlined"
+                color="primary"
+                size="small"
+                to="/register"
+                prepend-icon="tabler-login"
+                class="px-4"
+              >
+                Crear mi cuenta gratis
+              </VBtn>
+            </div>
+          </div>
+        </VCard>
+
+        <VBtn
+          variant="text"
+          color="medium-emphasis"
+          @click="emit('close')"
+        >
+          Cerrar ventana
+        </VBtn>
+      </VCardText>
+
       <!-- Guest Form (replaces Chat Body) -->
-      <VCardText v-if="showGuestForm" class="pa-6 bg-background flex-grow-1 overflow-y-auto">
+      <VCardText v-else-if="showGuestForm" class="pa-6 bg-background flex-grow-1 overflow-y-auto">
         <div class="text-center mb-6">
           <VIcon icon="tabler-mail-fast" size="48" color="primary" class="mb-3" />
           <h3 class="text-h6 font-weight-bold mb-1">Consulta sobre este motor</h3>
@@ -378,8 +450,7 @@ onBeforeUnmount(() => {
           <AppTextarea
             v-model="formMessage"
             label="Mensaje *"
-            placeholder="Hola, estoy interesado en este motor..."
-            rows="4"
+            rows="3"
             class="mb-4"
           />
 
@@ -563,8 +634,8 @@ onBeforeUnmount(() => {
         </div>
       </VCardText>
       
-      <!-- Composer (Hidden if form is shown) -->
-      <VCardActions v-if="!showGuestForm" class="composer bg-surface py-3 px-4 border-t">
+      <!-- Composer (Hidden if form is shown or success) -->
+      <VCardActions v-if="!showGuestForm && !isSuccess" class="composer bg-surface py-3 px-4 border-t">
         <div class="d-flex align-end w-100 gap-2">
           <VTextarea
             v-model="messageText"

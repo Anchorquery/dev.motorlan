@@ -6,8 +6,11 @@ import { useRouter } from 'vue-router'
 import type { ImagenDestacada, Publicacion } from '../../../../../interfaces/publicacion'
 import { useApi } from '@/composables/useApi'
 import { debounce } from '@/utils/debounce'
+import { useUserStore } from '@/@core/stores/user'
+
 const { t } = useI18n()
 const router = useRouter()
+const userStore = useUserStore()
 
 const headers = [
   { title: t('publication_list.publication'), value: 'publicacion' },
@@ -55,14 +58,22 @@ const resolveStatus = (statusMsg: string | number) => {
   if (statusString === 'draft')
     return { text: t('custom.draft'), color: 'secondary' }
   if (statusString === 'pending')
-    return { text: t('custom.pending'), color: 'info' }
+    return { text: t('custom.pending'), color: 'warning' }
   if (statusString === 'paused')
     return { text: t('custom.paused'), color: 'warning' }
   if (statusString === 'sold')
     return { text: t('custom.sold'), color: 'error' }
+  if (statusString === 'private')
+    return { text: t('custom.draft'), color: 'secondary' }
+  if (statusString === 'future')
+    return { text: t('custom.published'), color: 'success' }
+
+  // For unknown or empty statuses, default to 'draft' or 'not_found'
+  if (!statusString || statusString === 'false' || statusString === 'undefined' || statusString === 'null')
+     return { text: t('custom.draft'), color: 'secondary' }
 
   // If it's not one of the expected strings, it's an unknown/invalid status
-  return { text: t('custom.unknown'), color: 'info' }
+  return { text: statusString.charAt(0).toUpperCase() + statusString.slice(1) || t('custom.unknown'), color: 'info' }
 }
 
 const apiUrl = computed(() => {
@@ -280,6 +291,13 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
 
   return imageObj.url || ''
 }
+
+
+const canEdit = (item: any) => {
+  if (userStore.isAdmin) return true
+  // Si está en revisión (pending), y no es admin, no puede editar
+  return item.status !== 'pending'
+}
 </script>
 
 <template>
@@ -452,16 +470,19 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
         <template #item.actions="{ item }">
           <div class="d-flex justify-end gap-2">
             <IconBtn 
-              color="primary" 
+              :color="canEdit(item) ? 'primary' : 'warning'" 
               variant="tonal" 
               size="small"
-              @click="router.push(`/dashboard/publications/publication/edit/${(item as any).uuid}`)"
+              @click="canEdit(item) ? router.push(`/dashboard/publications/publication/edit/${(item as any).uuid}`) : null"
             >
-              <VIcon icon="tabler-pencil" size="18" />
-              <VTooltip activator="parent" location="top">Editar</VTooltip>
+              <VIcon :icon="canEdit(item) ? 'tabler-pencil' : 'tabler-lock'" size="18" />
+              <VTooltip activator="parent" location="top">
+                {{ canEdit(item) ? 'Editar' : t('edit_publication.pending_review_warning') }}
+              </VTooltip>
             </IconBtn>
 
             <IconBtn
+              v-if="canEdit(item)"
               color="secondary"
               variant="tonal"
               size="small"

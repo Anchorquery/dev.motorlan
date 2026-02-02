@@ -8,7 +8,11 @@ import { useApi } from '@/composables/useApi'
 import { useUserStore } from '@/@core/stores/user'
 import { createUrl } from '@/@core/composable/createUrl'
 
-const props = defineProps<{ publicacion: Publicacion; disableActions?: boolean }>()
+const props = defineProps<{ 
+  publicacion: Publicacion; 
+  disableActions?: boolean;
+  isPreview?: boolean;
+}>()
 const emit = defineEmits(['open-chat'])
 
 const brand = computed(() => (props.publicacion as any).marca_name || '-')
@@ -32,7 +36,7 @@ onMounted(async () => {
   if (!isLoggedIn.value)
     await userStore.fetchUserSession()
 
-  if (isLoggedIn.value) {
+  if (isLoggedIn.value && !props.isPreview) {
     try {
       const { data: favorites, error } = await useApi('/wp-json/motorlan/v1/favorites').get().json()
       if (error.value)
@@ -128,29 +132,76 @@ const isOwner = computed(() => {
   if (!userStore.getUser?.id) return false
   return props.publicacion.author?.id === userStore.getUser.id
 })
-const actionsAvailable = computed(() => !props.disableActions && !isOwner.value)
+const actionsAvailable = computed(() => !props.disableActions && !isOwner.value && !props.isPreview)
 
 const isNegotiable = computed(() => {
-  const val = props.publicacion.acf.precio_negociable
+  const val = props.publicacion?.acf?.precio_negociable
+
+  if (val === undefined || val === null)
+    return false
+
   if (typeof val === 'string') {
-    const lowerVal = val.toLowerCase()
-    return lowerVal === 'si' || lowerVal === 'yes'
+    const lowerVal = val.toLowerCase().trim()
+    
+    return lowerVal === 'si' || lowerVal === 'yes' || lowerVal === 'true'
   }
-  return !!val
+
+  if (Array.isArray(val))
+    return val.length > 0 && (val[0] === 'si' || val[0] === true)
+
+  return val === true
 })
 
-const share = () => {
+import { useShare, useClipboard } from '@vueuse/core'
+
+const isShareModalOpen = ref(false)
+const { copy, copied } = useClipboard()
+
+const shareOptions = computed(() => {
   const url = window.location.href
-  if (navigator.share) {
-    navigator.share({
-      title: props.publicacion.title,
-      url,
-    })
-  }
-  else {
-    navigator.clipboard.writeText(url)
-    shareSnackbar.value = true
-  }
+  const text = `Echa un vistazo a ${props.publicacion.title} en Motorlan`
+  
+  return [
+    {
+      name: 'WhatsApp',
+      icon: 'tabler-brand-whatsapp',
+      color: '#25D366',
+      action: () => {
+        window.open(`https://wa.me/?text=${encodeURIComponent(text + ' ' + url)}`, '_blank')
+      }
+    },
+    {
+      name: 'Telegram',
+      icon: 'tabler-brand-telegram',
+      color: '#0088cc',
+      action: () => {
+        window.open(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`, '_blank')
+      }
+    },
+    {
+      name: 'Email',
+      icon: 'tabler-mail',
+      color: 'primary',
+      action: () => {
+        window.open(`mailto:?subject=${encodeURIComponent(props.publicacion.title)}&body=${encodeURIComponent(text + ' ' + url)}`, '_self')
+      }
+    },
+    {
+      name: 'Copiar enlace',
+      icon: 'tabler-copy',
+      color: 'secondary',
+      action: () => {
+        copy(url)
+        shareSnackbar.value = true
+        isShareModalOpen.value = false
+      }
+    }
+  ]
+})
+
+
+const share = () => {
+  isShareModalOpen.value = true
 }
 
 const router = useRouter()
@@ -373,7 +424,7 @@ const removeOffer = async () => {
           </p>
           <VTextField
             v-model.number="offerAmount"
-            label="Monto de la oferta"
+            label="Precio de la oferta"
             type="number"
             class="mt-4"
             :rules="[v => !v || v < Number(props.publicacion.acf.precio_de_venta) || 'Oferta inválida']"
@@ -406,12 +457,42 @@ const removeOffer = async () => {
       </VCard>
     </VDialog>
 
+    <VDialog
+      v-model="isShareModalOpen"
+      width="400"
+    >
+      <VCard class="share-modal">
+        <VCardTitle class="d-flex align-center justify-space-between pt-4 pl-4 pr-4">
+          <span class="text-h6">Compartir publicación</span>
+          <VBtn icon="tabler-x" variant="text" size="small" @click="isShareModalOpen = false" />
+        </VCardTitle>
+        <VCardText class="pb-6">
+          <div class="d-flex flex-column gap-3 mt-2">
+            <VBtn
+              v-for="option in shareOptions"
+              :key="option.name"
+              block
+              variant="outlined"
+              :color="option.color"
+              class="justify-start px-4"
+              style="height: 48px;"
+              @click="option.action"
+            >
+              <template #prepend>
+                <VIcon :icon="option.icon" size="24" :color="option.color" class="mr-2" />
+              </template>
+              {{ option.name }}
+            </VBtn>
+          </div>
+        </VCardText>
+      </VCard>
+    </VDialog>
 
 
     <VSnackbar
       v-model="shareSnackbar"
       color="success"
-      location="top right"
+      location="top end"
     >
       Enlace copiado al portapapeles
     </VSnackbar>

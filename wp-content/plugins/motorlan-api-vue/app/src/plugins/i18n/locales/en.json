@@ -181,7 +181,29 @@
       "draft": "Draft",
       "published": "Published",
       "paused": "Paused",
-      "pending": "Pending Approval"
+      "pending": "Under Review"
+    },
+    "admin_approvals": {
+      "title": "Pending Approvals",
+      "subtitle": "Review and manage user publication requests.",
+      "approve_success": "Publication approved successfully",
+      "approve_error": "Error approving publication",
+      "reject_success": "Publication rejected",
+      "reject_error": "Error rejecting publication",
+      "no_data_title": "No pending publications",
+      "no_data_subtitle": "Everything is up to date for now.",
+      "buttons": {
+        "approve": "Approve",
+        "reject": "Reject",
+        "cancel": "Cancel",
+        "confirm_reject": "Confirm Reject"
+      },
+      "reject_dialog": {
+        "title": "Reject Publication",
+        "text": "Indicate the reason why this publication is not approved. The user will receive this information.",
+        "reason_label": "Reason for rejection",
+        "reason_placeholder": "E.g.: Missing technical specifications in the description."
+      }
     },
   "store": {
     "par_options": {
@@ -205,6 +227,9 @@
       "price_asc": "Price asc",
       "price_desc": "Price desc"
     }
+  },
+  "contact_modal": {
+    "default_message": "Hi, I am interested in knowing the price of the publication"
   },
   "add_publication": {
     "title": "Add New Publication",
@@ -362,7 +387,7 @@
       "draft": "Draft",
       "paused": "Paused",
       "sold": "Sold",
-      "pending": "Pending",
+      "pending": "Under Review",
       "unknown": "Unknown"
     },
     "delete_selected": "Delete Selected",
@@ -429,7 +454,9 @@
     "update_success": "Publication updated successfully.",
     "update_error": "Error updating publication: {message}",
     "required_fields_error": "Please fill in all required fields.",
-    "save_draft": "Save Draft"
+    "save_draft": "Save Draft",
+    "status_title": "Status",
+    "pending_review_warning": "Your publication is under review and cannot be edited until it is approved or rejected by an administrator."
   },
   "questions": {
     "page_title": "Publication Questions",
@@ -519,6 +546,7 @@
     "username": "Username",
     "password": "Password",
     "login_button": "Log in",
+    "forgot_password": "Forgot your password?",
     "new_platform": "New to our platform?",
     "create_account": "Create an account",
     "or": "or",

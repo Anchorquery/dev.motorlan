@@ -107,7 +107,7 @@ onMounted(fetchQuestions)
     <VSnackbar
       v-model="snackbar.show"
       :color="snackbar.color"
-      location="top"
+      location="top end"
     >
       {{ snackbar.text }}
     </VSnackbar>

@@ -25,6 +25,12 @@ function motorlan_update_publicacion_status(WP_REST_Request $request) {
         return new WP_Error('no_status', 'Status not provided', ['status' => 400]);
     }
 
+    // Security check: If current post is pending, only admin can change status
+    $current_status = get_post_status($post_id);
+    if ($current_status === 'pending' && !current_user_can('administrator')) {
+        return new WP_Error('forbidden', 'No puedes cambiar el estado de una publicación que está en revisión.', ['status' => 403]);
+    }
+
     // Si el usuario no es admin y quiere publicar, forzar 'pending'
     if (!$is_admin && $new_status === 'publish') {
         $new_status = 'pending';

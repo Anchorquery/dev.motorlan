@@ -20,7 +20,7 @@ definePage({
 })
 
 const route = useRoute();
-const slug = route.params.slug as string;
+
 const userStore = useUserStore();
 
 // Define a public API client that bypasses the global useApi (which forces auth headers and redirects on 401)
@@ -36,8 +36,8 @@ const usePublicApi = createFetch({
 })
 
 const { data, isFetching, execute } = usePublicApi<any>(
-  createUrl(`/wp-json/motorlan/v1/publicaciones/${slug}`),
-  { immediate: false }
+  createUrl(() => `/wp-json/motorlan/v1/publicaciones/${route.params.slug}`),
+  { immediate: false, refetch: true }
 )
   .get()
   .json();

@@ -5,7 +5,6 @@ import { useAbility } from '@casl/vue'
 import { useToast } from '@/composables/useToast'
 import { requiredValidator } from '@core/utils/validators'
 import { useUserStore } from '@/@core/stores/user'
-import { useApi } from '@/composables/useApi'
 
 const props = defineProps<{
   isDialogVisible: boolean
@@ -34,109 +33,65 @@ const credentials = ref({
   password: '',
 })
 
-const loginSyncWithWordPress = async () => {
-  const wpData = (window as any).wpData
-  const loginUrl = wpData?.login_endpoint || '/wp-json/wp/v2/custom/login'
-  try {
-    const response = await fetch(loginUrl, {
+
+
+const login = async () => {
+    isSubmitting.value = true
+    try {
+        // Reset errors
+        errors.value = { username: undefined, password: undefined }
+        genericError.value = null
+
+        // Use native WordPress session login
+    const response = await fetch('/wp-json/motorlan/v1/login', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-WP-Nonce': wpData?.rest_nonce || wpData?.nonce || '',
       },
+      credentials: 'include', // Important: include cookies
       body: JSON.stringify({
         username: credentials.value.username,
         password: credentials.value.password,
+        remember: true,
       }),
-      credentials: 'include',
     })
-    if (!response.ok) {
-      console.warn('Unable to sync WordPress session', await response.text())
-    }
-  } catch (error) {
-    console.error('Error syncing WordPress session', error)
-  }
-}
 
-const login = async () => {
-  isSubmitting.value = true
-  try {
-    // Reset errors
-    errors.value = { username: undefined, password: undefined }
-    genericError.value = null
+    const responseData = await response.json().catch(() => ({}))
 
-    const { data, error } = await useApi<any>('/wp-json/jwt-auth/v1/token')
-      .post({
-        username: credentials.value.username,
-        password: credentials.value.password,
-      })
-      .json()
-
-    if (error.value) {
-      const errorData = error.value.data
-      if (errorData && errorData.errors) {
-        errors.value = errorData.errors
-      }
-      else {
-        genericError.value = errorData?.message || error.value.message || 'An unknown error occurred. Please try again.'
-      }
-
+    if (!response.ok || !responseData.success) {
+      genericError.value = responseData.message || 'Error al iniciar sesión. Por favor verifica tus credenciales.'
       return
     }
 
-    const { token, user_display_name, user_email, user_nicename } = data.value
+    const { user, profile } = responseData
 
-    // Store the token in a cookie
-    useCookie<string>('accessToken').value = token
-    localStorage.setItem('accessToken', token)
-
-    // Use native fetch to ensure the new token is used immediately
-    const profileResponse = await fetch('/wp-json/motorlan/v1/profile', {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    })
-
-    if (!profileResponse.ok) {
-      const errorData = await profileResponse.json().catch(() => ({}))
-      genericError.value = errorData.message || `Error al obtener el perfil: ${profileResponse.statusText}`
-      
-      return
-    }
-
-    const profileData = await profileResponse.json()
-
-    // Store user data in a cookie
-    useCookie<any>('userData').value = {
-      displayName: user_display_name,
-      email: user_email,
-      nicename: user_nicename,
-      role: user_nicename,
-    }
-
-    await loginSyncWithWordPress()
-
+    // Update Pinia store with user data
     const userStore = useUserStore()
     userStore.setFromBootstrap(
-      { id: profileData.id ?? 0, email: user_email, display_name: user_display_name },
+      {
+        id: user.id,
+        email: user.email,
+        display_name: user.display_name,
+        is_admin: user.is_admin,
+      },
       true
     )
 
     // Grant abilities based on role
-    const userAbilities = [{ action: 'manage', subject: 'all' }]
+    const userAbilities = user.is_admin
+      ? [{ action: 'manage', subject: 'all' }]
+      : [{ action: 'read', subject: 'all' }]
 
     ability.update(userAbilities)
-    useCookie<any>('userAbilityRules').value = userAbilities
 
-    showToast('Logueo exitoso')
+    showToast('Inicio de sesión exitoso')
     
-    // Reload the page to refresh state
+    // Reload the page to refresh state and ensure all components catch the new session
     window.location.reload()
   }
   catch (err: any) {
-    console.error(err)
-    genericError.value = err.data?.message || 'Failed to connect to the server. Please check your connection or contact support.'
+    console.error('Login Error:', err)
+    genericError.value = err.message || 'Error de conexión. Por favor intenta de nuevo.'
   }
   finally {
     isSubmitting.value = false

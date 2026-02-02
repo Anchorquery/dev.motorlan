@@ -16,6 +16,7 @@ interface UserState {
 
 export const useUserStore = defineStore('user', {
   state: (): UserState => {
+    // Initialize from WordPress bootstrap data if available
     const bootstrapData = (typeof window !== 'undefined') ? (window as any).wpData?.user_data : null
 
     if (bootstrapData?.user) {
@@ -37,13 +38,18 @@ export const useUserStore = defineStore('user', {
       loading: true,
     }
   },
+
   getters: {
     getUser: (state) => state.user,
     getIsLoggedIn: (state) => state.isLoggedIn,
     isLoading: (state) => state.loading,
     isAdmin: (state) => state.user?.isAdmin ?? false,
   },
+
   actions: {
+    /**
+     * Set user data from WordPress bootstrap or login response
+     */
     setFromBootstrap(user: Partial<User & { is_admin?: boolean }> | null, isLoggedIn: boolean) {
       this.user = user
         ? {
@@ -56,50 +62,52 @@ export const useUserStore = defineStore('user', {
       this.isLoggedIn = Boolean(isLoggedIn) && Boolean(this.user?.id)
       this.loading = false
     },
+
+    /**
+     * Fetch current session from server
+     * Uses WordPress session cookies automatically
+     */
     async fetchUserSession() {
       this.loading = true
       try {
         const { data, error } = await useApi('/wp-json/motorlan/v1/session').get().json()
+
         if (error.value)
           throw error.value
 
-        const payload: any = (data.value && (data.value as any).data) ? (data.value as any).data : data.value
-        if (payload) {
-          const candidateUser = payload.user ?? payload
-          const normalizedUser = candidateUser
-            && typeof candidateUser === 'object'
-            && ('id' in candidateUser || 'email' in candidateUser || 'display_name' in candidateUser)
-            ? {
-              id: candidateUser.id ?? 0,
-              email: candidateUser.email ?? '',
-              display_name: candidateUser.display_name ?? candidateUser.displayName ?? '',
-              isAdmin: Boolean(candidateUser.is_admin ?? candidateUser.isAdmin),
-            }
-            : null
+        const payload: any = data.value
 
-          if (normalizedUser) {
-            this.user = normalizedUser as User
-            this.isLoggedIn = Boolean(payload.is_logged_in ?? payload.isLoggedIn ?? normalizedUser?.id)
-          } else if (payload.is_logged_in === false || payload.isLoggedIn === false) {
-            // Solo si explícitamente nos dicen que no está logueado
-            this.isLoggedIn = false
-            this.user = null
+        if (payload && payload.is_logged_in && payload.user) {
+          this.user = {
+            id: payload.user.id ?? 0,
+            email: payload.user.email ?? '',
+            display_name: payload.user.display_name ?? '',
+            isAdmin: Boolean(payload.user.is_admin),
           }
+          this.isLoggedIn = true
         }
-      } catch (error) {
-        console.error('Error fetching user session:', error)
-        // No limpiamos el estado inmediatamente en caso de error de red o de la API
-        // si ya teníamos datos previos (p.ej. de WordPress Bootstrap)
-        if (!this.user) {
+        else {
+          this.user = null
           this.isLoggedIn = false
         }
-      } finally {
+      }
+      catch (error) {
+        console.error('Session check error', error)
+        this.user = null
+        this.isLoggedIn = false
+      }
+      finally {
         this.loading = false
       }
     },
+
+    /**
+     * Clear user state (called on logout)
+     */
     logout() {
       this.user = null
       this.isLoggedIn = false
+      this.loading = false
     },
   },
 })

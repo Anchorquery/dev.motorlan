@@ -33,10 +33,15 @@ function motorlan_create_publicacion_callback(WP_REST_Request $request) {
     if (empty($acf_data['tipo_o_referencia'])) return new WP_Error('missing_reference', 'La referencia es obligatoria', ['status' => 400]);
 
     // --- Create Post ---
-    $slug = '';
-    if (!empty($params['slug'])) {
-        $slug = sanitize_title($params['slug']);
-    }
+    $post_title = sanitize_text_field($params['title']);
+    
+    // Generate slug using the new format
+    $slug_data = [
+        'title' => $params['title'],
+        'acf'   => $acf_data,
+        'tipo'  => $params['tipo'] ?? null
+    ];
+    $slug = motorlan_generate_publicacion_slug($slug_data);
 
     $requested_status = sanitize_text_field($params['status'] ?? 'draft');
     $is_admin = current_user_can('administrator');
@@ -73,6 +78,9 @@ function motorlan_create_publicacion_callback(WP_REST_Request $request) {
     if (is_wp_error($post_id)) {
         return $post_id;
     }
+
+    // Explicitly set the ACF field for consistency
+    update_field('publicar_acf', $requested_status, $post_id);
 
     // --- Notifications ---
     if ($requested_status === 'pending' && !$is_admin) {

@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { PerfectScrollbar } from 'vue3-perfect-scrollbar'
 import { useChat } from './useChat'
-import { useChatStore } from '@/views/dashboard/chat/useChatStore'
+import { useChatStore } from '@/views/apps/chat/useChatStore'
 
 defineEmits<{
   (e: 'close'): void

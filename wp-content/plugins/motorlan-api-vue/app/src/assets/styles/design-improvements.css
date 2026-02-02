@@ -62,3 +62,23 @@ body {
 	letter-spacing: -0.01em;
 	color: #da291c;
 }
+
+/* Toast/Snackbar adjustments for WordPress integration */
+#motorlan-app {
+	position: relative;
+}
+
+#motorlan-app .v-snackbar {
+	position: absolute !important;
+	z-index: 9999 !important;
+}
+
+/* Ensure snackbars at the top don't hide behind WordPress admin bar if there's any overflow issue, 
+   though attach should handle the relative positioning. */
+#motorlan-app .v-snackbar--location-top {
+	top: 12px !important;
+}
+
+#motorlan-app .v-snackbar--location-bottom {
+	bottom: 12px !important;
+}

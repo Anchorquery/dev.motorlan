@@ -182,7 +182,29 @@
       "draft": "Borrador",
       "published": "Publicado",
       "paused": "Pausado",
-      "pending": "Pendiente de aprobación"
+      "pending": "En revisión"
+    },
+    "admin_approvals": {
+      "title": "Aprobaciones Pendientes",
+      "subtitle": "Revisa y gestiona las solicitudes de publicación de los usuarios.",
+      "approve_success": "Publicación aprobada con éxito",
+      "approve_error": "Error al aprobar la publicación",
+      "reject_success": "Publicación rechazada",
+      "reject_error": "Error al rechazar la publicación",
+      "no_data_title": "No hay publicaciones pendientes",
+      "no_data_subtitle": "Todo está al día por ahora.",
+      "buttons": {
+        "approve": "Aprobar",
+        "reject": "Rechazar",
+        "cancel": "Cancelar",
+        "confirm_reject": "Confirmar Rechazo"
+      },
+      "reject_dialog": {
+        "title": "Rechazar Publicación",
+        "text": "Indica el motivo por el cual no se aprueba esta publicación. El usuario recibirá esta información.",
+        "reason_label": "Motivo del rechazo",
+        "reason_placeholder": "Ej: Faltan especificaciones técnicas en la descripción."
+      }
     },
   "store": {
     "par_options": {
@@ -217,7 +239,8 @@
       "state_label": "Estado",
       "type_model_label": "Tipo / modelo",
       "responsibility_note": "IMPORTANTE: Motorlan no se hace responsable de aquellos equipos que se vendan directamente entre vendedor-comprador sin una revisión previa en su taller especializado."
-    }
+    },
+    "default_message": "Hola, me interesa saber el precio de la publicación"
   },
   "add_publication": {
     "title": "Añadir Nueva Publicación",
@@ -375,7 +398,7 @@
       "draft": "Borrador",
       "paused": "Pausado",
       "sold": "Vendido",
-      "pending": "Pendiente",
+      "pending": "En revisión",
       "unknown": "Desconocido"
     },
     "delete_selected": "Eliminar Seleccionados",
@@ -442,7 +465,9 @@
     "update_success": "Publicación actualizada correctamente.",
     "update_error": "Error al actualizar la publicación: {message}",
     "required_fields_error": "Por favor, rellene todos los campos obligatorios.",
-    "save_draft": "Guardar Borrador"
+    "save_draft": "Guardar Borrador",
+    "status_title": "Estado",
+    "pending_review_warning": "Tu publicación está en revisión y no puede ser editada hasta que sea aprobada o rechazada por un administrador."
   },
   "questions": {
     "page_title": "Preguntas de la Publicación",
@@ -532,6 +557,7 @@
     "username": "Usuario",
     "password": "Contraseña",
     "login_button": "Iniciar sesión",
+    "forgot_password": "¿Olvidaste tu contraseña?",
     "new_platform": "¿Nuevo en nuestra plataforma?",
     "create_account": "Crear una cuenta",
     "or": "o",

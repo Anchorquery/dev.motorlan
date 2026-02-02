@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Invoice } from '@/plugins/fake-api/handlers/dashboard/invoice/types'
+import type { Invoice } from '@/plugins/fake-api/handlers/apps/invoice/types'
 import { avatarText } from '@core/utils/formatters'
 
 const searchQuery = ref('')

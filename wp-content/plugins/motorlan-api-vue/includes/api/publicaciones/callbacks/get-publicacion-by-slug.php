@@ -37,6 +37,23 @@ function motorlan_get_publicacion_by_slug(WP_REST_Request $request) {
     $post_id = get_the_ID();
     wp_reset_postdata();
 
-    $publicacion_data = motorlan_get_publicacion_data($post_id);
+    $post_status = get_post_status($post_id);
+    $post_author_id = get_post_field('post_author', $post_id);
+    $is_admin = current_user_can('manage_options') || current_user_can('administrator');
+    $is_owner = get_current_user_id() == $post_author_id;
+
+    // Security: If not published, only admin or owner can see it.
+    if ($post_status !== 'publish' && !$is_admin && !$is_owner) {
+        return new WP_Error('not_found', 'Publicación no encontrada', ['status' => 404]);
+    }
+
+    // Check if user is admin or owner to view sensitive data (like price)
+    $is_admin = current_user_can('manage_options');
+    $post_author_id = get_post_field('post_author', $post_id);
+    $is_owner = get_current_user_id() == $post_author_id;
+
+    $show_sensitive = $is_admin || $is_owner;
+
+    $publicacion_data = motorlan_get_publicacion_data($post_id, $show_sensitive);
     return new WP_REST_Response(['data' => $publicacion_data], 200);
 }

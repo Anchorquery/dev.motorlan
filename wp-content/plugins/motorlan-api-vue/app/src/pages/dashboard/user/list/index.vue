@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import type { UserProperties } from '@db/dashboard/users/types'
+import type { UserProperties } from '@db/apps/users/types'
 import { avatarText, prefixWithPlus } from '@core/utils/formatters'
-import AddNewUserDrawer from '@/views/dashboard/user/list/AddNewUserDrawer.vue'
+import AddNewUserDrawer from '@/views/apps/user/list/AddNewUserDrawer.vue'
 
 // 👉 Store
 const searchQuery = ref('')

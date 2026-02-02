@@ -5,15 +5,48 @@ import initCore from '@core/initCore'
 import { initConfigStore, useConfigStore } from '@core/stores/config'
 import { hexToRgb } from '@core/utils/colorConverter'
 import { useToast } from '@/composables/useToast'
+import { useUserStore } from '@/@core/stores/user'
+import { onMounted, onUnmounted } from 'vue'
 
 const { global } = useTheme()
 const { isToastVisible, toastMessage, toastColor } = useToast()
+const userStore = useUserStore()
 
 // ℹ️ Sync current theme with initial loader theme
 initCore()
 initConfigStore()
 
 const configStore = useConfigStore()
+
+// Handle browser back/forward navigation (bfcache)
+const handlePageShow = async (event: PageTransitionEvent) => {
+  // If page is restored from bfcache, verify session is still valid
+  if (event.persisted && userStore.getIsLoggedIn) {
+    try {
+      const response = await fetch('/wp-json/motorlan/v1/session', {
+        credentials: 'include',
+      })
+      const data = await response.json()
+
+      if (!data.is_logged_in) {
+        userStore.logout()
+        window.location.href = '/login'
+      }
+    }
+    catch (e) {
+      // Network error - assume session is still valid
+      console.error('Session check failed:', e)
+    }
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('pageshow', handlePageShow)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('pageshow', handlePageShow)
+})
 </script>
 
 <template>

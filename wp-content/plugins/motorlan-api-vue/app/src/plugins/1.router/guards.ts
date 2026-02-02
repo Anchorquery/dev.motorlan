@@ -1,26 +1,16 @@
 import type { RouteNamedMap, _RouterTyped } from 'unplugin-vue-router'
-import { canNavigate } from '@layouts/plugins/casl'
-
 import { useUserStore } from '@/@core/stores/user'
 import { watch } from 'vue'
 
 export const setupGuards = (router: _RouterTyped<RouteNamedMap & { [key: string]: any }>) => {
-  // 👉 router.beforeEach
-  // Docs: https://router.vuejs.org/guide/advanced/navigation-guards.html#global-before-guards
   router.beforeEach(async to => {
-    /*
-     * If it's a public route, continue navigation. This kind of pages are allowed to visited by login & non-login users. Basically, without any restrictions.
-     * Examples of public routes are, 404, under maintenance, etc.
-     */
+    // Public routes are accessible by everyone
     if (to.meta.public)
       return
 
-    /**
-     * Check if user is logged in by checking if token & user data exists in local storage
-     * Feel free to update this logic to suit your needs
-     */
     const userStore = useUserStore()
 
+    // Wait for store to finish loading if needed
     if (userStore.isLoading) {
       await new Promise<void>(resolve => {
         const unwatch = watch(
@@ -32,7 +22,7 @@ export const setupGuards = (router: _RouterTyped<RouteNamedMap & { [key: string]
             }
           },
         )
-        // Check immediate again just in case
+        // Check immediate in case it changed
         if (!userStore.isLoading) {
           unwatch()
           resolve()
@@ -45,13 +35,9 @@ export const setupGuards = (router: _RouterTyped<RouteNamedMap & { [key: string]
       })
     }
 
-    const isLoggedIn = !!useCookie('userData').value || userStore.getIsLoggedIn
+    const isLoggedIn = userStore.getIsLoggedIn
 
-    /*
-      If user is logged in and is trying to access login like page, redirect to home
-      else allow visiting the page
-      (WARN: Don't allow executing further by return statement because next code will check for permissions)
-     */
+    // If route is only for unauthenticated users (login, register, etc.)
     if (to.meta.unauthenticatedOnly) {
       if (isLoggedIn)
         return { name: 'dashboard-purchases-purchases', replace: true }
@@ -59,11 +45,11 @@ export const setupGuards = (router: _RouterTyped<RouteNamedMap & { [key: string]
         return undefined
     }
 
-    // If the user is logged in and is trying to access the account page, allow it.
-    // This is to prevent a redirect loop for new users who need to complete their profile.
+    // Allow access to account page for logged in users (profile completion)
     if (to.name === 'dashboard-user-account' && isLoggedIn)
       return undefined
 
+    // Redirect to login if not authenticated
     if (!isLoggedIn) {
       return {
         name: 'login',

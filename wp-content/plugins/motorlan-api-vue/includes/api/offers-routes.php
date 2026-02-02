@@ -409,7 +409,7 @@ function motorlan_handle_create_offer($request) {
         array(
             'offer_id'       => $offer_id,
             'publication_id' => $post_id,
-            'url'            => '/offers/received',
+                'url'            => '/dashboard/publications/offers-received',
         ),
         array( 'web', 'email' )
     );
@@ -593,7 +593,7 @@ function motorlan_handle_update_offer_status($request) {
             array(
                 'offer_id'       => $offer_id,
                 'publication_id' => $offer->publication_id,
-                'url'            => '/offers/sent',
+                'url'            => '/dashboard/purchases/offers-sent',
             ),
             array( 'web', 'email' )
         );

@@ -261,6 +261,7 @@ const onSubmit = () => {
   <VSnackbar
     v-model="showSuccessNotification"
     color="success"
+    location="top end"
     :timeout="4000"
   >
     Registro exitoso. Hemos enviado un correo de bienvenida. Revisa tu bandeja de entrada.

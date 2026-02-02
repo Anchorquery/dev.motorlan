@@ -397,6 +397,26 @@ if ( ! class_exists( 'Motorlan_Product_Chat_Controller' ) ) {
             $row = $this->persist_message( $product_id, $room_key, $message, $current_user_id, $sender_role, $display_name, $avatar );
             if ( is_wp_error( $row ) ) return $row;
 
+            // Notification Logic
+            if ( $sender_role !== 'seller' ) {
+                $post = get_post( $product_id );
+                $author_id = (int) $post->post_author;
+                
+                if ( $author_id && class_exists( 'Motorlan_Notification_Manager' ) ) {
+                    $notif_manager = new Motorlan_Notification_Manager();
+                    $notif_title = __( 'Nuevo mensaje en tu publicación', 'motorlan-api-vue' );
+                    $notif_data = [
+                        'url' => '/dashboard/inquiries?room_key=' . $room_key,
+                        'room_key' => $room_key,
+                        'product_id' => $product_id,
+                        'product_title' => get_the_title( $product_id ),
+                        'sender_name' => $display_name
+                    ];
+                    // Also send email
+                    $notif_manager->create_notification( $author_id, 'new_message', $notif_title, $message, $notif_data, ['web', 'email'] );
+                }
+            }
+
             $response_message                    = $this->format_message( $row, $current_user_id );
             $response_message['is_current_user'] = true;
 

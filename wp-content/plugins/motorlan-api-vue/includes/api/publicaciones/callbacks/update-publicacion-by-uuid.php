@@ -23,6 +23,12 @@ function motorlan_update_publicacion_by_uuid(WP_REST_Request $request) {
         return new WP_Error('not_found', 'Publicación no encontrada', ['status' => 404]);
     }
 
+    // Security check: If post is pending, only admin can update
+    $current_post_status = get_post_status($post_id);
+    if ($current_post_status === 'pending' && !current_user_can('administrator')) {
+        return new WP_Error('forbidden', 'No puedes editar una publicación que está en revisión.', ['status' => 403]);
+    }
+
     $params = $request->get_params();
     $files = $request->get_file_params();
 
@@ -31,14 +37,36 @@ function motorlan_update_publicacion_by_uuid(WP_REST_Request $request) {
         wp_update_post(['ID' => $post_id, 'post_title' => sanitize_text_field($params['title'])]);
     }
 
-    if (isset($params['slug'])) {
-        $sanitized_slug = sanitize_title($params['slug']);
-        if (!empty($sanitized_slug)) {
-            wp_update_post([
-                'ID' => $post_id,
-                'post_name' => $sanitized_slug,
-            ]);
-        }
+    // --- Handle Slug ---
+    $current_post = get_post($post_id);
+    $new_slug = '';
+
+    if (isset($params['slug']) && !empty($params['slug'])) {
+        // User provided a manual slug, ensure it's unique
+        $new_slug = motorlan_make_slug_unique(sanitize_title($params['slug']), $post_id);
+    } elseif (isset($params['title']) || isset($params['acf'])) {
+        // If title or ACF fields (which compose the slug) change, we should probably update the slug
+        // However, we only do this if it's explicitly desired or if it's a draft.
+        // For now, let's regenerate it to match the new format if it doesn't match.
+        
+        $acf_data = isset($params['acf']) ? (is_string($params['acf']) ? json_decode($params['acf'], true) : $params['acf']) : get_fields($post_id);
+        $title = $params['title'] ?? get_the_title($post_id);
+        $categories = isset($params['categories']) ? (is_string($params['categories']) ? json_decode($params['categories'], true) : $params['categories']) : null;
+        $tipo = isset($params['tipo']) ? (is_string($params['tipo']) ? json_decode($params['tipo'], true) : $params['tipo']) : null;
+
+        $slug_data = [
+            'title' => $title,
+            'acf'   => $acf_data,
+            'tipo'  => $tipo
+        ];
+        $new_slug = motorlan_generate_publicacion_slug($slug_data, $post_id);
+    }
+
+    if (!empty($new_slug) && $new_slug !== $current_post->post_name) {
+        wp_update_post([
+            'ID' => $post_id,
+            'post_name' => $new_slug,
+        ]);
     }
     // --- Handle Post Status ---
     // This is critical for the post to be 'published', 'draft', etc.

@@ -174,6 +174,7 @@ export default {
     hideDetails: 'auto',
   },
   VSnackbar: {
+    attach: '#motorlan-app',
     VBtn: {
       density: 'comfortable',
     },

@@ -182,7 +182,7 @@ function motorlan_create_question_callback( WP_REST_Request $request ) {
         [
             'publication_id' => $publicacion_id,
             'question_id'    => $post_id,
-            'url'            => $publication_url,
+            'url'            => '/dashboard/publications/questions',
         ],
         ['web', 'email']
     );

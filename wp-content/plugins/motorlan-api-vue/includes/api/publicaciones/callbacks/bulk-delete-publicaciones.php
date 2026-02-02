@@ -24,7 +24,14 @@ function motorlan_bulk_delete_publicaciones(WP_REST_Request $request) {
     }
 
     $deleted_count = 0;
+    $deleted_count = 0;
     foreach ($ids as $id) {
+        // Security check per item
+        $post_status = get_post_status(intval($id));
+        if ($post_status === 'pending' && !current_user_can('administrator')) {
+            continue; // Skip pending items if not admin
+        }
+
         if (wp_delete_post(intval($id), true)) {
             $deleted_count++;
         }

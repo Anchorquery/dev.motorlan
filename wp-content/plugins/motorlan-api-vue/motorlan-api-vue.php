@@ -42,6 +42,7 @@ require_once MOTORLAN_API_VUE_PATH . 'includes/api/sales-routes.php';
 require_once MOTORLAN_API_VUE_PATH . 'includes/api/notifications-routes.php';
 require_once MOTORLAN_API_VUE_PATH . 'includes/api/my-publications-routes.php';
 require_once MOTORLAN_API_VUE_PATH . 'includes/api/admin-approval-routes.php';
+require_once MOTORLAN_API_VUE_PATH . 'includes/api/admin-publications-routes.php';
 require_once MOTORLAN_API_VUE_PATH . 'includes/api/product-messages-routes.php';
 
 require_once MOTORLAN_API_VUE_PATH . 'includes/classes/class-motorlan-notification-manager.php';

@@ -82,7 +82,7 @@ const generateTitle = (publicacion: Publicacion) => {
 .motor-image {
   height: 200px;
   border-radius: 12px;
-  background: #f8f9fa;
+  background: white !important;
   display: flex;
   align-items: center;
   justify-content: center;

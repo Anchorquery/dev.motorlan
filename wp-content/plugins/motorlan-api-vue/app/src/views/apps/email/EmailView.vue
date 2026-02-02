@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { PerfectScrollbar } from 'vue3-perfect-scrollbar'
-import type { Email } from '@db/dashboard/email/types'
-import type { MoveEmailToAction } from '@/views/dashboard/email/useEmail'
-import { useEmail } from '@/views/dashboard/email/useEmail'
+import type { Email } from '@db/apps/email/types'
+import type { MoveEmailToAction } from '@/views/apps/email/useEmail'
+import { useEmail } from '@/views/apps/email/useEmail'
 
 interface Props {
   email: Email | null
@@ -167,7 +167,7 @@ const updateMailLabel = async (label: Email['labels'][number]) => {
             <VList density="compact">
               <template
                 v-for="moveTo in emailMoveToFolderActions"
-                :key="moveTo.title"
+                :key="moveTo.action"
               >
                 <VListItem
                   :class="shallShowMoveToActionFor(moveTo.action) ? 'd-flex' : 'd-none'"

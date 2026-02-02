@@ -147,7 +147,7 @@ function motorlan_build_publicaciones_query_args($params) {
  * @param int $post_id The post ID.
  * @return array The publicacion data.
  */
-function motorlan_get_publicacion_data($post_id) {
+function motorlan_get_publicacion_data($post_id, $include_sensitive = false) {
     $post = get_post($post_id);
     if (!$post) return [];
 
@@ -178,7 +178,8 @@ function motorlan_get_publicacion_data($post_id) {
     ];
 
     // Remove price from ACF if it exists, to prevent it from being returned to the frontend.
-    if (isset($publicacion_item['acf']['precio_de_venta'])) {
+    // UNLESS $include_sensitive is true (e.g. for the owner editing the post)
+    if (!$include_sensitive && isset($publicacion_item['acf']['precio_de_venta'])) {
         unset($publicacion_item['acf']['precio_de_venta']);
     }
 
@@ -307,4 +308,94 @@ function motorlan_get_taxonomy_terms_callback($taxonomy) {
         return new WP_REST_Response(['message' => $terms->get_error_message()], 500);
     }
     return new WP_REST_Response($terms, 200);
+}
+/**
+ * Generate a formatted slug for a publicación.
+ * Format: [Nombre]-[Tipo]-[Marca]-[Referencia]-[Potencia o Par]-[Velocidad]
+ *
+ * @param array $data Data for the publication (title and acf).
+ * @param int   $post_id Optional. Post ID to exclude from uniqueness check.
+ * @return string Generated slug.
+ */
+function motorlan_generate_publicacion_slug($data, $post_id = 0) {
+    $title = $data['title'] ?? '';
+    $acf = $data['acf'] ?? [];
+
+    $parts = [];
+
+    // 1. Nombre (Title)
+    if (!empty($title)) {
+        $parts[] = $title;
+    }
+
+    // 2. Tipo (Taxonomy 'tipo') - We try to get it from the data
+    $tipo_id = $data['tipo'] ?? null;
+    if ($tipo_id) {
+        if (is_array($tipo_id)) $tipo_id = reset($tipo_id);
+        $term = get_term($tipo_id, 'tipo');
+        if ($term && !is_wp_error($term)) {
+            $parts[] = $term->name;
+        }
+    }
+
+    // 3. Marca (ACF 'marca')
+    $marca_id = $acf['marca'] ?? null;
+    if ($marca_id) {
+        $term = get_term($marca_id, 'marca');
+        if ($term && !is_wp_error($term)) {
+            $parts[] = $term->name;
+        }
+    }
+
+    // 4. Referencia (ACF 'tipo_o_referencia')
+    if (!empty($acf['tipo_o_referencia'])) {
+        $parts[] = $acf['tipo_o_referencia'];
+    }
+
+    // 5. Potencia o Par (ACF 'potencia' or 'par_nominal')
+    if (!empty($acf['potencia'])) {
+        $parts[] = $acf['potencia'] . 'KW';
+    } elseif (!empty($acf['par_nominal'])) {
+        $parts[] = $acf['par_nominal'] . 'Nm';
+    }
+
+    // 6. Velocidad (ACF 'velocidad')
+    if (!empty($acf['velocidad'])) {
+        $parts[] = $acf['velocidad'] . 'RPM';
+    }
+
+    $slug = implode('-', $parts);
+    $slug = sanitize_title($slug);
+
+    // Ensure uniqueness
+    return motorlan_make_slug_unique($slug, $post_id);
+}
+
+/**
+ * Check if a slug already exists and return a unique version if it does.
+ *
+ * @param string $slug Original slug.
+ * @param int    $post_id Post ID to exclude.
+ * @return string Unique slug.
+ */
+function motorlan_make_slug_unique($slug, $post_id = 0) {
+    global $wpdb;
+
+    $check_sql = "SELECT post_name FROM $wpdb->posts WHERE post_name = %s AND post_type = 'publicacion' AND ID != %d LIMIT 1";
+    $exists = $wpdb->get_var($wpdb->prepare($check_sql, $slug, $post_id));
+
+    if (!$exists) {
+        return $slug;
+    }
+
+    // If it exists, append numerical suffix
+    $suffix = 2;
+    while (true) {
+        $alt_slug = $slug . '-' . $suffix;
+        $exists = $wpdb->get_var($wpdb->prepare($check_sql, $alt_slug, $post_id));
+        if (!$exists) {
+            return $alt_slug;
+        }
+        $suffix++;
+    }
 }

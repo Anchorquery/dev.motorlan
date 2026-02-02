@@ -85,7 +85,7 @@ const images = computed(() => {
 }
 
 .main-swiper {
-  background: #EEF1F4;
+  background: white !important;
   border-radius: 8px;
   min-height: 300px;
   display: flex;
@@ -124,7 +124,7 @@ const images = computed(() => {
   width: 100%;
   height: 100%;
   min-height: 300px;
-  background: #EEF1F4;
+  background: white !important;
   border-radius: 8px;
 }
 

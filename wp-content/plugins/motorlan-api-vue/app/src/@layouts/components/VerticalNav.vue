@@ -164,17 +164,21 @@ const hideTitleAndIcon = configStore.isVerticalNavMini(isHovered)
 
 // 👉 Vertical Nav
 .layout-vertical-nav {
-  position: fixed;
+  position: sticky;
   z-index: variables.$layout-vertical-nav-z-index;
   display: flex;
   flex-direction: column;
   block-size: 100vh;
   inline-size: variables.$layout-vertical-nav-width;
-  inset-block-start: 0;
+  inset-block-start: 3rem;
   inset-inline-start: 0;
   margin: 0;
   transition: inline-size 0.25s ease-in-out, box-shadow 0.25s ease-in-out;
   will-change: transform, inline-size;
+
+  &.overlay-nav {
+    position: fixed;
+  }
 
   .nav-header {
     display: flex;

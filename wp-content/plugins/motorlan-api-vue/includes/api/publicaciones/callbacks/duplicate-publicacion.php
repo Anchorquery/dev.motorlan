@@ -23,6 +23,11 @@ function motorlan_duplicate_publicacion(WP_REST_Request $request) {
         return new WP_Error('not_found', 'Publicación original no encontrada', ['status' => 404]);
     }
 
+    // Security check: If post is pending, only admin can duplicate
+    if ($original_post->post_status === 'pending' && !current_user_can('administrator')) {
+        return new WP_Error('forbidden', 'No puedes duplicar una publicación que está en revisión.', ['status' => 403]);
+    }
+
     $new_post_data = [
         'post_title'  => $original_post->post_title . ' (copia)',
         'post_status' => 'draft',

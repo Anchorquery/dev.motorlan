@@ -113,16 +113,15 @@ watch([selectedBrand, selectedState, typeModel, selectedTechnology, selectedPar,
 onMounted(async () => {
   // Fetch Brands
   try {
-    console.log('Fetching Marcas...')
+
     const { data: brandsData, error: brandsError, execute: executeBrands } = useApi<any>('/wp-json/motorlan/v1/marcas', { immediate: false }).get().json()
     await executeBrands()
-    console.log('Marcas API result:', brandsData.value)
-    if (brandsError.value) console.error('Marcas API Error:', brandsError.value)
+
     
     if (brandsData.value) {
       const raw = brandsData.value
       marcas.value = Array.isArray(raw) ? raw : (raw.data || [])
-      console.log('Marcas assigned:', marcas.value)
+
     }
   } catch (e) {
     console.error('Exception fetching marcas:', e)
@@ -130,16 +129,15 @@ onMounted(async () => {
 
   // Fetch Types
   try {
-    console.log('Fetching Tipos...')
+
     const { data: tiposData, error: tiposError, execute: executeTipos } = useApi<any>('/wp-json/motorlan/v1/tipos', { immediate: false }).get().json()
     await executeTipos()
-     console.log('Tipos API result:', tiposData.value)
-     if (tiposError.value) console.error('Tipos API Error:', tiposError.value)
+
 
     if (tiposData.value) {
       const raw = tiposData.value
       tipos.value = Array.isArray(raw) ? raw : (raw.data || [])
-       console.log('Tipos assigned:', tipos.value)
+
     }
   } catch (e) {
      console.error('Exception fetching tipos:', e)
@@ -159,7 +157,7 @@ const search = () => {
 </script>
 
 <template>
-  <v-container fluid>
+  <v-container fluid style="background-color: white !important; min-height: 100vh;">
     <v-row>
       <v-col
         cols="12"

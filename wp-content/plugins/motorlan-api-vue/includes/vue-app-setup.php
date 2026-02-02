@@ -58,19 +58,27 @@ function motorlan_enqueue_vue_app() {
     // 2. Preparar y adjuntar los datos
     $language_info = motorlan_get_language_info();
 
+    // Get current user from WordPress session only (no JWT)
     $user_data = [
-        'is_logged_in' => is_user_logged_in(),
+        'is_logged_in' => false,
         'user' => null,
     ];
 
     if (is_user_logged_in()) {
         $current_user = wp_get_current_user();
-        $user_data['user'] = [
-            'id' => $current_user->ID,
-            'email' => $current_user->user_email,
-            'display_name' => $current_user->display_name,
-            'is_admin' => in_array('administrator', (array) $current_user->roles),
-        ];
+
+        if ($current_user && $current_user->ID > 0) {
+            $user_data = [
+                'is_logged_in' => true,
+                'user' => [
+                    'id' => $current_user->ID,
+                    'email' => $current_user->user_email,
+                    'display_name' => $current_user->display_name,
+                    'nicename' => $current_user->user_nicename,
+                    'is_admin' => in_array('administrator', (array) $current_user->roles),
+                ],
+            ];
+        }
     }
 
     wp_localize_script('wp-data-bridge', 'wpData', [

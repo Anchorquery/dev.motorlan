@@ -1,5 +1,5 @@
 {
-  // Force IDE Reload
+  // Force IDE Reload - Updated
   "compilerOptions": {
     "target": "ESNext",
     "useDefineForClassFields": true,

@@ -12,12 +12,12 @@ add_action( 'rest_api_init', function () {
         'permission_callback' => 'motorlan_is_user_authenticated',
         'args'                => [
             'page'     => [
-                'validate_callback' => 'is_numeric',
+                'validate_callback' => function($param) { return is_numeric($param); },
                 'sanitize_callback' => 'absint',
                 'default'           => 1,
             ],
             'per_page' => [
-                'validate_callback' => 'is_numeric',
+                'validate_callback' => function($param) { return is_numeric($param); },
                 'sanitize_callback' => 'absint',
                 'default'           => 20,
             ],

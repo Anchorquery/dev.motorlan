@@ -2,22 +2,10 @@
 import { VerticalNav } from '@layouts/components'
 import { useLayoutConfigStore } from '@layouts/stores/config'
 import type { VerticalNavItems } from '@layouts/types'
-import { useRouter } from 'vue-router'
 import { useToast } from '@/composables/useToast'
 import UserProfile from '@/layouts/components/UserProfile.vue'
 
-const router = useRouter()
 const { isToastVisible, toastMessage, toastColor } = useToast()
-
-const logout = () => {
-  // Remove "userData" from cookie
-  useCookie('userData').value = null
-  useCookie('accessToken').value = null
-  useCookie('userAbilityRules').value = null
-
-  // Redirect to login page
-  router.push('/login')
-}
 interface Props {
   navItems: VerticalNavItems
   verticalNavAttrs?: {
@@ -176,6 +164,7 @@ const verticalNavAttrs = computed(() => {
 .layout-wrapper.layout-nav-type-vertical {
   // TODO(v2): Check why we need height in vertical nav & min-height in horizontal nav
   position: relative;
+  display: flex;
   block-size: 100%;
 
   .layout-content-wrapper {
@@ -183,12 +172,7 @@ const verticalNavAttrs = computed(() => {
     flex-direction: column;
     flex-grow: 1;
     min-block-size: 100dvh;
-    transition: padding-inline-start 0.2s ease-in-out;
-    will-change: padding-inline-start;
 
-    @media screen and (min-width: 1280px) {
-      padding-inline-start: variables.$layout-vertical-nav-width;
-    }
   }
 
   .layout-navbar {
@@ -267,12 +251,7 @@ const verticalNavAttrs = computed(() => {
     }
   }
 
-  // Adjust right column pl when vertical nav is collapsed
-  &.layout-vertical-nav-collapsed .layout-content-wrapper {
-    @media screen and (min-width: 1280px) {
-      padding-inline-start: variables.$layout-vertical-nav-collapsed-width;
-    }
-  }
+
 
   // 👉 Content height fixed
   &.layout-content-height-fixed {

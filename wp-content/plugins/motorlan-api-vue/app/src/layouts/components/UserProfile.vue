@@ -1,44 +1,55 @@
 <script setup lang="ts">
 import { PerfectScrollbar } from 'vue3-perfect-scrollbar'
+import { useUserStore } from '@/@core/stores/user'
 
 const router = useRouter()
 const ability = useAbility()
+const userStore = useUserStore()
 
-// TODO: Get type from backend
-const userData = useCookie<any>('userData')
+// Get user data from store
+const user = computed(() => userStore.getUser)
 
 const logout = async () => {
-  // Remove "accessToken" from cookie
-  useCookie('accessToken').value = null
+  try {
+    // Call backend to destroy WordPress session
+    await fetch('/wp-json/motorlan/v1/logout', {
+      method: 'POST',
+      credentials: 'include',
+    })
+  }
+  catch (e) {
+    console.error('Error calling logout endpoint:', e)
+  }
 
-  // Remove "userData" from cookie
-  userData.value = null
+  // Clear Pinia store state
+  userStore.logout()
 
-  // Redirect to login page
-  await router.push('/login')
-
-  // ℹ️ We had to remove abilities in then block because if we don't nav menu items mutation is visible while redirecting user to login page
-  // Remove "userAbilities" from cookie
-  useCookie('userAbilityRules').value = null
-
-  // Reset ability to initial ability
+  // Clear abilities
   ability.update([])
+
+  // Redirect to login with full page reload to clear all state
+  window.location.href = '/login'
 }
 
-const userProfileList = [
+interface ProfileItem {
+  type: string
+  icon?: string
+  title?: string
+  to?: { name: string }
+  badgeProps?: any
+}
+
+const userProfileList: ProfileItem[] = [
   { type: 'divider' },
-  { type: 'navItem', icon: 'tabler-user', title: 'Profile', to: { name: 'dashboard-user-view-id', params: { id: 21 } } },
-  { type: 'navItem', icon: 'tabler-settings', title: 'Settings', to: { name: 'pages-account-settings-tab', params: { tab: 'account' } } },
-  { type: 'navItem', icon: 'tabler-file-dollar', title: 'Billing Plan', to: { name: 'pages-account-settings-tab', params: { tab: 'billing-plans' } }, badgeProps: { color: 'error', content: '4' } },
+  { type: 'navItem', icon: 'tabler-user', title: 'Profile', to: { name: 'dashboard-user-profile' } },
+  { type: 'navItem', icon: 'tabler-settings', title: 'Settings', to: { name: 'dashboard-user-account' } },
   { type: 'divider' },
-  { type: 'navItem', icon: 'tabler-currency-dollar', title: 'Pricing', to: { name: 'pages-pricing' } },
-  { type: 'navItem', icon: 'tabler-question-mark', title: 'FAQ', to: { name: 'pages-faq' } },
 ]
 </script>
 
 <template>
   <IconBtn
-    v-if="userData"
+    v-if="user"
     id="user-profile-btn"
     class="ms-n1"
   >
@@ -52,17 +63,10 @@ const userProfileList = [
     >
       <VAvatar
         size="38"
-        :color="!(userData && userData.avatar) ? 'primary' : undefined"
-        :variant="!(userData && userData.avatar) ? 'tonal' : undefined"
+        color="primary"
+        variant="tonal"
       >
-        <VImg
-          v-if="userData && userData.avatar"
-          :src="userData.avatar"
-        />
-        <VIcon
-          v-else
-          icon="tabler-user"
-        />
+        <VIcon icon="tabler-user" />
       </VAvatar>
     </VBadge>
 
@@ -86,27 +90,20 @@ const userProfileList = [
                 bordered
               >
                 <VAvatar
-                  :color="!(userData && userData.avatar) ? 'primary' : undefined"
-                  :variant="!(userData && userData.avatar) ? 'tonal' : undefined"
+                  color="primary"
+                  variant="tonal"
                 >
-                  <VImg
-                    v-if="userData && userData.avatar"
-                    :src="userData.avatar"
-                  />
-                  <VIcon
-                    v-else
-                    icon="tabler-user"
-                  />
+                  <VIcon icon="tabler-user" />
                 </VAvatar>
               </VBadge>
             </VListItemAction>
 
             <div>
               <h6 class="text-h6 font-weight-medium">
-                {{ userData.displayName }}
+                {{ user.display_name }}
               </h6>
               <VListItemSubtitle class="text-capitalize text-disabled">
-                -
+                {{ user.isAdmin ? 'Administrador' : 'Usuario' }}
               </VListItemSubtitle>
             </div>
           </div>
@@ -156,7 +153,7 @@ const userProfileList = [
               append-icon="tabler-logout"
               @click="logout"
             >
-              Logout
+              Cerrar sesión
             </VBtn>
           </div>
         </PerfectScrollbar>
