@@ -23,6 +23,12 @@ function motorlan_update_publicacion_by_uuid(WP_REST_Request $request) {
         return new WP_Error('not_found', 'Publicación no encontrada', ['status' => 404]);
     }
 
+    // Security check: Only author or admin can update
+    $post = get_post($post_id);
+    if ($post->post_author != get_current_user_id() && !current_user_can('administrator')) {
+        return new WP_Error('forbidden', 'No tienes permisos para editar esta publicación.', ['status' => 403]);
+    }
+
     // Security check: If post is pending, only admin can update
     $current_post_status = get_post_status($post_id);
     if ($current_post_status === 'pending' && !current_user_can('administrator')) {

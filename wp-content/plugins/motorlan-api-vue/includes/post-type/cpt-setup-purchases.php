@@ -53,6 +53,7 @@ add_action( 'init', 'motorlan_register_compra_cpt' );
 /**
  * Register a custom post type called "pregunta".
  */
+/*
 function motorlan_register_pregunta_cpt() {
     $labels = array(
         'name'               => _x( 'Preguntas', 'post type general name', 'motorlan-api-vue' ),
@@ -89,6 +90,7 @@ function motorlan_register_pregunta_cpt() {
     register_post_type( 'pregunta', $args );
 }
 add_action( 'init', 'motorlan_register_pregunta_cpt' );
+*/
 
 /**
  * Register a custom post type called "opinion".

@@ -3,9 +3,13 @@ import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { createUrl } from '@/@core/composable/createUrl'
 import { useApi } from '@/composables/useApi'
+import { useUserStore } from '@/@core/stores/user'
 import type { ImagenDestacada, Publicacion } from '@/interfaces/publicacion'
 
 const router = useRouter()
+const userStore = useUserStore()
+
+const currentUser = computed(() => userStore.getUser)
 
 const headers = [
   { title: 'Publicacion', key: 'title' },
@@ -166,8 +170,9 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
           />
           <div class="d-flex flex-column">
             <span
-              class="text-body-1 font-weight-medium text-premium-title cursor-pointer"
-              @click="router.push(`/dashboard/publications/publication/edit/${(item as any).uuid}`)"
+              class="text-body-1 font-weight-medium text-premium-title"
+              :class="{ 'cursor-pointer': (item as any).author?.id === currentUser?.id || currentUser?.isAdmin }"
+              @click="(item as any).author?.id === currentUser?.id || currentUser?.isAdmin ? router.push(`/dashboard/publications/publication/edit/${(item as any).uuid}`) : null"
             >{{ item.title }}</span>
             <span class="text-body-2 text-muted">{{ (item.acf.marca as any)?.name }}</span>
           </div>

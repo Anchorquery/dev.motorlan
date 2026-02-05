@@ -54,6 +54,21 @@ require_once MOTORLAN_API_VUE_PATH . 'includes/cron/cron-jobs.php';
 require_once MOTORLAN_API_VUE_PATH . 'includes/db/db-setup.php';
 
 /**
+ * Interceptar la carga de plantillas para usar nuestra plantilla personalizada del plugin
+ * para el Custom Post Type 'publicacion'.
+ */
+function motorlan_publicacion_template_include($template) {
+    if (is_singular('publicacion')) {
+        $plugin_template = MOTORLAN_API_VUE_PATH . 'includes/templates/single-publicacion.php';
+        if (file_exists($plugin_template)) {
+            return $plugin_template;
+        }
+    }
+    return $template;
+}
+add_filter('template_include', 'motorlan_publicacion_template_include', 99);
+
+/**
  * Configuración global del plugin y funciones utilitarias.
  */
 

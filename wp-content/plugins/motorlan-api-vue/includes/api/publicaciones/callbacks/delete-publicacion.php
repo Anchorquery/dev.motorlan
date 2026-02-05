@@ -18,6 +18,12 @@ if (!defined('WPINC')) {
 function motorlan_delete_publicacion(WP_REST_Request $request) {
     $post_id = $request->get_param('id');
 
+    // Security check: Only author or admin can delete
+    $post = get_post($post_id);
+    if ($post->post_author != get_current_user_id() && !current_user_can('administrator')) {
+        return new WP_Error('forbidden', 'No tienes permisos para eliminar esta publicación.', ['status' => 403]);
+    }
+
     // Security check: If post is pending, only admin can delete
     $post_status = get_post_status($post_id);
     if ($post_status === 'pending' && !current_user_can('administrator')) {

@@ -5,6 +5,7 @@ import { createUrl } from '@/@core/composable/createUrl'
 import { useRouter } from 'vue-router'
 import SellerChatModal from './components/SellerChatModal.vue'
 import { useI18n } from 'vue-i18n'
+import { formatDateToMonthShort } from '@core/utils/formatters'
 
 const { t } = useI18n()
 
@@ -13,7 +14,7 @@ interface InquiryItem {
   product_id: number
   product_title: string
   product_slug: string
-  product_image?: any
+  product_image?: string | { url?: string; src?: string; sizes?: Record<string, string | { url?: string }> } | null
   room_key: string
   last_at: string
   unread?: number
@@ -35,7 +36,7 @@ const fetchInquiries = async () => {
   try {
     // Note: If the API supports server-side filtering/pagination, we should implement it here.
     // For now keeping client-side fetch but styling it to match others.
-    const { data, error } = await useApi<any>(createUrl('/wp-json/motorlan/v1/seller/inquiries')).get().json()
+    const { data, error } = await useApi<InquiryItem[]>(createUrl('/wp-json/motorlan/v1/seller/inquiries')).get().json()
     if (error.value) {
       loadError.value = (error.value.data?.message || error.value.message || t('inquiries.load_error')) as string
       return
@@ -48,16 +49,19 @@ const fetchInquiries = async () => {
 
 onMounted(fetchInquiries)
 
-const goToProduct = (slug: string, roomKey: string) => {
-  router.push({ name: 'store-slug', params: { slug }, query: { open_chat: '1', room_key: roomKey } })
+const goToProduct = (slug: string) => {
+  window.open(`/${slug}`, '_blank')
 }
 
 // Table columns
 const headers = [
   { title: t('inquiries.user'), key: 'user' },
   { title: t('inquiries.publication'), key: 'product' },
-  { title: t('inquiries.actions'), key: 'actions', sortable: false },
+  { title: t('inquiries.date') || 'Fecha', key: 'last_at' },
+  { title: t('inquiries.actions'), key: 'actions', sortable: false, align: 'end' as const },
 ]
+
+const sortBy = ref([{ key: 'last_at', order: 'desc' as const }])
 
 // Modal state
 const activeRoom = ref<{ productId: number; roomKey: string; productTitle: string } | null>(null)
@@ -69,21 +73,19 @@ const handleMarkedRead = async () => {
 }
 
 // Helper to get image URL
-const getImageUrl = (image: any, size = 'thumbnail'): string => {
+const getImageUrl = (image: string | { url?: string; src?: string; sizes?: Record<string, string | { url?: string }> } | null | undefined, size = 'thumbnail'): string => {
   if (!image) return ''
   if (typeof image === 'string') return image
   
-  let imageObj = image
-  if (Array.isArray(image) && image.length > 0) imageObj = image[0]
+  let imageObj: { url?: string; src?: string; sizes?: Record<string, string | { url?: string }> } = image
+  if (Array.isArray(image) && image.length > 0) {
+    imageObj = image[0]
+  }
   
   if (imageObj.sizes) {
-    if (Array.isArray(imageObj.sizes)) {
-      const match = imageObj.sizes.find((s: any) => s.name === size || s.slug === size)
-      if (match) return match.url || match.src
-    } else if (typeof imageObj.sizes === 'object') {
-      const sizeEntry = imageObj.sizes[size]
-      if (sizeEntry) return sizeEntry.url || sizeEntry.src || sizeEntry
-    }
+    const sizeData = imageObj.sizes[size]
+    if (typeof sizeData === 'string') return sizeData
+    if (sizeData && typeof sizeData === 'object' && 'url' in sizeData) return sizeData.url || ''
   }
   
   return imageObj.url || imageObj.src || ''
@@ -153,11 +155,26 @@ const refresh = () => {
           :headers="headers"
           :items="filteredItems"
           :loading="isLoading"
+          v-model:sort-by="sortBy"
           class="text-no-wrap"
           hover
         >
+        <!-- Last Message Date Column -->
+        <template #item.last_at="{ item }: { item: InquiryItem }">
+          <div class="d-flex flex-column py-3">
+            <span class="text-body-1 font-weight-medium text-high-emphasis">
+              {{ formatDateToMonthShort(item.last_at) }}
+            </span>
+            <VTooltip
+              activator="parent"
+              location="top"
+            >
+              {{ new Date(item.last_at).toLocaleString() }}
+            </VTooltip>
+          </div>
+        </template>
         <!-- User Column -->
-        <template #item.user="{ item }: { item: any }">
+        <template #item.user="{ item }: { item: InquiryItem }">
           <div class="d-flex align-center gap-3 py-3">
             <VAvatar size="44" variant="tonal" color="primary" class="border">
               <VImg v-if="item.user_avatar" :src="item.user_avatar" cover />
@@ -171,7 +188,7 @@ const refresh = () => {
         </template>
 
         <!-- Product Column -->
-        <template #item.product="{ item }: { item: any }">
+        <template #item.product="{ item }: { item: InquiryItem }">
           <div class="d-flex align-center gap-3 py-3">
             <VAvatar
               rounded
@@ -189,7 +206,7 @@ const refresh = () => {
         </template>
 
         <!-- Actions Column -->
-        <template #item.actions="{ item }: { item: any }">
+        <template #item.actions="{ item }: { item: InquiryItem }">
           <div class="d-flex justify-end gap-2">
             <VBtn
               size="small"
@@ -206,7 +223,7 @@ const refresh = () => {
               size="small"
               color="secondary"
               variant="tonal"
-              @click="goToProduct(item.product_slug, item.room_key)"
+              @click="goToProduct(item.product_slug)"
             >
               <VIcon icon="tabler-external-link" size="18" />
               <VTooltip activator="parent" location="top">Ver publicación</VTooltip>

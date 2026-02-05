@@ -215,7 +215,7 @@ const openOfferDialog = () => {
 }
 
 const submitOffer = async () => {
-  if (offerAmount.value === null || offerAmount.value >= Number(props.publicacion.acf.precio_de_venta || Infinity))
+  if (offerAmount.value === null || offerAmount.value <= 0)
     return
 
   isSubmittingOffer.value = true
@@ -427,7 +427,10 @@ const removeOffer = async () => {
             label="Precio de la oferta"
             type="number"
             class="mt-4"
-            :rules="[v => !v || v < Number(props.publicacion.acf.precio_de_venta) || 'Oferta inválida']"
+            :rules="[
+              v => !!v || 'El monto es requerido',
+              v => v > 0 || 'El monto debe ser mayor a 0'
+            ]"
           />
           <VTextarea
             v-model="offerMessage"

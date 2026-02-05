@@ -25,6 +25,12 @@ function motorlan_update_publicacion_status(WP_REST_Request $request) {
         return new WP_Error('no_status', 'Status not provided', ['status' => 400]);
     }
 
+    // Security check: Only author or admin can change status
+    $post = get_post($post_id);
+    if ($post->post_author != get_current_user_id() && !current_user_can('administrator')) {
+        return new WP_Error('forbidden', 'No tienes permisos para editar esta publicación.', ['status' => 403]);
+    }
+
     // Security check: If current post is pending, only admin can change status
     $current_status = get_post_status($post_id);
     if ($current_status === 'pending' && !current_user_can('administrator')) {

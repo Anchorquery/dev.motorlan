@@ -24,3 +24,5 @@ wp-content/plugins/motorlan-api-vue/app/typed-router.d.ts
 wp-config.php
 /wp-content/plugins/gp-premium/dist
 /wp-content/plugins/jwt-authentication-for-wp-rest-api/admin/ui/dist
+wp-content/plugins/motorlan-api-vue/.agent/skills/
+/wp-content/plugins/motorlan-api-vue/app/dist

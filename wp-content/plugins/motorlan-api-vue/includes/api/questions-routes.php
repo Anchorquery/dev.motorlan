@@ -52,6 +52,7 @@ function format_publication_response( $post ) {
     return $publicacion_item;
 }
 
+/*
 function motorlan_register_question_rest_routes() {
     $namespace = 'motorlan/v1';
     register_rest_route( $namespace, '/publicaciones/(?P<publicacion_id>\d+)/questions', array(
@@ -86,6 +87,7 @@ function motorlan_register_question_rest_routes() {
     ) );
 }
 add_action( 'rest_api_init', 'motorlan_register_question_rest_routes' );
+*/
 
 function motorlan_get_user_publications_list_callback( WP_REST_Request $request ) {
     $user_id = get_current_user_id();

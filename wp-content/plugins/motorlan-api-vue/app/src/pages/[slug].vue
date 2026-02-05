@@ -10,6 +10,7 @@ import PublicacionInfo from "@/pages/store/components/PublicacionInfo.vue";
 import ProductDocs from "@/pages/store/components/ProductDocs.vue";
 import RelatedProducts from "@/pages/store/components/RelatedProducts.vue";
 import ChatModal from "@/pages/store/components/ChatModal.vue";
+import EmptyState from "@/pages/store/components/EmptyState.vue";
 import type { Publicacion } from "@/interfaces/publicacion";
 
 definePage({
@@ -190,9 +191,13 @@ onMounted(() => {
     <VProgressCircular indeterminate size="64" />
   </div>
 
-  <VCard v-else class="pa-8 text-center">
-    <VCardText>Publicación no encontrada</VCardText>
-  </VCard>
+  <EmptyState
+    v-else
+    title="Publicación no encontrada"
+    message="Lo sentimos, no hemos podido encontrar la publicación que buscas. Es posible que el enlace sea incorrecto o que la publicación haya sido eliminada."
+    action-label="Ir a la tienda"
+    action-link="/store"
+  />
 </template>
 
 <style scoped>

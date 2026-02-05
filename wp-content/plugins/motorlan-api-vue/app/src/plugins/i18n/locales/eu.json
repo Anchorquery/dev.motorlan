@@ -582,6 +582,7 @@
     "user": "Erabiltzailea",
     "publication": "Argitalpena",
     "actions": "Ekintzak",
+    "date": "Data",
     "load_error": "Ezin izan dira elkarrizketak kargatu",
     "no_data_title": "Ez dago elkarrizketarik",
     "no_data_text": "Oraindik ez duzu interes kontsultarik jaso."

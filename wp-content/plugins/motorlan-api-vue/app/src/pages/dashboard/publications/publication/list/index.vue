@@ -490,6 +490,7 @@ const canEdit = (item: any) => {
               <VIcon icon="tabler-dots-vertical" size="18" />
               <VMenu activator="parent">
                 <VList density="compact">
+<!--
                   <VListItem
                     value="questions"
                     @click="router.push(`/dashboard/publications/publication/questions/${(item as any).uuid}`)"
@@ -499,6 +500,7 @@ const canEdit = (item: any) => {
                     </template>
                     <VListItemTitle>{{ t('publication_list.questions') }}</VListItemTitle>
                   </VListItem>
+-->
                   
                   <VListItem
                     value="duplicate"

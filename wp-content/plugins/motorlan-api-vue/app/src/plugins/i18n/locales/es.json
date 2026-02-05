@@ -585,6 +585,7 @@
     "user": "Usuario",
     "publication": "Publicación",
     "actions": "Acciones",
+    "date": "Fecha",
     "load_error": "No se pudieron cargar las conversaciones",
     "no_data_title": "No hay conversaciones",
     "no_data_text": "Aún no has recibido consultas de interés."

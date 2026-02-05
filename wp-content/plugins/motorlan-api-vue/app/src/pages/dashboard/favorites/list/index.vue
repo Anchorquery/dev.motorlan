@@ -4,10 +4,14 @@ import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { createUrl } from '@/@core/composable/createUrl'
 import { useApi } from '@/composables/useApi'
+import { useUserStore } from '@/@core/stores/user'
 import type { Publicacion } from '@/interfaces/publicacion'
 
 const { t } = useI18n()
 const router = useRouter()
+const userStore = useUserStore()
+
+const currentUser = computed(() => userStore.getUser)
 
 const headers = [
   { title: t('publication_list.publication'), key: 'publicacion' },
@@ -230,6 +234,7 @@ const refresh = () => {
         <template #item.actions="{ item }">
            <div class="d-flex justify-end gap-2">
               <IconBtn
+                v-if="(item as any).author?.id === currentUser?.id || currentUser?.isAdmin"
                 color="primary"
                 variant="tonal"
                 size="small"
