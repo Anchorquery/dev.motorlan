@@ -104,21 +104,8 @@ get_header(); ?>
         ?>
         
         <script>
-            // We tell the Vue router to navigate to the correct internal route based on the WP slug
-            window.addEventListener('load', function() {
-                const slug = '<?php echo esc_js($post->post_name); ?>';
-                if (window.location.hash === '' || window.location.hash === '#/') {
-                    window.location.hash = '/' + slug;
-                    
-                    // Aesthetic fix: remove the redundant hash from the address bar after a delay
-                    // This keeps the URL looking clean like /publicacion/slug/
-                    setTimeout(() => {
-                        if (window.location.hash.includes(slug)) {
-                            window.history.replaceState(null, null, window.location.pathname);
-                        }
-                    }, 1000);
-                }
-            });
+            // History mode: Redirigir a la tienda con URL limpia
+            window.location.href = '/marketplace-motorlan/<?php echo esc_attr($post->post_name); ?>';
         </script>
     </main>
 </div>

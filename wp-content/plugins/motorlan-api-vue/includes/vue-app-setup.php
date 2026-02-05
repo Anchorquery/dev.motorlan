@@ -86,6 +86,7 @@ function motorlan_enqueue_vue_app() {
         'nonce' => wp_create_nonce('wp_rest'),
         'rest_nonce' => wp_create_nonce('wp_rest'),
         'user_data' => $user_data,
+        'vue_base' => trailingslashit(wp_parse_url(get_permalink(), PHP_URL_PATH) ?: '/'),
         'language' => $language_info['current'],
         'language_locale' => $language_info['locale'],
         'languages' => $language_info['available'],
@@ -153,19 +154,9 @@ function motorlan_vue_app_shortcode($atts = []) {
 
     motorlan_enqueue_vue_app();
 
-    $route = trim((string) $atts['route']);
-    $routeScript = '';
-
-    if ($route !== '') {
-        $route = ltrim($route, '#/');
-        $hash = '#/' . $route;
-        $routeScript = sprintf(
-            '<script>if (!window.location.hash || window.location.hash === \'#/\' || window.location.hash === \'\') window.location.hash = \'%s\';</script>',
-            esc_js($hash)
-        );
-    }
-
-    return $routeScript . '<div id="motorlan-app" class="motorlan-app-root"></div>';
+    // History mode: ya no necesitamos manipular el hash
+    // Vue Router obtiene la ruta desde la URL directamente
+    return '<div id="motorlan-app" class="motorlan-app-root"></div>';
 }
 add_shortcode('motorlan_vue_app', 'motorlan_vue_app_shortcode');
 

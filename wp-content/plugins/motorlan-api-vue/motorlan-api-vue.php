@@ -547,3 +547,31 @@ function motorlan_jwt_payload_fix_nbf($payload, $user) {
     return $payload;
 }
 add_filter('jwt_auth_payload', 'motorlan_jwt_payload_fix_nbf', 10, 2);
+
+/**
+ * Vue History Mode: Register rewrite rules for pages with Vue app shortcode.
+ * This allows sub-routes like /marketplace-motorlan/product-slug to load the correct page.
+ */
+function motorlan_vue_history_rewrite_rules() {
+    // Páginas conocidas con la app Vue (agregar más si es necesario)
+    $vue_pages = ['marketplace-motorlan', 'mi-cuenta'];
+    
+    foreach ($vue_pages as $page_slug) {
+        // Captura cualquier sub-ruta bajo esta página
+        add_rewrite_rule(
+            "^{$page_slug}/(.+)/?$",
+            "index.php?pagename={$page_slug}",
+            'top'
+        );
+    }
+}
+add_action('init', 'motorlan_vue_history_rewrite_rules', 1);
+
+/**
+ * Flush rewrite rules on plugin activation.
+ */
+function motorlan_vue_activate() {
+    motorlan_vue_history_rewrite_rules();
+    flush_rewrite_rules();
+}
+register_activation_hook(__FILE__, 'motorlan_vue_activate');
