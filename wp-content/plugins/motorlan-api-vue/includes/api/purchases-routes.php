@@ -352,10 +352,23 @@ function motorlan_get_my_purchases_callback( $request ) {
             $offer_id_raw = get_post_meta( $post_id, 'offer_id', true );
             $offer_id     = $offer_id_raw ? (int) $offer_id_raw : 0;
 
+            // Obtener fecha de compra: primero intentar meta directo para evitar
+            // comportamiento de ACF date_picker que retorna fecha actual si vacío
+            $fecha_raw = get_post_meta( $post_id, 'fecha_compra', true );
+            if ( empty( $fecha_raw ) ) {
+                // Fallback a la fecha de creación del post
+                $fecha_raw = get_the_date( 'd/m/Y', $post_id );
+            } else {
+                // Si el valor está en formato ACF (Ymd), convertir a d/m/Y
+                if ( preg_match( '/^\d{8}$/', $fecha_raw ) ) {
+                    $fecha_raw = date_i18n( 'd/m/Y', strtotime( $fecha_raw ) );
+                }
+            }
+
             $data[] = array(
                 'uuid'         => get_field('uuid', $post_id),
                 'title'        => get_the_title(),
-                'fecha_compra' => get_field('fecha_compra', $post_id),
+                'fecha_compra' => $fecha_raw,
                 'publicacion'  => $publicacion_data,
                 'vendedor'     => get_field('vendedor', $post_id) ?: get_post_meta($post_id, 'vendedor_id', true),
                 'comprador'    => get_field('comprador', $post_id) ?: get_post_meta($post_id, 'comprador_id', true),
@@ -776,10 +789,21 @@ function motorlan_get_purchase_callback( WP_REST_Request $request ) {
         $published_price = (float) $publicacion_data['acf']['precio_de_venta'];
     }
 
+    // Obtener fecha de compra evitando comportamiento de ACF date_picker
+    $fecha_compra_raw = get_post_meta( $purchase_id, 'fecha_compra', true );
+    if ( empty( $fecha_compra_raw ) ) {
+        $purchase_post = get_post( $purchase_id );
+        $fecha_compra_raw = $purchase_post ? date_i18n( 'd/m/Y', strtotime( $purchase_post->post_date ) ) : '';
+    } else {
+        if ( preg_match( '/^\d{8}$/', $fecha_compra_raw ) ) {
+            $fecha_compra_raw = date_i18n( 'd/m/Y', strtotime( $fecha_compra_raw ) );
+        }
+    }
+
     $data = array(
         'uuid'         => $uuid,
         'title'        => get_the_title( $purchase_id ),
-        'fecha_compra' => get_field( 'fecha_compra', $purchase_id ),
+        'fecha_compra' => $fecha_compra_raw,
         'publicacion'  => $publicacion_data,
         'vendedor'     => get_field( 'vendedor', $purchase_id ),
         'comprador'    => get_field( 'comprador', $purchase_id ),

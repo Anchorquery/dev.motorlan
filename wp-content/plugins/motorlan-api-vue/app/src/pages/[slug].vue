@@ -144,7 +144,7 @@ onMounted(() => {
         <!-- Seller row with chat button above the buy button -->
 
 
-        <ProductDetails :publicacion="publicacion" @open-chat="isChatModalVisible = true" />
+        <ProductDetails :publicacion="publicacion" :disable-actions="isOwner" @open-chat="isChatModalVisible = true" />
                 <div class="d-flex align-center mb-4" v-if="publicacion.author">
           <VAvatar size="48" class="mr-4" :color="publicacion.author.avatar ? undefined : 'primary'">
             <VImg v-if="publicacion.author.avatar" :src="publicacion.author.avatar" :alt="publicacion.author.name || 'Vendedor'" />
@@ -180,7 +180,7 @@ onMounted(() => {
 
     <RelatedProducts :current-id="publicacion.id" />
     <ChatModal
-      v-if="isChatModalVisible"
+      v-if="isChatModalVisible && !isOwner"
       :publicacion="publicacion"
       :room-key="chatRoomKeyFromQuery"
       @close="isChatModalVisible = false"

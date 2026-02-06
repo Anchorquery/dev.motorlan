@@ -91,7 +91,8 @@ const removeFavorite = async (motorId: number) => {
 }
 
 const goToDetail = (item: Publicacion) => {
-  router.push(`/${item.slug}`)
+  // Navegar a la tienda con URL absoluta (no usar router.push porque estamos en otra base)
+  window.location.href = `/marketplace-motorlan/${item.slug}`
 }
 
 const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail'): string => {

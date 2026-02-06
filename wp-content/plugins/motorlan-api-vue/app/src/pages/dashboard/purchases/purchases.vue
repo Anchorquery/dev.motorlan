@@ -167,6 +167,11 @@ const resolvePurchaseType = (item: any): { text: string; color: string } => {
     return { text: 'Alquiler', color: 'primary' }
   return { text: 'Directa', color: 'success' }
 }
+
+// Navegación a la tienda (URL absoluta para cross-base)
+const goToProduct = (slug: string) => {
+  window.location.href = `/marketplace-motorlan/${slug}`
+}
 </script>
 
 <template>
@@ -227,8 +232,7 @@ const resolvePurchaseType = (item: any): { text: string; color: string } => {
               class="text-body-1 font-weight-medium text-high-emphasis cursor-pointer"
               @click="() => {
                 const slug = (item.publicacion || item.motor)?.slug
-                if (slug)
-                  router.push({ name: 'store-slug', params: { slug } })
+                if (slug) goToProduct(slug)
               }"
             >{{ formatPublicationTitle(item.publicacion || item.motor) }}</span>
             <span
@@ -276,7 +280,7 @@ const resolvePurchaseType = (item: any): { text: string; color: string } => {
           :disabled="!(item.publicacion || item.motor)?.slug"
           @click="() => {
             const slug = (item.publicacion || item.motor)?.slug
-            if (slug) router.push({ name: 'store-slug', params: { slug } })
+            if (slug) goToProduct(slug)
           }"
         >
           <VIcon icon="tabler-external-link" />

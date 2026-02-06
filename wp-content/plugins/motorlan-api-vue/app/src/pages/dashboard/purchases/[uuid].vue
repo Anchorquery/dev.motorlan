@@ -188,7 +188,8 @@ const productLink = computed(() => {
   if (!productSlug.value)
     return null
 
-  return { name: 'store-slug', params: { slug: productSlug.value } }
+  // URL absoluta para navegación cross-base (desde mi-cuenta a la tienda)
+  return `/marketplace-motorlan/${productSlug.value}`
 })
 
 const locationLabel = computed(() => {
@@ -658,25 +659,25 @@ const sendOpinion = async () => {
               <div class="summary-header">
                 <div class="summary-info">
                   <h1 class="summary-title">
-                    <RouterLink
+                    <a
                       v-if="productLink"
-                      :to="productLink"
+                      :href="productLink"
                       class="summary-title__link"
                     >
                       {{ productTitle }}
-                    </RouterLink>
+                    </a>
                     <span v-else>{{ productTitle }}</span>
                   </h1>
                   <div class="summary-meta">
                     <span>{{ quantityLabel }}</span>
                     <span v-if="productLink">|</span>
-                    <RouterLink
+                    <a
                       v-if="productLink"
                       class="summary-link"
-                      :to="productLink"
+                      :href="productLink"
                     >
                       Ver detalle
-                    </RouterLink>
+                    </a>
                   </div>
                   <div
                     v-if="locationLabel"
@@ -834,7 +835,7 @@ const sendOpinion = async () => {
               <div class="seller-card__actions">
                 <VBtn
                   v-if="productLink"
-                  :to="productLink"
+                  :href="productLink"
                   color="primary"
                   variant="tonal"
                 >
@@ -881,7 +882,7 @@ const sendOpinion = async () => {
                 <VBtn
                   color="primary"
                   variant="outlined"
-                  :to="productLink"
+                  :href="productLink"
                 >
                   Volver a comprar
                 </VBtn>

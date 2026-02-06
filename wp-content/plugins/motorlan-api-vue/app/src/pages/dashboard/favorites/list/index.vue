@@ -119,6 +119,54 @@ onMounted(() => {
 const refresh = () => {
   fetchPublications()
 }
+
+// Estado para el modal de confirmación de eliminación
+const showDeleteConfirm = ref(false)
+const selectedFavorite = ref<Publicacion | null>(null)
+const isDeleting = ref(false)
+
+// Función para ver la publicación
+const goToPublication = (item: Publicacion) => {
+  const slug = (item as any).slug
+  window.location.href = `/publicacion/${slug}/`
+}
+
+// Función para contactar al vendedor
+const contactSeller = (item: Publicacion) => {
+  const authorId = (item as any).author?.id
+  const publicacionId = (item as any).id
+  if (authorId && publicacionId) {
+    // Redirigir al chat con el vendedor
+    router.push(`/dashboard/purchases/chat/${publicacionId}`)
+  }
+}
+
+// Función para confirmar eliminación de favorito
+const confirmRemoveFavorite = (item: Publicacion) => {
+  selectedFavorite.value = item
+  showDeleteConfirm.value = true
+}
+
+// Función para eliminar de favoritos
+const removeFavorite = async () => {
+  if (!selectedFavorite.value) return
+  
+  isDeleting.value = true
+  try {
+    const { error } = await useApi(`/wp-json/motorlan/v1/favorites/${(selectedFavorite.value as any).id}`, {
+      method: 'DELETE',
+    })
+    
+    if (!error.value) {
+      // Refrescar la lista después de eliminar
+      refresh()
+    }
+  } finally {
+    isDeleting.value = false
+    showDeleteConfirm.value = false
+    selectedFavorite.value = null
+  }
+}
 </script>
 
 <template>
@@ -233,31 +281,46 @@ const refresh = () => {
         <!-- Actions -->
         <template #item.actions="{ item }">
            <div class="d-flex justify-end gap-2">
+              <!-- Ver Publicación -->
               <IconBtn
-                v-if="(item as any).author?.id === currentUser?.id || currentUser?.isAdmin"
-                color="primary"
+                color="info"
                 variant="tonal"
                 size="small"
-                 @click="router.push(`/dashboard/publications/publication/edit/${(item as any).uuid}`)"
-              >
-                <VIcon
-                  icon="tabler-pencil"
-                  size="18"
-                />
-                 <VTooltip activator="parent" location="top">Editar</VTooltip>
-              </IconBtn>
-              <IconBtn
-                color="secondary"
-                variant="tonal"
-                size="small"
-                :to="`/${(item as any).slug}`"
-                 target="_blank"
+                @click="goToPublication(item)"
               >
                 <VIcon
                   icon="tabler-eye"
                   size="18"
                 />
-                 <VTooltip activator="parent" location="top">Ver</VTooltip>
+                <VTooltip activator="parent" location="top">{{ t('Ver Publicación') }}</VTooltip>
+              </IconBtn>
+              
+              <!-- Contactar Vendedor -->
+              <IconBtn
+                color="primary"
+                variant="tonal"
+                size="small"
+                @click="contactSeller(item)"
+              >
+                <VIcon
+                  icon="tabler-message-circle"
+                  size="18"
+                />
+                <VTooltip activator="parent" location="top">{{ t('Contactar Vendedor') }}</VTooltip>
+              </IconBtn>
+              
+              <!-- Eliminar de Favoritos -->
+              <IconBtn
+                color="error"
+                variant="tonal"
+                size="small"
+                @click="confirmRemoveFavorite(item)"
+              >
+                <VIcon
+                  icon="tabler-heart-off"
+                  size="18"
+                />
+                <VTooltip activator="parent" location="top">{{ t('Eliminar de Favoritos') }}</VTooltip>
               </IconBtn>
             </div>
         </template>
@@ -275,5 +338,52 @@ const refresh = () => {
       </VDataTableServer>
     </div>
   </VCard>
+
+  <!-- Modal de confirmación para eliminar favorito -->
+  <VDialog
+    v-model="showDeleteConfirm"
+    max-width="450"
+    persistent
+  >
+    <VCard class="motor-card-enhanced">
+      <VCardTitle class="pa-4 d-flex justify-space-between align-center border-b">
+        <span class="text-h6 text-premium-title">
+          <VIcon icon="tabler-heart-off" class="me-2" color="error" />
+          {{ t('Eliminar de Favoritos') }}
+        </span>
+        <VBtn icon variant="text" size="small" @click="showDeleteConfirm = false" :disabled="isDeleting">
+          <VIcon icon="tabler-x" />
+        </VBtn>
+      </VCardTitle>
+      
+      <VCardText class="pa-6">
+        <p class="text-body-1 mb-0">
+          {{ t('¿Estás seguro que deseas eliminar esta publicación de tus favoritos?') }}
+        </p>
+        <p v-if="selectedFavorite" class="text-body-2 text-medium-emphasis mt-2 font-weight-medium">
+          "{{ formatPublicationTitle(selectedFavorite, (selectedFavorite as any).title) }}"
+        </p>
+      </VCardText>
+      
+      <VCardActions class="pa-6 pt-0 justify-end gap-2">
+        <VBtn
+          variant="tonal"
+          color="secondary"
+          @click="showDeleteConfirm = false"
+          :disabled="isDeleting"
+        >
+          {{ t('Cancelar') }}
+        </VBtn>
+        <VBtn
+          color="error"
+          @click="removeFavorite"
+          :loading="isDeleting"
+        >
+          <VIcon icon="tabler-heart-off" class="me-1" />
+          {{ t('Eliminar') }}
+        </VBtn>
+      </VCardActions>
+    </VCard>
+  </VDialog>
 </div>
 </template>

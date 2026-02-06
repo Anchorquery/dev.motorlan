@@ -93,7 +93,8 @@ const productImage = computed(() => {
 })
 
 const productSlug = computed(() => purchase.value?.motor?.slug || null)
-const productLink = computed(() => (productSlug.value ? { name: 'store-slug', params: { slug: productSlug.value } } : null))
+// URL absoluta para navegación cross-base (desde mi-cuenta a la tienda)
+const productLink = computed(() => (productSlug.value ? `/marketplace-motorlan/${productSlug.value}` : null))
 
 const sellerName = computed(() => purchase.value?.motor?.author?.name || 'Vendedor')
 const sellerAvatar = computed(() => {
@@ -557,13 +558,13 @@ onBeforeUnmount(() => {
 
                 <div class="summary-card__product-info">
                   <!-- Solo el comprador puede ver el enlace al producto -->
-                  <RouterLink
+                  <a
                     v-if="productLink && isBuyer"
-                    :to="productLink"
+                    :href="productLink"
                     class="summary-card__product-title"
                   >
                     {{ productTitle }}
-                  </RouterLink>
+                  </a>
                   <span
                     v-else
                     class="summary-card__product-title"

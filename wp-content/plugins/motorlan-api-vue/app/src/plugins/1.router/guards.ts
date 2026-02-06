@@ -4,6 +4,14 @@ import { watch } from 'vue'
 
 export const setupGuards = (router: _RouterTyped<RouteNamedMap & { [key: string]: any }>) => {
   router.beforeEach(async to => {
+    // History mode: Detectar base y redirigir según contexto
+    const vueBase = (window as unknown as { wpData?: { vue_base?: string } }).wpData?.vue_base || '/'
+
+    // Si estamos en /mi-cuenta/ y la ruta es la raíz, redirigir al dashboard
+    if (vueBase.includes('mi-cuenta') && to.path === '/') {
+      return { path: '/dashboard', replace: true }
+    }
+
     // Public routes are accessible by everyone
     if (to.meta.public)
       return

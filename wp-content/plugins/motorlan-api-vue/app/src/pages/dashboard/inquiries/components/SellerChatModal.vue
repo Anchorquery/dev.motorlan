@@ -4,7 +4,7 @@ import { useProductChat } from '@/composables/useProductChat'
 import { useApi } from '@/composables/useApi'
 import { createUrl } from '@/@core/composable/createUrl'
 
-const props = defineProps<{ productId: number; roomKey: string; productTitle?: string | null }>()
+const props = defineProps<{ productId: number; roomKey: string; productTitle?: string | null; productImage?: string | null }>()
 const emit = defineEmits(['close', 'read'])
 
 const chat = useProductChat(props.productId, { roomKey: props.roomKey })
@@ -113,200 +113,271 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <VDialog max-width="700px" persistent :model-value="true">
-    <VCard class="seller-chat-modal motor-card-enhanced overflow-hidden">
-      <VCardTitle class="pa-0">
-        <div class="d-flex align-center justify-space-between pa-4 bg-surface border-b">
-          <div class="d-flex align-center gap-2">
-            <VIcon icon="tabler-message-2" color="primary" />
-            <span class="text-h6 font-weight-bold text-premium-title">{{ productTitle || 'Consultas sobre el producto' }}</span>
-          </div>
-          <IconBtn @click="emit('close')">
-            <VIcon icon="tabler-x" size="20" />
-          </IconBtn>
-        </div>
+  <VDialog
+    max-width="600px"
+    persistent
+    :model-value="true"
+    transition="dialog-bottom-transition"
+  >
+    <VCard class="chat-modal rounded-xl overflow-hidden elevation-10">
+      <!-- Header -->
+      <VCardTitle class="d-flex justify-space-between align-center py-3 px-4 bg-surface elevation-0 border-b">
+        <span class="text-h6 font-weight-bold text-high-emphasis">Responder consulta</span>
+        <VBtn
+          icon="tabler-x"
+          variant="text"
+          color="medium-emphasis"
+          density="comfortable"
+          @click="emit('close')"
+        />
       </VCardTitle>
-      
-      <VCardText class="pa-0">
-        <div ref="messagesContainer" class="messages-container bg-light">
-          <div v-if="isLoadingMessages && !hasLoadedMessages" class="loader">
-            <VProgressCircular color="primary" indeterminate size="40" width="4" />
+
+      <!-- Context: Product Info -->
+      <div class="product-info bg-surface-container-low px-4 py-3 border-b d-flex align-center gap-4">
+        <VAvatar
+          v-if="productImage"
+          :image="productImage"
+          size="48"
+          class="rounded-lg elevation-2"
+        />
+        <VAvatar
+          v-else
+          size="48"
+          color="primary"
+          variant="tonal"
+          class="rounded-lg"
+        >
+          <VIcon icon="tabler-package" size="24" />
+        </VAvatar>
+        <div class="product-details flex-grow-1 min-w-0">
+          <p class="text-subtitle-2 font-weight-bold text-truncate mb-0 text-high-emphasis">
+            {{ productTitle || 'Consulta sobre el producto' }}
+          </p>
+          <div class="d-flex align-center gap-1 text-caption text-medium-emphasis">
+            <VIcon icon="tabler-message-circle" size="14" />
+            <span>Consulta de comprador interesado</span>
           </div>
-          <VAlert v-else-if="messagesError" type="error" variant="tonal" class="ma-4 rounded-lg">
-            <div class="d-flex justify-space-between align-center gap-4">
-              <span>{{ messagesError }}</span>
-              <VBtn size="small" variant="elevated" color="error" class="rounded-pill" @click="handleRetryMessages">Reintentar</VBtn>
+        </div>
+      </div>
+
+      <!-- Security Alert -->
+      <div class="bg-primary-lighten-5 px-4 py-2 d-flex align-center gap-3 text-caption text-primary">
+        <VIcon icon="tabler-shield-lock" size="16" color="primary" />
+        <span>Por tu seguridad, no compartas datos de contacto directo.</span>
+      </div>
+
+      <!-- Chat Body -->
+      <VCardText class="pa-0 chat-modal__body bg-background position-relative">
+        <div
+          ref="messagesContainer"
+          class="messages-container px-4 py-4"
+        >
+          <!-- Loader -->
+          <div
+            v-if="isLoadingMessages && !hasLoadedMessages"
+            class="d-flex flex-column align-center justify-center h-100 gap-2 text-medium-emphasis"
+          >
+            <VProgressCircular
+              color="primary"
+              indeterminate
+              size="40"
+              width="3"
+            />
+            <span class="text-caption">Cargando conversación...</span>
+          </div>
+
+          <!-- Error -->
+          <VAlert
+            v-else-if="messagesError"
+            type="error"
+            variant="tonal"
+            class="ma-4"
+            density="compact"
+          >
+            <div class="d-flex justify-space-between align-center w-100">
+              <span class="text-caption">{{ messagesError }}</span>
+              <VBtn
+                size="x-small"
+                variant="text"
+                color="error"
+                class="ms-2"
+                @click="handleRetryMessages"
+              >
+                Reintentar
+              </VBtn>
             </div>
           </VAlert>
-          <div v-else-if="!groupedMessages.length" class="empty-chat">
-            <div class="pa-6 rounded-circle bg-white shadow-sm mb-4">
-              <VIcon icon="tabler-message-chatbot" size="48" color="primary" />
+
+          <!-- Empty State -->
+          <div
+            v-else-if="!groupedMessages.length"
+            class="d-flex flex-column align-center justify-center h-100 text-medium-emphasis gap-3"
+          >
+            <div class="bg-surface rounded-circle pa-4 elevation-1">
+              <VIcon icon="tabler-message-2" size="32" color="primary" />
             </div>
-            <p class="text-h6 font-weight-medium">Sin mensajes previos</p>
-            <p class="text-body-2 text-muted">Inicia la conversación respondiendo al interesado.</p>
+            <div class="text-center">
+              <p class="text-body-2 font-weight-medium mb-1 text-high-emphasis">
+                Sin mensajes previos
+              </p>
+              <p class="text-caption">
+                Inicia la conversación respondiendo al interesado.
+              </p>
+            </div>
           </div>
+
+          <!-- Messages -->
           <template v-else>
-            <div v-for="group in groupedMessages" :key="group.key" class="message-group">
-              <div class="date-divider">
-                <span class="date-divider__text">{{ group.label }}</span>
+            <div
+              v-for="group in groupedMessages"
+              :key="group.key"
+              class="message-group mb-6"
+            >
+              <div class="d-flex justify-center mb-4">
+                <VChip
+                  size="x-small"
+                  variant="flat"
+                  color="surface-variant"
+                  class="font-weight-medium text-caption"
+                >
+                  {{ group.label }}
+                </VChip>
               </div>
-              <div v-for="message in group.items" :key="message.id" class="chat-message" :class="message.is_current_user ? 'chat-message--self' : 'chat-message--other'">
-                <div v-if="!message.is_current_user" class="chat-message__avatar">
-                  <VAvatar v-if="message.avatar" :image="message.avatar" size="36" class="border shadow-sm" />
-                  <VAvatar v-else size="36" color="primary" variant="tonal" class="border shadow-sm font-weight-bold">{{ getInitials(message.display_name) }}</VAvatar>
-                </div>
-                <div class="chat-message__bubble shadow-sm">
-                  <p class="chat-message__text">{{ message.message }}</p>
-                  <span class="chat-message__time">{{ formatMessageTime(message.created_at) }}</span>
+
+              <div
+                v-for="message in group.items"
+                :key="message.id"
+                class="chat-message d-flex mb-3"
+                :class="message.is_current_user ? 'justify-end' : 'justify-start'"
+              >
+                <!-- Avatar (Other) -->
+                <VAvatar
+                  v-if="!message.is_current_user"
+                  size="32"
+                  class="me-2 align-self-end mb-1 elevation-1"
+                  color="primary"
+                  variant="tonal"
+                >
+                  <VImg
+                    v-if="message.avatar"
+                    :src="message.avatar"
+                  />
+                  <span
+                    v-else
+                    class="text-caption font-weight-bold text-primary"
+                  >{{ getInitials(message.display_name) }}</span>
+                </VAvatar>
+
+                <!-- Message Bubble -->
+                <div
+                  class="message-bubble elevation-1 px-4 py-2"
+                  :class="[
+                    message.is_current_user
+                      ? 'bg-primary text-white rounded-t-xl rounded-bs-xl'
+                      : 'bg-surface text-high-emphasis rounded-t-xl rounded-be-xl',
+                  ]"
+                  style="max-width: 80%;"
+                >
+                  <p class="text-body-2 mb-1" style="white-space: pre-wrap;">
+                    {{ message.message }}
+                  </p>
+                  <div
+                    class="text-caption d-flex align-center justify-end gap-1"
+                    :class="message.is_current_user ? 'text-primary-lighten-4' : 'text-medium-emphasis'"
+                    style="font-size: 0.65rem;"
+                  >
+                    {{ formatMessageTime(message.created_at) }}
+                    <VIcon
+                      v-if="message.is_current_user"
+                      icon="tabler-check"
+                      size="12"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
           </template>
         </div>
       </VCardText>
-
-      <VDivider />
       
-      <VCardActions class="composer pa-4 bg-surface">
-        <VTextarea 
-          v-model="messageText" 
-          :disabled="isConversationLocked" 
-          auto-grow 
-          hide-details 
-          placeholder="Escribe tu respuesta aquí..." 
-          rows="1" 
-          class="flex-grow-1 mr-2" 
-          maxlength="1000"
-          variant="outlined"
-          density="comfortable"
-          @keydown.enter.exact.prevent="handleComposerSubmit" 
-        />
-        <VBtn 
-          color="primary" 
-          variant="elevated" 
-          :disabled="!canSendMessage" 
-          :loading="isSendingMessage" 
-          icon="tabler-send"
-          class="rounded-lg"
-          @click="handleComposerSubmit" 
-        />
+      <!-- Composer -->
+      <VCardActions class="composer bg-surface py-3 px-4 border-t">
+        <div class="d-flex align-end w-100 gap-2">
+          <VTextarea
+            v-model="messageText"
+            :disabled="isConversationLocked"
+            auto-grow
+            hide-details
+            placeholder="Escribe tu respuesta..."
+            rows="1"
+            max-rows="4"
+            density="comfortable"
+            variant="outlined"
+            bg-color="surface"
+            class="composer-input rounded-xl"
+            maxlength="1000"
+            @keydown.enter.exact.prevent="handleComposerSubmit"
+          >
+            <template #append-inner>
+              <VBtn
+                icon="tabler-send"
+                variant="text"
+                color="primary"
+                density="compact"
+                :disabled="!canSendMessage"
+                :loading="isSendingMessage"
+                @click="handleComposerSubmit"
+              />
+            </template>
+          </VTextarea>
+        </div>
       </VCardActions>
     </VCard>
-</VDialog>
+  </VDialog>
 </template>
 
 <style scoped lang="scss">
-.seller-chat-modal {
-  .messages-container { 
-    height: 480px; 
-    overflow-y: auto; 
-    padding: 1.5rem;
-    background: var(--v-theme-background-light, #f8f9fa);
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-    
-    /* Custom scrollbar */
-    &::-webkit-scrollbar {
-      width: 6px;
-    }
-    &::-webkit-scrollbar-thumb {
-      background: rgba(var(--v-border-color), 0.1);
-      border-radius: 10px;
-    }
-  }
-  
-  .loader, .empty-chat { 
-    display: flex; 
-    flex-direction: column; 
-    align-items: center; 
-    justify-content: center; 
-    height: 100%; 
-    color: rgba(var(--v-theme-on-surface), 0.6);
-  }
-  
-  .message-group { 
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-  }
-  
-  .date-divider { 
-    align-self: center;
-    background: white;
-    padding: 4px 16px;
-    border-radius: 20px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-    margin-bottom: 0.5rem;
-    z-index: 1;
+.chat-modal {
+  display: flex;
+  flex-direction: column;
+  max-height: 85vh;
+  border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+}
 
-    .date-divider__text {
-      font-size: 0.75rem;
-      font-weight: 700;
-      color: rgba(var(--v-theme-on-surface), 0.5);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-  }
+.chat-modal__body {
+  flex: 1 1 auto;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
 
-  .chat-message { 
-    display: flex; 
-    gap: 12px; 
-    max-width: 85%;
-    
-    &.chat-message--self { 
-      align-self: flex-end;
-      flex-direction: row-reverse; 
-      
-      .chat-message__bubble { 
-        background: var(--v-theme-primary);
-        color: white;
-        border-radius: 18px 18px 4px 18px;
-        box-shadow: 0 4px 12px rgba(var(--v-theme-primary), 0.2);
-        
-        .chat-message__text { color: white; }
-        .chat-message__time { color: rgba(255, 255, 255, 0.7); text-align: right; }
-      }
-    }
+.messages-container {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  scroll-behavior: smooth;
+  min-height: 350px;
   
-    &.chat-message--other { 
-      align-self: flex-start;
-      
-      .chat-message__bubble { 
-        background: white;
-        border-radius: 18px 18px 18px 4px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-        color: var(--v-theme-on-surface);
-        
-        .chat-message__text { color: var(--v-theme-on-surface); }
-        .chat-message__time { color: rgba(var(--v-theme-on-surface), 0.4); }
-      }
-    }
+  // Custom scrollbar
+  &::-webkit-scrollbar {
+    width: 6px;
   }
-
-  .chat-message__bubble { 
-    padding: 12px 16px; 
-    position: relative;
-  }
-  
-  .chat-message__text { 
-    margin: 0; 
-    white-space: pre-line; 
-    line-height: 1.5; 
-    font-size: 0.95rem; 
-  }
-  
-  .chat-message__time { 
-    display: block; 
-    margin-top: 4px; 
-    font-size: 0.7rem; 
-    font-weight: 500;
-  }
-  
-  .composer { 
-    border-top: 1px solid rgba(var(--v-border-color), 0.08);
-    background: white;
+  &::-webkit-scrollbar-thumb {
+    background-color: rgba(var(--v-theme-on-surface), 0.2);
+    border-radius: 4px;
   }
 }
-</style>
 
+.composer-input {
+  :deep(.v-field__outline) {
+    --v-field-border-opacity: 0.15;
+  }
+  :deep(.v-field--focused .v-field__outline) {
+    --v-field-border-opacity: 0.4;
+  }
+}
+
+// Ensure smooth animations for dynamic content
+.message-bubble {
+  transition: all 0.2s ease;
+}
+</style>

@@ -258,7 +258,7 @@ const removeOffer = async () => {
   <div class="product-details flex-grow-1">
     <div class="d-flex align-center gap-6 mb-4">
       <div
-        v-if="isLoggedIn"
+        v-if="isLoggedIn && !isOwner"
         class="d-flex align-center gap-2 pointer"
         @click="toggleFavorite"
       >

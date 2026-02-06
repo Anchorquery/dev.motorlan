@@ -111,9 +111,14 @@ function motorlan_prepare_sale_item( $purchase_id ) {
     $type   = function_exists( 'get_field' ) ? get_field( 'tipo_venta', $purchase_id ) : get_post_meta( $purchase_id, 'tipo_venta', true );
     $uuid   = function_exists( 'get_field' ) ? get_field( 'uuid', $purchase_id ) : get_post_meta( $purchase_id, 'uuid', true );
 
-    $raw_date   = function_exists( 'get_field' ) ? get_field( 'fecha_compra', $purchase_id ) : get_post_meta( $purchase_id, 'fecha_compra', true );
-    $iso_date   = $raw_date ? motorlan_normalize_sale_date( $raw_date ) : get_post_time( DATE_ATOM, true, $purchase_id );
-    $date_label = $raw_date ? $raw_date : get_the_date( 'Y-m-d', $purchase_id );
+    // Usar get_post_meta para evitar que ACF date_picker retorne fecha actual si vacío
+    $raw_date   = get_post_meta( $purchase_id, 'fecha_compra', true );
+    // Convertir formato ACF (Ymd) a d/m/Y si es necesario
+    if ( ! empty( $raw_date ) && preg_match( '/^\d{8}$/', $raw_date ) ) {
+        $raw_date = date_i18n( 'd/m/Y', strtotime( $raw_date ) );
+    }
+    $iso_date   = ! empty( $raw_date ) ? motorlan_normalize_sale_date( $raw_date ) : get_post_time( DATE_ATOM, true, $purchase_id );
+    $date_label = ! empty( $raw_date ) ? $raw_date : get_the_date( 'd/m/Y', $purchase_id );
 
     $publication_slug  = '';
     // Default to purchase title, but we will override with the publication title when available
