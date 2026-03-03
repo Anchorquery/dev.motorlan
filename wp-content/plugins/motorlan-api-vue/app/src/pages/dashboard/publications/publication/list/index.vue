@@ -7,10 +7,12 @@ import type { ImagenDestacada, Publicacion } from '../../../../../interfaces/pub
 import { useApi } from '@/composables/useApi'
 import { debounce } from '@/utils/debounce'
 import { useUserStore } from '@/@core/stores/user'
+import { useMotorFormatter } from '@/composables/useMotorFormatter'
 
 const { t } = useI18n()
 const router = useRouter()
 const userStore = useUserStore()
+const { formatMotorName } = useMotorFormatter()
 
 const headers = [
   { title: t('publication_list.publication'), value: 'publicacion' },
@@ -253,9 +255,14 @@ const changeStatus = () => {
   })
 }
 
-const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail'): string => {
-  let imageObj: ImagenDestacada | null = null
+const getImageBySize = (image: any, size = 'thumbnail'): string => {
+  if (!image)
+    return ''
+  
+  if (typeof image === 'string')
+    return image
 
+  let imageObj: ImagenDestacada | null = null
   if (Array.isArray(image) && image.length > 0)
     imageObj = image[0]
   else if (image && !Array.isArray(image))
@@ -427,21 +434,27 @@ const canEdit = (item: any) => {
       >
        <!-- publicacion  -->
        <template #item.publicacion="{ item }">
-         <div class="d-flex align-center gap-3 py-2">
-            <VAvatar
-              v-if="(item as any).imagen_destacada"
-              size="48"
-              variant="tonal"
-              rounded
-              class="border"
-              :image="getImageBySize((item as any).imagen_destacada, 'thumbnail')"
-            />
-            <div class="d-flex flex-column">
-              <span class="text-body-1 font-weight-medium text-high-emphasis">{{ (item as any).title }}</span>
-              <span class="text-caption text-medium-emphasis">{{ (item as any).acf.marca?.name }}</span>
-            </div>
-          </div>
-        </template>
+          <div class="d-flex align-center gap-3 py-2" style="max-width: 280px;">
+             <VAvatar
+               v-if="(item as any).imagen_destacada"
+               size="48"
+               variant="tonal"
+               rounded
+               class="border flex-shrink-0"
+               :image="getImageBySize((item as any).imagen_destacada, 'thumbnail')"
+             />
+             <div class="d-flex flex-column overflow-hidden">
+               <span 
+                 class="text-body-1 font-weight-medium text-high-emphasis text-truncate"
+                 style="max-width: 200px;"
+               >
+                 {{ formatMotorName(item as any) || (item as any).title }}
+                 <VTooltip activator="parent" location="top">{{ formatMotorName(item as any) || (item as any).title }}</VTooltip>
+               </span>
+               <span class="text-caption text-medium-emphasis">{{ (item as any).acf.marca?.name }}</span>
+             </div>
+           </div>
+         </template>
 
         <!-- referencia -->
         <template #item.referencia="{ item }">
@@ -469,6 +482,18 @@ const canEdit = (item: any) => {
         <!-- Actions -->
         <template #item.actions="{ item }">
           <div class="d-flex justify-end gap-2">
+            <IconBtn 
+              v-if="(item as any).status === 'publish'"
+              color="success" 
+              variant="tonal" 
+              size="small"
+              :href="`/${(item as any).slug}`"
+              target="_blank"
+            >
+              <VIcon icon="tabler-eye" size="18" />
+              <VTooltip activator="parent" location="top">{{ t('Ver Publicación') }}</VTooltip>
+            </IconBtn>
+
             <IconBtn 
               :color="canEdit(item) ? 'primary' : 'warning'" 
               variant="tonal" 

@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(php -l:*)",
+      "Bash(more:*)",
+      "Bash(wp eval \"echo admin_url\\(''admin.php?page=motorlan-migration''\\);\")"
+    ]
+  }
+}

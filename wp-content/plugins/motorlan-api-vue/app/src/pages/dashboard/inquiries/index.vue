@@ -5,6 +5,7 @@ import { createUrl } from '@/@core/composable/createUrl'
 import { useRouter } from 'vue-router'
 import SellerChatModal from './components/SellerChatModal.vue'
 import { useI18n } from 'vue-i18n'
+import { useMotorFormatter } from '@/composables/useMotorFormatter'
 
 const { t, locale } = useI18n()
 
@@ -56,6 +57,7 @@ const isLoading = ref(false)
 const loadError = ref<string | null>(null)
 const items = ref<InquiryItem[]>([])
 const router = useRouter()
+const { formatMotorName } = useMotorFormatter()
 const searchQuery = ref('')
 const itemsPerPage = ref(10)
 const page = ref(1)
@@ -149,6 +151,16 @@ const refresh = () => {
 }
 </script>
 
+<style scoped lang="scss">
+.unread-badge-absolute {
+  position: absolute;
+  top: 0;
+  right: 0;
+  transform: translate(25%, -25%);
+  z-index: 1;
+}
+</style>
+
 <template>
   <div>
     <VCard class="motor-card-enhanced overflow-visible">
@@ -239,9 +251,9 @@ const refresh = () => {
               <span 
                 class="font-weight-medium text-high-emphasis text-body-1 text-truncate"
                 style="max-width: 260px;"
-                :title="item.product_title"
               >
-                {{ item.product_title }}
+                {{ formatMotorName({ title: item.product_title, ...item }) || item.product_title }}
+                <VTooltip activator="parent" location="top">{{ formatMotorName({ title: item.product_title, ...item }) || item.product_title }}</VTooltip>
               </span>
               <span class="text-caption text-medium-emphasis">ID: {{ item.product_id }}</span>
             </div>
@@ -255,11 +267,21 @@ const refresh = () => {
               size="small"
               color="primary"
               variant="tonal"
-              class="rounded-pill"
+              class="rounded-pill position-relative"
               @click="openReply(item)"
             >
               <VIcon icon="tabler-message-circle" start />
               Responder
+              
+              <!-- Unread badge -->
+              <VBadge
+                v-if="item.unread && item.unread > 0"
+                :content="item.unread"
+                color="error"
+                offset-x="-10"
+                offset-y="-10"
+                class="unread-badge-absolute"
+              />
             </VBtn>
             
             <IconBtn

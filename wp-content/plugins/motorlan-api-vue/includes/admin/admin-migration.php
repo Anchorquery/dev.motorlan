@@ -11,10 +11,10 @@ if ( ! defined( 'WPINC' ) ) {
 }
 
 /**
- * Register the migration menu page.
+ * Register the migration menu page and enqueue assets on its hook.
  */
 function motorlan_register_migration_menu() {
-    add_menu_page(
+    $hook = add_menu_page(
         __( 'Migración motores', 'motorlan-api-vue' ),
         __( 'Migración motores', 'motorlan-api-vue' ),
         'manage_options',
@@ -23,31 +23,36 @@ function motorlan_register_migration_menu() {
         'dashicons-upload',
         6
     );
+
+    // Enqueue assets only on this exact page using the hook returned by add_menu_page.
+    add_action( 'admin_enqueue_scripts', function ( $hook_suffix ) use ( $hook ) {
+        if ( $hook_suffix !== $hook ) {
+            return;
+        }
+        motorlan_enqueue_migration_assets();
+    } );
 }
 add_action( 'admin_menu', 'motorlan_register_migration_menu' );
 
 /**
  * Enqueue admin scripts/styles for the migration page.
- *
- * @param string $hook_suffix Admin page hook suffix.
  */
-function motorlan_enqueue_migration_assets( $hook_suffix ) {
-    if ( 'toplevel_page_motorlan-migration' !== $hook_suffix ) {
-        return;
-    }
+function motorlan_enqueue_migration_assets() {
+    $css_file = MOTORLAN_API_VUE_PATH . 'assets/css/admin-migration.css';
+    $js_file  = MOTORLAN_API_VUE_PATH . 'assets/js/admin-migration.js';
 
     wp_enqueue_style(
         'motorlan-migration-admin',
         MOTORLAN_API_VUE_URL . 'assets/css/admin-migration.css',
         [],
-        MOTORLAN_API_VUE_VERSION
+        file_exists( $css_file ) ? filemtime( $css_file ) : MOTORLAN_API_VUE_VERSION
     );
 
     wp_enqueue_script(
         'motorlan-migration-admin',
         MOTORLAN_API_VUE_URL . 'assets/js/admin-migration.js',
         [],
-        MOTORLAN_API_VUE_VERSION,
+        file_exists( $js_file ) ? filemtime( $js_file ) : MOTORLAN_API_VUE_VERSION,
         true
     );
 
@@ -64,6 +69,7 @@ function motorlan_enqueue_migration_assets( $hook_suffix ) {
             'endpoint'    => [
                 'upload' => rest_url( 'motorlan/v1/migration/upload' ),
                 'chunk'  => rest_url( 'motorlan/v1/migration/chunk' ),
+                'featured' => rest_url( 'motorlan/v1/migration/chunk-featured' ),
             ],
             'strings'     => [
                 'fileRequired' => __( 'Selecciona un fichero CSV.', 'motorlan-api-vue' ),
@@ -72,7 +78,48 @@ function motorlan_enqueue_migration_assets( $hook_suffix ) {
         ]
     );
 }
-add_action( 'admin_enqueue_scripts', 'motorlan_enqueue_migration_assets' );
+
+/**
+ * Register REST API routes for migration.
+ */
+function motorlan_migration_register_rest_routes() {
+    register_rest_route(
+        'motorlan/v1',
+        '/migration/upload',
+        [
+            'methods'             => 'POST',
+            'callback'            => 'motorlan_rest_migration_upload',
+            'permission_callback' => function () {
+                return current_user_can( 'manage_options' );
+            },
+        ]
+    );
+
+    register_rest_route(
+        'motorlan/v1',
+        '/migration/chunk',
+        [
+            'methods'             => 'POST',
+            'callback'            => 'motorlan_rest_migration_chunk',
+            'permission_callback' => function () {
+                return current_user_can( 'manage_options' );
+            },
+        ]
+    );
+
+    register_rest_route(
+        'motorlan/v1',
+        '/migration/chunk-featured',
+        [
+            'methods'             => 'POST',
+            'callback'            => 'motorlan_rest_migration_chunk_featured',
+            'permission_callback' => function () {
+                return current_user_can( 'manage_options' );
+            },
+        ]
+    );
+}
+add_action( 'rest_api_init', 'motorlan_migration_register_rest_routes' );
 
 /**
  * Render the migration admin page.
@@ -101,10 +148,11 @@ function motorlan_render_migration_page() {
                 </tr>
             </table>
             <p class="submit">
-                <button type="submit" class="button button-primary"><?php esc_html_e( 'Subir y comenzar migración', 'motorlan-api-vue' ); ?></button>
+                <button type="button" id="motorlan-submit-migration" class="button button-primary"><?php esc_html_e( 'Subir y comenzar migración', 'motorlan-api-vue' ); ?></button>
                 <span id="motorlan-migration-status" class="spinner"></span>
             </p>
         </form>
+
         <div id="motorlan-migration-progress" class="motorlan-migration-progress">
             <div class="motorlan-progress-bar">
                 <div class="motorlan-progress-fill" style="width: 0%;"></div>
@@ -112,7 +160,78 @@ function motorlan_render_migration_page() {
             <p id="motorlan-migration-progress-text"><?php esc_html_e( 'Sin acciones todavía.', 'motorlan-api-vue' ); ?></p>
             <ul id="motorlan-migration-log"></ul>
         </div>
+
+        <hr>
+
+        <h2><?php esc_html_e( 'Actualizar Imágenes Destacadas (Entradas de Blog)', 'motorlan-api-vue' ); ?></h2>
+        <p><?php esc_html_e( 'Busca imágenes que ya están en la biblioteca por nombre de archivo y las asigna como destacadas a las Entradas de Blog.', 'motorlan-api-vue' ); ?></p>
+        
+        <form id="motorlan-migration-featured-form" enctype="multipart/form-data">
+            <?php wp_nonce_field( 'motorlan_migration_action', 'motorlan_migration_nonce_featured' ); ?>
+            <table class="form-table">
+                <tr>
+                    <th><label for="motorlan-csv-file-featured"><?php esc_html_e( 'CSV Legacy', 'motorlan-api-vue' ); ?></label></th>
+                    <td>
+                        <input type="file" id="motorlan-csv-file-featured" name="motorlan_csv" accept=".csv" required>
+                        <p class="description"><?php esc_html_e( 'Usa el mismo formato de CSV (Permalink/ID + URL de imagen).', 'motorlan-api-vue' ); ?></p>
+                    </td>
+                </tr>
+                <tr>
+                    <th><label for="motorlan-chunk-size-featured"><?php esc_html_e( 'Filas por bloque', 'motorlan-api-vue' ); ?></label></th>
+                    <td>
+                        <input type="number" id="motorlan-chunk-size-featured" name="chunk_size" min="1" max="100" value="20" required>
+                    </td>
+                </tr>
+                <tr>
+                    <th><label for="motorlan-lang-featured"><?php esc_html_e( 'Idioma del CSV', 'motorlan-api-vue' ); ?></label></th>
+                    <td>
+                        <select id="motorlan-lang-featured" name="lang">
+                            <option value="es"><?php esc_html_e( 'Español', 'motorlan-api-vue' ); ?></option>
+                            <option value="en"><?php esc_html_e( 'Inglés', 'motorlan-api-vue' ); ?></option>
+                            <option value="eu"><?php esc_html_e( 'Euskera', 'motorlan-api-vue' ); ?></option>
+                        </select>
+                    </td>
+                </tr>
+            </table>
+            <p class="submit">
+                <button type="button" id="motorlan-submit-featured" class="button button-primary"><?php esc_html_e( 'Procesar Imágenes Destacadas', 'motorlan-api-vue' ); ?></button>
+                <span id="motorlan-migration-featured-status" class="spinner"></span>
+            </p>
+        </form>
+
+        <div id="motorlan-migration-progress-featured" class="motorlan-migration-progress" style="display:none;">
+            <div class="motorlan-progress-bar">
+                <div class="motorlan-progress-fill motorlan-progress-fill-featured" style="width: 0%;"></div>
+            </div>
+            <p id="motorlan-migration-progress-text-featured"><?php esc_html_e( 'Sin acciones todavía.', 'motorlan-api-vue' ); ?></p>
+            <ul id="motorlan-migration-log-featured"></ul>
+        </div>
     </div>
+    <script>
+    // Ensure motorlanMigration is available (fallback if wp_localize_script fails)
+    if (typeof motorlanMigration === 'undefined') {
+        var motorlanMigration = <?php echo wp_json_encode( [
+            'ajaxUrl'   => admin_url( 'admin-ajax.php' ),
+            'nonce'     => wp_create_nonce( 'motorlan_migration_action' ),
+            'chunkLimit'=> 10,
+            'maxChunk'  => 50,
+            'restNonce' => wp_create_nonce( 'wp_rest' ),
+            'restRoot'  => esc_url_raw( rest_url() ),
+            'endpoint'  => [
+                'upload'   => rest_url( 'motorlan/v1/migration/upload' ),
+                'chunk'    => rest_url( 'motorlan/v1/migration/chunk' ),
+                'featured' => rest_url( 'motorlan/v1/migration/chunk-featured' ),
+            ],
+            'strings'   => [
+                'fileRequired'   => __( 'Selecciona un fichero CSV.', 'motorlan-api-vue' ),
+                'alreadyRunning' => __( 'Hay una importación en curso. Espera a que termine.', 'motorlan-api-vue' ),
+            ],
+        ] ); ?>;
+        console.log('Motorlan Migration: Using inline fallback config');
+    } else {
+        console.log('Motorlan Migration: Using wp_localize_script config');
+    }
+    </script>
     <?php
 }
 
@@ -161,6 +280,40 @@ function motorlan_handle_migration_chunk() {
 
     wp_send_json_success( $result );
 }
+add_action( 'wp_ajax_motorlan_import_csv_chunk', 'motorlan_handle_migration_chunk' );
+
+/**
+ * REST wrapper for upload.
+ *
+ * @param WP_REST_Request $request
+ * @return WP_REST_Response|WP_Error
+ */
+function motorlan_rest_migration_upload( WP_REST_Request $request ) {
+    $file = $_FILES['motorlan_csv'] ?? [];
+    $result = motorlan_migration_handle_uploaded_csv( $file );
+    if ( is_wp_error( $result ) ) {
+        return $result;
+    }
+    return rest_ensure_response( $result );
+}
+
+/**
+ * REST wrapper for chunk.
+ *
+ * @param WP_REST_Request $request
+ * @return WP_REST_Response|WP_Error
+ */
+function motorlan_rest_migration_chunk( WP_REST_Request $request ) {
+    $import_id = sanitize_text_field( $request->get_param( 'import_id' ) ?? '' );
+    $offset    = max( 0, intval( $request->get_param( 'offset' ) ?? 0 ) );
+    $limit     = max( 1, min( 100, intval( $request->get_param( 'limit' ) ?? 10 ) ) );
+
+    $result = motorlan_migration_process_chunk_request_data( $import_id, $offset, $limit );
+    if ( is_wp_error( $result ) ) {
+        return $result;
+    }
+    return rest_ensure_response( $result );
+}
 
 /**
  * Handle the uploaded CSV and store transient.
@@ -176,8 +329,12 @@ function motorlan_migration_handle_uploaded_csv( $file ) {
     require_once ABSPATH . 'wp-admin/includes/file.php';
 
     $overrides = [
-        'test_form' => false,
-        'mimes'     => [ 'csv' => 'text/csv' ],
+        'test_form'                => false,
+        'test_type'                => false,
+        'mimes'                    => [
+            'csv' => 'text/csv',
+        ],
+        'unique_filename_callback' => null,
     ];
 
     $upload = wp_handle_upload( $file, $overrides );
@@ -255,7 +412,6 @@ function motorlan_migration_process_chunk_request_data( $import_id, $offset, $li
         'finished'  => $finished,
     ];
 }
-add_action( 'wp_ajax_motorlan_import_csv_chunk', 'motorlan_handle_migration_chunk' );
 
 /**
  * Delete temporary CSV and additional data.
@@ -399,6 +555,39 @@ function motorlan_migration_process_chunk( $path, $delimiter, $headers, $offset,
     }
 
     return $result;
+}
+
+/**
+ * Read raw rows from CSV without processing.
+ *
+ * @param string $path
+ * @param string $delimiter
+ * @param int    $offset
+ * @param int    $limit
+ * @return array
+ */
+function motorlan_migration_read_csv_rows( $path, $delimiter, $offset, $limit ) {
+    $file = new SplFileObject( $path );
+    $file->setFlags( SplFileObject::READ_CSV );
+    $file->setCsvControl( $delimiter );
+    $file->rewind();
+    $file->fgetcsv(); // skip header
+
+    $current = 0;
+    $rows    = [];
+    while ( ! $file->eof() && count( $rows ) < $limit ) {
+        $row = $file->fgetcsv();
+        if ( ! is_array( $row ) || ! array_filter( $row ) ) {
+            continue;
+        }
+
+        if ( $current++ < $offset ) {
+            continue;
+        }
+
+        $rows[] = $row;
+    }
+    return $rows;
 }
 
 /**
@@ -1080,77 +1269,6 @@ function motorlan_migration_normalize_publicar_status( $value, $fallback = 'publ
     return $fallback;
 }
 
-/**
- * REST upload callback.
- *
- * @param WP_REST_Request $request
- * @return WP_REST_Response|WP_Error
- */
-function motorlan_rest_migration_upload( WP_REST_Request $request ) {
-    if ( ! current_user_can( 'manage_options' ) ) {
-        return new WP_Error( 'rest_forbidden', __( 'Sin permisos suficientes.', 'motorlan-api-vue' ), [ 'status' => 403 ] );
-    }
-
-    $file = $request->get_file_params()['motorlan_csv'] ?? [];
-    $result = motorlan_migration_handle_uploaded_csv( $file );
-    if ( is_wp_error( $result ) ) {
-        return $result;
-    }
-    return rest_ensure_response( $result );
-}
-
-/**
- * REST chunk callback.
- *
- * @param WP_REST_Request $request
- * @return WP_REST_Response|WP_Error
- */
-function motorlan_rest_migration_chunk( WP_REST_Request $request ) {
-    if ( ! current_user_can( 'manage_options' ) ) {
-        return new WP_Error( 'rest_forbidden', __( 'Sin permisos suficientes.', 'motorlan-api-vue' ), [ 'status' => 403 ] );
-    }
-
-    $import_id = sanitize_text_field( $request->get_param( 'import_id' ) ?? '' );
-    $offset    = max( 0, intval( $request->get_param( 'offset' ) ?? 0 ) );
-    $limit     = max( 1, min( 100, intval( $request->get_param( 'limit' ) ?? 10 ) ) );
-
-    $result = motorlan_migration_process_chunk_request_data( $import_id, $offset, $limit );
-    if ( is_wp_error( $result ) ) {
-        return $result;
-    }
-
-    return rest_ensure_response( $result );
-}
-
-/**
- * Register REST routes for migration.
- */
-function motorlan_register_migration_rest_routes() {
-    register_rest_route(
-        'motorlan/v1',
-        '/migration/upload',
-        [
-            'methods'             => WP_REST_Server::CREATABLE,
-            'callback'            => 'motorlan_rest_migration_upload',
-            'permission_callback' => function () {
-                return current_user_can( 'manage_options' );
-            },
-        ]
-    );
-
-    register_rest_route(
-        'motorlan/v1',
-        '/migration/chunk',
-        [
-            'methods'             => WP_REST_Server::CREATABLE,
-            'callback'            => 'motorlan_rest_migration_chunk',
-            'permission_callback' => function () {
-                return current_user_can( 'manage_options' );
-            },
-        ]
-    );
-}
-add_action( 'rest_api_init', 'motorlan_register_migration_rest_routes' );
 
 /**
  * Assign many terms by name.
@@ -1265,6 +1383,38 @@ function motorlan_find_publicacion_by_legacy( $legacy_id, $slug ) {
     }
     return null;
 }
+
+/**
+ * Find existing post (blog) by legacy metadata.
+ *
+ * @param string $legacy_id Legacy ID.
+ * @param string $slug Legacy slug.
+ * @return int|null
+ */
+function motorlan_find_post_by_legacy( $legacy_id, $slug ) {
+    if ( $legacy_id ) {
+        $query = new WP_Query(
+            [
+                'post_type'  => 'post',
+                'meta_key'   => 'legacy_post_id',
+                'meta_value' => $legacy_id,
+                'fields'     => 'ids',
+            ]
+        );
+        if ( $query->have_posts() ) {
+            return (int) $query->posts[0];
+        }
+    }
+
+    if ( $slug ) {
+        $post = get_page_by_path( $slug, OBJECT, 'post' );
+        if ( $post ) {
+            return $post->ID;
+        }
+    }
+    return null;
+}
+
 
 /**
  * Resolve an author ID based on CSV data.
@@ -1688,4 +1838,224 @@ function motorlan_migration_delete_attachments( array $attachment_ids ) {
  */
 function motorlan_migration_disable_image_sizes( $sizes ) {
     return [];
+}
+
+/**
+ * REST chunk callback for featured images (Blog Posts).
+ *
+ * @param WP_REST_Request $request
+ * @return WP_REST_Response|WP_Error
+ */
+function motorlan_rest_migration_chunk_featured( WP_REST_Request $request ) {
+    if ( ! current_user_can( 'manage_options' ) ) {
+        return new WP_Error( 'rest_forbidden', __( 'Sin permisos suficientes.', 'motorlan-api-vue' ), [ 'status' => 403 ] );
+    }
+
+    $import_id = sanitize_text_field( $request->get_param( 'import_id' ) ?? '' );
+    $offset    = max( 0, intval( $request->get_param( 'offset' ) ?? 0 ) );
+    $limit     = max( 1, min( 100, intval( $request->get_param( 'limit' ) ?? 10 ) ) );
+
+    $payload = get_transient( 'motorlan_migration_' . $import_id );
+    if ( ! $payload ) {
+        return new WP_Error( 'invalid_import', __( 'Importación no encontrada o expirada.', 'motorlan-api-vue' ), [ 'status' => 404 ] );
+    }
+
+    $file_path = $payload['path'];
+    $delimiter = $payload['delimiter'];
+    $headers   = $payload['headers'];
+
+    if ( ! file_exists( $file_path ) ) {
+        return new WP_Error( 'file_missing', __( 'El archivo temporal ha desaparecido.', 'motorlan-api-vue' ), [ 'status' => 404 ] );
+    }
+
+    $lang = sanitize_text_field( $request->get_param( 'lang' ) ?? 'es' );
+    $rows = motorlan_migration_read_csv_rows( $file_path, $delimiter, $offset, $limit );
+    $results = [
+        'processed' => 0,
+        'updated'   => 0,
+        'skipped'   => 0,
+        'errors'    => [],
+    ];
+
+    foreach ( $rows as $row_data ) {
+        $row = motorlan_migration_pair_row_with_headers( $headers, $row_data );
+        if ( empty( $row ) ) {
+            continue;
+        }
+
+        $res = motorlan_migration_process_blog_featured_row( $row, $lang );
+        $results['processed']++;
+
+        if ( is_wp_error( $res ) ) {
+            if ( 'skip' === $res->get_error_code() ) {
+                $results['skipped']++;
+            } else {
+                $results['errors'][] = $res->get_error_message();
+            }
+        } elseif ( true === $res ) {
+            $results['updated']++;
+        }
+    }
+
+    $total_rows = isset( $payload['total_rows'] ) ? (int) $payload['total_rows'] : 0;
+    $actual_processed = $results['processed'];
+    $finished = ( $actual_processed < $limit ) || ( ( $offset + $actual_processed ) >= $total_rows );
+
+    if ( $finished ) {
+        motorlan_migration_cleanup( $import_id, $file_path );
+    }
+
+    return rest_ensure_response( [
+        'chunk'    => $results,
+        'offset'   => $offset,
+        'total'    => $total_rows,
+        'finished' => $finished,
+    ] );
+}
+
+/**
+ * Process a single blog row to link a featured image from existing media.
+ *
+ * @param array  $row  CSV row data.
+ * @param string $lang Language code to filter posts (e.g. 'es', 'en').
+ * @return bool|WP_Error
+ */
+function motorlan_migration_process_blog_featured_row( $row, $lang = 'es' ) {
+    $title     = motorlan_migration_get_field_value( $row, 'title' );
+    $permalink = motorlan_migration_get_field_value( $row, 'permalink' );
+    $slug_csv  = motorlan_migration_get_field_value( $row, 'slug' );
+
+    // Prefer 'featured' column, fallback to 'url'.
+    $image_url = motorlan_migration_get_field_value( $row, 'featured' );
+    if ( ! $image_url || false === stripos( $image_url, 'http' ) ) {
+        $image_url = motorlan_migration_get_field_value( $row, 'url' );
+    }
+
+    // Validate it looks like an image URL.
+    if ( ! $image_url || false === stripos( $image_url, 'http' ) ) {
+        return new WP_Error( 'skip', "Fila sin URL de imagen para: " . ( $title ?: $permalink ) );
+    }
+
+    $post_id = null;
+    global $wpdb;
+
+    // Extract slug from permalink.
+    $slug_from_permalink = '';
+    if ( $permalink ) {
+        $path = wp_parse_url( $permalink, PHP_URL_PATH );
+        $slug_from_permalink = $path ? basename( untrailingslashit( $path ) ) : '';
+    }
+
+    // Use slug from CSV column or from permalink.
+    $slug = $slug_csv ?: $slug_from_permalink;
+
+    // 1. Try to find by post_name (slug) directly.
+    if ( ! $post_id && $slug ) {
+        $found = $wpdb->get_var( $wpdb->prepare(
+            "SELECT ID FROM $wpdb->posts WHERE post_type = 'post' AND post_name = %s AND post_status != 'trash' LIMIT 1",
+            $slug
+        ) );
+        if ( $found ) {
+            $post_id = (int) $found;
+        }
+    }
+
+    // 2. Try to find by title, filtered by WPML language if applicable.
+    if ( ! $post_id && $title ) {
+        $found = $wpdb->get_var( $wpdb->prepare(
+            "SELECT ID FROM $wpdb->posts WHERE post_type = 'post' AND post_title = %s AND post_status != 'trash' LIMIT 1",
+            $title
+        ) );
+        if ( $found ) {
+            $post_id = (int) $found;
+        }
+    }
+
+    // 3. Try WPML icl_translations table if available and we have a language.
+    if ( ! $post_id && $title && $lang ) {
+        $icl_table = $wpdb->prefix . 'icl_translations';
+        $table_exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $icl_table ) );
+        if ( $table_exists ) {
+            $found = $wpdb->get_var( $wpdb->prepare(
+                "SELECT p.ID FROM $wpdb->posts p
+                 INNER JOIN {$icl_table} t ON t.element_id = p.ID AND t.element_type = 'post_post'
+                 WHERE p.post_type = 'post' AND p.post_title = %s AND t.language_code = %s AND p.post_status != 'trash'
+                 LIMIT 1",
+                $title,
+                $lang
+            ) );
+            if ( $found ) {
+                $post_id = (int) $found;
+            }
+        }
+    }
+
+    if ( ! $post_id ) {
+        return new WP_Error( 'not_found', "No se encontró la entrada: " . ( $title ?: $slug ?: $permalink ) );
+    }
+
+    // Skip if already has a featured image.
+    if ( has_post_thumbnail( $post_id ) ) {
+        return new WP_Error( 'skip', "Ya tiene imagen destacada: " . get_the_title( $post_id ) );
+    }
+
+    // Search for the attachment in the media library by its filename.
+    $attachment_id = motorlan_migration_find_attachment_by_url( $image_url );
+
+    // If not found in library, download/sideload it.
+    if ( ! $attachment_id ) {
+        $downloaded = motorlan_migration_download_media( [ $image_url ], $post_id, 'image' );
+        if ( ! empty( $downloaded ) ) {
+            $attachment_id = (int) $downloaded[0];
+        }
+    }
+
+    if ( ! $attachment_id ) {
+        return new WP_Error( 'media_not_found', "No se pudo obtener la imagen: " . basename( $image_url ) . " para: " . get_the_title( $post_id ) );
+    }
+
+    set_post_thumbnail( $post_id, $attachment_id );
+    return true;
+}
+
+/**
+ * Locate an existing attachment ID by its URL or filename.
+ *
+ * @param string $url The image URL from CSV.
+ * @return int|null
+ */
+function motorlan_migration_find_attachment_by_url( $url ) {
+    $filename = basename( $url );
+    if ( ! $filename ) {
+        return null;
+    }
+
+    global $wpdb;
+    $attachment_id = $wpdb->get_var( $wpdb->prepare(
+        "SELECT post_id FROM $wpdb->postmeta WHERE meta_key = '_wp_attached_file' AND meta_value LIKE %s LIMIT 1",
+        '%' . $filename
+    ) );
+
+    if ( $attachment_id ) {
+        return (int) $attachment_id;
+    }
+
+    $slug = pathinfo( $filename, PATHINFO_FILENAME );
+    $args = [
+        'post_type'      => 'attachment',
+        'name'           => $slug,
+        'posts_per_page' => 1,
+        'fields'         => 'ids',
+    ];
+    $query = new WP_Query( $args );
+    if ( $query->have_posts() ) {
+        return (int) $query->posts[0];
+    }
+
+    $attachment_id = $wpdb->get_var( $wpdb->prepare(
+        "SELECT ID FROM $wpdb->posts WHERE post_type = 'attachment' AND guid LIKE %s LIMIT 1",
+        '%' . $filename
+    ) );
+
+    return $attachment_id ? (int) $attachment_id : null;
 }

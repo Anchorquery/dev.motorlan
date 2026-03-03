@@ -5,10 +5,12 @@ import { useRouter } from 'vue-router'
 import { useApi } from '@/composables/useApi'
 import { debounce } from '@/utils/debounce'
 import { useToast } from '@/composables/useToast'
+import { useMotorFormatter } from '@/composables/useMotorFormatter'
 
 const { t } = useI18n()
 const router = useRouter()
 const { showToast } = useToast()
+const { formatMotorName } = useMotorFormatter()
 
 const headers = [
   { title: t('questions.publication'), key: 'motor' },
@@ -119,16 +121,29 @@ const submitAnswer = async (question: any, isActive: any) => {
   }
 }
 
+interface ImagenDestacada {
+  url?: string;
+  src?: string;
+  sizes?: {
+    [key: string]: string;
+  };
+}
+
 const getImageBySize = (image: any, size = 'thumbnail'): string => {
-  if (!image) return ''
-  
+  if (!image)
+    return ''
+  if (typeof image === 'string')
+    return image
+  let imageObj: ImagenDestacada | null = null
   if (Array.isArray(image) && image.length > 0)
-    image = image[0]
-    
-  if (image.sizes && image.sizes[size])
-    return image.sizes[size].url || image.sizes[size].src || image.sizes[size]
-    
-  return image.url || image.src || ''
+    imageObj = image[0]
+  else if (image && !Array.isArray(image))
+    imageObj = image as ImagenDestacada
+  if (!imageObj)
+    return ''
+  if (imageObj.sizes && imageObj.sizes[size])
+    return imageObj.sizes[size] as string
+  return imageObj.url || ''
 }
 </script>
 
@@ -194,7 +209,7 @@ const getImageBySize = (image: any, size = 'thumbnail'): string => {
             <span
               class="text-body-1 font-weight-medium text-premium-title cursor-pointer"
               @click="router.push(`/dashboard/publications/publication/edit/${item.motor.uuid}`)"
-            >{{ item.motor.title }}</span>
+            >{{ formatMotorName(item.motor) }}</span>
             <span class="text-body-2 text-muted">{{ item.motor.acf.marca?.name }}</span>
           </div>
         </div>

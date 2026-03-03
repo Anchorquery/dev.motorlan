@@ -3,6 +3,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useProductChat } from '@/composables/useProductChat'
 import { useApi } from '@/composables/useApi'
 import { createUrl } from '@/@core/composable/createUrl'
+import RatingModal from '@/components/RatingModal.vue'
 
 const props = defineProps<{ productId: number; roomKey: string; productTitle?: string | null; productImage?: string | null }>()
 const emit = defineEmits(['close', 'read'])
@@ -18,6 +19,11 @@ const isSendingMessage = computed(() => chat.isSending.value)
 const isConversationLocked = chat.isLocked
 const hasLoadedMessages = chat.hasLoadedMessages
 const isLoadingMessages = computed(() => chat.isFetchingMessages.value && !chat.hasLoadedMessages.value)
+const isMarkingSold = ref(false)
+
+// Rating flow state
+const showRatingModal = ref(false)
+const lastSaleUuid = ref('')
 
 const canSendMessage = computed(() => !chat.isLocked.value && messageText.value.trim().length > 0 && !chat.isSending.value)
 
@@ -84,6 +90,48 @@ const handleRetryMessages = async () => {
   await chat.fetchMessages({ reset: false })
 }
 
+const handleMarkAsSold = async () => {
+  if (!confirm('¿Confirmas que has vendido este artículo a este usuario? Esto generará una compra y descontará el stock.')) {
+    return
+  }
+  
+  isMarkingSold.value = true
+  try {
+    const { data, error } = await useApi<any>(createUrl('/wp-json/motorlan/v1/user/sales/manual')).post({
+      product_id: props.productId,
+      room_key: props.roomKey
+    }).json()
+
+    if (error.value) {
+      alert(error.value.value?.message || error.value.data?.message || 'Error al registrar la venta')
+      return
+    }
+
+    // Success: Open Rating Modal
+    if (data.value && data.value.data && data.value.data.uuid) {
+        lastSaleUuid.value = data.value.data.uuid
+        showRatingModal.value = true
+    } else {
+        // Fallback if no UUID returned (should not happen with new endpoint)
+        alert('Venta registrada correctamente')
+        emit('close')
+        emit('read')
+    }
+  } catch (e) {
+    console.error(e)
+    alert('Ocurrió un error inesperado')
+  } finally {
+    isMarkingSold.value = false
+  }
+}
+
+const handleRatingSuccess = () => {
+    alert('¡Gracias por tu valoración!')
+    showRatingModal.value = false
+    emit('close') // Close chat modal too as flow is complete
+    emit('read')
+}
+
 watch(
   () => chat.messages.value.length,
   async (length, previous) => {
@@ -115,9 +163,9 @@ onBeforeUnmount(() => {
 <template>
   <VDialog
     max-width="600px"
-    persistent
     :model-value="true"
     transition="dialog-bottom-transition"
+    @update:model-value="val => !val && emit('close')"
   >
     <VCard class="chat-modal rounded-xl overflow-hidden elevation-10">
       <!-- Header -->
@@ -158,6 +206,17 @@ onBeforeUnmount(() => {
             <span>Consulta de comprador interesado</span>
           </div>
         </div>
+        
+        <VBtn
+          color="success"
+          variant="tonal"
+          size="small"
+          prepend-icon="tabler-currency-euro"
+          :loading="isMarkingSold"
+          @click="handleMarkAsSold"
+        >
+          Vender
+        </VBtn>
       </div>
 
       <!-- Security Alert -->
@@ -332,6 +391,16 @@ onBeforeUnmount(() => {
           </VTextarea>
         </div>
       </VCardActions>
+
+      <!-- Rating Modal (Nested/Overlay) -->
+      <RatingModal 
+        v-if="showRatingModal"
+        v-model="showRatingModal"
+        :purchase-uuid="lastSaleUuid"
+        target-role="buyer"
+        :target-name="chat.messages.value?.find(m => !m.is_current_user)?.display_name || 'Comprador'"
+        @success="handleRatingSuccess"
+      />
     </VCard>
   </VDialog>
 </template>
@@ -356,6 +425,7 @@ onBeforeUnmount(() => {
   overflow-y: auto;
   scroll-behavior: smooth;
   min-height: 350px;
+  padding-bottom: 80px !important;
   
   // Custom scrollbar
   &::-webkit-scrollbar {

@@ -172,6 +172,7 @@ declare global {
   const useActiveElement: typeof import('@vueuse/core')['useActiveElement']
   const useAnimate: typeof import('@vueuse/core')['useAnimate']
   const useApi: typeof import('./src/composables/useApi')['useApi']
+  const useAppLoading: typeof import('./src/composables/useAppLoading')['useAppLoading']
   const useArrayDifference: typeof import('@vueuse/core')['useArrayDifference']
   const useArrayEvery: typeof import('@vueuse/core')['useArrayEvery']
   const useArrayFilter: typeof import('@vueuse/core')['useArrayFilter']
@@ -267,6 +268,7 @@ declare global {
   const useMemory: typeof import('@vueuse/core')['useMemory']
   const useMin: typeof import('@vueuse/math')['useMin']
   const useModel: typeof import('vue')['useModel']
+  const useMotorFormatter: typeof import('./src/composables/useMotorFormatter')['useMotorFormatter']
   const useMounted: typeof import('@vueuse/core')['useMounted']
   const useMouse: typeof import('@vueuse/core')['useMouse']
   const useMouseInElement: typeof import('@vueuse/core')['useMouseInElement']
@@ -306,6 +308,7 @@ declare global {
   const useRound: typeof import('@vueuse/math')['useRound']
   const useRoute: typeof import('vue-router/auto')['useRoute']
   const useRouter: typeof import('vue-router/auto')['useRouter']
+  const useSanitize: typeof import('./src/composables/useSanitize')['useSanitize']
   const useScreenOrientation: typeof import('@vueuse/core')['useScreenOrientation']
   const useScreenSafeArea: typeof import('@vueuse/core')['useScreenSafeArea']
   const useScriptTag: typeof import('@vueuse/core')['useScriptTag']
@@ -551,6 +554,7 @@ declare module 'vue' {
     readonly useActiveElement: UnwrapRef<typeof import('@vueuse/core')['useActiveElement']>
     readonly useAnimate: UnwrapRef<typeof import('@vueuse/core')['useAnimate']>
     readonly useApi: UnwrapRef<typeof import('./src/composables/useApi')['useApi']>
+    readonly useAppLoading: UnwrapRef<typeof import('./src/composables/useAppLoading')['useAppLoading']>
     readonly useArrayDifference: UnwrapRef<typeof import('@vueuse/core')['useArrayDifference']>
     readonly useArrayEvery: UnwrapRef<typeof import('@vueuse/core')['useArrayEvery']>
     readonly useArrayFilter: UnwrapRef<typeof import('@vueuse/core')['useArrayFilter']>
@@ -643,6 +647,7 @@ declare module 'vue' {
     readonly useMemory: UnwrapRef<typeof import('@vueuse/core')['useMemory']>
     readonly useMin: UnwrapRef<typeof import('@vueuse/math')['useMin']>
     readonly useModel: UnwrapRef<typeof import('vue')['useModel']>
+    readonly useMotorFormatter: UnwrapRef<typeof import('./src/composables/useMotorFormatter')['useMotorFormatter']>
     readonly useMounted: UnwrapRef<typeof import('@vueuse/core')['useMounted']>
     readonly useMouse: UnwrapRef<typeof import('@vueuse/core')['useMouse']>
     readonly useMouseInElement: UnwrapRef<typeof import('@vueuse/core')['useMouseInElement']>
@@ -682,6 +687,7 @@ declare module 'vue' {
     readonly useRound: UnwrapRef<typeof import('@vueuse/math')['useRound']>
     readonly useRoute: UnwrapRef<typeof import('vue-router/auto')['useRoute']>
     readonly useRouter: UnwrapRef<typeof import('vue-router/auto')['useRouter']>
+    readonly useSanitize: UnwrapRef<typeof import('./src/composables/useSanitize')['useSanitize']>
     readonly useScreenOrientation: UnwrapRef<typeof import('@vueuse/core')['useScreenOrientation']>
     readonly useScreenSafeArea: UnwrapRef<typeof import('@vueuse/core')['useScreenSafeArea']>
     readonly useScriptTag: UnwrapRef<typeof import('@vueuse/core')['useScriptTag']>

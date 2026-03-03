@@ -44,6 +44,19 @@ const toggleReadUnread = (isSeen: boolean, Id: number) => {
   else
     emit('read', [Id])
 }
+
+const getProductImage = (n: Notification): string | undefined => {
+  if (n.data?.product_image)
+    return n.data.product_image
+  return undefined
+}
+
+const getUserImage = (n: Notification): string | undefined => {
+  // Check if img exists on the union type (it might be undefined/never)
+  if ('img' in n && n.img)
+    return n.img
+  return undefined
+}
 </script>
 
 <template>
@@ -127,18 +140,28 @@ const toggleReadUnread = (isSeen: boolean, Id: number) => {
                 <!-- Handles Avatar: Image, Icon, Text -->
                 <div class="d-flex align-start gap-3">
                   <VAvatar
-                    :color="notification.color && !notification.img ? notification.color : undefined"
-                    :variant="notification.img ? undefined : 'tonal' "
+                    :color="notification.color && !notification.img && !notification.data?.product_image ? notification.color : undefined"
+                    :variant="notification.img || notification.data?.product_image ? undefined : 'tonal' "
+                    class="notification-avatar"
                   >
-                    <span v-if="notification.text">{{ avatarText(notification.text) }}</span>
+                    <!-- Priority 1: Product Image (from data) -->
                     <VImg
-                      v-if="notification.img"
-                      :src="notification.img"
+                      v-if="getProductImage(notification)"
+                      :src="getProductImage(notification)"
+                      cover
                     />
+                    <!-- Priority 2: User Avatar (img prop) -->
+                    <VImg
+                      v-else-if="getUserImage(notification)"
+                      :src="getUserImage(notification)"
+                    />
+                    <!-- Priority 3: Icon -->
                     <VIcon
-                      v-if="notification.icon"
+                      v-else-if="notification.icon"
                       :icon="notification.icon"
                     />
+                    <!-- Priority 4: Text Initials -->
+                    <span v-else-if="notification.text">{{ avatarText(notification.text) }}</span>
                   </VAvatar>
 
                   <div>
@@ -232,8 +255,17 @@ const toggleReadUnread = (isSeen: boolean, Id: number) => {
   .v-list-item {
     border-radius: 0 !important;
     margin: 0 !important;
-    padding-block: 0.75rem !important;
+    padding-block: 1rem !important; /* increased padding for better spacing */
+    transition: background-color 0.2s ease;
+
+    &:hover {
+      background-color: rgba(var(--v-theme-primary), 0.05);
+    }
   }
+}
+
+.notification-avatar {
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.1);
 }
 
 // Badge Style Override for Notification Badge

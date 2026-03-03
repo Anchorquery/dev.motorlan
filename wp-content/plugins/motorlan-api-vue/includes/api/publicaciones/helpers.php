@@ -174,7 +174,7 @@ function motorlan_get_publicacion_data($post_id, $include_sensitive = false) {
         'categories'   => motorlan_get_post_taxonomy_details($post_id, 'categoria'),
         'tipo'         => motorlan_get_post_taxonomy_details($post_id, 'tipo'),
         'acf'          => get_fields($post_id) ?: [],
-        'imagen_destacada' => get_field('motor_image', $post_id, true),
+        'imagen_destacada' => motorlan_format_image_for_frontend(get_field('motor_image', $post_id, true)),
     ];
 
     // Remove price from ACF if it exists, to prevent it from being returned to the frontend.
@@ -321,47 +321,47 @@ function motorlan_generate_publicacion_slug($data, $post_id = 0) {
     $title = $data['title'] ?? '';
     $acf = $data['acf'] ?? [];
 
-    $parts = [];
-
-    // 1. Nombre (Title)
-    if (!empty($title)) {
-        $parts[] = $title;
-    }
-
-    // 2. Tipo (Taxonomy 'tipo') - We try to get it from the data
+    // 1. Tipo (Taxonomy 'tipo')
     $tipo_id = $data['tipo'] ?? null;
     if ($tipo_id) {
         if (is_array($tipo_id)) $tipo_id = reset($tipo_id);
         $term = get_term($tipo_id, 'tipo');
         if ($term && !is_wp_error($term)) {
-            $parts[] = $term->name;
+            $parts[] = $term->slug;
         }
     }
 
-    // 3. Marca (ACF 'marca')
+    // 2. Marca (ACF 'marca')
     $marca_id = $acf['marca'] ?? null;
     if ($marca_id) {
         $term = get_term($marca_id, 'marca');
         if ($term && !is_wp_error($term)) {
-            $parts[] = $term->name;
+            $parts[] = $term->slug;
+        } elseif (is_string($marca_id)) {
+            $parts[] = $marca_id;
         }
     }
 
-    // 4. Referencia (ACF 'tipo_o_referencia')
+    // 3. Referencia (ACF 'tipo_o_referencia')
     if (!empty($acf['tipo_o_referencia'])) {
         $parts[] = $acf['tipo_o_referencia'];
     }
 
-    // 5. Potencia o Par (ACF 'potencia' or 'par_nominal')
+    // 4. Potencia o Par (ACF 'potencia' or 'par_nominal')
     if (!empty($acf['potencia'])) {
-        $parts[] = $acf['potencia'] . 'KW';
+        $parts[] = $acf['potencia'] . '-kw';
     } elseif (!empty($acf['par_nominal'])) {
-        $parts[] = $acf['par_nominal'] . 'Nm';
+        $parts[] = $acf['par_nominal'] . '-nm';
     }
 
-    // 6. Velocidad (ACF 'velocidad')
+    // 5. Velocidad (ACF 'velocidad')
     if (!empty($acf['velocidad'])) {
-        $parts[] = $acf['velocidad'] . 'RPM';
+        $parts[] = $acf['velocidad'] . '-rpm';
+    }
+
+    // Ensure we have at least something, fallback to title if empty parts
+    if (empty($parts)) {
+        $parts[] = $title;
     }
 
     $slug = implode('-', $parts);
@@ -398,4 +398,25 @@ function motorlan_make_slug_unique($slug, $post_id = 0) {
         }
         $suffix++;
     }
+}
+/**
+ * Generate a formatted slug based on a post ID.
+ * Useful for refreshing existing posts.
+ *
+ * @param int $post_id The post ID.
+ * @return string Generated unique slug.
+ */
+function motorlan_generate_slug_by_post_id($post_id) {
+    if (!$post_id) return '';
+    
+    $post = get_post($post_id);
+    if (!$post) return '';
+
+    $data = [
+        'title' => $post->post_title,
+        'acf'   => get_fields($post_id) ?: [],
+        'tipo'  => wp_get_post_terms($post_id, 'tipo', ['fields' => 'ids'])
+    ];
+
+    return motorlan_generate_publicacion_slug($data, $post_id);
 }

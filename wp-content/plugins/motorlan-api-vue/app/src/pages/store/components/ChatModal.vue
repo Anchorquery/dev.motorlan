@@ -68,6 +68,7 @@ const handleGuestSubmit = async () => {
   
   // Update chat state
   chat.setViewerName(formName.value)
+  chat.setRoomKey(roomKey.value)
   
   // Send message
   await chat.sendMessage(formMessage.value, { 
@@ -520,7 +521,7 @@ onBeforeUnmount(() => {
 
           <!-- Error -->
           <VAlert
-            v-else-if="messagesError"
+            v-if="messagesError"
             type="error"
             variant="tonal"
             class="ma-4"
@@ -539,18 +540,14 @@ onBeforeUnmount(() => {
               </VBtn>
             </div>
           </VAlert>
-
+          
           <!-- Empty State (Should rarely show due to form, but good fallback) -->
           <div
             v-else-if="!groupedMessages.length"
             class="d-flex flex-column align-center justify-center h-100 text-medium-emphasis gap-3"
           >
             <div class="bg-surface rounded-circle pa-4 elevation-1">
-              <VIcon
-                icon="tabler-message-2"
-                size="32"
-                color="primary"
-              />
+              <VIcon icon="tabler-message-2" size="32" color="primary" />
             </div>
             <div class="text-center">
               <p class="text-body-2 font-weight-medium mb-1 text-high-emphasis">
@@ -689,6 +686,7 @@ onBeforeUnmount(() => {
   flex: 1 1 auto;
   overflow-y: auto;
   scroll-behavior: smooth;
+  min-height: 400px;
   // Custom scrollbar
   &::-webkit-scrollbar {
     width: 6px;

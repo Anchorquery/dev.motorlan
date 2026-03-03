@@ -28,6 +28,12 @@ function motorlan_register_sales_rest_routes() {
         'callback' => 'motorlan_get_user_sale_by_uuid_callback',
         'permission_callback' => 'motorlan_is_user_authenticated',
     ) );
+
+    register_rest_route( $namespace, '/user/sales/manual', array(
+        'methods'  => WP_REST_Server::CREATABLE,
+        'callback' => 'motorlan_handle_create_manual_sale',
+        'permission_callback' => 'motorlan_is_user_authenticated',
+    ) );
 }
 add_action( 'rest_api_init', 'motorlan_register_sales_rest_routes' );
 
@@ -128,7 +134,7 @@ function motorlan_prepare_sale_item( $purchase_id ) {
     if ( $publication_id ) {
         $publication = get_post( $publication_id );
         if ( $publication ) {
-            $publication_title = get_the_title( $publication_id );
+            $publication_title = motorlan_format_motor_name( $publication_id );
             $publication_slug  = $publication->post_name;
             $publication_uuid  = function_exists( 'get_field' ) ? get_field( 'uuid', $publication_id ) : get_post_meta( $publication_id, 'uuid', true );
         }
@@ -467,4 +473,127 @@ function motorlan_get_user_sale_by_uuid_callback( WP_REST_Request $request ) {
     }
 
     return new WP_REST_Response( array( 'data' => $sale_item ), 200 );
+}
+
+/**
+ * Handle manual sale creation from seller (e.g. via chat).
+ */
+function motorlan_handle_create_manual_sale( $request ) {
+    // Validate Content-Type
+    if ( function_exists( 'motorlan_validate_json_content_type' ) ) {
+        $valid_type = motorlan_validate_json_content_type( $request );
+        if ( is_wp_error( $valid_type ) ) {
+            return $valid_type;
+        }
+    }
+
+    $user_id = get_current_user_id();
+    if ( ! $user_id ) {
+        return new WP_Error( 'rest_not_logged_in', 'Debes iniciar sesión.', array( 'status' => 401 ) );
+    }
+
+    $product_id = (int) $request['product_id'];
+    $room_key   = sanitize_text_field( $request['room_key'] );
+
+    $post = get_post( $product_id );
+    if ( ! $post || 'publicacion' !== $post->post_type ) {
+        return new WP_Error( 'not_found', 'Publicación no encontrada.', array( 'status' => 404 ) );
+    }
+
+    // 1. Validate Ownership
+    if ( (int) $post->post_author !== (int) $user_id ) {
+        return new WP_Error( 'forbidden', 'No tienes permisos para vender este artículo.', array( 'status' => 403 ) );
+    }
+
+    // 2. Extract Buyer from Room Key
+    // Format: pub-{productId}-viewer-{viewerId}
+    if ( ! preg_match( '/^pub-(\d+)-viewer-(.+)$/', $room_key, $m ) ) {
+        return new WP_Error( 'invalid_room', 'Identificador de chat inválido.', array( 'status' => 400 ) );
+    }
+
+    $key_pid   = (int) $m[1];
+    $viewer_id = $m[2];
+
+    if ( $key_pid !== $product_id ) {
+        return new WP_Error( 'invalid_room', 'El chat no corresponde a esta publicación.', array( 'status' => 400 ) );
+    }
+
+    if ( ! is_numeric( $viewer_id ) ) {
+        return new WP_Error( 'invalid_buyer', 'No se puede vender a un usuario invitado o desconocido.', array( 'status' => 400 ) );
+    }
+
+    $buyer_id = (int) $viewer_id;
+    $buyer    = get_userdata( $buyer_id );
+    if ( ! $buyer ) {
+        return new WP_Error( 'invalid_buyer', 'El usuario comprador no existe.', array( 'status' => 404 ) );
+    }
+
+    // 3. Transaction & Stock Validation
+    global $wpdb;
+    $wpdb->query('START TRANSACTION');
+
+    // Lock Stock Row
+    $wpdb->get_results( $wpdb->prepare("SELECT meta_id FROM {$wpdb->postmeta} WHERE post_id = %d AND meta_key = 'stock' FOR UPDATE", $product_id) );
+    $current_stock = (int) $wpdb->get_var( $wpdb->prepare("SELECT meta_value FROM {$wpdb->postmeta} WHERE post_id = %d AND meta_key = 'stock'", $product_id) );
+
+    if ( $current_stock <= 0 ) {
+        $wpdb->query('COMMIT'); // Close transaction neatly
+        return new WP_Error( 'no_stock', 'No hay stock disponible.', array( 'status' => 400 ) );
+    }
+
+    // 4. Create Purchase using Helper
+    if ( ! function_exists( 'motorlan_create_purchase' ) ) {
+        require_once MOTORLAN_API_VUE_PATH . 'includes/api/motor-helpers.php';
+    }
+
+    // Get price from publication
+    $price = function_exists( 'get_field' ) ? get_field( 'precio_de_venta', $product_id ) : get_post_meta( $product_id, 'precio_de_venta', true );
+    $amount = (float) $price;
+
+    $purchase_data = motorlan_create_purchase( $product_id, $buyer_id, $amount, $user_id, 0 );
+    if ( is_wp_error( $purchase_data ) ) {
+        $wpdb->query('ROLLBACK');
+        return $purchase_data;
+    }
+
+    // 5. Update Stock
+    $new_stock = max( 0, $current_stock - 1 );
+    if ( function_exists( 'update_field' ) ) {
+        update_field( 'stock', $new_stock, $product_id );
+        if ( $new_stock === 0 ) {
+            update_field( 'publicar_acf', 'paused', $product_id );
+        }
+    }
+    update_post_meta( $product_id, 'stock', $new_stock );
+    if ( $new_stock === 0 ) {
+        update_post_meta( $product_id, 'publicar_acf', 'paused' );
+    }
+
+    $wpdb->query('COMMIT');
+    if ( function_exists( 'update_field' ) ) {
+        update_field( 'stock', $new_stock, $product_id );
+        if ( $new_stock === 0 ) {
+            update_field( 'publicar_acf', 'paused', $product_id ); // Or 'sold'? 'paused' usually stops new offers.
+        }
+    }
+    update_post_meta( $product_id, 'stock', $new_stock );
+    if ( $new_stock === 0 ) {
+        update_post_meta( $product_id, 'publicar_acf', 'paused' );
+    }
+
+    // 6. Notify Buyer
+    $notification_payload = array(
+        'buyer_id'      => $buyer_id,
+        'product_title' => $post->post_title,
+        'uuid'          => is_array( $purchase_data ) ? $purchase_data['uuid'] : '',
+        'product_id'    => $product_id,
+    );
+    do_action( 'motorlan_manual_sale_created', $notification_payload );
+
+    return new WP_REST_Response( array(
+        'success' => true,
+        'message' => 'Venta registrada correctamente.',
+        'data'    => $purchase_data,
+        'stock'   => $new_stock,
+    ), 200 );
 }

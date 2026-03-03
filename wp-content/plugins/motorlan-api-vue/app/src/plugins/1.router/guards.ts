@@ -5,16 +5,41 @@ import { watch } from 'vue'
 export const setupGuards = (router: _RouterTyped<RouteNamedMap & { [key: string]: any }>) => {
   router.beforeEach(async to => {
     // History mode: Detectar base y redirigir según contexto
-    const vueBase = (window as unknown as { wpData?: { vue_base?: string } }).wpData?.vue_base || '/'
+    const wpData = (window as unknown as { wpData?: { vue_base?: string, initial_route?: string, user_data?: { is_logged_in: boolean } } }).wpData
+    const vueBase = wpData?.vue_base || '/'
+    const initialRoute = wpData?.initial_route
 
-    // Si estamos en /mi-cuenta/ y la ruta es la raíz, redirigir al dashboard
-    if (vueBase.includes('mi-cuenta') && to.path === '/') {
-      return { path: '/dashboard', replace: true }
+    // Si estamos en la raíz, verificar si hay una ruta inicial (ej: login) o redirigir a dashboard
+    if (to.path === '/') {
+      if (initialRoute) {
+        // Eliminar slash inicial si existe para evitar doble slash
+        const target = initialRoute.startsWith('/') ? initialRoute : `/${initialRoute}`
+        return { path: target, replace: true }
+      }
+
+      if (vueBase.includes('mi-cuenta')) {
+        return { path: '/dashboard', replace: true }
+      }
     }
 
     // Public routes are accessible by everyone
     if (to.meta.public)
       return
+
+    // Unauthenticated only routes (login, register) should be accessible without waiting for user store
+    // This prevents redirect loops when accessing login page while not authenticated
+    if (to.meta.unauthenticatedOnly) {
+      const userStore = useUserStore()
+      const isWpLoggedIn = wpData?.user_data?.is_logged_in
+
+      // Check if user is logged in (via store OR wpData hint)
+      if (isWpLoggedIn || (!userStore.isLoading && userStore.getIsLoggedIn)) {
+        return { name: 'dashboard-purchases-purchases', replace: true }
+      }
+
+      // Allow access to login/register pages without waiting for store
+      return undefined
+    }
 
     const userStore = useUserStore()
 
@@ -44,14 +69,6 @@ export const setupGuards = (router: _RouterTyped<RouteNamedMap & { [key: string]
     }
 
     const isLoggedIn = userStore.getIsLoggedIn
-
-    // If route is only for unauthenticated users (login, register, etc.)
-    if (to.meta.unauthenticatedOnly) {
-      if (isLoggedIn)
-        return { name: 'dashboard-purchases-purchases', replace: true }
-      else
-        return undefined
-    }
 
     // Allow access to account page for logged in users (profile completion)
     if (to.name === 'dashboard-user-account' && isLoggedIn)

@@ -8,6 +8,7 @@ import { useUserStore } from '@/@core/stores/user'
 import AppSelect from '@/@core/components/app-form-elements/AppSelect.vue'
 import AppTextField from '@/@core/components/app-form-elements/AppTextField.vue'
 import ContactPublisherModal from './components/ContactPublisherModal.vue'
+import { useMotorFormatter } from '@/composables/useMotorFormatter'
 
 // Basic types
 interface Author {
@@ -36,7 +37,9 @@ interface ApiResponse {
 
 const { t } = useI18n()
 const router = useRouter()
+
 const userStore = useUserStore()
+const { formatMotorName } = useMotorFormatter()
 
 // Data table headers
 const headers = [
@@ -264,13 +267,21 @@ const openEdit = (uuid: string) => {
           variant="tonal"
           class="me-3"
         >
-          <VImg v-if="item.image" :src="item.image" cover />
+          <VImg v-if="item.image" :src="typeof item.image === 'string' ? item.image : (item.image as any)?.url" cover />
           <VIcon v-else icon="tabler-photo" />
         </VAvatar>
       </template>
 
-      <!-- Title & Author Column (Custom) -->
-      <!-- Actually I have separate columns defined in headers. -->
+      <!-- Title Column -->
+      <template #item.title="{ item }">
+        <span 
+          class="text-body-1 font-weight-medium text-high-emphasis text-truncate d-block"
+          style="max-width: 250px;"
+        >
+          {{ formatMotorName(item) || item.title }}
+          <VTooltip activator="parent" location="top">{{ formatMotorName(item) || item.title }}</VTooltip>
+        </span>
+      </template>
       
       <!-- Author Column -->
       <template #item.author="{ item }">

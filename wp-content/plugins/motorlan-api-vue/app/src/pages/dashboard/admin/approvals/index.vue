@@ -4,10 +4,12 @@ import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { useApi } from '@/composables/useApi'
 import { useToast } from '@/composables/useToast'
+import { useMotorFormatter } from '@/composables/useMotorFormatter'
 
 const { t } = useI18n()
 const router = useRouter()
 const { showToast } = useToast()
+const { formatMotorName } = useMotorFormatter()
 
 const headers = [
   { title: t('publication_list.publication'), value: 'publicacion' },
@@ -72,6 +74,8 @@ const rejectPublication = async () => {
 
 const getImageBySize = (image: any, size = 'thumbnail'): string => {
   if (!image) return ''
+  if (typeof image === 'string') return image
+  
   if (Array.isArray(image) && image.length > 0) image = image[0]
   
   if (image.sizes && image.sizes[size]) return image.sizes[size]
@@ -109,16 +113,22 @@ onMounted(() => {
       >
         <!-- publicacion  -->
         <template #item.publicacion="{ item }">
-          <div class="d-flex align-center gap-3 py-3">
+          <div class="d-flex align-center gap-3 py-3" style="max-width: 280px;">
             <VAvatar
               size="48"
               variant="tonal"
               rounded
-              class="border"
+              class="border flex-shrink-0"
               :image="getImageBySize((item as any).imagen_destacada)"
             />
-            <div class="d-flex flex-column">
-              <span class="text-body-1 font-weight-bold text-high-emphasis">{{ (item as any).title }}</span>
+            <div class="d-flex flex-column overflow-hidden">
+              <span 
+                class="text-body-1 font-weight-bold text-high-emphasis text-truncate"
+                style="max-width: 200px;"
+              >
+                {{ formatMotorName(item as any) }}
+                <VTooltip activator="parent" location="top">{{ formatMotorName(item as any) }}</VTooltip>
+              </span>
               <span class="text-caption text-medium-emphasis">{{ (item as any).acf?.marca?.name }}</span>
             </div>
           </div>

@@ -375,6 +375,7 @@ function motorlan_get_my_purchases_callback( $request ) {
                 'estado'       => get_field('estado', $post_id) ?: get_post_meta($post_id, 'estado', true),
                 'tipo_venta'   => $tipo_venta ?: '',
                 'offer_id'     => $offer_id,
+                'review_done'  => (bool) get_post_meta($post_id, '_review_by_buyer_done', true),
             );
         }
         wp_reset_postdata();
@@ -692,19 +693,7 @@ function motorlan_create_purchase_callback( WP_REST_Request $request ) {
     }
 
     // Notify seller
-    $notification_manager = new Motorlan_Notification_Manager();
-    $notification_manager->create_notification(
-        $seller_id,
-        'new_purchase',
-        "Nueva compra de {$buyer_name} en \"{$publicacion_title}\"",
-        "El usuario {$buyer_name} ha iniciado una compra para tu publicación.",
-        array(
-            'purchase_uuid' => $uuid,
-            'purchase_id'   => $purchase_id,
-            'url'           => '/purchases/' . $uuid,
-        ),
-        array( 'web', 'email' )
-    );
+    do_action( 'motorlan_new_purchase', $purchase_id );
 
     return new WP_REST_Response( array( 'uuid' => $uuid ), 201 );
 }
@@ -726,6 +715,11 @@ function motorlan_get_purchase_callback( WP_REST_Request $request ) {
     }
 
     $purchase_id = $purchases[0]->ID;
+
+    // Security check: IDOR protection
+    if ( ! motorlan_user_can_access_purchase( $purchase_id, get_current_user_id() ) ) {
+        return new WP_Error( 'forbidden', 'No tienes permisos para ver esta compra.', array( 'status' => 403 ) );
+    }
 
 
     // Obtener publicacion asociada (o legado 'motor')
@@ -817,6 +811,7 @@ function motorlan_get_purchase_callback( WP_REST_Request $request ) {
         'offer_id'     => $offer_id,
         'offer'        => $offer_data,
         'precio_publicado' => $published_price,
+        'review_done'  => (bool) get_post_meta($purchase_id, '_review_by_buyer_done', true),
     );
 
     return new WP_REST_Response( array( 'data' => $data ), 200 );
@@ -912,6 +907,14 @@ function motorlan_add_purchase_message_callback( WP_REST_Request $request ) {
  * Add an opinion for a purchase.
  */
 function motorlan_add_purchase_opinion_callback( WP_REST_Request $request ) {
+    // Validate Content-Type
+    if ( function_exists( 'motorlan_validate_json_content_type' ) ) {
+        $valid_type = motorlan_validate_json_content_type( $request );
+        if ( is_wp_error( $valid_type ) ) {
+            return $valid_type;
+        }
+    }
+
     $uuid       = sanitize_text_field( $request['uuid'] );
     $valoracion = absint( $request->get_param( 'valoracion' ) );
     $comentario = sanitize_textarea_field( $request->get_param( 'comentario' ) );
@@ -928,6 +931,13 @@ function motorlan_add_purchase_opinion_callback( WP_REST_Request $request ) {
     }
 
     $purchase_id = $purchases[0]->ID;
+
+    // Validate if current user is the buyer of this purchase
+    $buyer_id = (int) ( get_field( 'comprador', $purchase_id ) ?: get_post_meta( $purchase_id, 'comprador_id', true ) );
+    if ( get_current_user_id() !== $buyer_id ) {
+        return new WP_Error( 'forbidden', 'Solo el comprador puede dejar una opinión.', array( 'status' => 403 ) );
+    }
+
     $related  = get_field( 'publicacion', $purchase_id );
     if ( ! $related ) {
         $related = get_field( 'motor', $purchase_id );

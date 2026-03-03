@@ -4,16 +4,19 @@ import { useI18n } from 'vue-i18n'
 import { requiredValidator } from '@/@core/utils/validators'
 import AppTextField from '@/@core/components/app-form-elements/AppTextField.vue'
 import AppSelect from '@/@core/components/app-form-elements/AppSelect.vue'
+import { useMotorFormatter } from '@/composables/useMotorFormatter'
 
 const props = defineProps<{
   formState: any
   marcas: any[]
   categories: any[]
+  tipos?: any[]
 }>()
 
 const emit = defineEmits(['update:formState'])
 
 const { t } = useI18n()
+const { getFormattedPreview } = useMotorFormatter()
 
 // Computed wrappers for v-model to avoid direct prop mutation warnings if strict
 const localTitle = computed({
@@ -34,6 +37,11 @@ const localMarca = computed({
 const localCategories = computed({
     get: () => props.formState.categories,
     set: (val) => emit('update:formState', { ...props.formState, categories: val })
+})
+
+// Vista previa del nombre formateado
+const formattedPreview = computed(() => {
+    return getFormattedPreview(props.formState, props.marcas, props.tipos || [])
 })
 
 </script>
@@ -83,6 +91,24 @@ const localCategories = computed({
         :rules="[requiredValidator]"
         variant="outlined"
       />
+    </VCol>
+    
+    <!-- Vista previa del nombre formateado -->
+    <VCol v-if="formattedPreview && formattedPreview !== formState.title" cols="12">
+      <VAlert 
+        type="info" 
+        variant="tonal" 
+        density="compact"
+        class="mt-2"
+      >
+        <div class="d-flex align-center">
+          <VIcon icon="tabler-eye" class="me-2" size="20" />
+          <div>
+            <div class="text-caption text-medium-emphasis">Vista previa del nombre estandarizado:</div>
+            <div class="font-weight-bold">{{ formattedPreview }}</div>
+          </div>
+        </div>
+      </VAlert>
     </VCol>
   </VRow>
 </template>

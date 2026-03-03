@@ -10,6 +10,7 @@ import StepTechSpecs from '@/pages/dashboard/publications/components/StepTechSpe
 import StepMedia from '@/pages/dashboard/publications/components/StepMedia.vue'
 import StepLocationCondition from '@/pages/dashboard/publications/components/StepLocationCondition.vue'
 import StepDocumentation from '@/pages/dashboard/publications/components/StepDocumentation.vue'
+import { useMotorFormatter } from '@/composables/useMotorFormatter'
 
 // Composables
 import { usePublicationForm } from '@/composables/usePublicationForm'
@@ -24,6 +25,7 @@ const router = useRouter()
 const { showToast } = useToast()
 const { formState, setFormState, isMotor } = usePublicationForm()
 const userStore = useUserStore()
+const { formatMotorName, getFormattedPreview } = useMotorFormatter()
 
 const motorUuid = route.params.uuid as string
 const formRef = ref<VForm | null>(null)
@@ -81,6 +83,7 @@ const fetchPublication = async (uuid: string) => {
         const mappedState = {
             id: post.id,
             title: post.title,
+            slug: post.slug,
             status: post.status,
             categories: post.categories ? post.categories.map((c: any) => c.id) : [],
             tipo: post.tipo ? post.tipo.map((t: any) => t.id) : [],
@@ -421,7 +424,7 @@ const statusColor = computed(() => {
                                </div>
                            </template>
                            <VCardTitle class="text-h6 font-weight-bold mb-1" style="line-height: 1.4; white-space: normal;">
-                               {{ formState.title || t('edit_publication.no_title', 'Sin título') }}
+                               {{ getFormattedPreview(formState, marcas, tipos) || formState.title || t('edit_publication.no_title', 'Sin título') }}
                            </VCardTitle>
                            <VCardSubtitle class="text-body-2">
                                ID: #{{ postId }}
@@ -461,7 +464,7 @@ const statusColor = computed(() => {
                             <VBtn 
                                 block 
                                 variant="outlined" 
-                                :href="`/producto/${formState.slug || ''}`" 
+                                :href="`/${formState.slug || ''}`" 
                                 target="_blank"
                                 prepend-icon="tabler-external-link"
                                 :disabled="!formState.slug || formState.status !== 'publish'"

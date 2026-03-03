@@ -31,6 +31,8 @@ function motorlan_create_publicacion_callback(WP_REST_Request $request) {
     if (empty($params['title'])) return new WP_Error('missing_title', 'El título es obligatorio', ['status' => 400]);
     if (empty($acf_data['marca'])) return new WP_Error('missing_brand', 'La marca es obligatoria', ['status' => 400]);
     if (empty($acf_data['tipo_o_referencia'])) return new WP_Error('missing_reference', 'La referencia es obligatoria', ['status' => 400]);
+    if (empty($acf_data['velocidad'])) return new WP_Error('missing_speed', 'La velocidad es obligatoria', ['status' => 400]);
+    if (empty($acf_data['potencia']) && empty($acf_data['par_nominal'])) return new WP_Error('missing_power_or_torque', 'Debe especificar Potencia o Par Nominal', ['status' => 400]);
 
     // --- Create Post ---
     $post_title = sanitize_text_field($params['title']);
@@ -94,9 +96,14 @@ function motorlan_create_publicacion_callback(WP_REST_Request $request) {
                     'Nueva publicación pendiente',
                     'El usuario ' . wp_get_current_user()->display_name . ' ha creado una nueva publicación que requiere tu aprobación.',
                     [
-                        'post_id' => $post_id,
-                        'author_id' => get_current_user_id(),
-                        'url' => '/dashboard/admin/approvals', // URL de la nueva sección admin
+                        'post_id'       => $post_id,
+                        'author_id'     => get_current_user_id(),
+                        'url'           => '/dashboard/admin/approvals',
+                        'product_title' => motorlan_format_motor_name( $post_id ),
+                        'reference'     => $acf_data['tipo_o_referencia'] ?? '',
+                        'brand'         => is_numeric($acf_data['marca']) ? get_term($acf_data['marca'], 'marca')->name : ($acf_data['marca'] ?? ''),
+                        'power'         => (!empty($acf_data['potencia'])) ? $acf_data['potencia'] . ' KW' : ((!empty($acf_data['par_nominal'])) ? $acf_data['par_nominal'] . ' Nm' : ''),
+                        'speed'         => (!empty($acf_data['velocidad'])) ? $acf_data['velocidad'] . ' RPM' : '',
                     ],
                     ['web', 'email']
                 );

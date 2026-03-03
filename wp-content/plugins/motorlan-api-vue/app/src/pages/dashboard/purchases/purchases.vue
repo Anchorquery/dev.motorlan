@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { createUrl } from '@/@core/composable/createUrl'
 import { useApi } from '@/composables/useApi'
 import type { ImagenDestacada } from '@/interfaces/publicacion'
+import RatingModal from '@/components/RatingModal.vue'
 
 const router = useRouter()
 
@@ -24,6 +25,25 @@ const itemsPerPage = ref(10)
 const page = ref(1)
 const sortBy = ref()
 const orderBy = ref()
+
+// Rating Flow
+const showRatingModal = ref(false)
+const selectedPurchaseUuid = ref('')
+const selectedSellerName = ref('')
+
+const handleRateSeller = (item: any) => {
+  selectedPurchaseUuid.value = item.uuid
+  // Attempt to resolve seller name (fallback to generic)
+  // item.vendedor is usually ID or object, backend normalization helps but not always present here as name
+  // If we had seller object in item.vendedor, we could use display_name
+  selectedSellerName.value = 'al Vendedor' 
+  showRatingModal.value = true
+}
+
+const handleRatingSuccess = () => {
+  fetchPurchases() // Refresh list to update review_done status
+}
+
 
 // Update data table options
 const updateOptions = (options: any) => {
@@ -104,20 +124,20 @@ const totalPurchases = computed(() => {
   return 0
 })
 
-const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail'): string => {
+const getImageBySize = (image: any, size = 'thumbnail'): string => {
+  if (!image)
+    return ''
+  if (typeof image === 'string')
+    return image
   let imageObj: ImagenDestacada | null = null
-
   if (Array.isArray(image) && image.length > 0)
     imageObj = image[0]
   else if (image && !Array.isArray(image))
     imageObj = image as ImagenDestacada
-
   if (!imageObj)
     return ''
-
   if (imageObj.sizes && imageObj.sizes[size])
     return imageObj.sizes[size] as string
-
   return imageObj.url || ''
 }
 
@@ -219,26 +239,32 @@ const goToProduct = (slug: string) => {
         <div
           v-if="item.publicacion || item.motor"
           class="d-flex align-center gap-x-4"
+          style="max-width: 280px;"
         >
           <VAvatar
             v-if="(item.publicacion || item.motor)?.imagen_destacada"
             size="38"
             variant="tonal"
             rounded
+            class="flex-shrink-0"
             :image="getImageBySize((item.publicacion || item.motor).imagen_destacada, 'thumbnail')"
           />
-          <div class="d-flex flex-column">
+          <div class="d-flex flex-column overflow-hidden">
             <span
-              class="text-body-1 font-weight-medium text-high-emphasis cursor-pointer"
+              class="text-body-1 font-weight-medium text-high-emphasis cursor-pointer text-truncate"
+              style="max-width: 200px;"
               @click="() => {
                 const slug = (item.publicacion || item.motor)?.slug
                 if (slug) goToProduct(slug)
               }"
-            >{{ formatPublicationTitle(item.publicacion || item.motor) }}</span>
+            >
+              {{ formatPublicationTitle(item.publicacion || item.motor) }}
+              <VTooltip activator="parent" location="top">{{ formatPublicationTitle(item.publicacion || item.motor) }}</VTooltip>
+            </span>
             <span
               v-if="(item.publicacion || item.motor)?.acf?.tipo_o_referencia"
               class="text-body-2 text-medium-emphasis"
-            >Ref: {{ (item.publicacion || item.motor).acf.tipo_o_referencia }}</span>
+              >Ref: {{ (item.publicacion || item.motor).acf.tipo_o_referencia }}</span>
           </div>
         </div>
       </template>
@@ -276,7 +302,9 @@ const goToProduct = (slug: string) => {
         >
           <VIcon icon="tabler-eye" />
         </IconBtn>
+        
         <IconBtn
+          class="me-1"
           :disabled="!(item.publicacion || item.motor)?.slug"
           @click="() => {
             const slug = (item.publicacion || item.motor)?.slug
@@ -285,6 +313,20 @@ const goToProduct = (slug: string) => {
         >
           <VIcon icon="tabler-external-link" />
         </IconBtn>
+
+        <!-- Rate Button -->
+        <VTooltip location="top" v-if="!item.review_done">
+          <template #activator="{ props }">
+            <IconBtn
+              v-bind="props"
+              color="warning"
+              @click="handleRateSeller(item)"
+            >
+              <VIcon icon="tabler-star" />
+            </IconBtn>
+          </template>
+          <span>Valorar Vendedor</span>
+        </VTooltip>
       </template>
 
       <!-- pagination -->
@@ -293,6 +335,15 @@ const goToProduct = (slug: string) => {
           v-model:page="page"
           :items-per-page="itemsPerPage"
           :total-items="totalPurchases"
+        />
+        
+        <RatingModal
+          v-if="showRatingModal"
+          v-model="showRatingModal"
+          :purchase-uuid="selectedPurchaseUuid"
+          target-role="seller"
+          :target-name="selectedSellerName"
+          @success="handleRatingSuccess"
         />
       </template>
     </VDataTableServer>

@@ -3,7 +3,9 @@ import { ref, computed } from 'vue'
 import type { ImagenDestacada } from '@/interfaces/publicacion'
 import { useApi } from '@/composables/useApi'
 import { createUrl } from '@/@core/composable/createUrl'
+import { useMotorFormatter } from '@/composables/useMotorFormatter'
 
+const { formatMotorName } = useMotorFormatter()
 const headers = [
   { title: 'Publicacion', key: 'publicacion' },
   { title: 'Valoración', key: 'valoracion' },
@@ -39,20 +41,20 @@ const { data: opinionsData, execute: fetchOpinions } = await useApi<any>(createU
 const opinions = computed(() => opinionsData.value?.data || [])
 const totalOpinions = computed(() => opinionsData.value?.pagination.total || 0)
 
-const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail'): string => {
+const getImageBySize = (image: any, size = 'thumbnail'): string => {
+  if (!image)
+    return ''
+  if (typeof image === 'string')
+    return image
   let imageObj: ImagenDestacada | null = null
-
   if (Array.isArray(image) && image.length > 0)
     imageObj = image[0]
   else if (image && !Array.isArray(image))
     imageObj = image as ImagenDestacada
-
   if (!imageObj)
     return ''
-
   if (imageObj.sizes && imageObj.sizes[size])
     return imageObj.sizes[size] as string
-
   return imageObj.url || ''
 }
 </script>
@@ -115,7 +117,7 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
             />
             <div class="d-flex flex-column">
               <NuxtLink :to="`/dashboard/publications/publication/edit/${item.raw.publicacion.uuid}`">
-                <span class="text-body-1 font-weight-medium text-premium-title cursor-pointer">{{ item.raw.publicacion.title }}</span>
+                <span class="text-body-1 font-weight-medium text-premium-title cursor-pointer">{{ formatMotorName(item.raw.publicacion) }}</span>
               </NuxtLink>
               <span class="text-body-2 text-muted">{{ item.raw.publicacion.acf.marca.name }}</span>
             </div>

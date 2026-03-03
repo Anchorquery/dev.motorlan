@@ -138,6 +138,25 @@ function motorlan_update_publicacion_by_uuid(WP_REST_Request $request) {
     // --- Handle ACF Fields ---
     $acf_data = isset($params['acf']) ? (is_string($params['acf']) ? json_decode($params['acf'], true) : $params['acf']) : [];
     
+    // --- Validate Required Fields ---
+    $required_acf_fields = ['marca', 'tipo_o_referencia', 'velocidad'];
+    foreach ($required_acf_fields as $field) {
+        if (array_key_exists($field, $acf_data) && empty($acf_data[$field])) {
+             return new WP_Error("missing_{$field}", "El campo {$field} es obligatorio y no puede quedar vacío.", ['status' => 400]);
+        }
+    }
+
+    // Validate Potencia/Par logic if either is being updated
+    if (array_key_exists('potencia', $acf_data) || array_key_exists('par_nominal', $acf_data)) {
+        // Obtenemos valores finales (nuevos o existentes)
+        $new_potencia = array_key_exists('potencia', $acf_data) ? $acf_data['potencia'] : get_field('potencia', $post_id);
+        $new_par = array_key_exists('par_nominal', $acf_data) ? $acf_data['par_nominal'] : get_field('par_nominal', $post_id);
+
+        if (empty($new_potencia) && empty($new_par)) {
+             return new WP_Error('missing_power_or_torque', 'Debe especificar Potencia o Par Nominal.', ['status' => 400]);
+        }
+    }
+
     $checkbox_acf_fields = ['servomotores', 'regulacion_electronica_drivers'];
     foreach ($checkbox_acf_fields as $checkbox_field) {
         if (array_key_exists($checkbox_field, $acf_data)) {

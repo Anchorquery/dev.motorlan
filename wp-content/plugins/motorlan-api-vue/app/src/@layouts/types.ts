@@ -108,6 +108,9 @@ export interface I18nLanguage {
 export type NotificationData = {
   url?: string
   offer_id?: number
+  product_image?: string
+  product_price?: string | number
+  product_title?: string
   [key: string]: unknown
 }
 
@@ -122,10 +125,10 @@ export type Notification = {
   isSeen: boolean
   data?: NotificationData
 } & (
-  | { img: string; text?: never; icon?: never }
-  | { img?: never; text: string; icon?: never }
-  | { img?: never; text?: never; icon: string }
-)
+    | { img: string; text?: never; icon?: never }
+    | { img?: never; text: string; icon?: never }
+    | { img?: never; text?: never; icon: string }
+  )
 
 export interface ThemeSwitcherTheme {
   name: string

@@ -583,12 +583,19 @@
     "title": "Interesados",
     "search_placeholder": "Buscar por usuario o publicación...",
     "user": "Usuario",
+    "buyer": "Comprador",
+    "seller": "Vendedor",
     "publication": "Publicación",
     "actions": "Acciones",
     "date": "Fecha",
     "load_error": "No se pudieron cargar las conversaciones",
     "no_data_title": "No hay conversaciones",
-    "no_data_text": "Aún no has recibido consultas de interés."
+    "no_data_text": "Aún no has recibido consultas de interés.",
+    "no_data_text_buyer": "Aún no has realizado ninguna consulta.",
+    "buyer_label": "Comprador interesado",
+    "seller_label": "Vendedor del equipo",
+    "view_chat": "Ver Chat",
+    "go_to_publication": "Ir a la publicación"
   },
   "notifications": {
     "title": "Notificaciones",
@@ -655,5 +662,6 @@
   "Mis Compras": "Mis Compras",
   "Mi Cuenta": "Mi Cuenta",
   "Ofertas Recibidas": "Ofertas Recibidas",
-  "Ofertas Enviadas": "Ofertas Enviadas"
+  "Ofertas de Precio": "Ofertas de Precio",
+  "Consultas Enviadas": "Consultas Enviadas"
 }

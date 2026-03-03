@@ -102,6 +102,14 @@ function motorlan_get_notifications_unread_count( WP_REST_Request $request ) {
  * @return WP_REST_Response
  */
 function motorlan_mark_notifications_as_read( WP_REST_Request $request ) {
+    // Validate Content-Type
+    if ( function_exists( 'motorlan_validate_json_content_type' ) ) {
+        $valid_type = motorlan_validate_json_content_type( $request );
+        if ( is_wp_error( $valid_type ) ) {
+            return $valid_type;
+        }
+    }
+
     $user_id = get_current_user_id();
     $notification_ids = $request['notification_ids'];
 

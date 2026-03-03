@@ -128,7 +128,7 @@ const isDeleting = ref(false)
 // Función para ver la publicación
 const goToPublication = (item: Publicacion) => {
   const slug = (item as any).slug
-  window.location.href = `/publicacion/${slug}/`
+  window.location.href = `/marketplace-motorlan/${slug}/`
 }
 
 // Función para contactar al vendedor
@@ -235,19 +235,23 @@ const removeFavorite = async () => {
         >
         <!-- publicacion  -->
         <template #item.publicacion="{ item }">
-          <div class="d-flex align-center gap-x-4 py-2">
+          <div class="d-flex align-center gap-x-4 py-2" style="max-width: 280px;">
             <VAvatar
               v-if="(item as any).imagen_destacada"
               size="48"
               variant="tonal"
               rounded
-              class="border"
+              class="border flex-shrink-0"
             >
               <VImg :src="(item as any).imagen_destacada.url" alt="Publication Image" cover />
             </VAvatar>
-            <div class="d-flex flex-column">
-              <span class="text-body-1 font-weight-medium text-high-emphasis">
+            <div class="d-flex flex-column overflow-hidden">
+              <span 
+                class="text-body-1 font-weight-medium text-high-emphasis text-truncate"
+                style="max-width: 200px;"
+              >
                 {{ formatPublicationTitle(item, (item as any).title) }}
+                <VTooltip activator="parent" location="top">{{ formatPublicationTitle(item, (item as any).title) }}</VTooltip>
               </span>
               <span
                 v-if="(item as any).acf?.tipo_o_referencia"

@@ -7,6 +7,7 @@ import type { Publicacion } from '@/interfaces/publicacion'
 import { useApi } from '@/composables/useApi'
 import { useUserStore } from '@/@core/stores/user'
 import { createUrl } from '@/@core/composable/createUrl'
+import { useSanitize } from '@/composables/useSanitize'
 
 const props = defineProps<{ 
   publicacion: Publicacion; 
@@ -14,6 +15,7 @@ const props = defineProps<{
   isPreview?: boolean;
 }>()
 const emit = defineEmits(['open-chat'])
+const { sanitize } = useSanitize()
 
 const brand = computed(() => (props.publicacion as any).marca_name || '-')
 
@@ -206,6 +208,24 @@ const share = () => {
 
 const router = useRouter()
 
+// Check if the current product has a price already requested in this session (for guests)
+const hasRequestedPrice = computed(() => {
+  try {
+    const list = JSON.parse(localStorage.getItem('motorlan_requested_prices') || '[]')
+    return list.includes(props.publicacion.id)
+  } catch (e) {
+    return false
+  }
+})
+
+import { useI18n } from 'vue-i18n'
+const { t } = useI18n()
+
+const chatButtonText = computed(() => {
+  if (hasRequestedPrice.value) return 'Abrir chat'
+  return t('motor.consult_price')
+})
+
 const openChatModal = () => {
   emit('open-chat')
 }
@@ -371,7 +391,7 @@ const removeOffer = async () => {
       v-if="props.publicacion.acf.descripcion"
       class="contact-card pa-4 mb-6"
     >
-      <p v-html="props.publicacion.acf.descripcion" />
+      <p v-html="sanitize(props.publicacion.acf.descripcion)" />
     </div>
 
     <div class="d-flex flex-wrap gap-4 mb-6">

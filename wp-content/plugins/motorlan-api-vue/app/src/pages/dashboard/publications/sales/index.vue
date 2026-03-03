@@ -5,9 +5,11 @@ import { useRouter } from 'vue-router'
 import { useApi } from '@/composables/useApi'
 import { debounce } from '@/utils/debounce'
 import type { ImagenDestacada } from '@/interfaces/publicacion'
+import { useMotorFormatter } from '@/composables/useMotorFormatter'
 
 const { t } = useI18n()
 const router = useRouter()
+const { formatMotorName } = useMotorFormatter()
 
 const searchQuery = ref('')
 const selectedType = ref<string>()
@@ -15,13 +17,13 @@ const statusFilter = ref('all')
 const dateRange = ref('')
 
 const headers = computed(() => [
-  { title: t('sales.publication'), value: 'publication_title', sortable: false },
-  { title: t('sales.buyer'), value: 'buyer_name', sortable: false },
-  { title: t('sales.type'), value: 'type', sortable: false },
-  { title: t('sales.price'), value: 'price_value', sortable: true },
-  { title: t('sales.date'), value: 'date', sortable: true },
-  { title: t('sales.status'), value: 'status', sortable: false },
-  { title: t('sales.actions'), value: 'actions', sortable: false },
+  { title: t('sales.publication'), value: 'publication_title', sortable: false, width: '280px' },
+  { title: t('sales.buyer'), value: 'buyer_name', sortable: false, width: '200px' },
+  { title: t('sales.type'), value: 'type', sortable: false, width: '100px' },
+  { title: t('sales.price'), value: 'price_value', sortable: true, width: '130px' },
+  { title: t('sales.date'), value: 'date', sortable: true, width: '180px' },
+  { title: t('sales.status'), value: 'status', sortable: false, width: '120px' },
+  { title: t('sales.actions'), value: 'actions', sortable: false, width: '100px' },
 ])
 
 const typeOptions = computed(() => [
@@ -100,7 +102,7 @@ const resolveStatus = (status: string) => {
   if (normalized === 'completed')
     return { text: t('sales.status_labels.completed'), color: 'success' }
   if (normalized === 'pendiente' || normalized === 'pending')
-    return { text: t('sales.status_labels.pending'), color: 'warning' }
+    return { text: 'Venta Registrada', color: 'warning' }
   if (normalized === 'processing')
     return { text: t('sales.status_labels.processing'), color: 'info' }
   if (normalized === 'cancelled' || normalized === 'canceled')
@@ -247,7 +249,11 @@ const resolveBrandName = (value: any): string | null => {
   return asStr && asStr !== 'null' && asStr !== 'undefined' ? asStr : null
 }
 
-const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail'): string => {
+const getImageBySize = (image: any, size = 'thumbnail'): string => {
+  if (!image)
+    return ''
+  if (typeof image === 'string')
+    return image
   let imageObj: ImagenDestacada | null = null
   if (Array.isArray(image) && image.length > 0)
     imageObj = image[0] as ImagenDestacada
@@ -264,13 +270,11 @@ const formatPublicationTitle = (pub: any, fallbackTitle?: string): string => {
   if (!pub) {
     return fallbackTitle || ''
   }
-  const acf = pub.acf || {}
-  const parts = [
-    pub.title || fallbackTitle,
-    resolveBrandName(acf.marca),
-    acf.velocidad ? `${acf.velocidad} rpm` : null,
-  ].filter(Boolean) as string[]
-  return parts.join(' • ')
+  // Intentar usar el composable primero
+  const formatted = formatMotorName(pub)
+  if (formatted) return formatted
+
+  return pub.title || fallbackTitle || ''
 }
 </script>
 
@@ -286,6 +290,8 @@ const formatPublicationTitle = (pub: any, fallbackTitle?: string): string => {
             v-model="searchQuery"
             :placeholder="t('sales.search_placeholder')"
             prepend-inner-icon="tabler-search"
+            density="compact"
+            hide-details
             class="elevation-0"
           />
         </VCol>
@@ -295,6 +301,8 @@ const formatPublicationTitle = (pub: any, fallbackTitle?: string): string => {
             :items="typeOptions"
             :placeholder="t('sales.type')"
             prepend-inner-icon="tabler-category"
+            density="compact"
+            hide-details
             clearable
             clear-icon="tabler-x"
           />
@@ -305,6 +313,8 @@ const formatPublicationTitle = (pub: any, fallbackTitle?: string): string => {
             :items="statusOptions"
             :placeholder="t('sales.filters.status')"
             prepend-inner-icon="tabler-filter"
+            density="compact"
+            hide-details
             clearable
             clear-icon="tabler-x"
             @update:model-value="(value: string | null) => statusFilter = value || 'all'"
@@ -316,6 +326,8 @@ const formatPublicationTitle = (pub: any, fallbackTitle?: string): string => {
             :placeholder="t('sales.filters.date_range')"
             prepend-inner-icon="tabler-calendar"
             :config="{ mode: 'range' }"
+            density="compact"
+            hide-details
             clearable
             clear-icon="tabler-x"
           />
@@ -349,26 +361,33 @@ const formatPublicationTitle = (pub: any, fallbackTitle?: string): string => {
       @update:options="updateOptions"
     >
       <template #item.publication_title="{ item }">
-        <div class="d-flex align-center gap-3 py-2">
+        <div class="d-flex align-center gap-3 py-2" style="max-width: 280px;">
           <VAvatar
             v-if="((item as any).publicacion || (item as any).motor)?.imagen_destacada"
             size="48"
             variant="tonal"
             rounded
-            class="border"
+            class="border flex-shrink-0"
             :image="getImageBySize(((item as any).publicacion || (item as any).motor).imagen_destacada, 'thumbnail')"
           />
-          <div class="d-flex flex-column">
+          <div class="d-flex flex-column overflow-hidden">
             <template v-if="((item as any).publicacion || (item as any).motor)?.slug || (item as any).publication_slug || (item as any).motor_slug">
               <RouterLink
                 :to="`/${((item as any).publicacion || (item as any).motor)?.slug || (item as any).publication_slug || (item as any).motor_slug}`"
-                class="text-body-1 font-weight-medium text-high-emphasis text-decoration-none"
+                class="text-body-1 font-weight-medium text-high-emphasis text-decoration-none text-truncate d-block"
+                style="max-width: 200px;"
               >
                 {{ formatPublicationTitle(((item as any).publicacion || (item as any).motor), (item as any).publication_title || (item as any).motor_title) }}
+                <VTooltip activator="parent" location="top">{{ formatPublicationTitle(((item as any).publicacion || (item as any).motor), (item as any).publication_title || (item as any).motor_title) }}</VTooltip>
               </RouterLink>
             </template>
-            <span v-else class="text-body-1 font-weight-medium text-high-emphasis">
+            <span 
+              v-else 
+              class="text-body-1 font-weight-medium text-high-emphasis text-truncate d-block"
+              style="max-width: 200px;"
+            >
               {{ formatPublicationTitle(((item as any).publicacion || (item as any).motor), (item as any).publication_title || (item as any).motor_title) }}
+              <VTooltip activator="parent" location="top">{{ formatPublicationTitle(((item as any).publicacion || (item as any).motor), (item as any).publication_title || (item as any).motor_title) }}</VTooltip>
             </span>
             <span
               v-if="((item as any).publicacion || (item as any).motor)?.acf?.tipo_o_referencia"
@@ -381,13 +400,15 @@ const formatPublicationTitle = (pub: any, fallbackTitle?: string): string => {
       </template>
 
       <template #item.buyer_name="{ item }">
-        <div class="d-flex flex-column">
+        <div class="d-flex flex-column" style="max-width: 180px;">
           <span class="text-body-2 font-weight-medium text-high-emphasis">{{ (item as any).buyer_name || t('sales.no_buyer') }}</span>
           <span
             v-if="(item as any).buyer_email"
-            class="text-caption text-medium-emphasis"
+            class="text-caption text-medium-emphasis text-truncate d-block"
+            style="max-width: 180px;"
           >
             {{ (item as any).buyer_email }}
+            <VTooltip activator="parent" location="top">{{ (item as any).buyer_email }}</VTooltip>
           </span>
         </div>
       </template>
@@ -411,8 +432,12 @@ const formatPublicationTitle = (pub: any, fallbackTitle?: string): string => {
       </template>
 
       <template #item.date="{ item }">
-        <span class="text-body-2 text-medium-emphasis">
+        <span 
+          class="text-body-2 text-medium-emphasis text-truncate d-block"
+          style="max-width: 160px;"
+        >
           {{ formatDate((item as any).date, (item as any).date_label) }}
+          <VTooltip activator="parent" location="top">{{ formatDate((item as any).date, (item as any).date_label) }}</VTooltip>
         </span>
       </template>
 

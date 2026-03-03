@@ -91,6 +91,14 @@ function motorlan_get_pending_publications_callback($request) {
  * Approve a publication.
  */
 function motorlan_approve_publication_callback($request) {
+    // Validate Content-Type
+    if ( function_exists( 'motorlan_validate_json_content_type' ) ) {
+        $valid_type = motorlan_validate_json_content_type( $request );
+        if ( is_wp_error( $valid_type ) ) {
+            return $valid_type;
+        }
+    }
+
     $post_id = $request['id'];
     $post = get_post($post_id);
 
@@ -107,21 +115,15 @@ function motorlan_approve_publication_callback($request) {
         return $result;
     }
 
-    // Notificar al usuario
-    if (class_exists('Motorlan_Notification_Manager')) {
-        $notification_manager = new Motorlan_Notification_Manager();
-        $notification_manager->create_notification(
-            $post->post_author,
-            'publication_approved',
-            'Tu producto ha sido aprobado',
-            'Felicidades, tu publicación "' . $post->post_title . '" ya está visible en la tienda.',
-            [
-                'post_id' => $post_id,
-                'url' => '/dashboard/publications/list',
-            ],
-            ['web', 'email']
-        );
+    // Sincronizar campo ACF
+    if (function_exists('update_field')) {
+        update_field('publicar_acf', 'publish', $post_id);
     }
+    update_post_meta($post_id, 'publicar_acf', 'publish');
+
+    // Notificar al usuario
+    // Notificar al usuario
+    do_action( 'motorlan_publication_approved', $post_id );
 
     return new WP_REST_Response(['message' => 'Publicación aprobada con éxito.'], 200);
 }
@@ -130,6 +132,14 @@ function motorlan_approve_publication_callback($request) {
  * Reject a publication.
  */
 function motorlan_reject_publication_callback($request) {
+    // Validate Content-Type
+    if ( function_exists( 'motorlan_validate_json_content_type' ) ) {
+        $valid_type = motorlan_validate_json_content_type( $request );
+        if ( is_wp_error( $valid_type ) ) {
+            return $valid_type;
+        }
+    }
+
     $post_id = $request['id'];
     $params = $request->get_json_params();
     $reason = !empty($params['reason']) ? sanitize_text_field($params['reason']) : 'No cumple con las normas de la comunidad.';
@@ -151,22 +161,15 @@ function motorlan_reject_publication_callback($request) {
         return $result;
     }
 
-    // Notificar al usuario con el motivo
-    if (class_exists('Motorlan_Notification_Manager')) {
-        $notification_manager = new Motorlan_Notification_Manager();
-        $notification_manager->create_notification(
-            $post->post_author,
-            'publication_rejected',
-            'Tu producto requiere cambios',
-            'Tu publicación "' . $post->post_title . '" no ha sido aprobada. Motivo: ' . $reason,
-            [
-                'post_id' => $post_id,
-                'reason' => $reason,
-                'url' => '/dashboard/publications/list',
-            ],
-            ['web', 'email']
-        );
+    // Sincronizar campo ACF
+    if (function_exists('update_field')) {
+        update_field('publicar_acf', 'draft', $post_id);
     }
+    update_post_meta($post_id, 'publicar_acf', 'draft');
+
+    // Notificar al usuario con el motivo
+    // Notificar al usuario con el motivo
+    do_action( 'motorlan_publication_rejected', $post_id, $reason );
 
     return new WP_REST_Response(['message' => 'Publicación rechazada con éxito.'], 200);
 }

@@ -278,6 +278,7 @@ watch(() => [formState.value.tipo, formState.value.acf.marca, formState.value.ac
                             :form-state="formState" 
                             :marcas="marcas" 
                             :categories="categories"
+                            :tipos="tipos"
                             @update:form-state="setFormState" 
                         />
                     </VForm>
