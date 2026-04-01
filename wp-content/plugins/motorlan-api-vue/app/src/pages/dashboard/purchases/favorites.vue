@@ -94,7 +94,7 @@ const removeFavorite = async (motorId: number) => {
 
 const goToDetail = (item: Publicacion) => {
   // Navegar a la tienda con URL absoluta (no usar router.push porque estamos en otra base)
-  window.location.href = `/marketplace-motorlan/${item.slug}`
+  window.open(`/marketplace-motorlan/${item.slug}/`, '_blank')
 }
 
 const getImageBySize = (image: any, size = 'thumbnail'): string => {
@@ -189,8 +189,14 @@ const getImageBySize = (image: any, size = 'thumbnail'): string => {
 
       <!-- precio -->
       <template #item.precio="{ item }">
-        <span class="text-body-1 font-weight-medium text-premium-price">
-          {{ item.acf.precio_de_venta ? formatCurrency(item.acf.precio_de_venta) : 'Consultar' }}
+        <span v-if="item.acf?.precio_negociable === 'yes' || item.acf?.precio_negociable === true" class="text-body-1 font-weight-medium text-warning">
+          Precio Negociable
+        </span>
+        <span v-else-if="item.acf?.precio_de_venta" class="text-body-1 font-weight-medium text-premium-price">
+          {{ formatCurrency(item.acf.precio_de_venta) }}
+        </span>
+        <span v-else class="text-body-1 font-weight-medium text-premium-price">
+          Consultar
         </span>
       </template>
 

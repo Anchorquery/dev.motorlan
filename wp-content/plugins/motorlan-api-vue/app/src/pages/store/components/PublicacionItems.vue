@@ -3,42 +3,6 @@ import type { Publicacion } from '@/interfaces/publicacion'
 
 defineProps<{ publicaciones: Publicacion[]; loading: boolean }>()
 
-const generateTitle = (publicacion: Publicacion) => {
-  if (!publicacion || !publicacion.acf)
-    return ''
-
-  // Nomenclature: Tipo de producto_Marca_Tipo/modelo_Potencia o Par_Velocidad
-  
-  // 1. Tipo
-  const tipo = publicacion.tipo && publicacion.tipo.length > 0 ? publicacion.tipo[0].name : '';
-  
-  // 2. Marca
-  const marca = (publicacion as any).marca_name || '';
-
-  // 3. Modelo
-  const modelo = publicacion.acf.tipo_o_referencia || '';
-
-  // 4. Potencia o Par
-  let powerOrTorque = '';
-  if (publicacion.acf.potencia) {
-      powerOrTorque = `${publicacion.acf.potencia} kW`;
-  } else if (publicacion.acf.par_nominal) {
-      powerOrTorque = `${publicacion.acf.par_nominal} Nm`;
-  }
-
-  // 5. Velocidad
-  const velocidad = publicacion.acf.velocidad ? `${publicacion.acf.velocidad} rpm` : '';
-
-  const parts = [
-    tipo,
-    marca,
-    modelo,
-    powerOrTorque,
-    velocidad,
-  ].filter(p => !!p && String(p).trim() !== '')
-
-  return parts.join(' ').toUpperCase()
-}
 </script>
 
 <template>
@@ -54,7 +18,7 @@ const generateTitle = (publicacion: Publicacion) => {
           <div class="motor-image mb-4">
             <img :src="(!Array.isArray(publicacion.imagen_destacada) && publicacion.imagen_destacada?.url) || '/placeholder.png'" alt="" />
           </div>
-          <div class="text-error text-premium-title text-body-1 mb-2">{{ generateTitle(publicacion) }}</div>
+          <div class="text-error text-premium-title text-body-1 mb-2">{{ publicacion.title }}</div>
           
           <div class="mt-auto pt-2 d-flex justify-end align-center">
             <VBtn

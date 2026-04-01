@@ -88,6 +88,8 @@ const handleCustomTypeSelect = (val: string) => {
 }
 
 // Reverse mapping for UI state
+const isACSelected = computed(() => selectedTechnology.value === 'ac')
+
 const customTypeModel = computed({
   get() {
     if (selectedTipo.value === 'motor' && selectedTechnology.value === 'ac') return 'motor-ac'
@@ -100,6 +102,7 @@ const customTypeModel = computed({
       if (val === 'motor-ac') {
         selectedTipo.value = 'motor'
         selectedTechnology.value = 'ac'
+        selectedPar.value = null
       } else if (val === 'motor-dc') {
         selectedTipo.value = 'motor'
         selectedTechnology.value = 'dc'
@@ -115,16 +118,48 @@ const customTypeModel = computed({
       }
   }
 })
+// Logic to check if any filter is active
+const hasFiltersActive = computed(() => {
+  return !!typeModel.value || 
+         !!selectedTechnology.value || 
+         !!selectedPar.value || 
+         !!selectedPotencia.value || 
+         !!selectedVelocidad.value || 
+         !!selectedBrand.value || 
+         !!selectedState.value || 
+         !!selectedTipo.value
+})
 
 </script>
 
 <template>
   <aside class="filters sidebar-filters-enhanced">
-    <div class="d-flex align-center mb-4">
-      <VIcon size="18" class="me-2" color="error">
-        mdi-filter-variant
-      </VIcon>
-      <span class="text-error font-weight-medium text-uppercase" style="letter-spacing: 1px; font-size: 0.85rem;">FILTROS</span>
+    <div class="d-flex align-center justify-space-between mb-4">
+      <div class="d-flex align-center">
+        <VIcon size="18" class="me-2" color="error">
+          mdi-filter-variant
+        </VIcon>
+        <span class="text-error font-weight-medium text-uppercase" style="letter-spacing: 1px; font-size: 0.85rem;">FILTROS</span>
+      </div>
+      <VBtn
+        v-if="hasFiltersActive"
+        variant="text"
+        color="error"
+        density="compact"
+        class="text-caption px-2 font-weight-bold"
+        @click="() => {
+          typeModel = '';
+          selectedTechnology = null;
+          selectedPar = null;
+          selectedPotencia = null;
+          selectedVelocidad = null;
+          selectedBrand = null;
+          selectedState = null;
+          selectedTipo = null;
+        }"
+      >
+        Limpiar
+      </VBtn>
     </div>
     <VDivider thickness="3" class="mb-4" color="error" />
 
@@ -140,9 +175,9 @@ const customTypeModel = computed({
 
     <div class="mb-4">
       <span class="text-sm font-weight-medium text-high-emphasis">{{ t('store.filters.product_type') }}</span>
-      <VRadioGroup v-model="customTypeModel" class="mt-2 custom-radio-group">
+      <VRadioGroup v-model="customTypeModel" class="mt-2 custom-radio-group" color="error">
         <!-- Manual mapping based on request -->
-         <VRadio label="Todos" :value="null" />
+         <VRadio label="Todos" :value="null" color="error" />
          
          <!-- Motor AC -->
          <VTooltip location="top" text="Motores de Corriente Alterna">
@@ -151,8 +186,6 @@ const customTypeModel = computed({
                <VRadio 
                  label="Motor (AC)" 
                  value="motor-ac" 
-                 true-icon="mdi-close" 
-                 false-icon="mdi-radiobox-blank" 
                  color="error"
                />
              </div>
@@ -166,8 +199,6 @@ const customTypeModel = computed({
                 <VRadio 
                   label="Motor (DC)" 
                   value="motor-dc"
-                  true-icon="mdi-close" 
-                  false-icon="mdi-radiobox-blank" 
                   color="error"
                 />
               </div>
@@ -181,8 +212,6 @@ const customTypeModel = computed({
                  <VRadio 
                    label="Regulador" 
                    value="regulador"
-                   true-icon="mdi-close" 
-                   false-icon="mdi-radiobox-blank" 
                    color="error"
                  />
               </div>
@@ -196,8 +225,6 @@ const customTypeModel = computed({
                  <VRadio 
                    label="Otros" 
                    value="otros"
-                   true-icon="mdi-close" 
-                   false-icon="mdi-radiobox-blank" 
                    color="error"
                  />
               </div>
@@ -210,7 +237,7 @@ const customTypeModel = computed({
     <!-- Disabled when Text search is active -->
     <AppSelect v-model="selectedBrand" :label="t('store.filters.brands_label')" placeholder="Seleccionar marcas" :items="marcas" item-title="name" item-value="term_id" class="mb-4" variant="outlined" color="error" clearable />
     <AppSelect v-model="selectedPotencia" :label="t('store.filters.power_label')" placeholder="Seleccionar potencia" :items="potenciaOptions" class="mb-4" variant="outlined" color="error" clearable :disabled="isTypeModelActive" />
-    <AppSelect v-model="selectedPar" :label="t('store.filters.torque_label')" placeholder="Seleccionar PAR (Nm)" :items="parOptions" class="mb-4" variant="outlined" color="error" clearable :disabled="isTypeModelActive" />
+    <AppSelect v-if="!isACSelected" v-model="selectedPar" :label="t('store.filters.torque_label')" placeholder="Seleccionar PAR (Nm)" :items="parOptions" class="mb-4" variant="outlined" color="error" clearable :disabled="isTypeModelActive" />
     <AppSelect v-model="selectedVelocidad" :label="t('store.filters.speed_label')" placeholder="Seleccionar velocidad" :items="velocidadOptions" class="mb-4" variant="outlined" color="error" clearable :disabled="isTypeModelActive" />
     
     <AppSelect v-model="selectedState" :label="t('store.filters.state_label')" placeholder="Seleccionar estado" item-title="name" item-value="value"  :items="[{'name':'Nuevo', 'value':'new'},{'name':'Usado', 'value':'used'},{'name':'Reacondicionado', 'value':'restored'}]" class="mb-4" variant="outlined" color="error" clearable />

@@ -163,7 +163,7 @@ function motorlan_format_publication_item($post_id) {
         'uuid'             => $uuid,
         'title'            => get_the_title($post_id),
         'slug'             => get_post_field('post_name', $post_id),
-        'link'             => get_permalink($post_id),
+        'link'             => motorlan_get_store_url($post_id),
         'status'           => get_field('publicar_acf', $post_id) ?: get_post_status($post_id),
         'imagen_destacada' => motorlan_format_image_for_frontend(get_field('motor_image', $post_id, true)),
         'author_id'        => get_post_field('post_author', $post_id),

@@ -134,34 +134,7 @@ const brandName = computed(() => {
 })
 
 const productTitle = computed(() => {
-  const parts: string[] = []
-
-  // 1. Tipo de producto (Category/Title)
-  if (props.publicacion.title)
-    parts.push(props.publicacion.title)
-
-  // 2. Marca
-  if (brandName.value && brandName.value !== '-')
-    parts.push(brandName.value)
-
-  // 3. Tipo/modelo
-  if (props.publicacion.acf?.tipo_o_referencia)
-    parts.push(props.publicacion.acf.tipo_o_referencia)
-
-  // 4. Potencia o Par
-  const potencia = props.publicacion.acf?.potencia
-  const par = props.publicacion.acf?.par_nominal || props.publicacion.acf?.par
-
-  if (potencia)
-    parts.push(`${potencia} kW`)
-  else if (par)
-    parts.push(`${par} Nm`)
-
-  // 5. Velocidad
-  if (props.publicacion.acf?.velocidad)
-    parts.push(`${props.publicacion.acf.velocidad} rpm`)
-
-  return parts.join(' - ')
+  return props.publicacion.title || '';
 })
 
 

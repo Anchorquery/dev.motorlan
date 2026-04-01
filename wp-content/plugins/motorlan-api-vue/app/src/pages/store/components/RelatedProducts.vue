@@ -18,31 +18,7 @@ const products = computed(() => {
 })
 
 const formatProductTitle = (publication: Publicacion) => {
-  const acf = publication?.acf || {}
-  
-  // Try to use the same logic as in [slug].vue if possible, but keeping it simple here
-  const tipo = publication?.tipo && publication.tipo.length > 0 ? publication.tipo[0].name : ''
-  const marca = (publication as any).marca_name || ''
-  const modelo = acf.tipo_o_referencia || ''
-  
-  let powerOrTorque = ''
-  if (acf.potencia) {
-    powerOrTorque = `${acf.potencia} kW`
-  } else if (acf.par_nominal) {
-    powerOrTorque = `${acf.par_nominal} Nm`
-  }
-
-  const velocidad = acf.velocidad ? `${acf.velocidad} rpm` : ''
-
-  const parts = [
-    tipo,
-    marca,
-    modelo,
-    powerOrTorque,
-    velocidad,
-  ].filter(p => !!p && String(p).trim() !== '')
-
-  return parts.join(' ').toUpperCase()
+  return publication?.title || ''
 }
 
 const resolveProductType = (publication: Publicacion) => {

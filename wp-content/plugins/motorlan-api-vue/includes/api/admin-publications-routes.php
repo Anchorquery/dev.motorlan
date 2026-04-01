@@ -89,11 +89,12 @@ function motorlan_admin_get_publications_callback($request) {
             // Basic info
             $item = [
                 'id' => $post_id,
-                'uuid' => get_post_meta($post_id, 'uuid', true), // Add UUID
+                'uuid' => get_post_meta($post_id, 'uuid', true),
                 'title' => get_the_title(),
+                'slug' => get_post_field('post_name', $post_id),
                 'status' => get_post_status(),
                 'date' => get_the_date('Y-m-d H:i:s'),
-                'link' => get_permalink(),
+                'link' => motorlan_get_store_url( $post_id ),
             ];
 
             $item['image'] = motorlan_format_image_for_frontend($post_id ? get_post_thumbnail_id($post_id) ?: get_field('motor_image', $post_id, false) : null);
@@ -104,7 +105,11 @@ function motorlan_admin_get_publications_callback($request) {
             // ACF Data for formatting
             $marca_id = get_field('marca', $post_id);
             $marca_name = '';
-            if ($marca_id) {
+            $pending_brand = get_post_meta($post_id, '_pending_brand_name', true);
+            if (!empty($pending_brand)) {
+                $marca_name = $pending_brand;
+                $item['pending_brand'] = $pending_brand;
+            } elseif ($marca_id && is_numeric($marca_id) && (int) $marca_id !== -1) {
                 $term = get_term($marca_id);
                 if ($term && !is_wp_error($term)) {
                     $marca_name = $term->name;

@@ -1,23 +1,24 @@
-import type { Publication } from '@/@core/types'
 
 /**
-	* Composable para formatear nombres de motores de manera consistente
-	* 
-	* Formato: TIPO_PRODUCTO MARCA MODELO POTENCIA/PAR VELOCIDAD
-	* Ejemplo: MOTOR MITSUBISHI HC-KFS73G1 750 KW 3000 RPM
-	*/
+ * Composable para formatear nombres de motores de manera consistente
+ * 
+ * Formato: MARCA MODELO POTENCIA
+ * Ejemplo: MITSUBISHI HC-KFS73G1 750 KW
+ */
 export const useMotorFormatter = () => {
 	/**
 		* Formatea el nombre completo del motor basado en sus datos
 		*/
-	const formatMotorName = (publication: Publication | Record<string, any>): string => {
+	const formatMotorName = (publication: Record<string, any>): string => {
 		const parts: string[] = []
 
+/*
 		// 1. Tipo de producto (de taxonomía 'tipo')
 		if (publication.tipo && Array.isArray(publication.tipo) && publication.tipo.length > 0) {
 			const tipoName = publication.tipo[0].name || publication.tipo[0].slug
 			if (tipoName) parts.push(tipoName.toUpperCase())
 		}
+*/
 
 		// 2. Marca (puede venir como objeto, string, o necesitar buscar)
 		const acf = publication.acf || {}
@@ -46,11 +47,6 @@ export const useMotorFormatter = () => {
 			parts.push(`${acf.par_nominal} NM`)
 		}
 
-		// 5. Velocidad
-		if (acf.velocidad) {
-			parts.push(`${acf.velocidad} RPM`)
-		}
-
 		// Si no hay suficientes datos, retornar el título original
 		if (parts.length === 0 && publication.title) {
 			return publication.title
@@ -67,39 +63,23 @@ export const useMotorFormatter = () => {
 		const parts: string[] = []
 		const acf = data.acf || {}
 
-		// 1. Título
-		if (data.title) {
-			parts.push(data.title)
-		}
-
-		// 2. Tipo
-		if (data.tipo && Array.isArray(data.tipo) && data.tipo.length > 0) {
-			const tipoName = data.tipo[0].name || data.tipo[0].slug
-			if (tipoName) parts.push(tipoName)
-		}
-
-		// 3. Marca
+		// 1. Marca
 		if (data.marca_name) {
 			parts.push(data.marca_name)
 		} else if (acf.marca && typeof acf.marca === 'object' && acf.marca.name) {
 			parts.push(acf.marca.name)
 		}
 
-		// 4. Referencia
+		// 2. Referencia/Modelo
 		if (acf.tipo_o_referencia) {
 			parts.push(acf.tipo_o_referencia)
 		}
 
-		// 5. Potencia o Par
+		// 3. Potencia o Par
 		if (acf.potencia) {
 			parts.push(`${acf.potencia}KW`)
 		} else if (acf.par_nominal) {
 			parts.push(`${acf.par_nominal}Nm`)
-		}
-
-		// 6. Velocidad
-		if (acf.velocidad) {
-			parts.push(`${acf.velocidad}RPM`)
 		}
 
 		// Slugify
@@ -121,11 +101,13 @@ export const useMotorFormatter = () => {
 		const parts: string[] = []
 		const acf = formState.acf || {}
 
+/*
 		// 1. Tipo de producto
 		if (formState.tipo && Array.isArray(formState.tipo) && formState.tipo.length > 0 && tipos.length > 0) {
 			const tipoObj = tipos.find(t => t.value === formState.tipo[0])
 			if (tipoObj) parts.push(tipoObj.title.toUpperCase())
 		}
+*/
 
 		// 2. Marca
 		if (acf.marca && marcas.length > 0) {
@@ -143,11 +125,6 @@ export const useMotorFormatter = () => {
 			parts.push(`${acf.potencia} KW`)
 		} else if (acf.par_nominal) {
 			parts.push(`${acf.par_nominal} NM`)
-		}
-
-		// 5. Velocidad
-		if (acf.velocidad) {
-			parts.push(`${acf.velocidad} RPM`)
 		}
 
 		if (parts.length === 0) {

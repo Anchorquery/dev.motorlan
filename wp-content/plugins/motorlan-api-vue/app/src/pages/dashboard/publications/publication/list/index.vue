@@ -463,7 +463,9 @@ const canEdit = (item: any) => {
 
         <!-- precio -->
         <template #item.precio="{ item }">
-          <span class="text-body-1 text-primary font-weight-bold">{{ (item as any).acf.precio_de_venta }}€</span>
+          <span v-if="(item as any).acf.precio_negociable === 'yes' || (item as any).acf.precio_negociable === true" class="text-body-1 text-warning font-weight-bold">Precio Negociable</span>
+          <span v-else-if="(item as any).acf.precio_de_venta" class="text-body-1 text-primary font-weight-bold">{{ (item as any).acf.precio_de_venta }}€</span>
+          <span v-else class="text-body-2 text-medium-emphasis">-</span>
         </template>
 
         <!-- status -->
@@ -482,12 +484,12 @@ const canEdit = (item: any) => {
         <!-- Actions -->
         <template #item.actions="{ item }">
           <div class="d-flex justify-end gap-2">
-            <IconBtn 
+            <IconBtn
               v-if="(item as any).status === 'publish'"
-              color="success" 
-              variant="tonal" 
+              color="success"
+              variant="tonal"
               size="small"
-              :href="`/${(item as any).slug}`"
+              :href="`/marketplace-motorlan/${(item as any).slug}/`"
               target="_blank"
             >
               <VIcon icon="tabler-eye" size="18" />

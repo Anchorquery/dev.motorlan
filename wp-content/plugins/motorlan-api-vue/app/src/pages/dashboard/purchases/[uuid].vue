@@ -7,11 +7,13 @@ import type { Publicacion } from '@/interfaces/publicacion'
 import { useUserStore } from '@/@core/stores/user'
 import ChatModal from '@/components/ChatModal.vue'
 import { useMotorFormatter } from '@/composables/useMotorFormatter'
+import { useCountries } from '@/composables/useCountries'
 import RatingModal from '@/components/RatingModal.vue'
 
 const route = useRoute()
 const uuid = route.params.uuid as string
 const { formatMotorName } = useMotorFormatter()
+const { getCountryName, fetchCountries } = useCountries()
 
 const showRatingModal = ref(false)
 
@@ -47,6 +49,7 @@ const fetchPurchase = async () => {
 
 
 onMounted(() => {
+  fetchCountries()
   if (uuid) fetchPurchase()
   if (route.query.openChat === 'true') {
      isChatModalOpen.value = true
@@ -193,11 +196,11 @@ const productLink = computed(() => {
     return null
 
   // URL absoluta para navegación cross-base (desde mi-cuenta a la tienda)
-  return `/marketplace-motorlan/${productSlug.value}`
+  return `/marketplace-motorlan/${productSlug.value}/`
 })
 
 const locationLabel = computed(() => {
-  const country = motorAcf.value.pais
+  const country = getCountryName(motorAcf.value.pais)
   const province = motorAcf.value.provincia
 
   if (country && province)

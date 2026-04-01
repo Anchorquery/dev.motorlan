@@ -123,8 +123,8 @@ const getInitials = (value: string): string => {
   return parts.slice(0, 2).map(part => part.charAt(0).toUpperCase()).join('') || 'U'
 }
 
-const goToProduct = (slug: string) => {
-  window.open(`/marketplace-motorlan/${slug}`, '_blank')
+const goToProduct = (item: InquiryItem) => {
+  window.open(`/marketplace-motorlan/${item.product_slug}/`, '_blank')
 }
 
 onMounted(fetchInquiries)
@@ -252,7 +252,7 @@ const headers = [
                 size="small"
                 color="secondary"
                 variant="tonal"
-                @click="goToProduct(item.product_slug)"
+                @click="goToProduct(item)"
               >
                 <VIcon icon="tabler-external-link" size="18" />
                 <VTooltip activator="parent" location="top">{{ t('inquiries.go_to_publication') || 'Ir a la publicación' }}</VTooltip>

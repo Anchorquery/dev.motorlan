@@ -129,7 +129,17 @@ onMounted(() => {
                 {{ formatMotorName(item as any) }}
                 <VTooltip activator="parent" location="top">{{ formatMotorName(item as any) }}</VTooltip>
               </span>
-              <span class="text-caption text-medium-emphasis">{{ (item as any).acf?.marca?.name }}</span>
+              <span class="text-caption text-medium-emphasis">
+                <template v-if="(item as any).pending_brand">
+                  <VChip color="warning" size="small" variant="elevated" prepend-icon="tabler-tag-starred">
+                    {{ (item as any).pending_brand }}
+                    <VTooltip activator="parent" location="top">Nueva marca propuesta por el usuario</VTooltip>
+                  </VChip>
+                </template>
+                <template v-else>
+                  {{ (item as any).acf?.marca?.name }}
+                </template>
+              </span>
             </div>
           </div>
         </template>
@@ -149,7 +159,9 @@ onMounted(() => {
 
         <!-- precio -->
         <template #item.precio="{ item }">
-          <span class="text-body-1 text-primary font-weight-bold">{{ (item as any).acf?.precio_de_venta }}€</span>
+          <span v-if="(item as any).acf?.precio_negociable === 'yes' || (item as any).acf?.precio_negociable === true" class="text-body-1 text-warning font-weight-bold">Precio Negociable</span>
+          <span v-else-if="(item as any).acf?.precio_de_venta" class="text-body-1 text-primary font-weight-bold">{{ (item as any).acf?.precio_de_venta }}€</span>
+          <span v-else class="text-body-2 text-medium-emphasis">-</span>
         </template>
 
         <!-- Actions -->

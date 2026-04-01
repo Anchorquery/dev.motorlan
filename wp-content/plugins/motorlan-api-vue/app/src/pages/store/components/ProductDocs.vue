@@ -2,17 +2,36 @@
 interface Doc { title: string; url: string }
 
 defineProps<{ docs?: Doc[] }>()
+
+const getFileIcon = (url: string) => {
+  const ext = url.split('.').pop()?.toLowerCase()
+  if (ext === 'pdf') return 'tabler-file-type-pdf'
+  if (['doc', 'docx'].includes(ext)) return 'tabler-file-type-doc'
+  if (['xls', 'xlsx'].includes(ext)) return 'tabler-file-type-xls'
+  if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext || '')) return 'tabler-file-type-jpg'
+  
+  return 'tabler-file-text'
+}
+
+const getIconColor = (url: string) => {
+  const ext = url.split('.').pop()?.toLowerCase()
+  if (ext === 'pdf') return 'error'
+  if (['doc', 'docx'].includes(ext)) return 'info'
+  if (['xls', 'xlsx'].includes(ext)) return 'success'
+  
+  return 'primary'
+}
 </script>
 
 <template>
   <VCard class="product-docs" flat>
-    <VCardTitle class="docs-title d-flex align-center">
-      <VIcon icon="tabler-file-text" color="error" class="mr-2" />
+    <VCardTitle class="docs-title d-flex align-center text-uppercase">
+      <VIcon icon="tabler-files" color="error" class="mr-2" />
       Documentación adicional
     </VCardTitle>
     <VCardText class="pt-0">
       <VCard
-        v-if="docs && docs.length"
+        v-if="docs && docs.length > 0"
         border
         flat
         class="rounded-lg overflow-hidden bg-surface"
@@ -27,18 +46,23 @@ defineProps<{ docs?: Doc[] }>()
               class="doc-item py-3"
             >
               <template #prepend>
-                <VAvatar color="primary" variant="tonal" rounded class="mr-3">
-                  <VIcon icon="mdi-file-document-outline" size="20" />
+                <VAvatar 
+                  :color="getIconColor(doc.url)" 
+                  variant="tonal" 
+                  rounded 
+                  class="mr-3"
+                >
+                  <VIcon :icon="getFileIcon(doc.url)" size="20" />
                 </VAvatar>
               </template>
 
-              <VListItemTitle class="font-weight-medium text-body-2">
+              <VListItemTitle class="font-weight-medium text-body-2 text-uppercase">
                 {{ doc.title }}
               </VListItemTitle>
 
               <template #append>
                 <VIcon
-                  icon="mdi-open-in-new"
+                  icon="tabler-download"
                   size="18"
                   color="medium-emphasis"
                   class="doc-action-icon"
@@ -50,7 +74,7 @@ defineProps<{ docs?: Doc[] }>()
         </VList>
       </VCard>
       <div v-else class="empty-docs">
-        <VIcon icon="mdi-file-document-outline" size="28" class="mb-2" />
+        <VIcon icon="tabler-file-off" size="28" class="mb-2" />
         <p class="text-body-2 mb-0">No hay documentación adjunta.</p>
       </div>
     </VCardText>

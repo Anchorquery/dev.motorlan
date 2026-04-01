@@ -111,12 +111,7 @@ acf_add_local_field_group(array(
 			'key' => 'field_6643d3c3b034c',
 			'label' => 'País (localización)',
 			'name' => 'pais',
-			'type' => 'select',
-			'choices' => array(
-				'España' => 'España',
-				'Portugal' => 'Portugal',
-				'Francia' => 'Francia',
-			),
+			'type' => 'text',
 			'allow_null' => 1,
 		),
 		array(
@@ -202,6 +197,18 @@ acf_add_local_field_group(array(
 			'name' => 'stock',
 			'type' => 'number',
 			'default_value' => 1,
+		),
+		array(
+			'key' => 'field_mostrar_precio',
+			'label' => 'Mostrar precio',
+			'name' => 'mostrar_precio',
+			'type' => 'radio',
+			'choices' => array(
+				'yes' => 'Sí',
+				'no' => 'No',
+			),
+			'default_value' => 'no',
+			'layout' => 'horizontal',
 		),
 		array(
 			'key' => 'field_6643d3c3b0356',

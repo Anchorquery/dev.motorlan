@@ -1,16 +1,16 @@
 <script setup lang="ts">
-import { computed, ref, watch, onMounted } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRouter } from 'vue-router'
 import { createUrl } from '@/@core/composable/createUrl'
 import { useApi } from '@/composables/useApi'
 import { useUserStore } from '@/@core/stores/user'
+import { useMotorFormatter } from '@/composables/useMotorFormatter'
 import type { Publicacion } from '@/interfaces/publicacion'
 
 const { t } = useI18n()
-const router = useRouter()
 const userStore = useUserStore()
 
+const { formatMotorName } = useMotorFormatter()
 const currentUser = computed(() => userStore.getUser)
 
 const headers = [
@@ -69,52 +69,9 @@ const { data: publicationsData, execute: fetchPublications, isFetching } = useAp
 const publications = computed((): Publicacion[] => (publicationsData.value?.data || []).filter(Boolean))
 const totalPublications = computed(() => publicationsData.value?.pagination?.total || 0)
 
-type BrandTerm = { term_id: number; name: string; slug: string }
-const { data: brandsResponse, execute: fetchBrands } = useApi<BrandTerm[]>('/wp-json/motorlan/v1/marcas', { immediate: false }).get().json()
-const brands = computed<BrandTerm[]>(() => brandsResponse.value || [])
-const brandById = computed<Record<number, BrandTerm>>(() => Object.fromEntries(brands.value.map(b => [Number(b.term_id), b])))
-const brandBySlug = computed<Record<string, BrandTerm>>(() => Object.fromEntries(brands.value.map(b => [String(b.slug), b])))
-
-const resolveBrandName = (value: any): string | null => {
-  if (!value && value !== 0)
-    return null
-  if (typeof value === 'object') {
-    const name = (value?.name || value?.label || value?.title) as string | undefined
-    if (name && name.trim().length)
-      return name
-    const id = Number(value?.id ?? value?.term_id ?? 0) || null
-    if (id && brandById.value[id])
-      return brandById.value[id].name
-  }
-  const asNum = Number(value)
-  if (Number.isFinite(asNum) && asNum > 0 && brandById.value[asNum])
-    return brandById.value[asNum].name
-  const asStr = String(value)
-  if (brandBySlug.value[asStr])
-    return brandBySlug.value[asStr].name
-  return asStr && asStr !== 'null' && asStr !== 'undefined' ? asStr : null
-}
-
-const formatPublicationTitle = (pub: any, fallbackTitle?: string): string => {
-  if (!pub)
-    return fallbackTitle || ''
-  const acf = pub.acf || {}
-  const parts = [
-    pub.title || fallbackTitle,
-    resolveBrandName(acf.marca),
-    acf.velocidad ? `${acf.velocidad} rpm` : null,
-    acf.potencia ? `${acf.potencia} kW` : null,
-  ].filter(Boolean) as string[]
-  return parts.join(' · ')
-}
-
 watch([page, itemsPerPage, sortBy, orderBy, searchQuery, selectedStatus], () => {
   void fetchPublications()
 }, { immediate: true })
-
-onMounted(() => {
-  void fetchBrands()
-})
 
 const refresh = () => {
   fetchPublications()
@@ -125,20 +82,9 @@ const showDeleteConfirm = ref(false)
 const selectedFavorite = ref<Publicacion | null>(null)
 const isDeleting = ref(false)
 
-// Función para ver la publicación
-const goToPublication = (item: Publicacion) => {
-  const slug = (item as any).slug
-  window.location.href = `/marketplace-motorlan/${slug}/`
-}
-
-// Función para contactar al vendedor
-const contactSeller = (item: Publicacion) => {
-  const authorId = (item as any).author?.id
-  const publicacionId = (item as any).id
-  if (authorId && publicacionId) {
-    // Redirigir al chat con el vendedor
-    router.push(`/dashboard/purchases/chat/${publicacionId}`)
-  }
+// Obtener URL de la publicación
+const getPublicationUrl = (item: Publicacion): string => {
+  return `/marketplace-motorlan/${(item as any).slug}/`
 }
 
 // Función para confirmar eliminación de favorito
@@ -235,30 +181,24 @@ const removeFavorite = async () => {
         >
         <!-- publicacion  -->
         <template #item.publicacion="{ item }">
-          <div class="d-flex align-center gap-x-4 py-2" style="max-width: 280px;">
+          <div class="d-flex align-center gap-3 py-2" style="max-width: 280px;">
             <VAvatar
               v-if="(item as any).imagen_destacada"
               size="48"
               variant="tonal"
               rounded
               class="border flex-shrink-0"
-            >
-              <VImg :src="(item as any).imagen_destacada.url" alt="Publication Image" cover />
-            </VAvatar>
+              :image="(item as any).imagen_destacada?.url"
+            />
             <div class="d-flex flex-column overflow-hidden">
-              <span 
+              <span
                 class="text-body-1 font-weight-medium text-high-emphasis text-truncate"
                 style="max-width: 200px;"
               >
-                {{ formatPublicationTitle(item, (item as any).title) }}
-                <VTooltip activator="parent" location="top">{{ formatPublicationTitle(item, (item as any).title) }}</VTooltip>
+                {{ formatMotorName(item as any) || (item as any).title }}
+                <VTooltip activator="parent" location="top">{{ formatMotorName(item as any) || (item as any).title }}</VTooltip>
               </span>
-              <span
-                v-if="(item as any).acf?.tipo_o_referencia"
-                class="text-caption text-medium-emphasis"
-              >
-                Ref: {{ (item as any).acf.tipo_o_referencia }}
-              </span>
+              <span class="text-caption text-medium-emphasis">{{ (item as any).acf?.marca?.name || (item as any).marca_name }}</span>
             </div>
           </div>
         </template>
@@ -287,10 +227,11 @@ const removeFavorite = async () => {
            <div class="d-flex justify-end gap-2">
               <!-- Ver Publicación -->
               <IconBtn
-                color="info"
+                color="success"
                 variant="tonal"
                 size="small"
-                @click="goToPublication(item)"
+                :href="getPublicationUrl(item)"
+                target="_blank"
               >
                 <VIcon
                   icon="tabler-eye"
@@ -298,21 +239,7 @@ const removeFavorite = async () => {
                 />
                 <VTooltip activator="parent" location="top">{{ t('Ver Publicación') }}</VTooltip>
               </IconBtn>
-              
-              <!-- Contactar Vendedor -->
-              <IconBtn
-                color="primary"
-                variant="tonal"
-                size="small"
-                @click="contactSeller(item)"
-              >
-                <VIcon
-                  icon="tabler-message-circle"
-                  size="18"
-                />
-                <VTooltip activator="parent" location="top">{{ t('Contactar Vendedor') }}</VTooltip>
-              </IconBtn>
-              
+
               <!-- Eliminar de Favoritos -->
               <IconBtn
                 color="error"
@@ -365,7 +292,7 @@ const removeFavorite = async () => {
           {{ t('¿Estás seguro que deseas eliminar esta publicación de tus favoritos?') }}
         </p>
         <p v-if="selectedFavorite" class="text-body-2 text-medium-emphasis mt-2 font-weight-medium">
-          "{{ formatPublicationTitle(selectedFavorite, (selectedFavorite as any).title) }}"
+          "{{ formatMotorName(selectedFavorite as any) || (selectedFavorite as any).title }}"
         </p>
       </VCardText>
       

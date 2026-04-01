@@ -39,6 +39,7 @@ const postId = ref<number | null>(null)
 const marcas = ref<{ title: string; value: number }[]>([])
 const categories = ref<{ title: string; value: number }[]>([])
 const tipos = ref<{ title: string; value: number; slug: string }[]>([])
+const countries = ref<{ title: string; value: string }[]>([])
 
 // Load Data
 onMounted(async () => {
@@ -46,16 +47,19 @@ onMounted(async () => {
     const marcasFetch = useApi('/wp-json/motorlan/v1/marcas', { immediate: false }).get().json()
     const categoriesFetch = useApi('/wp-json/motorlan/v1/publicacion-categories', { immediate: false }).get().json()
     const tiposFetch = useApi('/wp-json/motorlan/v1/tipos', { immediate: false }).get().json()
+    const countriesFetch = useApi('/wp-json/motorlan/v1/countries', { immediate: false }).get().json()
 
     await Promise.all([
        marcasFetch.execute(),
        categoriesFetch.execute(),
        tiposFetch.execute(),
+       countriesFetch.execute(),
     ])
 
     if (marcasFetch.data.value) marcas.value = marcasFetch.data.value.map((m: any) => ({ title: m.name, value: m.term_id }))
     if (categoriesFetch.data.value) categories.value = categoriesFetch.data.value.map((c: any) => ({ title: c.name, value: c.term_id }))
     if (tiposFetch.data.value) tipos.value = tiposFetch.data.value.map((t: any) => ({ title: t.name, value: t.term_id, slug: t.slug }))
+    if (countriesFetch.data.value) countries.value = countriesFetch.data.value
     
     if (motorUuid) {
         await fetchPublication(motorUuid)
@@ -101,6 +105,12 @@ const fetchPublication = async (uuid: string) => {
             mappedState.acf.marca = Number(mappedState.acf.marca)
         }
         
+        // Handle pending custom brand
+        if (post.pending_brand) {
+            mappedState.acf.marca = -1
+            mappedState.acf.marca_custom = post.pending_brand
+        }
+
         // Mapping Images properly for DropZone
         if (post.acf.motor_image) {
              mappedState.acf.motor_image = {
@@ -121,7 +131,7 @@ const fetchPublication = async (uuid: string) => {
         
         
         // Load legacy mappings (country, condition) if needed - logic copied from original file
-        const countryMap: { [key: string]: string } = { 'España': 'spain', 'España': 'spain', 'Spain': 'spain', 'Portugal': 'portugal', 'Francia': 'france', 'France': 'france' }
+        const countryMap: { [key: string]: string } = { 'España': 'es', 'spain': 'es', 'Spain': 'es', 'Portugal': 'pt', 'portugal': 'pt', 'Francia': 'fr', 'France': 'fr', 'france': 'fr' }
         const conditionMap: { [key: string]: string } = { 'Nuevo': 'new', 'Usado': 'used', 'Restaurado': 'restored' }
         
         if (typeof mappedState.acf.pais === 'string' && countryMap[mappedState.acf.pais]) mappedState.acf.pais = countryMap[mappedState.acf.pais]
@@ -160,7 +170,12 @@ const updatePublication = async (status: string) => {
         formData.append('tipo', JSON.stringify(formState.value.tipo))
         
         // ACF - separate files
-        const { motor_image, motor_gallery, documentacion_adicional, ...acfRest } = formState.value.acf
+        const { motor_image, motor_gallery, documentacion_adicional, marca_custom, ...acfRest } = formState.value.acf
+        // Si es marca personalizada (Otros), enviar el nombre en vez del ID
+        if (acfRest.marca === -1 && marca_custom) {
+          acfRest.marca = null
+          formData.append('marca_custom', marca_custom)
+        }
         formData.append('acf', JSON.stringify(acfRest))
         
         // Main Image logic
@@ -240,7 +255,6 @@ const buildPublicationSlug = () => {
         formState.value.title,
         formState.value.acf.tipo_o_referencia,
         formState.value.acf.potencia ? `${formState.value.acf.potencia} kW` : null,
-        formState.value.acf.velocidad ? `${formState.value.acf.velocidad} rpm` : null,
       ].filter(Boolean) as string[]
 
       return parts.length ? slugify(parts.join(' ')) : ''
@@ -252,7 +266,14 @@ const pageTitle = computed(() => {
     let title = t('edit_publication.title', 'Editar Publicación')
     if (formState.value.tipo && tipos.value.length) {
         const type = tipos.value.find(t => t.value === formState.value.tipo[0])
-        if (type) title += `: ${type.title}`
+        if (type) {
+            let typeTitle = type.title
+            if (type.slug === 'motor') {
+                const supplyType = formState.value.acf.tipo_de_alimentacion
+                typeTitle = supplyType === 'dc' ? t('select_publication_type.motor_dc_title') : t('select_publication_type.motor_ac_title')
+            }
+            title += `: ${typeTitle}`
+        }
     }
     return title
 })
@@ -312,7 +333,7 @@ const statusColor = computed(() => {
         <div class="d-flex flex-wrap justify-space-between gap-4 mb-6 align-center">
             <VCardTitle class="pa-6 pb-0">
           <div class="d-flex justify-space-between align-center flex-wrap gap-4">
-            <span class="text-h5 font-weight-bold text-premium-title">{{ t('Edit Publication') }}</span>
+            <span class="text-h5 font-weight-bold text-premium-title">{{ pageTitle }}</span>
             <span class="text-caption text-medium-emphasis">Los campos marcados con <span class="text-error">*</span> son obligatorios</span>
           </div>
         </VCardTitle>
@@ -358,7 +379,7 @@ const statusColor = computed(() => {
                     <VCardText class="pa-6">
                          <VWindow v-model="activeTab">
                              <!-- Basic Info -->
-                            <VWindowItem :value="0">
+                            <VWindowItem eager :value="0">
                                 <StepBasicInfo 
                                     :form-state="formState" 
                                     :marcas="marcas" 
@@ -368,22 +389,23 @@ const statusColor = computed(() => {
                                 <div class="mt-6">
                                      <StepLocationCondition
                                         :form-state="formState"
+                                        :country-options="countries"
                                         @update:form-state="setFormState"
                                     />
                                 </div>
                             </VWindowItem>
                             
                             <!-- Tech Specs -->
-                             <VWindowItem :value="1">
+                             <VWindowItem eager :value="1">
                                 <StepTechSpecs
                                      :form-state="formState"
-                                     :is-motor="true"
+                                     :tipos="tipos"
                                      @update:form-state="setFormState"
                                 />
                              </VWindowItem>
                              
                              <!-- Media -->
-                             <VWindowItem :value="2">
+                             <VWindowItem eager :value="2">
                                   <StepMedia
                                     :form-state="formState"
                                     @update:form-state="setFormState"
@@ -391,7 +413,7 @@ const statusColor = computed(() => {
                              </VWindowItem>
                              
                              <!-- Docs -->
-                             <VWindowItem :value="3">
+                             <VWindowItem eager :value="3">
                                  <StepDocumentation
                                     :form-state="formState"
                                     @update:form-state="setFormState"
@@ -436,8 +458,14 @@ const statusColor = computed(() => {
                        <VCardText class="py-4">
                            <div class="d-flex justify-space-between align-center mb-3">
                                <span class="text-body-2 text-medium-emphasis">{{ t('add_publication.post_details.price') }}:</span>
-                               <span class="text-h6 font-weight-bold text-primary">
-                                   {{ formState.acf.precio_de_venta ? `${formState.acf.precio_de_venta}€` : '-' }}
+                               <span v-if="formState.acf.precio_negociable === 'yes'" class="text-h6 font-weight-bold text-warning">
+                                   Precio Negociable
+                               </span>
+                               <span v-else-if="formState.acf.precio_de_venta" class="text-h6 font-weight-bold text-primary">
+                                   {{ formState.acf.precio_de_venta }}€
+                               </span>
+                               <span v-else class="text-h6 font-weight-bold text-primary">
+                                   {{ t('add_publication.post_details.no_price', 'Consultar') }}
                                </span>
                            </div>
                            <div class="d-flex justify-space-between align-center mb-3">
@@ -464,7 +492,7 @@ const statusColor = computed(() => {
                             <VBtn 
                                 block 
                                 variant="outlined" 
-                                :href="`/${formState.slug || ''}`" 
+                                :href="`/marketplace-motorlan/${formState.slug || ''}/`"
                                 target="_blank"
                                 prepend-icon="tabler-external-link"
                                 :disabled="!formState.slug || formState.status !== 'publish'"

@@ -323,7 +323,7 @@ const openEdit = (uuid: string) => {
             size="small" 
             variant="tonal" 
             color="success" 
-            :href="item.link" 
+            :href="`/marketplace-motorlan/${item.slug}/`"
             target="_blank"
             rel="noopener noreferrer"
           >

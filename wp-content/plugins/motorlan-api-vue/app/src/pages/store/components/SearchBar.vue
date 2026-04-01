@@ -1,9 +1,8 @@
 <script setup lang="ts">
-defineProps<{ loading: boolean; orderOptions: string[] }>()
+defineProps<{ loading: boolean }>()
 
 const emit = defineEmits(['search'])
 const searchTerm = defineModel<string>('searchTerm')
-const order = defineModel<string | null>('order')
 const onSearch = () => emit('search')
 </script>
 
@@ -18,10 +17,9 @@ const onSearch = () => emit('search')
       </h3>
     </div>
     <div class="top-bar">
-      <VTextField
+      <AppTextField
         v-model="searchTerm"
         placeholder="Buscar..."
-        variant="outlined"
         hide-details
         class="flex-grow-1"
         @keydown.enter="onSearch"
@@ -33,15 +31,6 @@ const onSearch = () => emit('search')
       >
         BUSCAR
       </VBtn>
-      <AppSelect
-        v-model="order"
-        :items="orderOptions"
-        placeholder="Ordenar"
-        variant="outlined"
-        color="error"
-        class="ml-auto"
-        style="max-width: 250px;"
-      />
     </div>
   </div>
 </template>
@@ -58,9 +47,6 @@ const onSearch = () => emit('search')
   color: white !important;
 }
 .search-bar-wrapper .text-error {
-  color: #da291c !important;
-}
-.search-bar-wrapper .v-select--variant-outlined .v-field__outline__color {
   color: #da291c !important;
 }
 </style>

@@ -159,6 +159,7 @@ function motorlan_get_publicacion_data($post_id, $include_sensitive = false) {
         'uuid'         => get_post_meta($post_id, 'uuid', true),
         'title'        => get_the_title($post_id),
         'slug'         => $post->post_name,
+        'link'         => function_exists('motorlan_get_store_url') ? motorlan_get_store_url($post_id) : get_permalink($post_id),
         'status'       => get_field('publicar_acf', $post_id),
         'author_id'    => $author_id,
         'author'       => $user ? [
@@ -177,10 +178,13 @@ function motorlan_get_publicacion_data($post_id, $include_sensitive = false) {
         'imagen_destacada' => motorlan_format_image_for_frontend(get_field('motor_image', $post_id, true)),
     ];
 
-    // Remove price from ACF if it exists, to prevent it from being returned to the frontend.
+    // Remove price from ACF if mostrar_precio is not 'yes' AND user is not the owner.
     // UNLESS $include_sensitive is true (e.g. for the owner editing the post)
-    if (!$include_sensitive && isset($publicacion_item['acf']['precio_de_venta'])) {
-        unset($publicacion_item['acf']['precio_de_venta']);
+    if (!$include_sensitive) {
+        $mostrar_precio = isset($publicacion_item['acf']['mostrar_precio']) ? $publicacion_item['acf']['mostrar_precio'] : 'no';
+        if ($mostrar_precio !== 'yes' && isset($publicacion_item['acf']['precio_de_venta'])) {
+            unset($publicacion_item['acf']['precio_de_venta']);
+        }
     }
 
     // Forzar la obtención de la marca si get_fields() no la incluye.
@@ -194,7 +198,14 @@ function motorlan_get_publicacion_data($post_id, $include_sensitive = false) {
     // Enrich marca with name if it is an ID
     if (!empty($publicacion_item['acf']['marca'])) {
         $marca_val = $publicacion_item['acf']['marca'];
-        if (is_numeric($marca_val)) {
+        if (is_numeric($marca_val) && (int) $marca_val === -1) {
+            // Marca pendiente de aprobación
+            $pending_brand = get_post_meta($post_id, '_pending_brand_name', true);
+            if ($pending_brand) {
+                $publicacion_item['marca_name'] = $pending_brand;
+                $publicacion_item['pending_brand'] = $pending_brand;
+            }
+        } elseif (is_numeric($marca_val)) {
             $term = get_term($marca_val);
             if ($term && !is_wp_error($term)) {
                 $publicacion_item['marca_name'] = $term->name;
@@ -302,8 +313,18 @@ function motorlan_normalize_checkbox_acf_value($post_id, $field_name, $value) {
  * @param string $taxonomy The taxonomy slug.
  * @return WP_REST_Response
  */
-function motorlan_get_taxonomy_terms_callback($taxonomy) {
-    $terms = get_terms(['taxonomy' => $taxonomy, 'hide_empty' => false]);
+function motorlan_get_taxonomy_terms_callback($taxonomy, $hide_empty = false) {
+    $args = [
+        'taxonomy'   => $taxonomy,
+        'hide_empty' => $hide_empty,
+    ];
+
+    // WPML filtra automáticamente get_terms() cuando suppress_filters no está activo
+    if ( has_filter( 'wpml_current_language' ) ) {
+        $args['suppress_filters'] = false;
+    }
+
+    $terms = get_terms($args);
     if (is_wp_error($terms)) {
         return new WP_REST_Response(['message' => $terms->get_error_message()], 500);
     }
@@ -320,6 +341,7 @@ function motorlan_get_taxonomy_terms_callback($taxonomy) {
 function motorlan_generate_publicacion_slug($data, $post_id = 0) {
     $title = $data['title'] ?? '';
     $acf = $data['acf'] ?? [];
+    $parts = [];
 
     // 1. Tipo (Taxonomy 'tipo')
     $tipo_id = $data['tipo'] ?? null;
@@ -352,11 +374,6 @@ function motorlan_generate_publicacion_slug($data, $post_id = 0) {
         $parts[] = $acf['potencia'] . '-kw';
     } elseif (!empty($acf['par_nominal'])) {
         $parts[] = $acf['par_nominal'] . '-nm';
-    }
-
-    // 5. Velocidad (ACF 'velocidad')
-    if (!empty($acf['velocidad'])) {
-        $parts[] = $acf['velocidad'] . '-rpm';
     }
 
     // Ensure we have at least something, fallback to title if empty parts

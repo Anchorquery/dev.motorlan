@@ -81,9 +81,9 @@ const fetchInquiries = async () => {
 
 onMounted(fetchInquiries)
 
-const goToProduct = (slug: string) => {
+const goToProduct = (item: InquiryItem) => {
   // URL absoluta para navegación cross-base (desde mi-cuenta a la tienda)
-  window.open(`/marketplace-motorlan/${slug}`, '_blank')
+  window.open(`/marketplace-motorlan/${item.product_slug}/`, '_blank')
 }
 
 // Table columns
@@ -288,7 +288,7 @@ const refresh = () => {
               size="small"
               color="secondary"
               variant="tonal"
-              @click="goToProduct(item.product_slug)"
+              @click="goToProduct(item)"
             >
               <VIcon icon="tabler-external-link" size="18" />
               <VTooltip activator="parent" location="top">Ver publicación</VTooltip>

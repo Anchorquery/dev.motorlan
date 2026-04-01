@@ -216,7 +216,7 @@
       "torque_label": "PAR (Nm)",
       "brands_label": "Markak",
       "state_label": "Egoera",
-      "type_model_label": "Mota / eredua",
+      "type_model_label": "Eredua",
       "responsibility_note": "GARRANTZITSUA: Motorlanek ez du bere gain hartzen saltzailearen eta eroslearen artean zuzenean saltzen diren ekipoen ardura, aurretik bere tailer espezializatuan azterketa egin gabe."
     },
     "par_options": {
@@ -259,7 +259,7 @@
       "type": "Argitalpen Mota",
       "title": "Argitalpenaren Izenburua",
       "title_placeholder": "Izenburua",
-      "reference": "Mota edo Erreferentzia",
+      "reference": "Eredua",
       "reference_placeholder": "Erreferentzia",
       "brand": "Marka",
       "category": "Kategoria",
@@ -408,6 +408,10 @@
   "select_publication_type": {
     "title": "Hautatu Argitalpen Mota",
     "subtitle": "Aukeratu zer produktu mota gehitu nahi duzun dendara.",
+    "motor_ac_title": "Motorra AC",
+    "motor_ac_description": "Argitaratu korronte alternoko motor elektriko bat.",
+    "motor_dc_title": "Motorra DC",
+    "motor_dc_description": "Argitaratu korronte zuzeneko motor elektriko bat (eskuilekin).",
     "motor_title": "Motorra",
     "motor_description": "Argitaratu motor elektriko bat, bere xehetasun tekniko guztiekin: potentzia, abiadura, etab.",
     "regulator_title": "Erregulatzailea",
@@ -423,7 +427,7 @@
     "section_title": "Argitalpenaren Xehetasunak",
     "publication_title": "Argitalpenaren Izenburua",
     "publication_title_placeholder": "Izenburua",
-    "reference": "Mota edo Erreferentzia",
+    "reference": "Eredua",
     "reference_placeholder": "Erreferentzia",
     "brand": "Marka",
     "category": "Kategoria",

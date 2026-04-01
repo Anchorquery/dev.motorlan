@@ -9,6 +9,27 @@ if ( ! defined( 'WPINC' ) ) {
     die;
 }
 
+if ( ! function_exists( 'motorlan_get_store_url' ) ) {
+    /**
+     * Get the public store URL for a publication.
+     *
+     * Builds the URL using the marketplace page slug instead of
+     * WordPress get_permalink(), which points to the raw CPT URL.
+     *
+     * @param int|string $post_id_or_slug Post ID or post slug.
+     * @return string Full URL to the publication in the store.
+     */
+    function motorlan_get_store_url( $post_id_or_slug ) {
+        if ( is_numeric( $post_id_or_slug ) ) {
+            $slug = get_post_field( 'post_name', (int) $post_id_or_slug );
+        } else {
+            $slug = $post_id_or_slug;
+        }
+
+        return trailingslashit( get_site_url() ) . 'marketplace-motorlan/' . $slug . '/';
+    }
+}
+
 if ( ! function_exists( 'motorlan_handle_db_error' ) ) {
     /**
      * Handle database errors securely with logging.
@@ -124,7 +145,7 @@ if ( ! function_exists( 'motorlan_get_motor_data' ) ) {
             'title'      => get_the_title( $motor_id ),
             'slug'       => $post->post_name,
             'status'     => get_post_status( $motor_id ),
-            'permalink'  => get_permalink( $motor_id ),
+            'permalink'  => motorlan_get_store_url( $motor_id ),
             'date'       => get_post_time( DATE_ATOM, true, $motor_id ),
             'modified'   => get_post_modified_time( DATE_ATOM, true, $motor_id ),
             'imagen_destacada' => motorlan_format_image_for_frontend( 
@@ -141,8 +162,9 @@ if ( ! function_exists( 'motorlan_get_motor_data' ) ) {
             $fields = get_fields( $motor_id );
             if ( is_array( $fields ) ) {
                 $data['acf'] = $fields;
-                // Remove price if it exists
-                if (isset($data['acf']['precio_de_venta'])) {
+                // Remove price if mostrar_precio is not 'yes'
+                $mostrar_precio = isset($data['acf']['mostrar_precio']) ? $data['acf']['mostrar_precio'] : 'no';
+                if ($mostrar_precio !== 'yes' && isset($data['acf']['precio_de_venta'])) {
                     unset($data['acf']['precio_de_venta']);
                 }
             }
@@ -321,12 +343,14 @@ if ( ! function_exists( 'motorlan_format_motor_name' ) ) {
 
         $parts = array();
 
+        /*
         // 1. Type (Taxonomy 'tipo')
         // Using wp_get_post_terms instead of get_field to avoid dependency issues if ACF is not fully loaded contextually or prefer native terms
         $terms = wp_get_post_terms( $post->ID, 'tipo' );
         if ( ! is_wp_error( $terms ) && ! empty( $terms ) ) {
             $parts[] = strtoupper( $terms[0]->name );
         }
+        */
 
         // 2. Brand (ACF 'marca')
         $marca = function_exists( 'get_field' ) ? get_field( 'marca', $post->ID ) : get_post_meta( $post->ID, 'marca', true );
@@ -360,12 +384,6 @@ if ( ! function_exists( 'motorlan_format_motor_name' ) ) {
             if ( $par ) {
                 $parts[] = $par . ' NM';
             }
-        }
-
-        // 5. Speed (ACF 'velocidad')
-        $velocidad = function_exists( 'get_field' ) ? get_field( 'velocidad', $post->ID ) : get_post_meta( $post->ID, 'velocidad', true );
-        if ( $velocidad ) {
-            $parts[] = $velocidad . ' RPM';
         }
 
         if ( empty( $parts ) ) {

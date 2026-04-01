@@ -151,38 +151,36 @@ add_action('rest_api_init', 'motorlan_add_cors_headers', 15);
  * Agrega headers de seguridad HTTP para mejorar la protección.
  * Implementa HSTS, Anti-clickjacking, XSS protection, etc.
  */
-function motorlan_add_security_headers() {
+function motorlan_add_security_headers($headers) {
     // HSTS (Strict-Transport-Security) - Solo si es HTTPS
     if (is_ssl()) {
-        header('Strict-Transport-Security: max-age=31536000; includeSubDomains');
+        $headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains';
     }
 
-    // X-Content-Type-Options - Previene MIME type sniffing
-    header('X-Content-Type-Options: nosniff');
-
-    // X-Frame-Options - Protección contra Clickjacking
-    header('X-Frame-Options: SAMEORIGIN');
-
-    // X-XSS-Protection - Filtro XSS del navegador
-    header('X-XSS-Protection: 1; mode=block');
-
-    // Referrer-Policy - Control de información enviada en el referer
-    header('Referrer-Policy: strict-origin-when-cross-origin');
+    // Headers de seguridad estándar
+    $headers['X-Content-Type-Options'] = 'nosniff';
+    $headers['X-Frame-Options'] = 'SAMEORIGIN';
+    $headers['X-XSS-Protection'] = '1; mode=block';
+    $headers['Referrer-Policy'] = 'strict-origin-when-cross-origin';
 
     // Content-Security-Policy (CSP)
-    // Permite scripts propios, fonts de Google, y estilos inline (necesario a veces para WP/Vue)
-    // Se recomienda ajustar 'unsafe-inline' y 'unsafe-eval' en producción si es posible.
-    $csp = "default-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com; ";
-    $csp .= "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "; // 'unsafe-eval' para Vue dev
+    // Permite scripts propios, fonts de Google, y estilos inline
+    $csp = "default-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com data: blob:; ";
+    $csp .= "script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:; ";
     $csp .= "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; ";
-    $csp .= "img-src 'self' data: https:; "; // Permite imágenes externas https y data URIs
+    $csp .= "worker-src 'self' blob:; ";
+    $csp .= "img-src 'self' data: https: blob:; ";
     $csp .= "font-src 'self' https://fonts.gstatic.com data:; ";
-    $csp .= "connect-src 'self' https://motorlan.com https://www.motorlan.es https://dev.motorlan.es http://localhost:*;"; // Ajustar según API
+    $csp .= "connect-src 'self' https://motorlan.com https://www.motorlan.es https://dev.motorlan.es http://localhost:* ws://localhost:* http://127.0.0.1:* ws://127.0.0.1:*; ";
+    $csp .= "frame-src 'self' blob:; ";
+    $csp .= "object-src 'none'; ";
     
-    header("Content-Security-Policy: $csp");
+    $headers['Content-Security-Policy'] = $csp;
+
+    return $headers;
 }
-// Se agrega a send_headers para que aplique a todas las respuestas, no solo REST API
-add_action('send_headers', 'motorlan_add_security_headers');
+// Usamos wp_headers para mayor compatibilidad y permitir que WP lo maneje
+add_filter('wp_headers', 'motorlan_add_security_headers', 999);
 
 /**
  * Personaliza el título del menú que tenga la clase 'menu-user-name' para mostrar el nombre del usuario si está logueado.

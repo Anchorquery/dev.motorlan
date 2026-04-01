@@ -314,14 +314,7 @@ const getImageBySize = (image: any, size = 'thumbnail'): string => {
 const formatPublicationTitle = (pub: any, fallbackTitle?: string): string => {
   if (!pub)
     return fallbackTitle || ''
-  const acf = pub.acf || {}
-  const parts = [
-    pub.title || fallbackTitle,
-    resolveBrandName(acf.marca),
-    acf.velocidad ? `${acf.velocidad} rpm` : null,
-    acf.potencia ? `${acf.potencia} kW` : null,
-  ].filter(Boolean) as string[]
-  return parts.join(' · ')
+  return pub.title || fallbackTitle || ''
 }
 
 const getPublicationEntity = (item: any) => (item?.publicacion || item?.motor || null)

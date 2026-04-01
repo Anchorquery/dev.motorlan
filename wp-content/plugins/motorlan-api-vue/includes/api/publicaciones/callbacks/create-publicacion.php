@@ -29,10 +29,40 @@ function motorlan_create_publicacion_callback(WP_REST_Request $request) {
     }
 
     if (empty($params['title'])) return new WP_Error('missing_title', 'El título es obligatorio', ['status' => 400]);
-    if (empty($acf_data['marca'])) return new WP_Error('missing_brand', 'La marca es obligatoria', ['status' => 400]);
-    if (empty($acf_data['tipo_o_referencia'])) return new WP_Error('missing_reference', 'La referencia es obligatoria', ['status' => 400]);
-    if (empty($acf_data['velocidad'])) return new WP_Error('missing_speed', 'La velocidad es obligatoria', ['status' => 400]);
-    if (empty($acf_data['potencia']) && empty($acf_data['par_nominal'])) return new WP_Error('missing_power_or_torque', 'Debe especificar Potencia o Par Nominal', ['status' => 400]);
+
+    // Manejar marca personalizada: guardar como pendiente para aprobación del admin
+    $pending_brand_name = null;
+    if (!empty($params['marca_custom'])) {
+        $custom_brand_name = strtoupper(sanitize_text_field($params['marca_custom']));
+        // Verificar si ya existe (case-insensitive)
+        $existing_term = get_term_by('name', $custom_brand_name, 'marca');
+        if ($existing_term) {
+            $acf_data['marca'] = $existing_term->term_id;
+        } elseif ($is_admin) {
+            // Admin: crear la marca directamente sin necesidad de aprobación
+            $new_term = wp_insert_term($custom_brand_name, 'marca');
+            if (is_wp_error($new_term)) {
+                return new WP_Error('brand_create_error', 'Error al crear la marca: ' . $new_term->get_error_message(), ['status' => 500]);
+            }
+            $acf_data['marca'] = $new_term['term_id'];
+        } else {
+            // Usuario normal: diferir a aprobación del admin
+            $pending_brand_name = $custom_brand_name;
+            $acf_data['marca'] = -1; // Valor temporal
+        }
+    }
+
+    if (($acf_data['marca'] ?? '') === '' && !$pending_brand_name) return new WP_Error('missing_brand', 'La marca es obligatoria', ['status' => 400]);
+    if (($acf_data['tipo_o_referencia'] ?? '') === '') return new WP_Error('missing_reference', 'La referencia es obligatoria', ['status' => 400]);
+    if (!isset($acf_data['velocidad']) || $acf_data['velocidad'] === '' || $acf_data['velocidad'] === null) return new WP_Error('missing_speed', 'La velocidad es obligatoria', ['status' => 400]);
+    $is_ac = isset($acf_data['tipo_de_alimentacion']) && $acf_data['tipo_de_alimentacion'] === 'ac';
+    if ($is_ac) {
+        if (!isset($acf_data['potencia']) || $acf_data['potencia'] === '' || $acf_data['potencia'] === null) return new WP_Error('missing_power', 'La potencia es obligatoria para motores AC', ['status' => 400]);
+    } else {
+        $has_potencia = isset($acf_data['potencia']) && $acf_data['potencia'] !== '' && $acf_data['potencia'] !== null;
+        $has_par = isset($acf_data['par_nominal']) && $acf_data['par_nominal'] !== '' && $acf_data['par_nominal'] !== null;
+        if (!$has_potencia && !$has_par) return new WP_Error('missing_power_or_torque', 'Debe especificar Potencia o Par Nominal', ['status' => 400]);
+    }
 
     // --- Create Post ---
     $post_title = sanitize_text_field($params['title']);
@@ -83,6 +113,11 @@ function motorlan_create_publicacion_callback(WP_REST_Request $request) {
 
     // Explicitly set the ACF field for consistency
     update_field('publicar_acf', $requested_status, $post_id);
+
+    // Si hay marca pendiente, guardarla como meta para aprobación
+    if ($pending_brand_name) {
+        update_post_meta($post_id, '_pending_brand_name', $pending_brand_name);
+    }
 
     // --- Notifications ---
     if ($requested_status === 'pending' && !$is_admin) {

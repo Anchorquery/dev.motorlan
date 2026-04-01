@@ -80,40 +80,7 @@ const docs = computed(() => {
 
 const title = computed(() => {
   if (!publicacion.value) return "";
-
-  // Nomenclature: Tipo de producto_Marca_Tipo/modelo_Potencia o Par_Velocidad
-  
-  // 1. Tipo
-  const tipo = publicacion.value.tipo && publicacion.value.tipo.length > 0 ? publicacion.value.tipo[0].name : '';
-  
-  // 2. Marca
-  const marca = (publicacion.value as any).marca_name || '';
-
-  // 3. Modelo
-  const modelo = publicacion.value.acf.tipo_o_referencia || '';
-
-  // 4. Potencia o Par
-  let powerOrTorque = '';
-  if (publicacion.value.acf.potencia) {
-      powerOrTorque = `${publicacion.value.acf.potencia} kW`;
-  } else if (publicacion.value.acf.par_nominal) {
-      powerOrTorque = `${publicacion.value.acf.par_nominal} Nm`;
-  }
-
-  // 5. Velocidad
-  const velocidad = publicacion.value.acf.velocidad
-      ? `${publicacion.value.acf.velocidad} rpm`
-      : '';
-
-  const parts = [
-    tipo,
-    marca,
-    modelo,
-    powerOrTorque,
-    velocidad,
-  ].filter(p => !!p && String(p).trim() !== '');
-
-  return parts.join(' ').toUpperCase();
+  return publicacion.value.title;
 });
 
 const getInitials = (value: string): string => {

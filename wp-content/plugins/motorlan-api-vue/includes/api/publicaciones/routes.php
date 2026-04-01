@@ -102,6 +102,13 @@ function motorlan_register_publicaciones_rest_routes() {
         'permission_callback' => '__return_true',
     ]);
 
+    // --- Countries ---
+    register_rest_route($namespace, '/countries', [
+        'methods'  => WP_REST_Server::READABLE,
+        'callback' => 'motorlan_get_countries_callback',
+        'permission_callback' => '__return_true',
+    ]);
+
     // --- Favorites ---
     register_rest_route($namespace, '/favorites', [
         [

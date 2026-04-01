@@ -169,13 +169,7 @@ const resolveBrandName = (value: any): string | null => {
 const formatPublicationTitle = (pub: any): string => {
   if (!pub)
     return ''
-  const acf = pub.acf || {}
-  const parts = [
-    pub.title,
-    resolveBrandName(acf.marca),
-    acf.velocidad ? `${acf.velocidad} rpm` : null,
-  ].filter(Boolean) as string[]
-  return parts.join(' • ')
+  return pub.title || ''
 }
 
 const resolvePurchaseType = (item: any): { text: string; color: string } => {
@@ -189,8 +183,10 @@ const resolvePurchaseType = (item: any): { text: string; color: string } => {
 }
 
 // Navegación a la tienda (URL absoluta para cross-base)
-const goToProduct = (slug: string) => {
-  window.location.href = `/marketplace-motorlan/${slug}`
+const goToProduct = (pub: any) => {
+  if (pub?.slug) {
+    window.open(`/marketplace-motorlan/${pub.slug}/`, '_blank')
+  }
 }
 </script>
 
@@ -254,8 +250,8 @@ const goToProduct = (slug: string) => {
               class="text-body-1 font-weight-medium text-high-emphasis cursor-pointer text-truncate"
               style="max-width: 200px;"
               @click="() => {
-                const slug = (item.publicacion || item.motor)?.slug
-                if (slug) goToProduct(slug)
+                const pub = item.publicacion || item.motor
+                if (pub) goToProduct(pub)
               }"
             >
               {{ formatPublicationTitle(item.publicacion || item.motor) }}

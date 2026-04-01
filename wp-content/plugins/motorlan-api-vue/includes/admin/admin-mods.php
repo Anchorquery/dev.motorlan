@@ -178,16 +178,20 @@ function motorlan_add_motor_filters() {
         echo '</select>';
 
         // Filter by Country
-        $paises = array( 'España', 'Portugal', 'Francia' );
-        $current_pais = isset( $_GET['pais_filter'] ) ? $_GET['pais_filter'] : '';
+        if ( function_exists( 'motorlan_get_countries_list' ) ) {
+            $paises = motorlan_get_countries_list();
+        } else {
+            $paises = array( 'es' => 'España', 'pt' => 'Portugal', 'fr' => 'Francia' );
+        }
+        $current_pais = isset( $_GET['pais_filter'] ) ? sanitize_text_field( $_GET['pais_filter'] ) : '';
         echo '<select name="pais_filter">';
         echo '<option value="">' . __( 'Todos los países', 'motorlan-api-vue' ) . '</option>';
-        foreach ( $paises as $pais ) {
+        foreach ( $paises as $code => $name ) {
             printf(
                 '<option value="%s"%s>%s</option>',
-                esc_attr( $pais ),
-                selected( $current_pais, $pais, false ),
-                esc_html( $pais )
+                esc_attr( strtolower( $code ) ),
+                selected( $current_pais, strtolower( $code ), false ),
+                esc_html( $name )
             );
         }
         echo '</select>';

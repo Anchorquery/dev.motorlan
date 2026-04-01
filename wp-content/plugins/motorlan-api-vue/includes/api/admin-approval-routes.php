@@ -31,6 +31,12 @@ function motorlan_register_admin_approval_routes() {
         'callback'            => 'motorlan_reject_publication_callback',
         'permission_callback' => 'motorlan_is_admin_user',
     ]);
+
+    register_rest_route($namespace, '/admin/update-pending-brand/(?P<id>\d+)', [
+        'methods'             => WP_REST_Server::CREATABLE,
+        'callback'            => 'motorlan_update_pending_brand_callback',
+        'permission_callback' => 'motorlan_is_admin_user',
+    ]);
 }
 
 /**
@@ -79,6 +85,12 @@ function motorlan_get_pending_publications_callback($request) {
                 'email' => $author ? $author->user_email : '',
             ];
 
+            // Marca pendiente de aprobación
+            $pending_brand = get_post_meta($post_id, '_pending_brand_name', true);
+            if (!empty($pending_brand)) {
+                $item['pending_brand'] = $pending_brand;
+            }
+
             $data[] = $item;
         }
         wp_reset_postdata();
@@ -106,6 +118,33 @@ function motorlan_approve_publication_callback($request) {
         return new WP_Error('not_found', 'Publicación no encontrada', ['status' => 404]);
     }
 
+    // Si hay marca pendiente, crearla como término de taxonomía
+    $pending_brand = get_post_meta($post_id, '_pending_brand_name', true);
+
+    // Permitir que el admin envíe un nombre editado al aprobar
+    $params = $request->get_json_params();
+    if (!empty($params['brand_name'])) {
+        $pending_brand = strtoupper(sanitize_text_field($params['brand_name']));
+    }
+
+    if (!empty($pending_brand)) {
+        $existing_term = get_term_by('name', $pending_brand, 'marca');
+        if ($existing_term) {
+            $brand_term_id = $existing_term->term_id;
+        } else {
+            $new_term = wp_insert_term($pending_brand, 'marca');
+            if (is_wp_error($new_term)) {
+                return new WP_Error('brand_create_error', 'Error al crear la marca: ' . $new_term->get_error_message(), ['status' => 500]);
+            }
+            $brand_term_id = $new_term['term_id'];
+        }
+        // Asignar la marca al post
+        if (function_exists('update_field')) {
+            update_field('marca', $brand_term_id, $post_id);
+        }
+        delete_post_meta($post_id, '_pending_brand_name');
+    }
+
     $result = wp_update_post([
         'ID'          => $post_id,
         'post_status' => 'publish',
@@ -126,6 +165,43 @@ function motorlan_approve_publication_callback($request) {
     do_action( 'motorlan_publication_approved', $post_id );
 
     return new WP_REST_Response(['message' => 'Publicación aprobada con éxito.'], 200);
+}
+
+/**
+ * Update pending brand name before approval.
+ */
+function motorlan_update_pending_brand_callback($request) {
+    if (function_exists('motorlan_validate_json_content_type')) {
+        $valid_type = motorlan_validate_json_content_type($request);
+        if (is_wp_error($valid_type)) {
+            return $valid_type;
+        }
+    }
+
+    $post_id = $request['id'];
+    $post = get_post($post_id);
+
+    if (!$post || $post->post_type !== 'publicacion') {
+        return new WP_Error('not_found', 'Publicación no encontrada', ['status' => 404]);
+    }
+
+    $pending_brand = get_post_meta($post_id, '_pending_brand_name', true);
+    if (empty($pending_brand)) {
+        return new WP_Error('no_pending_brand', 'Esta publicación no tiene una marca pendiente de aprobación.', ['status' => 400]);
+    }
+
+    $params = $request->get_json_params();
+    if (empty($params['brand_name'])) {
+        return new WP_Error('missing_brand_name', 'El nombre de la marca es obligatorio.', ['status' => 400]);
+    }
+
+    $new_brand_name = strtoupper(sanitize_text_field($params['brand_name']));
+    update_post_meta($post_id, '_pending_brand_name', $new_brand_name);
+
+    return new WP_REST_Response([
+        'message' => 'Marca pendiente actualizada correctamente.',
+        'brand_name' => $new_brand_name,
+    ], 200);
 }
 
 /**

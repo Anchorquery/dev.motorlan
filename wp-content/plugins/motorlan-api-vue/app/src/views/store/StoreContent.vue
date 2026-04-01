@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch, nextTick } from 'vue'
+import { storeToRefs } from 'pinia'
+import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import TiendaFilters from '@/pages/store/components/TiendaFilters.vue'
 import SearchBar from '@/pages/store/components/SearchBar.vue'
@@ -8,8 +10,25 @@ import PaginationControls from '@/pages/store/components/PaginationControls.vue'
 import { useApi } from '@/composables/useApi'
 import { createUrl } from '@/@core/composable/createUrl'
 import type { Publicacion } from '@/interfaces/publicacion'
+import { useStoreFiltersStore } from '@/views/store/useStoreFiltersStore'
 
 const { t } = useI18n()
+const route = useRoute()
+const router = useRouter()
+const filtersStore = useStoreFiltersStore()
+
+const {
+  selectedBrand,
+  selectedState,
+  typeModel,
+  selectedTechnology,
+  selectedPar,
+  selectedPotencia,
+  selectedVelocidad,
+  searchTerm,
+  selectedTipo,
+  page,
+} = storeToRefs(filtersStore)
 
 interface Term {
   term_id: number
@@ -17,17 +36,40 @@ interface Term {
   slug: string
 }
 
+// -- URL Sync Logic --
+const loadFiltersFromUrl = () => {
+  const query = route.query
+  if (query.brand) selectedBrand.value = Number(query.brand)
+  if (query.state) selectedState.value = String(query.state)
+  if (query.type) typeModel.value = String(query.type)
+  if (query.tech) selectedTechnology.value = String(query.tech)
+  if (query.par) selectedPar.value = String(query.par)
+  if (query.pot) selectedPotencia.value = String(query.pot)
+  if (query.vel) selectedVelocidad.value = String(query.vel)
+  if (query.q) searchTerm.value = String(query.q)
+  if (query.tipo) selectedTipo.value = String(query.tipo)
+  if (query.page) page.value = Number(query.page)
+}
+
+const syncFiltersToUrl = () => {
+  const query = {
+    brand: selectedBrand.value || undefined,
+    state: selectedState.value || undefined,
+    type: typeModel.value || undefined,
+    tech: selectedTechnology.value || undefined,
+    par: selectedPar.value || undefined,
+    pot: selectedPotencia.value || undefined,
+    vel: selectedVelocidad.value || undefined,
+    q: searchTerm.value || undefined,
+    tipo: selectedTipo.value || undefined,
+    page: page.value > 1 ? page.value : undefined,
+  }
+
+  router.replace({ query: { ...route.query, ...query } })
+}
+
 // -- State Management --
-const selectedBrand = ref<number | null>(null)
-const selectedState = ref<string | null>(null)
-const typeModel = ref('')
-const selectedTechnology = ref<string | null>(null)
-const selectedPar = ref<string | null>(null)
-const selectedPotencia = ref<string | null>(null)
-const selectedVelocidad = ref<string | null>(null)
-const searchTerm = ref('')
-const order = ref<string | null>(t('store.order_options.recents'))
-const selectedTipo = ref<string | null>(null)
+// (Eliminated local refs as they are now in the store)
 
 // Options with display labels and machine values (min-max)
 const parOptions = computed(() => [
@@ -48,24 +90,15 @@ const velocidadOptions = computed(() => [
   { title: 'mayor que 5.000 rpm', value: '5000-999999' },
 ])
 const technologyOptions = computed(() => [t('store.technology_options.dc'), t('store.technology_options.ac')])
-const orderOptions = computed(() => [t('store.order_options.recents'), t('store.order_options.price_asc'), t('store.order_options.price_desc')])
 
 const itemsPerPage = ref(9)
-const page = ref(1)
 
 // -- Data Fetching --
 // -- Data Fetching --
 const marcas = ref<Term[]>([])
 const tipos = ref<Term[]>([])
-
 const publicacionesApiUrl = computed(() => {
   const baseUrl = '/wp-json/motorlan/v1/store/publicaciones'
-
-  const sortOptions = {
-    [t('store.order_options.recents')]: { orderby: 'date', order: 'desc' },
-    [t('store.order_options.price_asc')]: { orderby: 'price', order: 'asc' },
-    [t('store.order_options.price_desc')]: { orderby: 'price', order: 'desc' },
-  }
 
   const queryParams = {
     per_page: itemsPerPage.value,
@@ -73,6 +106,7 @@ const publicacionesApiUrl = computed(() => {
     status: 'publish',
     search: searchTerm.value,
     tipo: selectedTipo.value,
+
     // pass brand by term_id as stored in ACF meta
     marca: selectedBrand.value,
     estado_del_articulo: selectedState.value,
@@ -81,7 +115,8 @@ const publicacionesApiUrl = computed(() => {
     par_nominal: selectedPar.value,
     tipo_de_alimentacion: selectedTechnology.value,
     tipo_o_referencia: typeModel.value ? typeModel.value.replace(/[\.\-\/\s]/g, '') : '',
-    ...(order.value ? sortOptions[order.value] : {}),
+    orderby: 'date',
+    order: 'desc',
   }
 
   const filteredParams = Object.entries(queryParams)
@@ -108,13 +143,24 @@ const applyFilters = async () => {
   }
 }
 
-watch([selectedBrand, selectedState, typeModel, selectedTechnology, selectedPar, selectedPotencia, selectedVelocidad, searchTerm, order, selectedTipo, page, itemsPerPage], applyFilters, { deep: true })
+watch([selectedBrand, selectedState, typeModel, selectedTechnology, selectedPar, selectedPotencia, selectedVelocidad, searchTerm, selectedTipo, itemsPerPage], () => {
+  page.value = 1
+  syncFiltersToUrl()
+  applyFilters()
+}, { deep: true })
+
+watch(page, () => {
+  syncFiltersToUrl()
+  applyFilters()
+})
 
 onMounted(async () => {
+  loadFiltersFromUrl()
+
   // Fetch Brands
   try {
 
-    const { data: brandsData, error: brandsError, execute: executeBrands } = useApi<any>('/wp-json/motorlan/v1/marcas', { immediate: false }).get().json()
+    const { data: brandsData, execute: executeBrands } = useApi<any>('/wp-json/motorlan/v1/marcas', { immediate: false }).get().json()
     await executeBrands()
 
     
@@ -130,7 +176,7 @@ onMounted(async () => {
   // Fetch Types
   try {
 
-    const { data: tiposData, error: tiposError, execute: executeTipos } = useApi<any>('/wp-json/motorlan/v1/tipos', { immediate: false }).get().json()
+    const { data: tiposData, execute: executeTipos } = useApi<any>('/wp-json/motorlan/v1/tipos', { immediate: false }).get().json()
     await executeTipos()
 
 
@@ -152,7 +198,8 @@ const totalPages = computed(() => publicacionesData.value?.pagination.totalPages
 
 const search = () => {
   page.value = 1
-  fetchPublicaciones()
+  syncFiltersToUrl()
+  applyFilters()
 }
 </script>
 
@@ -187,9 +234,7 @@ const search = () => {
       >
         <SearchBar
           v-model:search-term="searchTerm"
-          v-model:order="order"
           :loading="isSearching"
-          :order-options="orderOptions"
           @search="search"
         />
 
