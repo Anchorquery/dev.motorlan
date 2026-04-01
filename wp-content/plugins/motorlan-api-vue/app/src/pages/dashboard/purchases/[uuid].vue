@@ -492,7 +492,7 @@ const purchaseModeLabel = computed(() => {
   if (hasOffer.value)
     return 'Compra por oferta'
 
-  return isNegotiable.value ? 'Oferta negociable' : 'Compra directa'
+  return isNegotiable.value ? 'Consultar precio' : 'Compra directa'
 })
 
 const purchaseModeDescription = computed(() => {
@@ -504,7 +504,7 @@ const purchaseModeDescription = computed(() => {
   }
 
   return isNegotiable.value
-    ? 'El vendedor marco este articulo como negociable. Revisa el acuerdo con el vendedor.'
+    ? 'El precio de este artículo es bajo consulta. Contacta con el vendedor para acordar el precio.'
     : 'Compra realizada al precio publicado sin negociacion.'
 })
 

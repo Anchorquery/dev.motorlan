@@ -287,7 +287,9 @@
       "price_placeholder": "1000",
       "stock": "Stocka",
       "stock_placeholder": "1",
-      "negotiable_price": "Prezio Negoziagarria",
+      "negotiable_price": "Prezioa kontsultatu",
+      "consult_price": "Prezioa kontsultatu",
+      "consult_price_hint": "Markatuta badago, publikoak \"Prezioa kontsultatu\" ikusiko du. Zuk oraindik prezioa erreferentzia gisa ikusiko duzu.",
       "publish_acf": "Argitalpenaren egoera",
       "publish_status_publish": "Argitaratu",
       "publish_status_draft": "Zirriborroa"
@@ -450,7 +452,7 @@
     "price_placeholder": "1000",
     "stock": "Stocka",
     "stock_placeholder": "1",
-    "negotiable_price": "Prezio Negoziagarria",
+    "negotiable_price": "Prezioa kontsultatu",
     "rent_option": "Alokatzeko Aukera",
     "power_supply_type": "Elikatze Mota",
     "servomotors": "Serbomotorrak",
@@ -590,6 +592,9 @@
     "load_error": "Ezin izan dira elkarrizketak kargatu",
     "no_data_title": "Ez dago elkarrizketarik",
     "no_data_text": "Oraindik ez duzu interes kontsultarik jaso."
+  },
+  "motor": {
+    "consult_price": "Prezioa kontsultatu"
   },
   "notifications": {
     "title": "Notifications",

@@ -202,7 +202,6 @@ function motorlan_update_publicacion_by_uuid(WP_REST_Request $request) {
         if (isset($acf_data['servomotores'])) update_field('servomotores', $acf_data['servomotores'], $post_id);
         if (isset($acf_data['regulacion_electronica_drivers'])) update_field('regulacion_electronica_drivers', $acf_data['regulacion_electronica_drivers'], $post_id);
         if (isset($acf_data['precio_de_venta'])) update_field('precio_de_venta', $acf_data['precio_de_venta'], $post_id);
-        if (isset($acf_data['mostrar_precio'])) update_field('mostrar_precio', sanitize_text_field($acf_data['mostrar_precio']), $post_id);
         if (isset($acf_data['precio_negociable'])) update_field('precio_negociable', sanitize_text_field($acf_data['precio_negociable']), $post_id);
         if (isset($acf_data['documentacion_adjunta'])) update_field('documentacion_adjunta', $acf_data['documentacion_adjunta'], $post_id);
         if (isset($acf_data['stock'])) update_field('stock', intval($acf_data['stock']), $post_id);

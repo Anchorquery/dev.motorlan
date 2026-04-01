@@ -184,7 +184,7 @@ const hasFiltersActive = computed(() => {
            <template #activator="{ props }">
              <div v-bind="props" class="w-100">
                <VRadio 
-                 label="Motor (AC)" 
+                 label="Motor AC" 
                  value="motor-ac" 
                  color="error"
                />
@@ -197,7 +197,7 @@ const hasFiltersActive = computed(() => {
             <template #activator="{ props }">
               <div v-bind="props" class="w-100">
                 <VRadio 
-                  label="Motor (DC)" 
+                  label="Motor DC" 
                   value="motor-dc"
                   color="error"
                 />

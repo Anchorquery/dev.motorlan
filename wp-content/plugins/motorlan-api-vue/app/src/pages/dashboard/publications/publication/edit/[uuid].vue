@@ -458,8 +458,12 @@ const statusColor = computed(() => {
                        <VCardText class="py-4">
                            <div class="d-flex justify-space-between align-center mb-3">
                                <span class="text-body-2 text-medium-emphasis">{{ t('add_publication.post_details.price') }}:</span>
-                               <span v-if="formState.acf.precio_negociable === 'yes'" class="text-h6 font-weight-bold text-warning">
-                                   Precio Negociable
+                               <span v-if="formState.acf.precio_negociable === 'yes' && formState.acf.precio_de_venta" class="text-h6 font-weight-bold text-primary">
+                                   {{ formState.acf.precio_de_venta }}€
+                                   <VChip size="x-small" color="info" variant="tonal" class="ml-1">referencia</VChip>
+                               </span>
+                               <span v-else-if="formState.acf.precio_negociable === 'yes'" class="text-h6 font-weight-bold text-warning">
+                                   Consultar precio
                                </span>
                                <span v-else-if="formState.acf.precio_de_venta" class="text-h6 font-weight-bold text-primary">
                                    {{ formState.acf.precio_de_venta }}€

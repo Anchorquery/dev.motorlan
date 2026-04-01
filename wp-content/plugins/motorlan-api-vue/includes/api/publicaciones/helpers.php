@@ -178,11 +178,13 @@ function motorlan_get_publicacion_data($post_id, $include_sensitive = false) {
         'imagen_destacada' => motorlan_format_image_for_frontend(get_field('motor_image', $post_id, true)),
     ];
 
-    // Remove price from ACF if mostrar_precio is not 'yes' AND user is not the owner.
-    // UNLESS $include_sensitive is true (e.g. for the owner editing the post)
+    // Ocultar precio si "Consultar precio" está marcado y el usuario NO es el owner.
+    // El owner siempre ve el precio como referencia ($include_sensitive = true).
     if (!$include_sensitive) {
-        $mostrar_precio = isset($publicacion_item['acf']['mostrar_precio']) ? $publicacion_item['acf']['mostrar_precio'] : 'no';
-        if ($mostrar_precio !== 'yes' && isset($publicacion_item['acf']['precio_de_venta'])) {
+        $consultar_precio = isset($publicacion_item['acf']['precio_negociable']) ? $publicacion_item['acf']['precio_negociable'] : 'no';
+        // Normalizar valores legacy: 'Sí', 'si', 'yes', true → ocultar precio
+        $is_consult = in_array($consultar_precio, ['yes', 'Sí', 'si', 'true', true], true);
+        if ($is_consult && isset($publicacion_item['acf']['precio_de_venta'])) {
             unset($publicacion_item['acf']['precio_de_venta']);
         }
     }

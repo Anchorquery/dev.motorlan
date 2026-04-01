@@ -291,7 +291,9 @@
       "price_placeholder": "1000",
       "stock": "Stock",
       "stock_placeholder": "1",
-      "negotiable_price": "Precio negociable",
+      "negotiable_price": "Consultar precio",
+      "consult_price": "Consultar precio",
+      "consult_price_hint": "Si se marca, el público verá \"Consultar precio\". Tú seguirás viendo el precio como referencia.",
       "show_price": "Mostrar precio en la publicación",
       "no_price": "Sin precio",
       "publish_acf": "Estado de la publicación",
@@ -456,7 +458,7 @@
     "price_placeholder": "1000",
     "stock": "Stock",
     "stock_placeholder": "1",
-    "negotiable_price": "Precio negociable",
+    "negotiable_price": "Consultar precio",
     "rent_option": "Posibilidad de alquiler",
     "power_supply_type": "Tipo de alimentación",
     "servomotors": "Servomotores",
@@ -605,6 +607,9 @@
     "seller_label": "Vendedor del equipo",
     "view_chat": "Ver Chat",
     "go_to_publication": "Ir a la publicación"
+  },
+  "motor": {
+    "consult_price": "Consultar precio"
   },
   "notifications": {
     "title": "Notificaciones",

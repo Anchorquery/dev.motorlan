@@ -162,9 +162,10 @@ if ( ! function_exists( 'motorlan_get_motor_data' ) ) {
             $fields = get_fields( $motor_id );
             if ( is_array( $fields ) ) {
                 $data['acf'] = $fields;
-                // Remove price if mostrar_precio is not 'yes'
-                $mostrar_precio = isset($data['acf']['mostrar_precio']) ? $data['acf']['mostrar_precio'] : 'no';
-                if ($mostrar_precio !== 'yes' && isset($data['acf']['precio_de_venta'])) {
+                // Ocultar precio si "Consultar precio" está marcado
+                $consultar_precio = isset($data['acf']['precio_negociable']) ? $data['acf']['precio_negociable'] : 'no';
+                $is_consult = in_array($consultar_precio, ['yes', 'Sí', 'si', 'true', true], true);
+                if ($is_consult && isset($data['acf']['precio_de_venta'])) {
                     unset($data['acf']['precio_de_venta']);
                 }
             }

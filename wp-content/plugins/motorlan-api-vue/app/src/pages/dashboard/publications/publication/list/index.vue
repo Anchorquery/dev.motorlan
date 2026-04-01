@@ -463,7 +463,7 @@ const canEdit = (item: any) => {
 
         <!-- precio -->
         <template #item.precio="{ item }">
-          <span v-if="(item as any).acf.precio_negociable === 'yes' || (item as any).acf.precio_negociable === true" class="text-body-1 text-warning font-weight-bold">Precio Negociable</span>
+          <span v-if="(item as any).acf.precio_negociable === 'yes' || (item as any).acf.precio_negociable === true" class="text-body-1 text-warning font-weight-bold">Consultar precio</span>
           <span v-else-if="(item as any).acf.precio_de_venta" class="text-body-1 text-primary font-weight-bold">{{ (item as any).acf.precio_de_venta }}€</span>
           <span v-else class="text-body-2 text-medium-emphasis">-</span>
         </template>

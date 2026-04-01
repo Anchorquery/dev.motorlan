@@ -199,26 +199,15 @@ acf_add_local_field_group(array(
 			'default_value' => 1,
 		),
 		array(
-			'key' => 'field_mostrar_precio',
-			'label' => 'Mostrar precio',
-			'name' => 'mostrar_precio',
+			'key' => 'field_6643d3c3b0356',
+			'label' => 'Consultar precio',
+			'name' => 'precio_negociable',
 			'type' => 'radio',
 			'choices' => array(
 				'yes' => 'Sí',
 				'no' => 'No',
 			),
 			'default_value' => 'no',
-			'layout' => 'horizontal',
-		),
-		array(
-			'key' => 'field_6643d3c3b0356',
-			'label' => 'Precio negociable',
-			'name' => 'precio_negociable',
-			'type' => 'radio',
-			'choices' => array(
-				'Sí' => 'Sí',
-				'No' => 'No',
-			),
 			'layout' => 'horizontal',
 		),
 		array(

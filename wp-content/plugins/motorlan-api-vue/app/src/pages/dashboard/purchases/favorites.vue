@@ -190,7 +190,7 @@ const getImageBySize = (image: any, size = 'thumbnail'): string => {
       <!-- precio -->
       <template #item.precio="{ item }">
         <span v-if="item.acf?.precio_negociable === 'yes' || item.acf?.precio_negociable === true" class="text-body-1 font-weight-medium text-warning">
-          Precio Negociable
+          Consultar precio
         </span>
         <span v-else-if="item.acf?.precio_de_venta" class="text-body-1 font-weight-medium text-premium-price">
           {{ formatCurrency(item.acf.precio_de_venta) }}

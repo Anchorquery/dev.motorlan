@@ -277,7 +277,9 @@
       "price_placeholder": "1000",
       "stock": "Stock",
       "stock_placeholder": "1",
-      "negotiable_price": "Negotiable Price",
+      "negotiable_price": "Consult price",
+      "consult_price": "Consult price",
+      "consult_price_hint": "If checked, the public will see \"Consult price\". You will still see the price as a reference.",
       "publish_acf": "Publication Status",
       "publish_status_publish": "Publish",
       "publish_status_draft": "Draft"
@@ -440,7 +442,7 @@
     "price_placeholder": "1000",
     "stock": "Stock",
     "stock_placeholder": "1",
-    "negotiable_price": "Negotiable Price",
+    "negotiable_price": "Consult price",
     "rent_option": "Rental Option",
     "power_supply_type": "Power Supply Type",
     "servomotors": "Servomotors",
@@ -571,6 +573,9 @@
     "already_account": "Already have an account?",
     "sign_in_instead": "Log in instead",
     "or": "or"
+  },
+  "motor": {
+    "consult_price": "Consult price"
   },
   "notifications": {
     "title": "Notifications",

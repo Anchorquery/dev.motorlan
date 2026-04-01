@@ -87,8 +87,13 @@ const location = computed(() => {
     return `${countryName} / ${provincia}`
   return countryName || provincia || ''
 })
+const isConsultPrice = computed(() => isNegotiable.value)
+
 const showPrice = computed(() => {
-  return hasPrice.value && !isNegotiable.value
+  // Mostrar precio si hay precio Y no esta marcado "Consultar precio"
+  // O si es el owner (siempre ve el precio como referencia)
+  if (isConsultPrice.value && !isOwner.value) return false
+  return hasPrice.value
 })
 
 const hasPrice = computed(() => {
@@ -330,16 +335,19 @@ const removeOffer = async () => {
           <h3 class="text-h6 mb-1">{{ productTitleUpper }}</h3>
         </div>
         <VRow class="motor-details" dense>
+          <!-- Precio visible: no tiene "Consultar precio" marcado, o es el owner -->
           <VCol v-if="showPrice" cols="12">
             <div class="detail-item d-flex align-center mb-2">
               <VIcon icon="tabler-currency-euro" class="mr-1" color="primary" />
               <span class="text-h5 font-weight-bold text-primary">{{ Number(props.publicacion.acf.precio_de_venta).toLocaleString('es-ES') }} €</span>
+              <VChip v-if="isConsultPrice && isOwner" size="x-small" color="info" variant="tonal" class="ml-2">referencia</VChip>
             </div>
           </VCol>
-          <VCol v-else-if="isNegotiable" cols="12">
+          <!-- Consultar precio marcado (publico) o sin precio -->
+          <VCol v-else-if="isConsultPrice" cols="12">
             <div class="detail-item d-flex align-center mb-2">
               <VIcon icon="tabler-currency-euro" class="mr-1" />
-              <span class="text-h6 font-weight-bold text-warning">Precio Negociable</span>
+              <span class="text-h6 font-weight-bold text-warning">Consultar precio</span>
             </div>
           </VCol>
           <VCol v-else cols="12">
@@ -425,24 +433,7 @@ const removeOffer = async () => {
         >
           Consultar precio
         </VBtn>
-        <VBtn
-          v-if="isNegotiable"
-          variant="outlined"
-          color="error"
-          class="px-6 flex-grow-1 action-btn"
-          @click="openOfferDialog"
-        >
-          {{ offer ? 'Editar oferta' : 'Hacer una oferta' }}
-        </VBtn>
-        <VBtn
-          v-if="offer && isNegotiable"
-          variant="text"
-          color="error"
-          class="px-6 flex-grow-1 action-btn"
-          @click="removeOffer"
-        >
-          Quitar oferta
-        </VBtn>
+        <!-- Botones de oferta eliminados - ya no aplica "Precio negociable" -->
       </template>
     </div>
 

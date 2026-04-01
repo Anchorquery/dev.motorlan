@@ -123,9 +123,12 @@ const resolvedCountryOptions = computed(() => props.countryOptions && props.coun
          <VCheckbox
           :model-value="acf.precio_negociable === 'yes'"
           @update:model-value="(val) => updateAcf('precio_negociable', val ? 'yes' : 'no')"
-          :label="t('add_publication.post_details.negotiable_price')"
+          :label="t('add_publication.post_details.consult_price', 'Consultar precio')"
           hide-details
         />
+        <p class="text-caption text-medium-emphasis mt-1 ml-10">
+          {{ t('add_publication.post_details.consult_price_hint', 'Si se marca, el público verá "Consultar precio". Tú seguirás viendo el precio como referencia.') }}
+        </p>
     </VCol>
     
      <VCol cols="12" md="4">
