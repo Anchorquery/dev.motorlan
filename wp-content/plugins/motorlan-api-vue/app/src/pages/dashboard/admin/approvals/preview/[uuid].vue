@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch, onMounted } from "vue";
+import { computed, ref, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import ProductImage from "@/pages/store/components/ProductImage.vue";
 import ProductDetails from "@/pages/store/components/ProductDetails.vue";
@@ -44,44 +44,26 @@ const docs = computed(() => {
     }));
 });
 
-const pendingBrand = computed(() => (publicacion.value as any)?.pending_brand || null)
-const editedBrandName = ref('')
-const isEditingBrand = ref(false)
-const isBrandSaving = ref(false)
-
-watch(pendingBrand, (val) => {
-  if (val) editedBrandName.value = val
-}, { immediate: true })
-
-const startEditingBrand = () => {
-  editedBrandName.value = pendingBrand.value || ''
-  isEditingBrand.value = true
-}
-
-const saveBrandName = async () => {
-  if (!publicacion.value?.id || !editedBrandName.value.trim()) return
-
-  isBrandSaving.value = true
-  try {
-    const { error } = await useApi(`/wp-json/motorlan/v1/admin/update-pending-brand/${publicacion.value.id}`)
-      .post({ brand_name: editedBrandName.value.trim() })
-      .json()
-    if (error.value) throw error.value
-
-    showToast('Nombre de marca actualizado', 'success')
-    isEditingBrand.value = false
-    await execute()
-  } catch (error) {
-    console.error(error)
-    showToast('Error al actualizar la marca', 'error')
-  } finally {
-    isBrandSaving.value = false
-  }
-}
-
 const title = computed(() => {
   if (!publicacion.value) return "";
-  return publicacion.value.title || "";
+
+  const tipo = publicacion.value.tipo && publicacion.value.tipo.length > 0 ? publicacion.value.tipo[0].name : '';
+  const marca = (publicacion.value as any).marca_name || '';
+  const modelo = publicacion.value.acf.tipo_o_referencia || '';
+
+  let powerOrTorque = '';
+  if (publicacion.value.acf.potencia) {
+      powerOrTorque = `${publicacion.value.acf.potencia} kW`;
+  } else if (publicacion.value.acf.par_nominal) {
+      powerOrTorque = `${publicacion.value.acf.par_nominal} Nm`;
+  }
+
+  const velocidad = publicacion.value.acf.velocidad
+      ? `${publicacion.value.acf.velocidad} rpm`
+      : '';
+
+  const parts = [tipo, marca, modelo, powerOrTorque, velocidad].filter(p => !!p && String(p).trim() !== '');
+  return parts.join(' ').toUpperCase();
 });
 
 const getInitials = (value: string): string => {
@@ -187,73 +169,6 @@ const rejectPublication = async () => {
     </VAlert>
 
     <div v-if="publicacion">
-      <!-- Aviso de marca nueva pendiente -->
-      <VAlert
-        v-if="pendingBrand"
-        type="warning"
-        variant="tonal"
-        class="mb-6 rounded-xl"
-        prominent
-      >
-        <template #prepend>
-          <VIcon icon="tabler-tag-starred" size="28" />
-        </template>
-        <div class="w-100">
-          <span class="font-weight-bold">Nueva marca pendiente de aprobación</span>
-
-          <div v-if="!isEditingBrand" class="d-flex align-center gap-2 mt-2">
-            <p class="text-body-1 mb-0">
-              El usuario ha solicitado crear la marca
-              <VChip color="warning" variant="elevated" class="mx-1 font-weight-bold">{{ pendingBrand }}</VChip>.
-            </p>
-            <VBtn
-              variant="text"
-              color="warning"
-              size="small"
-              prepend-icon="tabler-pencil"
-              @click="startEditingBrand"
-            >
-              Editar nombre
-            </VBtn>
-          </div>
-
-          <div v-else class="d-flex align-center gap-3 mt-3">
-            <VTextField
-              v-model="editedBrandName"
-              label="Nombre de la marca"
-              variant="outlined"
-              density="compact"
-              hide-details
-              style="max-width: 300px; text-transform: uppercase;"
-              @input="editedBrandName = editedBrandName.toUpperCase()"
-            />
-            <VBtn
-              color="success"
-              variant="elevated"
-              size="small"
-              prepend-icon="tabler-check"
-              :loading="isBrandSaving"
-              :disabled="!editedBrandName.trim()"
-              @click="saveBrandName"
-            >
-              Guardar
-            </VBtn>
-            <VBtn
-              variant="text"
-              color="default"
-              size="small"
-              @click="isEditingBrand = false"
-            >
-              Cancelar
-            </VBtn>
-          </div>
-
-          <p class="text-caption text-medium-emphasis mt-2 mb-0">
-            Al aprobar esta publicación, la marca se creará y estará disponible para todos los usuarios.
-          </p>
-        </div>
-      </VAlert>
-
       <VRow>
         <VCol cols="12">
           <h1 class="text-h4 mb-4 font-weight-bold">

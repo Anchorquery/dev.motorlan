@@ -4,7 +4,6 @@ import { useRouter } from 'vue-router'
 import { createUrl } from '@/@core/composable/createUrl'
 import { useApi } from '@/composables/useApi'
 import type { ImagenDestacada } from '@/interfaces/publicacion'
-import RatingModal from '@/components/RatingModal.vue'
 
 const router = useRouter()
 
@@ -25,25 +24,6 @@ const itemsPerPage = ref(10)
 const page = ref(1)
 const sortBy = ref()
 const orderBy = ref()
-
-// Rating Flow
-const showRatingModal = ref(false)
-const selectedPurchaseUuid = ref('')
-const selectedSellerName = ref('')
-
-const handleRateSeller = (item: any) => {
-  selectedPurchaseUuid.value = item.uuid
-  // Attempt to resolve seller name (fallback to generic)
-  // item.vendedor is usually ID or object, backend normalization helps but not always present here as name
-  // If we had seller object in item.vendedor, we could use display_name
-  selectedSellerName.value = 'al Vendedor' 
-  showRatingModal.value = true
-}
-
-const handleRatingSuccess = () => {
-  fetchPurchases() // Refresh list to update review_done status
-}
-
 
 // Update data table options
 const updateOptions = (options: any) => {
@@ -124,20 +104,20 @@ const totalPurchases = computed(() => {
   return 0
 })
 
-const getImageBySize = (image: any, size = 'thumbnail'): string => {
-  if (!image)
-    return ''
-  if (typeof image === 'string')
-    return image
+const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail'): string => {
   let imageObj: ImagenDestacada | null = null
+
   if (Array.isArray(image) && image.length > 0)
     imageObj = image[0]
   else if (image && !Array.isArray(image))
     imageObj = image as ImagenDestacada
+
   if (!imageObj)
     return ''
+
   if (imageObj.sizes && imageObj.sizes[size])
     return imageObj.sizes[size] as string
+
   return imageObj.url || ''
 }
 
@@ -169,7 +149,13 @@ const resolveBrandName = (value: any): string | null => {
 const formatPublicationTitle = (pub: any): string => {
   if (!pub)
     return ''
-  return pub.title || ''
+  const acf = pub.acf || {}
+  const parts = [
+    pub.title,
+    resolveBrandName(acf.marca),
+    acf.velocidad ? `${acf.velocidad} rpm` : null,
+  ].filter(Boolean) as string[]
+  return parts.join(' • ')
 }
 
 const resolvePurchaseType = (item: any): { text: string; color: string } => {
@@ -181,13 +167,6 @@ const resolvePurchaseType = (item: any): { text: string; color: string } => {
     return { text: 'Alquiler', color: 'primary' }
   return { text: 'Directa', color: 'success' }
 }
-
-// Navegación a la tienda (URL absoluta para cross-base)
-const goToProduct = (pub: any) => {
-  if (pub?.slug) {
-    window.open(`/marketplace-motorlan/${pub.slug}/`, '_blank')
-  }
-}
 </script>
 
 <template>
@@ -195,31 +174,31 @@ const goToProduct = (pub: any) => {
     id="purchase-list"
     title="Mis Compras"
   >
-    <VCardText class="purchase-toolbar">
-      <VRow class="ga-3">
-        <VCol cols="12" md="8">
+    <VCardText>
+      <div class="d-flex flex-wrap gap-4">
+        <div class="d-flex align-center">
           <!-- 👉 Search  -->
           <AppTextField
             v-model="searchQuery"
-            placeholder="Buscar compra"
-            prepend-inner-icon="tabler-search"
-            clearable
+            placeholder="Buscar Compra"
+            style="inline-size: 200px;"
+            class="me-3"
           />
-        </VCol>
+        </div>
 
-        <VCol cols="12" md="4" class="d-flex justify-md-end">
+        <VSpacer />
+        <div class="d-flex gap-4 flex-wrap align-center">
           <AppSelect
             v-model="itemsPerPage"
             :items="[5, 10, 20, 25, 50]"
           />
-        </VCol>
-      </VRow>
+        </div>
+      </div>
     </VCardText>
 
     <VDivider />
 
     <!-- 👉 Datatable  -->
-    <div class="purchase-table-shell">
     <VDataTableServer
       v-model:items-per-page="itemsPerPage"
       v-model:page="page"
@@ -235,32 +214,27 @@ const goToProduct = (pub: any) => {
         <div
           v-if="item.publicacion || item.motor"
           class="d-flex align-center gap-x-4"
-          style="max-width: 280px;"
         >
           <VAvatar
             v-if="(item.publicacion || item.motor)?.imagen_destacada"
             size="38"
             variant="tonal"
             rounded
-            class="flex-shrink-0"
             :image="getImageBySize((item.publicacion || item.motor).imagen_destacada, 'thumbnail')"
           />
-          <div class="d-flex flex-column overflow-hidden">
+          <div class="d-flex flex-column">
             <span
-              class="text-body-1 font-weight-medium text-high-emphasis cursor-pointer text-truncate"
-              style="max-width: 200px;"
+              class="text-body-1 font-weight-medium text-high-emphasis cursor-pointer"
               @click="() => {
-                const pub = item.publicacion || item.motor
-                if (pub) goToProduct(pub)
+                const slug = (item.publicacion || item.motor)?.slug
+                if (slug)
+                  router.push({ name: 'store-slug', params: { slug } })
               }"
-            >
-              {{ formatPublicationTitle(item.publicacion || item.motor) }}
-              <VTooltip activator="parent" location="top">{{ formatPublicationTitle(item.publicacion || item.motor) }}</VTooltip>
-            </span>
+            >{{ formatPublicationTitle(item.publicacion || item.motor) }}</span>
             <span
               v-if="(item.publicacion || item.motor)?.acf?.tipo_o_referencia"
               class="text-body-2 text-medium-emphasis"
-              >Ref: {{ (item.publicacion || item.motor).acf.tipo_o_referencia }}</span>
+            >Ref: {{ (item.publicacion || item.motor).acf.tipo_o_referencia }}</span>
           </div>
         </div>
       </template>
@@ -298,31 +272,15 @@ const goToProduct = (pub: any) => {
         >
           <VIcon icon="tabler-eye" />
         </IconBtn>
-        
         <IconBtn
-          class="me-1"
           :disabled="!(item.publicacion || item.motor)?.slug"
           @click="() => {
             const slug = (item.publicacion || item.motor)?.slug
-            if (slug) goToProduct(slug)
+            if (slug) router.push({ name: 'store-slug', params: { slug } })
           }"
         >
           <VIcon icon="tabler-external-link" />
         </IconBtn>
-
-        <!-- Rate Button -->
-        <VTooltip location="top" v-if="!item.review_done">
-          <template #activator="{ props }">
-            <IconBtn
-              v-bind="props"
-              color="warning"
-              @click="handleRateSeller(item)"
-            >
-              <VIcon icon="tabler-star" />
-            </IconBtn>
-          </template>
-          <span>Valorar Vendedor</span>
-        </VTooltip>
       </template>
 
       <!-- pagination -->
@@ -332,30 +290,7 @@ const goToProduct = (pub: any) => {
           :items-per-page="itemsPerPage"
           :total-items="totalPurchases"
         />
-        
-        <RatingModal
-          v-if="showRatingModal"
-          v-model="showRatingModal"
-          :purchase-uuid="selectedPurchaseUuid"
-          target-role="seller"
-          :target-name="selectedSellerName"
-          @success="handleRatingSuccess"
-        />
       </template>
     </VDataTableServer>
-    </div>
   </VCard>
 </template>
-
-<style scoped>
-.purchase-table-shell {
-  overflow-x: auto;
-}
-
-@media (max-width: 959px) {
-  .purchase-toolbar :deep(.v-field),
-  .purchase-toolbar :deep(.v-btn) {
-    width: 100%;
-  }
-}
-</style>

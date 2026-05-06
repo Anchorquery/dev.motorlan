@@ -47,14 +47,7 @@ export default [
     subject: 'all',
   },
   {
-    title: 'Consultas Enviadas',
-    icon: { icon: 'tabler-message-share' },
-    to: { name: 'dashboard-purchases-inquiries' },
-    action: 'read',
-    subject: 'all',
-  },
-  {
-    title: 'Ofertas de Precio',
+    title: 'Ofertas Enviadas',
     icon: { icon: 'tabler-send' },
     to: 'dashboard-purchases-offers-sent',
     action: 'read',

@@ -27,7 +27,6 @@ export const useApi = createFetch({
     credentials: 'include',
   },
   options: {
-    updateDataOnError: true,
     async beforeFetch({ options }) {
       const nextOptions: RequestInit = { ...options }
       const headers = new Headers(nextOptions.headers as any)

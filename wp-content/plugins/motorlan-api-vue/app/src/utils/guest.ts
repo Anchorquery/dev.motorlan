@@ -2,9 +2,9 @@ export function getOrCreateGuestId(storageKey = 'ml_guest_id'): string {
   try {
     const existing = localStorage.getItem(storageKey)
     if (existing && existing.trim().length)
-      return existing.trim()
+      return existing
 
-    const id = createSimpleId().trim()
+    const id = createSimpleId()
     localStorage.setItem(storageKey, id)
     return id
   }

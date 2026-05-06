@@ -10,7 +10,6 @@ if (!defined('WPINC')) {
 }
 
 require_once __DIR__ . '/callbacks/migrate-publicaciones.php';
-require_once __DIR__ . '/callbacks/refresh-slugs.php';
 
 /**
  * Register all REST API routes for publicaciones.
@@ -102,13 +101,6 @@ function motorlan_register_publicaciones_rest_routes() {
         'permission_callback' => '__return_true',
     ]);
 
-    // --- Countries ---
-    register_rest_route($namespace, '/countries', [
-        'methods'  => WP_REST_Server::READABLE,
-        'callback' => 'motorlan_get_countries_callback',
-        'permission_callback' => '__return_true',
-    ]);
-
     // --- Favorites ---
     register_rest_route($namespace, '/favorites', [
         [
@@ -134,11 +126,5 @@ function motorlan_register_publicaciones_rest_routes() {
         'methods'  => WP_REST_Server::CREATABLE,
         'callback' => 'motorlan_migrate_publicaciones_callback',
         'permission_callback' => 'motorlan_is_user_authenticated',
-    ]);
-
-    register_rest_route($namespace, '/refresh-slugs', [
-        'methods'  => WP_REST_Server::READABLE,
-        'callback' => 'motorlan_refresh_slugs_callback',
-        'permission_callback' => '__return_true',
     ]);
 }

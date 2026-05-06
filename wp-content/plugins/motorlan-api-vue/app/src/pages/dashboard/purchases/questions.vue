@@ -6,11 +6,9 @@ import type { ImagenDestacada } from '@/interfaces/publicacion'
 import type { Question } from '@/interfaces/question'
 import type { Pagination } from '@/interfaces/pagination'
 import { useApi } from '@/composables/useApi'
-import { useMotorFormatter } from '@/composables/useMotorFormatter'
 
 const router = useRouter()
 const { t } = useI18n()
-const { formatMotorName } = useMotorFormatter()
 
 interface QuestionsData {
   data: Question[]
@@ -77,20 +75,20 @@ const resolveStatus = (respuesta: string | null) => {
   return { text: 'Pendiente', color: 'warning' }
 }
 
-const getImageBySize = (image: any, size = 'thumbnail'): string => {
-  if (!image)
-    return ''
-  if (typeof image === 'string')
-    return image
+const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail'): string => {
   let imageObj: ImagenDestacada | null = null
+
   if (Array.isArray(image) && image.length > 0)
     imageObj = image[0]
   else if (image && !Array.isArray(image))
     imageObj = image as ImagenDestacada
+
   if (!imageObj)
     return ''
+
   if (imageObj.sizes && imageObj.sizes[size])
     return imageObj.sizes[size] as string
+
   return imageObj.url || ''
 }
 </script>
@@ -157,7 +155,7 @@ const getImageBySize = (image: any, size = 'thumbnail'): string => {
             <span
               class="text-body-1 font-weight-medium text-premium-title cursor-pointer"
               @click="router.push(`/dashboard/publications/publication/edit/${item.motor.uuid}`)"
-            >{{ formatMotorName(item.motor) }}</span>
+            >{{ item.motor.title }}</span>
             <span class="text-body-2 text-muted">{{ item.motor.acf.marca?.name }}</span>
           </div>
         </div>

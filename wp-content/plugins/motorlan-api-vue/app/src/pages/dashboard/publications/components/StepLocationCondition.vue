@@ -4,12 +4,10 @@ import { useI18n } from 'vue-i18n'
 import { requiredValidator } from '@/@core/utils/validators'
 import AppTextField from '@/@core/components/app-form-elements/AppTextField.vue'
 import AppSelect from '@/@core/components/app-form-elements/AppSelect.vue'
-import AppAutocomplete from '@/@core/components/app-form-elements/AppAutocomplete.vue'
 import AppTextarea from '@/@core/components/app-form-elements/AppTextarea.vue'
 
 const props = defineProps<{
   formState: any
-  countryOptions?: { title: string; value: string }[]
 }>()
 
 const emit = defineEmits(['update:formState'])
@@ -34,13 +32,11 @@ const conditionOptions = computed(() => [
   { title: t('add_publication.condition_options.restored'), value: 'restored' },
 ])
 
-const defaultCountryOptions = computed(() => [
-  { title: t('add_publication.country_options.spain'), value: 'es' },
-  { title: t('add_publication.country_options.portugal'), value: 'pt' },
-  { title: t('add_publication.country_options.france'), value: 'fr' },
+const countryOptions = computed(() => [
+  { title: t('add_publication.country_options.spain'), value: 'spain' },
+  { title: t('add_publication.country_options.portugal'), value: 'portugal' },
+  { title: t('add_publication.country_options.france'), value: 'france' },
 ])
-
-const resolvedCountryOptions = computed(() => props.countryOptions && props.countryOptions.length > 0 ? props.countryOptions : defaultCountryOptions.value)
 
 </script>
 
@@ -82,18 +78,16 @@ const resolvedCountryOptions = computed(() => props.countryOptions && props.coun
     </VCol>
 
     <VCol cols="12" md="4">
-      <AppAutocomplete
+      <AppSelect
         :model-value="acf.pais"
         @update:model-value="updateAcf('pais', $event)"
         :label="t('add_publication.post_details.country') + ' *'"
-        :items="resolvedCountryOptions"
+        :items="countryOptions"
         item-title="title"
         item-value="value"
-        :placeholder="t('add_publication.post_details.country_placeholder', 'Buscar país...')"
+        placeholder="Seleccionar..."
         :rules="[requiredValidator]"
         variant="outlined"
-        :no-data-text="t('add_publication.post_details.no_country_found', 'No se encontró el país')"
-        auto-select-first
       />
     </VCol>
 
@@ -112,23 +106,21 @@ const resolvedCountryOptions = computed(() => props.countryOptions && props.coun
         <AppTextField
             :model-value="acf.precio_de_venta"
             @update:model-value="updateAcf('precio_de_venta', $event)"
-            :label="t('add_publication.post_details.price')"
+            :label="t('add_publication.post_details.price') + ' *'"
             type="number"
             prefix="€"
-            variant="outlined"
+            :rules="[requiredValidator]"
+             variant="outlined"
         />
     </VCol>
-
-    <VCol cols="12" md="4" class="d-flex flex-column justify-center gap-2">
+    
+    <VCol cols="12" md="4" class="d-flex align-center">
          <VCheckbox
           :model-value="acf.precio_negociable === 'yes'"
           @update:model-value="(val) => updateAcf('precio_negociable', val ? 'yes' : 'no')"
-          :label="t('add_publication.post_details.consult_price', 'Consultar precio')"
+          :label="t('add_publication.post_details.negotiable_price')"
           hide-details
         />
-        <p class="text-caption text-medium-emphasis mt-1 ml-10">
-          {{ t('add_publication.post_details.consult_price_hint', 'Si se marca, el público verá "Consultar precio". Tú seguirás viendo el precio como referencia.') }}
-        </p>
     </VCol>
     
      <VCol cols="12" md="4">

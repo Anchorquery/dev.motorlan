@@ -30,9 +30,7 @@ const handlePageShow = async (event: PageTransitionEvent) => {
 
       if (!data.is_logged_in) {
         userStore.logout()
-        const vueBase = (window as any).wpData?.vue_base || '/';
-        const cleanBase = vueBase.endsWith('/') ? vueBase : `${vueBase}/`;
-        window.location.href = `${cleanBase}login`
+        window.location.href = '/login'
       }
     }
     catch (e) {
@@ -44,15 +42,6 @@ const handlePageShow = async (event: PageTransitionEvent) => {
 
 onMounted(() => {
   window.addEventListener('pageshow', handlePageShow)
-
-  // Remove skeleton manually
-  const skeletonOverlay = document.getElementById('motorlan-skeleton-overlay')
-  if (skeletonOverlay) {
-    skeletonOverlay.classList.add('is-hidden')
-    setTimeout(() => {
-      skeletonOverlay.remove()
-    }, 350)
-  }
 })
 
 onUnmounted(() => {
@@ -77,17 +66,3 @@ onUnmounted(() => {
     </VApp>
   </VLocaleProvider>
 </template>
-
-<style>
-/**
- * Fix crítico: GeneratePress agrega inline-size: 260px a .layout-vertical-nav
- * Esta propiedad CSS lógica rompe el layout del sidebar.
- */
-.layout-vertical-nav {
-  inline-size: unset !important;
-}
-
-.layout-vertical-nav-collapsed .layout-vertical-nav:not(:hover) {
-  inline-size: unset !important;
-}
-</style>

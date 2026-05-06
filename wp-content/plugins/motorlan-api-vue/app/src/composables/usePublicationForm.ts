@@ -26,7 +26,6 @@ export interface PublicationFormState {
   tipo: number[]
   acf: {
     marca: number | null
-    marca_custom: string
     tipo_o_referencia: string
     motor_image: PublicationFile | null
     motor_gallery: PublicationFile[]
@@ -42,9 +41,10 @@ export interface PublicationFormState {
     descripcion: string
     posibilidad_de_alquiler: string
     tipo_de_alimentacion: string
+    servomotores: boolean
+    regulacion_electronica_drivers: boolean
     precio_de_venta: number | null
     precio_negociable: string
-    mostrar_precio: string
     stock: number
     documentacion_adicional: PublicationDocument[]
     [key: string]: any
@@ -60,7 +60,6 @@ const defaultState: PublicationFormState = {
   tipo: [],
   acf: {
     marca: null,
-    marca_custom: '',
     tipo_o_referencia: '',
     motor_image: null,
     motor_gallery: [],
@@ -76,9 +75,10 @@ const defaultState: PublicationFormState = {
     descripcion: '',
     posibilidad_de_alquiler: 'no',
     tipo_de_alimentacion: 'ac',
+    servomotores: false,
+    regulacion_electronica_drivers: false,
     precio_de_venta: null,
     precio_negociable: 'no',
-    mostrar_precio: 'no',
     stock: 1,
     documentacion_adicional: [],
   },

@@ -249,7 +249,7 @@
       "type": "Publication Type",
       "title": "Publication Title",
       "title_placeholder": "Title",
-      "reference": "Model",
+      "reference": "Type or Reference",
       "reference_placeholder": "Reference",
       "brand": "Brand",
       "category": "Category",
@@ -277,9 +277,7 @@
       "price_placeholder": "1000",
       "stock": "Stock",
       "stock_placeholder": "1",
-      "negotiable_price": "Consult price",
-      "consult_price": "Consult price",
-      "consult_price_hint": "If checked, the public will see \"Consult price\". You will still see the price as a reference.",
+      "negotiable_price": "Negotiable Price",
       "publish_acf": "Publication Status",
       "publish_status_publish": "Publish",
       "publish_status_draft": "Draft"
@@ -400,10 +398,6 @@
   "select_publication_type": {
     "title": "Select Publication Type",
     "subtitle": "Choose what type of product you want to add to the store.",
-    "motor_ac_title": "Motor AC",
-    "motor_ac_description": "Publish an alternating current electric motor.",
-    "motor_dc_title": "Motor DC",
-    "motor_dc_description": "Publish a direct current electric motor (brushed).",
     "motor_title": "Motor",
     "motor_description": "Publish an electric motor, with all its technical details such as power, speed, etc.",
     "regulator_title": "Regulator",
@@ -419,7 +413,7 @@
     "section_title": "Publication Details",
     "publication_title": "Publication Title",
     "publication_title_placeholder": "Title",
-    "reference": "Model",
+    "reference": "Type or Reference",
     "reference_placeholder": "Reference",
     "brand": "Brand",
     "category": "Category",
@@ -442,7 +436,7 @@
     "price_placeholder": "1000",
     "stock": "Stock",
     "stock_placeholder": "1",
-    "negotiable_price": "Consult price",
+    "negotiable_price": "Negotiable Price",
     "rent_option": "Rental Option",
     "power_supply_type": "Power Supply Type",
     "servomotors": "Servomotors",
@@ -573,9 +567,6 @@
     "already_account": "Already have an account?",
     "sign_in_instead": "Log in instead",
     "or": "or"
-  },
-  "motor": {
-    "consult_price": "Consult price"
   },
   "notifications": {
     "title": "Notifications",

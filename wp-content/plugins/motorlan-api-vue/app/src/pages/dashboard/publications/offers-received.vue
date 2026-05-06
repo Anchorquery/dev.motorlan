@@ -294,27 +294,30 @@ const resolveBrandName = (value: any): string | null => {
   return asStr && asStr !== 'null' && asStr !== 'undefined' ? asStr : null
 }
 
-const getImageBySize = (image: any, size = 'thumbnail'): string => {
-  if (!image)
-    return ''
-  if (typeof image === 'string')
-    return image
+const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail'): string => {
   let imageObj: ImagenDestacada | null = null
   if (Array.isArray(image) && image.length > 0)
-    imageObj = image[0]
+    imageObj = image[0] as ImagenDestacada
   else if (image && !Array.isArray(image))
     imageObj = image as ImagenDestacada
   if (!imageObj)
     return ''
-  if (imageObj.sizes && imageObj.sizes[size])
-    return imageObj.sizes[size] as string
-  return imageObj.url || ''
+  if ((imageObj as any).sizes && (imageObj as any).sizes[size])
+    return (imageObj as any).sizes[size] as string
+  return (imageObj as any).url || ''
 }
 
 const formatPublicationTitle = (pub: any, fallbackTitle?: string): string => {
   if (!pub)
     return fallbackTitle || ''
-  return pub.title || fallbackTitle || ''
+  const acf = pub.acf || {}
+  const parts = [
+    pub.title || fallbackTitle,
+    resolveBrandName(acf.marca),
+    acf.velocidad ? `${acf.velocidad} rpm` : null,
+    acf.potencia ? `${acf.potencia} kW` : null,
+  ].filter(Boolean) as string[]
+  return parts.join(' · ')
 }
 
 const getPublicationEntity = (item: any) => (item?.publicacion || item?.motor || null)
@@ -416,32 +419,28 @@ const resolveStatus = (status: string) => {
         @update:options="updateOptions"
       >
         <template #item.publication_title="{ item }">
-          <div class="d-flex align-center gap-3 py-2" style="max-width: 280px;">
+          <div class="d-flex align-center gap-3 py-2">
             <VAvatar
               v-if="getPublicationEntity(item)?.imagen_destacada"
               size="48"
               variant="tonal"
               rounded
-              class="border flex-shrink-0"
+              class="border"
               :image="getImageBySize(getPublicationEntity(item)?.imagen_destacada, 'thumbnail')"
             />
-            <div class="d-flex flex-column overflow-hidden">
+            <div class="d-flex flex-column">
               <RouterLink
                 v-if="getPublicationSlug(item)"
                 :to="`/${getPublicationSlug(item)}`"
-                class="text-high-emphasis font-weight-medium text-body-1 text-decoration-none text-truncate"
-                style="max-width: 200px;"
+                class="text-high-emphasis font-weight-medium text-body-1 text-decoration-none"
               >
                 {{ formatPublicationTitle(getPublicationEntity(item), item.publication_title) }}
-                <VTooltip activator="parent" location="top">{{ formatPublicationTitle(getPublicationEntity(item), item.publication_title) }}</VTooltip>
               </RouterLink>
               <span
                 v-else
-                class="text-high-emphasis font-weight-medium text-body-1 text-truncate"
-                style="max-width: 200px;"
+                class="text-high-emphasis font-weight-medium text-body-1"
               >
                 {{ formatPublicationTitle(getPublicationEntity(item), item.publication_title) }}
-                <VTooltip activator="parent" location="top">{{ formatPublicationTitle(getPublicationEntity(item), item.publication_title) }}</VTooltip>
               </span>
               <span
                 v-if="getPublicationEntity(item)?.acf?.tipo_o_referencia"
@@ -497,7 +496,7 @@ const resolveStatus = (status: string) => {
                     value="reject"
                     prepend-icon="tabler-x"
                     class="text-error"
-                    :disabled="item.status === 'confirmed' || item.status === 'rejected' || updatingOfferId === item.id"
+                    :disabled="item.status === 'confirmed' || updatingOfferId === item.id"
                     @click="updateOfferStatus(item.id, 'rejected')"
                   >
                     Rechazar
@@ -671,23 +670,19 @@ const resolveStatus = (status: string) => {
               Cerrar
             </VBtn>
             
-            <template v-if="(selectedOffer.can_accept || selectedOffer.status === 'pending') && !['confirmed', 'rejected'].includes(selectedOffer.status)">
+            <template v-if="selectedOffer.can_accept && selectedOffer.status === 'pending'">
               <VBtn
-                v-if="selectedOffer.status === 'pending'"
                 color="error"
                 variant="tonal"
                 class="px-6"
-                :disabled="updatingOfferId === selectedOffer.id"
                 @click="updateOfferStatus(selectedOffer.id, 'rejected')"
               >
                 Rechazar
               </VBtn>
               <VBtn
-                v-if="selectedOffer.can_accept && selectedOffer.status === 'pending'"
                 color="success"
                 variant="flat"
                 class="px-6"
-                :disabled="updatingOfferId === selectedOffer.id"
                 @click="updateOfferStatus(selectedOffer.id, 'accepted')"
               >
                 Aceptar Oferta

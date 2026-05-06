@@ -4,11 +4,9 @@ import { ref, computed } from 'vue'
 import { useApi } from '@/composables/useApi'
 import { createUrl } from '@/@core/composable/createUrl'
 import { useRouter } from 'vue-router'
-import { useMotorFormatter } from '@/composables/useMotorFormatter'
 
 const { t } = useI18n()
 const router = useRouter()
-const { formatMotorName } = useMotorFormatter()
 
 const headers = [
   { title: 'Publicacion', key: 'publicacion' },
@@ -131,7 +129,7 @@ const totalQuestions = computed(() => questionsData.value?.pagination?.total || 
               :image="item.publicacion.imagen_destacada.url"
             />
             <div class="d-flex flex-column">
-              <span class="text-body-1 font-weight-medium text-high-emphasis">{{ formatMotorName(item.publicacion) }}</span>
+              <span class="text-body-1 font-weight-medium text-high-emphasis">{{ item.publicacion.title }}</span>
               <span v-if="item.publicacion.acf?.marca?.name" class="text-caption text-medium-emphasis">
                 {{ item.publicacion.acf.marca.name }}
               </span>

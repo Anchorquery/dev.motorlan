@@ -272,16 +272,6 @@ const withdrawOffer = async (offerId: number) => {
       class="text-no-wrap pb-4"
       @update:options="updateOptions"
     >
-      <template #item.publication_title="{ item }">
-        <span 
-          class="text-body-1 font-weight-medium text-high-emphasis text-truncate d-block"
-          style="max-width: 250px;"
-        >
-          {{ item.publication_title }}
-          <VTooltip activator="parent" location="top">{{ item.publication_title }}</VTooltip>
-        </span>
-      </template>
-
       <template #item.offer_amount="{ item }">
         <span class="text-body-1 font-weight-medium text-premium-price">{{ formatCurrency(item.offer_amount) }}</span>
       </template>

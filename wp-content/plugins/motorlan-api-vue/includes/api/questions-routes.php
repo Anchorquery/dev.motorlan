@@ -31,9 +31,6 @@ function format_publication_response( $post ) {
             'marca',
             'tipo_o_referencia',
             'precio_de_venta',
-            'velocidad',
-            'potencia',
-            'par_nominal',
         ];
 
         foreach ( $acf_fields as $field_name ) {
@@ -152,14 +149,6 @@ function motorlan_get_questions_callback( WP_REST_Request $request ) {
 }
 
 function motorlan_create_question_callback( WP_REST_Request $request ) {
-    // Validate Content-Type
-    if ( function_exists( 'motorlan_validate_json_content_type' ) ) {
-        $valid_type = motorlan_validate_json_content_type( $request );
-        if ( is_wp_error( $valid_type ) ) {
-            return $valid_type;
-        }
-    }
-
     $publicacion_id = (int) $request['publicacion_id'];
     $user_id  = get_current_user_id();
     $pregunta = sanitize_text_field( $request->get_param( 'pregunta' ) );
@@ -184,20 +173,26 @@ function motorlan_create_question_callback( WP_REST_Request $request ) {
     
     $publication_title = get_the_title( $publicacion_id );
     $publication_url = get_permalink( $publicacion_id );
-    do_action( 'motorlan_new_question', $post_id );
+    $user_who_asked = get_userdata( $user_id );
+
+    $notification_manager = new Motorlan_Notification_Manager();
+    $notification_manager->create_notification(
+        $publication_author_id,
+        'new_question',
+        "Nueva pregunta de {$user_who_asked->display_name} en \"{$publication_title}\"",
+        $pregunta,
+        [
+            'publication_id' => $publicacion_id,
+            'question_id'    => $post_id,
+            'url'            => '/dashboard/publications/questions',
+        ],
+        ['web', 'email']
+    );
 
     return new WP_REST_Response( array( 'success' => true, 'id' => $post_id ), 201 );
 }
 
 function motorlan_answer_question_callback( WP_REST_Request $request ) {
-    // Validate Content-Type
-    if ( function_exists( 'motorlan_validate_json_content_type' ) ) {
-        $valid_type = motorlan_validate_json_content_type( $request );
-        if ( is_wp_error( $valid_type ) ) {
-            return $valid_type;
-        }
-    }
-
     $question_id = (int) $request['id'];
     $respuesta   = sanitize_text_field( $request->get_param( 'respuesta' ) );
 

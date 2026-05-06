@@ -47,9 +47,7 @@ class Motorlan_Notification_Manager {
         }
 
         if ( in_array( 'email', $channels, true ) ) {
-            // Schedule immediate async execution instead of blocking
-            // Using time() + 1 to ensure it runs very soon but in a separate process/spawn if possible by WP
-            wp_schedule_single_event( time(), 'motorlan_async_email_notification', array( $user_id, $type, $title, $message, $data ) );
+            $this->send_email_notification( $user_id, $type, $title, $message, $data );
         }
 
         do_action( 'motorlan_notification_created', $user_id, $type, $data );
@@ -179,7 +177,7 @@ class Motorlan_Notification_Manager {
     }
 
     /**
-     * Envía una notificación por correo electrónico (Método directo para uso por Cron/Async).
+     * Envía una notificación por correo electrónico.
      *
      * @param int    $user_id
      * @param string $type
@@ -187,22 +185,34 @@ class Motorlan_Notification_Manager {
      * @param string $message
      * @param array  $data
      */
-    public function send_email_notification_direct( $user_id, $type, $title, $message, $data ) {
-        $to = '';
-        $user = null;
-
-        if ( $user_id ) {
-            $user = get_userdata( $user_id );
-            if ( $user ) {
-                $to = $user->user_email;
-            }
-        } elseif ( ! empty( $data['direct_email'] ) ) {
-            $to = $data['direct_email'];
-        }
-
-        if ( empty( $to ) ) {
+    private function send_email_notification( $user_id, $type, $title, $message, $data ) {
+        $user = get_userdata( $user_id );
+        if ( ! $user ) {
             return;
         }
+
+        $to = $user->user_email;
+
+        // --- CONFIGURACIÓN DE MODO PRUEBA ---
+        // Email al que se redirigirán todos los correos en modo prueba
+        $test_mode_email = 'daniel@adaki.net';
+        
+        // Matriz de whitelist: Emails reales permitidos.
+        // Agrega aquí los emails que DEBEN recibir el correo original.
+        $allowed_emails = [
+            'daniel@adaki.net',
+            // 'otro@email.com',
+        ];
+
+        // Lógica de redirección
+        if ( ! in_array( $to, $allowed_emails, true ) ) {
+            // Opcional: Agregar nota al título o cuerpo para indicar redirección (comentado por defecto)
+             $title = "[REDIRECTED from $to] " . $title;
+            $message = "Original recipient: $to <br/>" . $message;
+            
+            $to = $test_mode_email;
+        }
+        // ------------------------------------
 
         $subject = "[Motorlan] " . $title;
         
@@ -229,7 +239,7 @@ class Motorlan_Notification_Manager {
      * @param array  $args          Argumentos para pasar a la plantilla.
      * @return string Contenido del correo renderizado.
      */
-    public function get_email_template( $template_name, $args = [] ) {
+    private function get_email_template( $template_name, $args = [] ) {
         $template_path = MOTORLAN_API_VUE_PATH . 'includes/email-templates/' . sanitize_file_name( $template_name ) . '.php';
 
         if ( ! file_exists( $template_path ) ) {

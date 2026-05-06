@@ -12,7 +12,6 @@ interface ProductMessage {
   display_name: string
   avatar?: string | null
   is_current_user?: boolean
-  guest_email?: string | null
 }
 
 interface ChatMeta {
@@ -68,8 +67,6 @@ const normalizeMessage = (input: any, fallbackIndex = 0): ProductMessage => {
   const avatar = typeof avatarValue === 'string' && avatarValue.length ? avatarValue : null
   const isCurrentUser = Boolean(input?.is_current_user ?? false)
 
-  const guestEmail = typeof input?.guest_email === 'string' ? input.guest_email : null
-
   return {
     id,
     message,
@@ -79,7 +76,6 @@ const normalizeMessage = (input: any, fallbackIndex = 0): ProductMessage => {
     display_name: displayName,
     avatar,
     is_current_user: isCurrentUser,
-    guest_email: guestEmail,
   }
 }
 
@@ -116,12 +112,6 @@ export function useProductChat(
     if (roomKey.value)
       params.set('room_key', roomKey.value)
 
-    // Crucial: Send guest email if we have it, so the backend can identify the user correctly
-    // especially for registered users acting as guests.
-    const storedEmail = getStoredGuestEmail()
-    if (storedEmail)
-      params.set('guest_email', storedEmail)
-
     return params.toString()
   })
   const endpointUrl = computed(() => {
@@ -134,9 +124,7 @@ export function useProductChat(
     const ordered = Array.from(messageStore.values())
       .map(message => ({
         ...message,
-        is_current_user: (currentId !== null && currentId !== 0)
-          ? message.user_id === currentId
-          : Boolean(message.is_current_user || (getStoredGuestEmail() && message.guest_email === getStoredGuestEmail())),
+        is_current_user: currentId !== null ? message.user_id === currentId : Boolean(message.is_current_user),
       }))
       .sort((a, b) => toTimestamp(a.created_at) - toTimestamp(b.created_at))
 
@@ -191,7 +179,7 @@ export function useProductChat(
 
   const ensurePolling = () => {
     if (!polling.value) {
-      polling.value = usePolling(endpointUrl, (incoming, meta) => {
+      polling.value = usePolling(endpointUrl.value, (incoming, meta) => {
         if (meta)
           handleMeta(meta)
 

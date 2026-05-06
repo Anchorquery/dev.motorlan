@@ -26,7 +26,6 @@ const label = computed(() => useAttrs().label as string | undefined)
       v-if="label"
       :for="elementId"
       class="mb-1 text-body-2"
-      style="line-height: 15px;"
       :text="label"
     />
     <VAutocomplete

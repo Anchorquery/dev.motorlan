@@ -48,9 +48,7 @@ declare module 'vue-router/auto-routes' {
     'dashboard-purchases': RouteRecordInfo<'dashboard-purchases', '/dashboard/purchases', Record<never, never>, Record<never, never>>,
     'dashboard-purchases-uuid': RouteRecordInfo<'dashboard-purchases-uuid', '/dashboard/purchases/:uuid', { uuid: ParamValue<true> }, { uuid: ParamValue<false> }>,
     'dashboard-purchases-chat-uuid': RouteRecordInfo<'dashboard-purchases-chat-uuid', '/dashboard/purchases/chat/:uuid', { uuid: ParamValue<true> }, { uuid: ParamValue<false> }>,
-    'dashboard-purchases-components-buyer-chat-modal': RouteRecordInfo<'dashboard-purchases-components-buyer-chat-modal', '/dashboard/purchases/components/BuyerChatModal', Record<never, never>, Record<never, never>>,
     'dashboard-purchases-favorites': RouteRecordInfo<'dashboard-purchases-favorites', '/dashboard/purchases/favorites', Record<never, never>, Record<never, never>>,
-    'dashboard-purchases-inquiries': RouteRecordInfo<'dashboard-purchases-inquiries', '/dashboard/purchases/inquiries', Record<never, never>, Record<never, never>>,
     'dashboard-purchases-list': RouteRecordInfo<'dashboard-purchases-list', '/dashboard/purchases/list', Record<never, never>, Record<never, never>>,
     'dashboard-purchases-offers-sent': RouteRecordInfo<'dashboard-purchases-offers-sent', '/dashboard/purchases/offers-sent', Record<never, never>, Record<never, never>>,
     'dashboard-purchases-opinions': RouteRecordInfo<'dashboard-purchases-opinions', '/dashboard/purchases/opinions', Record<never, never>, Record<never, never>>,
@@ -67,7 +65,6 @@ declare module 'vue-router/auto-routes' {
     'not-authorized': RouteRecordInfo<'not-authorized', '/not-authorized', Record<never, never>, Record<never, never>>,
     'public-store': RouteRecordInfo<'public-store', '/public-store', Record<never, never>, Record<never, never>>,
     'register': RouteRecordInfo<'register', '/register', Record<never, never>, Record<never, never>>,
-    'register-success': RouteRecordInfo<'register-success', '/register-success', Record<never, never>, Record<never, never>>,
     'reset-password': RouteRecordInfo<'reset-password', '/reset-password', Record<never, never>, Record<never, never>>,
     'store': RouteRecordInfo<'store', '/store', Record<never, never>, Record<never, never>>,
     'store-components-chat-inline': RouteRecordInfo<'store-components-chat-inline', '/store/components/ChatInline', Record<never, never>, Record<never, never>>,
@@ -85,6 +82,5 @@ declare module 'vue-router/auto-routes' {
     'store-components-related-products': RouteRecordInfo<'store-components-related-products', '/store/components/RelatedProducts', Record<never, never>, Record<never, never>>,
     'store-components-search-bar': RouteRecordInfo<'store-components-search-bar', '/store/components/SearchBar', Record<never, never>, Record<never, never>>,
     'store-components-tienda-filters': RouteRecordInfo<'store-components-tienda-filters', '/store/components/TiendaFilters', Record<never, never>, Record<never, never>>,
-    'verify-email': RouteRecordInfo<'verify-email', '/verify-email', Record<never, never>, Record<never, never>>,
   }
 }

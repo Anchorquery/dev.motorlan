@@ -169,14 +169,6 @@ function update_user_profile_data(WP_REST_Request $request) {
  * Handle password change request by sending a verification code.
  */
 function motorlan_handle_change_password_request(WP_REST_Request $request) {
-    // Validate Content-Type
-    if ( function_exists( 'motorlan_validate_json_content_type' ) ) {
-        $valid_type = motorlan_validate_json_content_type( $request );
-        if ( is_wp_error( $valid_type ) ) {
-            return $valid_type;
-        }
-    }
-
     $user_id = get_current_user_id();
     $user = get_userdata($user_id);
 
@@ -197,7 +189,19 @@ function motorlan_handle_change_password_request(WP_REST_Request $request) {
     $subject = 'Código de verificación para cambio de contraseña';
     $message = "Hola {$user->first_name},\n\nTu código de verificación para cambiar la contraseña es: **{$code}**\n\nEste código expirará en 15 minutos.";
 
-    do_action( 'motorlan_password_reset_code', $user_id, $code, $expiry );
+    if (class_exists('Motorlan_Notification_Manager')) {
+        $notification_manager = new Motorlan_Notification_Manager();
+        $notification_manager->create_notification(
+            $user_id,
+            'password_reset_code',
+            $subject,
+            $message,
+            ['code' => $code],
+            ['email']
+        );
+    } else {
+        wp_mail($to, $subject, $message);
+    }
 
     return new WP_REST_Response(['message' => 'Código de verificación enviado al correo.'], 200);
 }
@@ -206,14 +210,6 @@ function motorlan_handle_change_password_request(WP_REST_Request $request) {
  * Handle password change confirmation.
  */
 function motorlan_handle_change_password_confirm(WP_REST_Request $request) {
-    // Validate Content-Type
-    if ( function_exists( 'motorlan_validate_json_content_type' ) ) {
-        $valid_type = motorlan_validate_json_content_type( $request );
-        if ( is_wp_error( $valid_type ) ) {
-            return $valid_type;
-        }
-    }
-
     $user_id = get_current_user_id();
     $params = $request->get_json_params();
     $code = sanitize_text_field($params['code'] ?? '');

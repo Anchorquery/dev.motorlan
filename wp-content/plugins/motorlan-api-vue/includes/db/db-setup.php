@@ -22,9 +22,3 @@ function motorlan_offers_create_table() {
     require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
     dbDelta($sql);
 }
-require_once MOTORLAN_API_VUE_PATH . 'includes/db/db-migration-v1-2.php';
-
-function motorlan_run_migrations() {
-    motorlan_migrate_product_messages_v1_2();
-    motorlan_migrate_purchase_messages_v1_2();
-}

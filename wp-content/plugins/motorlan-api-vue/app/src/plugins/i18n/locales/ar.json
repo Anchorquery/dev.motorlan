@@ -204,7 +204,7 @@
       "publication_type": "نوع المنشور",
       "title": "عنوان المنشور",
       "title_placeholder": "العنوان",
-      "reference": "الموديل",
+      "reference": "النوع أو المرجع",
       "reference_placeholder": "المرجع",
       "brand": "العلامة التجارية",
       "category": "الفئة",
@@ -232,9 +232,7 @@
       "price_placeholder": "1000",
       "stock": "المخزون",
       "stock_placeholder": "1",
-      "negotiable_price": "استشارة السعر",
-      "consult_price": "استشارة السعر",
-      "consult_price_hint": "إذا تم تحديده، سيرى الجمهور \"استشارة السعر\". ستستمر في رؤية السعر كمرجع.",
+      "negotiable_price": "السعر قابل للتفاوض",
       "publish_acf": "نشر (ACF)",
       "publish_status_publish": "نشر",
       "publish_status_draft": "مسودة"
@@ -302,9 +300,6 @@
       "warranty_request_success": "تم طلب الضمان بنجاح. تم النشر.",
       "warranty_request_error": "خطأ في طلب الضمان: {message}"
     }
-  },
-  "motor": {
-    "consult_price": "استشارة السعر"
   },
   "notifications": {
     "title": "Notifications",

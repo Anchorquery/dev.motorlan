@@ -16,7 +16,3 @@ registerPlugins(app)
 
 // Mount vue app
 app.mount('#motorlan-app')
-
-// Nota: La transición del skeleton ahora se maneja en los layouts
-// mediante el composable useAppLoading cuando Suspense resuelve.
-// Esto garantiza que el skeleton solo desaparezca cuando el contenido esté listo.

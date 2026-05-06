@@ -29,42 +29,22 @@ const fileData = computed({
 
 const { open, onChange } = useFileDialog({ accept: 'image/*', multiple: props.multiple })
 
-// function onDrop(DroppedFiles: File[] | null) {
-//   if (!DroppedFiles)
-//     return
-
-//   if (!props.multiple && DroppedFiles.length > 0 && DroppedFiles.length > 1) { // Error en comentario previo, corregido abajo
-//     alert('Only one file is allowed')
-//     return
-//   }
-
-//   const newFiles = DroppedFiles.map(file => ({
-//     file,
-//     url: URL.createObjectURL(file),
-//   }))
-
-//   DroppedFiles.forEach(file => emit('file-added', file))
-
-//   if (props.multiple)
-//     fileData.value = [...fileData.value, ...newFiles]
-//   else
-//     fileData.value = newFiles
-// }
-
 function onDrop(DroppedFiles: File[] | null) {
   if (!DroppedFiles)
     return
 
   if (!props.multiple && DroppedFiles.length > 1) {
+    // eslint-disable-next-line no-alert
     alert('Only one file is allowed')
     return
   }
 
   const newFiles = DroppedFiles.map(file => ({
     file,
-    url: URL.createObjectURL(file),
+    url: useObjectUrl(file).value ?? '',
   }))
 
+  // Emitir evento file-added por cada archivo
   DroppedFiles.forEach(file => emit('file-added', file))
 
   if (props.multiple)
@@ -80,9 +60,10 @@ onChange((selectedFiles: FileList | null) => {
   const filesArray = Array.from(selectedFiles)
   const newFiles = filesArray.map((file: File) => ({
     file,
-    url: URL.createObjectURL(file),
+    url: useObjectUrl(file).value ?? '',
   }))
 
+  // Emitir evento file-added por cada archivo seleccionado
   filesArray.forEach(file => emit('file-added', file))
 
   if (props.multiple)
@@ -95,13 +76,8 @@ useDropZone(dropZoneRef, onDrop)
 
 const removeFile = (index: number) => {
   const currentFiles = [...fileData.value]
-  const removedFile = currentFiles.splice(index, 1)[0] as FileData
-  
-  // Revocar el URL si es un blob local para liberar memoria
-  if (removedFile.url && removedFile.url.startsWith('blob:')) {
-    URL.revokeObjectURL(removedFile.url)
-  }
 
+  currentFiles.splice(index, 1)
   fileData.value = currentFiles
 }
 
@@ -164,7 +140,8 @@ defineExpose({
                         :src="item.url"
                         aspect-ratio="1"
                         cover
-                        class="w-100"
+                        class="w-100 h-100"
+                        bg-color="grey-lighten-4"
                       />
                       
                       <!-- Overlay Actions -->

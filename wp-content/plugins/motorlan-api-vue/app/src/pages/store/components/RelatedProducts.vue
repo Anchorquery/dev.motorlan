@@ -6,19 +6,44 @@ import type { Publicacion } from '@/interfaces/publicacion'
 
 const props = defineProps<{ currentId: number }>()
 
-const { data } = useApi<any>(
-  createUrl('/wp-json/motorlan/v1/publicaciones', { query: { per_page: 8, status: 'publish' } }),
+const { data } =  useApi<any>(
+  createUrl('/wp-json/motorlan/v1/publicaciones', { query: { per_page: 8, status: 'publish' } })
 ).get().json()
 
 const products = computed(() => {
   const all = data.value?.data || []
-
   return all
     .filter((m: Publicacion) => m.id !== props.currentId && m.status === 'publish')
     .slice(0, 4)
 })
 
-const formatProductTitle = (publication: Publicacion) => publication?.title || ''
+const formatProductTitle = (publication: Publicacion) => {
+  const acf = publication?.acf || {}
+  
+  // Try to use the same logic as in [slug].vue if possible, but keeping it simple here
+  const tipo = publication?.tipo && publication.tipo.length > 0 ? publication.tipo[0].name : ''
+  const marca = (publication as any).marca_name || ''
+  const modelo = acf.tipo_o_referencia || ''
+  
+  let powerOrTorque = ''
+  if (acf.potencia) {
+    powerOrTorque = `${acf.potencia} kW`
+  } else if (acf.par_nominal) {
+    powerOrTorque = `${acf.par_nominal} Nm`
+  }
+
+  const velocidad = acf.velocidad ? `${acf.velocidad} rpm` : ''
+
+  const parts = [
+    tipo,
+    marca,
+    modelo,
+    powerOrTorque,
+    velocidad,
+  ].filter(p => !!p && String(p).trim() !== '')
+
+  return parts.join(' ').toUpperCase()
+}
 
 const resolveProductType = (publication: Publicacion) => {
   const candidates: string[] = []
@@ -52,19 +77,13 @@ const resolveProductType = (publication: Publicacion) => {
 </script>
 
 <template>
-  <section
+  <div
     v-if="products.length"
     class="related-products"
   >
-    <div class="d-flex align-center justify-space-between flex-wrap gap-2 mb-4">
-      <h3 class="mb-0 text-h5 font-weight-bold">
-        Productos relacionados
-      </h3>
-      <span class="text-body-2 text-medium-emphasis">
-        Otras publicaciones que pueden interesarte
-      </span>
-    </div>
-
+    <h3 class="mb-4">
+      Productos relacionados
+    </h3>
     <VRow>
       <VCol
         v-for="publicacion in products"
@@ -72,77 +91,85 @@ const resolveProductType = (publication: Publicacion) => {
         cols="12"
         sm="6"
         md="3"
-        class="d-flex"
       >
-        <VCard class="related-card flex-grow-1" rounded="xl">
-          <div class="related-card__image">
-            <VImg
+        <div class="motor-card pa-4">
+          <div class="motor-image mb-4">
+            <img
               :src="publicacion.imagen_destacada?.url || '/placeholder.png'"
-              :alt="publicacion.title"
-              cover
-              aspect-ratio="1.25"
+              alt=""
             />
           </div>
-
-          <VCardText class="d-flex flex-column flex-grow-1 pa-4">
-            <div class="text-body-1 mb-2 related-card__title">
-              {{ formatProductTitle(publicacion) }}
-            </div>
-
-            <div class="text-caption text-medium-emphasis mb-3 related-card__type">
-              {{ resolveProductType(publicacion) }}
-            </div>
-
-            <div class="mt-auto pt-2">
-              <VBtn
-                color="error"
-                variant="tonal"
-                class="rounded-pill px-6"
-                :to="'/' + publicacion.slug"
-                block
-              >
-                + Info
-              </VBtn>
-            </div>
-          </VCardText>
-        </VCard>
+          <div class="text-body-1 mb-2 motor-title">
+            {{ formatProductTitle(publicacion) }}
+          </div>
+          <div class="text-caption text-medium-emphasis mb-3 motor-type">
+            {{ resolveProductType(publicacion) }}
+          </div>
+          <div class="mt-auto pt-2">
+            <VBtn
+              color="error"
+              variant="elevated"
+              class="rounded-pill px-6"
+              :to="'/' + publicacion.slug"
+            >
+              + INFO
+            </VBtn>
+          </div>
+        </div>
       </VCol>
     </VRow>
-  </section>
+  </div>
 </template>
 
 <style scoped>
-.related-products {
-  margin-top: 1rem;
-}
-
-.related-card {
-  border: 1px solid rgba(218, 41, 28, 0.08);
-  box-shadow: 0 12px 24px rgba(20, 20, 43, 0.06);
-  transition:
-    transform 180ms ease,
-    box-shadow 180ms ease;
-  overflow: hidden;
+.related-products .motor-card {
   background: #fff;
+  border-radius: 16px;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
-.related-card:hover {
+.related-products .motor-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 18px 34px rgba(20, 20, 43, 0.1);
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
 }
 
-.related-card__image {
+.related-products .motor-image {
+  height: 160px;
+  border-radius: 12px;
   background: #f8fafc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
 }
 
-.related-card__title {
-  font-weight: 600;
+.related-products .motor-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 8px;
+}
+
+.related-products .motor-title {
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
   color: #334155;
-  line-height: 1.35;
-  min-height: 2.7em;
+  line-height: 1.4;
+  height: 2.8em;
+  display: -webkit-box;
+  line-clamp: 2;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: 0.9rem !important;
 }
 
-.related-card__type {
+.related-products .motor-type {
   display: inline-flex;
   align-items: center;
   padding: 4px 12px;
@@ -152,11 +179,12 @@ const resolveProductType = (publication: Publicacion) => {
   letter-spacing: 0.02em;
   text-transform: uppercase;
   font-weight: 600;
+  font-size: 0.7rem !important;
 }
 
-@media (max-width: 959px) {
-  .related-products {
-    margin-top: 0.5rem;
-  }
+.related-products h3 {
+  font-family: 'Inter', sans-serif;
+  color: #1e293b;
+  font-weight: 600;
 }
 </style>

@@ -1,24 +1,42 @@
 <?php
-// Welcome Email
-$url = get_site_url() . '/login';
+/**
+ * Email template for the welcome message sent after user registration.
+ *
+ * @var array $args {
+ *     @type string  $title
+ *     @type string  $message
+ *     @type array   $data
+ *     @type WP_User $user
+ * }
+ */
+
+if ( ! defined( 'WPINC' ) ) {
+    die;
+}
+
+$user = $args['user'] ?? null;
+$data = $args['data'] ?? [];
+$name = $data['name'] ?? ( $user ? $user->display_name : '' );
+$username = $data['username'] ?? ( $user ? $user->user_login : '' );
+$login_url = $data['login_url'] ?? home_url( '/login' );
+$message = $args['message'] ?? '';
+
 ?>
+<h2><?php echo esc_html( $args['title'] ); ?></h2>
+<p>Hola <?php echo esc_html( $name ); ?>,</p>
+<p><?php echo esc_html( $message ); ?></p>
 
-<h1><?php esc_html_e( '¡Bienvenido/a a Motorlan!', 'motorlan-api-vue' ); ?></h1>
+<?php if ( ! empty( $username ) ) : ?>
+    <p>Tu nombre de usuario es: <strong><?php echo esc_html( $username ); ?></strong></p>
+<?php endif; ?>
 
-<p><?php printf( esc_html__( 'Hola %s,', 'motorlan-api-vue' ), esc_html( $args['user']->display_name ) ); ?></p>
-
-<p><?php esc_html_e( 'Gracias por unirte a la mayor comunidad de compra-venta de recambios industriales y robótica.', 'motorlan-api-vue' ); ?></p>
-
-<p><?php esc_html_e( 'Tu cuenta ha sido creada correctamente. Ahora puedes:', 'motorlan-api-vue' ); ?></p>
-
-<ul>
-    <li><?php esc_html_e( 'Publicar tus productos y llegar a miles de compradores.', 'motorlan-api-vue' ); ?></li>
-    <li><?php esc_html_e( 'Guardar tus búsquedas y productos favoritos.', 'motorlan-api-vue' ); ?></li>
-    <li><?php esc_html_e( 'Contactar directamente con vendedores profesionales.', 'motorlan-api-vue' ); ?></li>
-</ul>
-
-<div style="text-align: center;">
-    <a href="<?php echo esc_url($url); ?>" class="button"><?php esc_html_e( 'Acceder a mi Cuenta', 'motorlan-api-vue' ); ?></a>
-</div>
-
-<p><?php esc_html_e( 'Si tienes alguna pregunta, nuestro equipo de soporte está aquí para ayudarte.', 'motorlan-api-vue' ); ?></p>
+<p>Puedes iniciar sesion usando el siguiente enlace:</p>
+<p>
+    <a
+        href="<?php echo esc_url( $login_url ); ?>"
+        style="display: inline-block; padding: 10px 20px; background-color: #005b96; color: #ffffff; text-decoration: none; border-radius: 4px;"
+    >
+        Iniciar sesion
+    </a>
+</p>
+<p>Si no has solicitado esta cuenta, por favor ignora este mensaje.</p>

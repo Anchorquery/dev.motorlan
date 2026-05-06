@@ -1,132 +1,66 @@
 <script setup lang="ts">
-defineProps<{
-  loading: boolean
-  activeFiltersCount?: number
-}>()
+defineProps<{ loading: boolean; orderOptions: string[] }>()
 
-const emit = defineEmits(['search', 'open-filters', 'reset'])
+const emit = defineEmits(['search'])
 const searchTerm = defineModel<string>('searchTerm')
+const order = defineModel<string | null>('order')
 const onSearch = () => emit('search')
 </script>
 
 <template>
-  <section class="store-navbar mb-6">
-    <div class="store-navbar__hero">
-      <div class="text-overline text-error font-weight-bold mb-1">
-        Tienda Motorlan
-      </div>
-      <h1 class="text-h4 text-md-h3 font-weight-bold mb-2 text-primary">
-        Compra y venta de motores industriales
-      </h1>
-      <p class="text-body-2 text-medium-emphasis mb-0 store-navbar__subtitle">
-        Motores, reguladores, repuestos y mas, con busqueda y filtros rapidos desde la barra superior.
-      </p>
+  <div class="search-bar-wrapper mb-6">
+    <div class="mb-6">
+      <h2 class="text-h4 text-error font-weight-bold mb-1 letter-spacing-tight">
+        COMPRA VENTA DE MOTORES ELÉCTRICOS INDUSTRIALES
+      </h2>
+      <h3 class="text-h6 text-secondary font-weight-medium opacity-70">
+        MOTORES, REGULADORES, REPUESTOS Y MUCHO MÁS
+      </h3>
     </div>
-
-    <div class="store-navbar__controls">
-      <AppTextField
+    <div class="top-bar">
+      <VTextField
         v-model="searchTerm"
         placeholder="Buscar..."
+        variant="outlined"
         hide-details
         class="flex-grow-1"
         @keydown.enter="onSearch"
       />
-
       <VBtn
         color="error"
-        class="store-navbar__btn"
-        :loading="loading"
+        class="search-btn"
         @click="onSearch"
       >
         BUSCAR
       </VBtn>
-
-      <VBtn
-        variant="tonal"
+      <AppSelect
+        v-model="order"
+        :items="orderOptions"
+        placeholder="Ordenar"
+        variant="outlined"
         color="error"
-        class="store-navbar__btn"
-        @click="emit('open-filters')"
-      >
-        Filtros
-        <VBadge
-          v-if="activeFiltersCount"
-          :content="activeFiltersCount"
-          inline
-          color="error"
-          class="ms-2"
-        />
-      </VBtn>
-
-      <VBtn
-        v-if="activeFiltersCount"
-        variant="text"
-        color="error"
-        class="store-navbar__btn"
-        @click="emit('reset')"
-      >
-        Limpiar
-      </VBtn>
+        class="ml-auto"
+        style="max-width: 250px;"
+      />
     </div>
-  </section>
+  </div>
 </template>
 
 <style>
-.store-navbar {
-  display: flex;
-  align-items: end;
-  justify-content: space-between;
-  gap: 1rem;
-  flex-wrap: wrap;
-  padding: 1rem 1rem 1.25rem;
-  margin-inline: -0.25rem;
-  border-radius: 24px;
-  background:
-    radial-gradient(circle at top left, rgba(218, 41, 28, 0.12), transparent 32%),
-    linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(255, 248, 247, 0.96));
-  border: 1px solid rgba(218, 41, 28, 0.12);
-  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
-}
-
-.store-navbar__hero {
-  min-width: 280px;
-  max-width: 700px;
-}
-
-.store-navbar__subtitle {
-  max-width: 62ch;
-}
-
-.store-navbar__controls {
+.top-bar {
   display: flex;
   align-items: center;
   width: 100%;
-  gap: 12px;
-  flex-wrap: wrap;
+  gap: 16px;
 }
-
-.store-navbar__btn {
-  min-height: 44px;
+.search-btn {
+  background-color: #da291c !important;
+  color: white !important;
 }
-
-@media (min-width: 960px) {
-  .store-navbar__controls {
-    flex: 1 1 460px;
-    justify-content: flex-end;
-    width: auto;
-  }
-
-  .store-navbar__controls > *:first-child {
-    flex: 1 1 320px;
-  }
+.search-bar-wrapper .text-error {
+  color: #da291c !important;
 }
-
-@media (max-width: 959px) {
-  .store-navbar {
-    padding: 1rem;
-  }
-
-  .store-navbar__hero {
-    max-width: none;
-  }
+.search-bar-wrapper .v-select--variant-outlined .v-field__outline__color {
+  color: #da291c !important;
 }
 </style>

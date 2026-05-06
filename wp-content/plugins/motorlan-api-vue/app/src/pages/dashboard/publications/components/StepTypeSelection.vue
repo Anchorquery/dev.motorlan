@@ -12,15 +12,9 @@ const { t } = useI18n()
 
 const postTypes = computed(() => [
   {
-    title: t('select_publication_type.motor_ac_title'),
-    slug: 'motor-ac',
-    description: t('select_publication_type.motor_ac_description'),
-    icon: 'mdi-engine-outline',
-  },
-  {
-    title: t('select_publication_type.motor_dc_title'),
-    slug: 'motor-dc',
-    description: t('select_publication_type.motor_dc_description'),
+    title: t('select_publication_type.motor_title'),
+    slug: 'motor',
+    description: t('select_publication_type.motor_description'),
     icon: 'mdi-engine-outline',
   },
   {

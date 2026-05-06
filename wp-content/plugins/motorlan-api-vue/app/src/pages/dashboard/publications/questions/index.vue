@@ -5,12 +5,10 @@ import { useRouter } from 'vue-router'
 import { useApi } from '@/composables/useApi'
 import { debounce } from '@/utils/debounce'
 import { useToast } from '@/composables/useToast'
-import { useMotorFormatter } from '@/composables/useMotorFormatter'
 
 const { t } = useI18n()
 const router = useRouter()
 const { showToast } = useToast()
-const { formatMotorName } = useMotorFormatter()
 
 const headers = [
   { title: t('questions.publication'), key: 'motor' },
@@ -121,36 +119,23 @@ const submitAnswer = async (question: any, isActive: any) => {
   }
 }
 
-interface ImagenDestacada {
-  url?: string;
-  src?: string;
-  sizes?: {
-    [key: string]: string;
-  };
-}
-
 const getImageBySize = (image: any, size = 'thumbnail'): string => {
-  if (!image)
-    return ''
-  if (typeof image === 'string')
-    return image
-  let imageObj: ImagenDestacada | null = null
+  if (!image) return ''
+  
   if (Array.isArray(image) && image.length > 0)
-    imageObj = image[0]
-  else if (image && !Array.isArray(image))
-    imageObj = image as ImagenDestacada
-  if (!imageObj)
-    return ''
-  if (imageObj.sizes && imageObj.sizes[size])
-    return imageObj.sizes[size] as string
-  return imageObj.url || ''
+    image = image[0]
+    
+  if (image.sizes && image.sizes[size])
+    return image.sizes[size].url || image.sizes[size].src || image.sizes[size]
+    
+  return image.url || image.src || ''
 }
 </script>
 
 <template>
   <VCard class="motor-card-enhanced">
-    <VCardText class="pa-6 questions-toolbar">
-      <VRow class="ga-3">
+    <VCardText class="pa-6">
+      <VRow>
         <VCol cols="12" sm="4">
           <AppTextField
             v-model="searchQuery"
@@ -181,7 +166,6 @@ const getImageBySize = (image: any, size = 'thumbnail'): string => {
 
     <VDivider />
 
-    <div class="questions-table-shell">
     <VDataTableServer
       v-model:items-per-page="itemsPerPage"
       v-model:page="page"
@@ -210,7 +194,7 @@ const getImageBySize = (image: any, size = 'thumbnail'): string => {
             <span
               class="text-body-1 font-weight-medium text-premium-title cursor-pointer"
               @click="router.push(`/dashboard/publications/publication/edit/${item.motor.uuid}`)"
-            >{{ formatMotorName(item.motor) }}</span>
+            >{{ item.motor.title }}</span>
             <span class="text-body-2 text-muted">{{ item.motor.acf.marca?.name }}</span>
           </div>
         </div>
@@ -235,11 +219,11 @@ const getImageBySize = (image: any, size = 'thumbnail'): string => {
       </template>
 
       <template #item.actions="{ item }: { item: any }">
-        <div class="d-flex gap-1 flex-wrap questions-actions">
+        <div class="d-flex gap-1">
           <!-- Reply Dialog -->
           <VDialog
             v-if="!item.respuesta"
-            :max-width="$vuetify.display.smAndDown ? 360 : 600"
+            max-width="600px"
           >
             <template #activator="{ props }">
               <IconBtn 
@@ -319,7 +303,7 @@ const getImageBySize = (image: any, size = 'thumbnail'): string => {
           <!-- View Dialog -->
           <VDialog
             v-if="item.respuesta"
-            :max-width="$vuetify.display.smAndDown ? 360 : 600"
+            max-width="600px"
           >
             <template #activator="{ props }">
               <IconBtn 
@@ -401,24 +385,5 @@ const getImageBySize = (image: any, size = 'thumbnail'): string => {
         />
       </template>
     </VDataTableServer>
-    </div>
   </VCard>
 </template>
-
-<style scoped>
-.questions-table-shell {
-  overflow-x: auto;
-}
-
-@media (max-width: 959px) {
-  .questions-toolbar :deep(.v-col),
-  .questions-toolbar :deep(.v-field),
-  .questions-toolbar :deep(.v-btn) {
-    width: 100%;
-  }
-
-  .questions-actions {
-    width: 100%;
-  }
-}
-</style>

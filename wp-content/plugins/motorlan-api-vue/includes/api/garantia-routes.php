@@ -122,14 +122,6 @@ function motorlan_get_garantia_by_publicacion_uuid( WP_REST_Request $request ) {
  * @return WP_REST_Response|WP_Error
  */
 function motorlan_create_garantia_item( WP_REST_Request $request ) {
-    // Validate Content-Type
-    if ( function_exists( 'motorlan_validate_json_content_type' ) ) {
-        $valid_type = motorlan_validate_json_content_type( $request );
-        if ( is_wp_error( $valid_type ) ) {
-            return $valid_type;
-        }
-    }
-
     $params = $request->get_params();
     $motor_id = intval( $params['motor_id'] );
 

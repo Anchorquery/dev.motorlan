@@ -3,12 +3,7 @@ import type { App } from 'vue'
 
 import type { RouteLocationNormalized, RouteRecordRaw } from 'vue-router'
 
-import { createRouter, createWebHistory } from 'vue-router/auto'
-
-// Base dinámica desde WordPress (soporta WPML y múltiples páginas)
-const getVueBase = (): string => {
-  return (window as unknown as { wpData?: { vue_base?: string } }).wpData?.vue_base || '/'
-}
+import { createRouter, createWebHashHistory } from 'vue-router/auto'
 
 import { redirects, routes } from './additional-routes'
 import { setupGuards } from './guards'
@@ -25,7 +20,7 @@ function recursiveLayouts(route: RouteRecordRaw): RouteRecordRaw {
 }
 
 const router = createRouter({
-  history: createWebHistory(getVueBase()),
+  history: createWebHashHistory(import.meta.env.BASE_URL),
   scrollBehavior(to: RouteLocationNormalized) {
     if (to.hash)
       return { el: to.hash, behavior: 'smooth', top: 60 }

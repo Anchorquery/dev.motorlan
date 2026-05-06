@@ -22,15 +22,6 @@ if (!defined('WPINC')) {
  * @return WP_REST_Response
  */
 function motorlan_migrate_publicaciones_callback( $request ) {
-    // Validate Content-Type
-    if ( function_exists( 'motorlan_validate_json_content_type' ) ) {
-        $valid_type = motorlan_validate_json_content_type( $request );
-        if ( is_wp_error( $valid_type ) ) {
-            return $valid_type;
-        }
-    }
-
-    $params = $request->get_json_params();
     // Basic capability check - only users able to edit posts can run this.
     if ( ! function_exists( 'current_user_can' ) || ! current_user_can( 'edit_posts' ) ) {
         return new WP_REST_Response( [ 'message' => 'Acceso denegado' ], 403 );
@@ -93,19 +84,12 @@ function motorlan_migrate_publicaciones_callback( $request ) {
             $item['action'] = 'would_change_post_type_to_publicacion';
             $item['status'] = 'dry_run';
         } else {
-            $new_slug = motorlan_generate_slug_by_post_id( $post_id );
-            $updated = wp_update_post( [ 
-                'ID' => $post_id, 
-                'post_type' => 'publicacion',
-                'post_name' => $new_slug
-            ], true );
-            
+            $updated = wp_update_post( [ 'ID' => $post_id, 'post_type' => 'publicacion' ], true );
             if ( is_wp_error( $updated ) ) {
                 $item['status'] = 'error';
                 $item['error'] = $updated->get_error_message();
             } else {
                 $item['status'] = 'changed';
-                $item['new_slug'] = $new_slug;
             }
         }
 

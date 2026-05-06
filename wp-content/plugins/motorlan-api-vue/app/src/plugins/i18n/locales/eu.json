@@ -216,7 +216,7 @@
       "torque_label": "PAR (Nm)",
       "brands_label": "Markak",
       "state_label": "Egoera",
-      "type_model_label": "Eredua",
+      "type_model_label": "Mota / eredua",
       "responsibility_note": "GARRANTZITSUA: Motorlanek ez du bere gain hartzen saltzailearen eta eroslearen artean zuzenean saltzen diren ekipoen ardura, aurretik bere tailer espezializatuan azterketa egin gabe."
     },
     "par_options": {
@@ -259,7 +259,7 @@
       "type": "Argitalpen Mota",
       "title": "Argitalpenaren Izenburua",
       "title_placeholder": "Izenburua",
-      "reference": "Eredua",
+      "reference": "Mota edo Erreferentzia",
       "reference_placeholder": "Erreferentzia",
       "brand": "Marka",
       "category": "Kategoria",
@@ -287,9 +287,7 @@
       "price_placeholder": "1000",
       "stock": "Stocka",
       "stock_placeholder": "1",
-      "negotiable_price": "Prezioa kontsultatu",
-      "consult_price": "Prezioa kontsultatu",
-      "consult_price_hint": "Markatuta badago, publikoak \"Prezioa kontsultatu\" ikusiko du. Zuk oraindik prezioa erreferentzia gisa ikusiko duzu.",
+      "negotiable_price": "Prezio Negoziagarria",
       "publish_acf": "Argitalpenaren egoera",
       "publish_status_publish": "Argitaratu",
       "publish_status_draft": "Zirriborroa"
@@ -410,10 +408,6 @@
   "select_publication_type": {
     "title": "Hautatu Argitalpen Mota",
     "subtitle": "Aukeratu zer produktu mota gehitu nahi duzun dendara.",
-    "motor_ac_title": "Motorra AC",
-    "motor_ac_description": "Argitaratu korronte alternoko motor elektriko bat.",
-    "motor_dc_title": "Motorra DC",
-    "motor_dc_description": "Argitaratu korronte zuzeneko motor elektriko bat (eskuilekin).",
     "motor_title": "Motorra",
     "motor_description": "Argitaratu motor elektriko bat, bere xehetasun tekniko guztiekin: potentzia, abiadura, etab.",
     "regulator_title": "Erregulatzailea",
@@ -429,7 +423,7 @@
     "section_title": "Argitalpenaren Xehetasunak",
     "publication_title": "Argitalpenaren Izenburua",
     "publication_title_placeholder": "Izenburua",
-    "reference": "Eredua",
+    "reference": "Mota edo Erreferentzia",
     "reference_placeholder": "Erreferentzia",
     "brand": "Marka",
     "category": "Kategoria",
@@ -452,7 +446,7 @@
     "price_placeholder": "1000",
     "stock": "Stocka",
     "stock_placeholder": "1",
-    "negotiable_price": "Prezioa kontsultatu",
+    "negotiable_price": "Prezio Negoziagarria",
     "rent_option": "Alokatzeko Aukera",
     "power_supply_type": "Elikatze Mota",
     "servomotors": "Serbomotorrak",
@@ -592,9 +586,6 @@
     "load_error": "Ezin izan dira elkarrizketak kargatu",
     "no_data_title": "Ez dago elkarrizketarik",
     "no_data_text": "Oraindik ez duzu interes kontsultarik jaso."
-  },
-  "motor": {
-    "consult_price": "Prezioa kontsultatu"
   },
   "notifications": {
     "title": "Notifications",

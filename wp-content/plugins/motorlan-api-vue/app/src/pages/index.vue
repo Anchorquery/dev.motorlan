@@ -10,5 +10,7 @@ definePage({
 </script>
 
 <template>
-  <StoreContent />
+  <div class="public-store-page">
+    <StoreContent />
+  </div>
 </template>

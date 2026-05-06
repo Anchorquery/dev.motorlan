@@ -11,20 +11,17 @@ if ( ! defined( 'WPINC' ) ) {
 }
 
 /**
- * Add custom columns to the publicacion CPT list.
+ * Add custom columns to the motor CPT list.
  *
  * @param array $columns The existing columns.
  * @return array The modified columns.
  */
-function motorlan_add_publicacion_columns( $columns ) {
+function motorlan_add_motor_columns( $columns ) {
     $new_columns = array();
     foreach ( $columns as $key => $value ) {
-        if ( 'title' === $key ) {
-            $new_columns['motor_image'] = __( 'Imagen', 'motorlan-api-vue' );
-            $new_columns['formatted_title'] = __( 'Título Formateado', 'motorlan-api-vue' );
-        }
         $new_columns[ $key ] = $value;
         if ( 'title' === $key ) {
+            $new_columns['motor_image'] = __( 'Imagen', 'motorlan-api-vue' );
             $new_columns['marca'] = __( 'Marca', 'motorlan-api-vue' );
             $new_columns['potencia'] = __( 'Potencia', 'motorlan-api-vue' );
             $new_columns['velocidad'] = __( 'Velocidad', 'motorlan-api-vue' );
@@ -34,26 +31,7 @@ function motorlan_add_publicacion_columns( $columns ) {
     }
     return $new_columns;
 }
-add_filter( 'manage_edit-publicacion_columns', 'motorlan_add_publicacion_columns' );
-
-/**
- * Add custom columns to the compra CPT list.
- */
-function motorlan_add_compra_columns( $columns ) {
-    $new_columns = array();
-    foreach ( $columns as $key => $value ) {
-        if ( 'title' === $key ) {
-            $new_columns['comprador'] = __( 'Comprador', 'motorlan-api-vue' );
-            $new_columns['motor_comprado'] = __( 'Motor / Publicación', 'motorlan-api-vue' );
-        }
-        $new_columns[ $key ] = $value;
-        if ( 'title' === $key ) {
-            $new_columns['precio_compra'] = __( 'Precio Compra', 'motorlan-api-vue' );
-        }
-    }
-    return $new_columns;
-}
-add_filter( 'manage_edit-compra_columns', 'motorlan_add_compra_columns' );
+add_filter( 'manage_edit-motor_columns', 'motorlan_add_motor_columns' );
 
 /**
  * Populate the custom columns with data.
@@ -61,7 +39,7 @@ add_filter( 'manage_edit-compra_columns', 'motorlan_add_compra_columns' );
  * @param string $column The column name.
  * @param int    $post_id The post ID.
  */
-function motorlan_populate_publicacion_columns( $column, $post_id ) {
+function motorlan_populate_motor_columns( $column, $post_id ) {
     switch ( $column ) {
         case 'motor_image':
             $image = get_field( 'motor_image', $post_id );
@@ -69,14 +47,8 @@ function motorlan_populate_publicacion_columns( $column, $post_id ) {
                 echo '<img src="' . esc_url( $image['sizes']['thumbnail'] ) . '" width="60" />';
             }
             break;
-        case 'formatted_title':
-            $formatted = function_exists( 'motorlan_format_motor_name' ) ? motorlan_format_motor_name( $post_id ) : get_the_title( $post_id );
-            echo '<strong>' . esc_html( $formatted ) . '</strong>';
-            break;
         case 'marca':
-            $marca = get_field( 'marca', $post_id );
-            if ( is_object( $marca ) ) echo esc_html( $marca->name );
-            else echo esc_html( $marca );
+            echo esc_html( get_field( 'marca', $post_id ) );
             break;
         case 'potencia':
             $potencia = get_field( 'potencia', $post_id );
@@ -101,47 +73,17 @@ function motorlan_populate_publicacion_columns( $column, $post_id ) {
             break;
     }
 }
-add_action( 'manage_publicacion_posts_custom_column', 'motorlan_populate_publicacion_columns', 10, 2 );
+add_action( 'manage_motor_posts_custom_column', 'motorlan_populate_motor_columns', 10, 2 );
 
 /**
- * Populate custom columns for Compra.
- */
-function motorlan_populate_compra_columns( $column, $post_id ) {
-    switch ( $column ) {
-        case 'comprador':
-            $user_id = get_post_meta( $post_id, 'comprador_id', true );
-            if ( ! $user_id ) $user_id = get_field( 'comprador', $post_id );
-            if ( $user_id ) {
-                $user = get_userdata( $user_id );
-                if ( $user ) echo esc_html( $user->display_name );
-            }
-            break;
-        case 'motor_comprado':
-            $motor_id = get_field( 'publicacion', $post_id );
-            if ( ! $motor_id ) $motor_id = get_post_meta( $post_id, 'motor', true );
-            
-            if ( $motor_id ) {
-                $formatted = function_exists( 'motorlan_format_motor_name' ) ? motorlan_format_motor_name( $motor_id ) : get_the_title( $motor_id );
-                printf( '<strong><a href="%s">%s</a></strong>', get_edit_post_link($motor_id), esc_html( $formatted ) );
-            }
-            break;
-        case 'precio_compra':
-            $precio = get_post_meta( $post_id, 'precio_compra', true );
-            if ( $precio ) echo esc_html( '€' . number_format_i18n( $precio, 2 ) );
-            break;
-    }
-}
-add_action( 'manage_compra_posts_custom_column', 'motorlan_populate_compra_columns', 10, 2 );
-
-/**
- * Add custom filters to the publicacion CPT list.
+ * Add custom filters to the motor CPT list.
  */
 function motorlan_add_motor_filters() {
     global $typenow;
-    if ( 'publicacion' === $typenow ) {
+    if ( 'motor' === $typenow ) {
         // Filter by Brand
         $marcas = array();
-        $posts = get_posts( array( 'post_type' => 'publicacion', 'posts_per_page' => -1 ) );
+        $posts = get_posts( array( 'post_type' => 'motor', 'posts_per_page' => -1 ) );
         foreach ( $posts as $post ) {
             $marca = get_field( 'marca', $post->ID );
             if ( $marca ) {
@@ -178,20 +120,16 @@ function motorlan_add_motor_filters() {
         echo '</select>';
 
         // Filter by Country
-        if ( function_exists( 'motorlan_get_countries_list' ) ) {
-            $paises = motorlan_get_countries_list();
-        } else {
-            $paises = array( 'es' => 'España', 'pt' => 'Portugal', 'fr' => 'Francia' );
-        }
-        $current_pais = isset( $_GET['pais_filter'] ) ? sanitize_text_field( $_GET['pais_filter'] ) : '';
+        $paises = array( 'España', 'Portugal', 'Francia' );
+        $current_pais = isset( $_GET['pais_filter'] ) ? $_GET['pais_filter'] : '';
         echo '<select name="pais_filter">';
         echo '<option value="">' . __( 'Todos los países', 'motorlan-api-vue' ) . '</option>';
-        foreach ( $paises as $code => $name ) {
+        foreach ( $paises as $pais ) {
             printf(
                 '<option value="%s"%s>%s</option>',
-                esc_attr( strtolower( $code ) ),
-                selected( $current_pais, strtolower( $code ), false ),
-                esc_html( $name )
+                esc_attr( $pais ),
+                selected( $current_pais, $pais, false ),
+                esc_html( $pais )
             );
         }
         echo '</select>';
@@ -206,7 +144,7 @@ add_action( 'restrict_manage_posts', 'motorlan_add_motor_filters' );
  */
 function motorlan_apply_motor_filters( $query ) {
     global $pagenow;
-    if ( is_admin() && 'edit.php' === $pagenow && 'publicacion' === $query->get( 'post_type' ) ) {
+    if ( is_admin() && 'edit.php' === $pagenow && 'motor' === $query->get( 'post_type' ) ) {
         $meta_query = array();
 
         if ( ! empty( $_GET['marca_filter'] ) ) {

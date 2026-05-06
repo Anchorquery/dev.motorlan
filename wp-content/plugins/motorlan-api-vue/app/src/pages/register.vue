@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import { VForm } from 'vuetify/components/VForm'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { useApi } from '@/composables/useApi'
-import { useToast } from '@/composables/useToast'
 import AuthProvider from '@/views/pages/authentication/AuthProvider.vue'
 import { VNodeRenderer } from '@layouts/components/VNodeRenderer'
 import { themeConfig } from '@themeConfig'
@@ -26,7 +25,6 @@ const authThemeMask = useGenerateImageVariant(authV2MaskLight, authV2MaskDark)
 
 const { t } = useI18n()
 const router = useRouter()
-const { showToast } = useToast()
 
 definePage({
   meta: {
@@ -51,6 +49,7 @@ const errors = ref<Record<string, string | undefined>>({})
 const genericError = ref<string | null>(null)
 const isCheckingUsername = ref(false)
 const usernameError = ref<string | null>(null)
+const showSuccessNotification = ref(false)
 
 
 
@@ -75,26 +74,17 @@ const register = async () => {
     }),
   }).json()
 
-  // useApi (createFetch) returns a ref for data and error.
-  // We need to wait for the fetch to finish.
   isSubmitting.value = false
 
   if (error.value) {
-    let errorMessage = 'Ocurrió un error al registrar la cuenta.'
-    
-    // Attempt to get the error message from the response body
-    // useFetch's data ref usually contains the body even on error if the fetch completed.
-    if (data.value && data.value.message) {
-      errorMessage = data.value.message
-    } 
-    // If not in data, try to parse it from the error status if needed, 
-    // but usually Motorlan API returns it in the JSON body.
-    
+    const errorMessage = error.value.data?.message || 'Ocurrio un error al registrar la cuenta.'
     const loweredMessage = errorMessage.toLowerCase()
     
+    // Asignar errores específicos si es posible, o mostrar genérico
     if (loweredMessage.includes('email')) {
       errors.value.email = errorMessage
-    } else {
+    }
+    else {
       genericError.value = errorMessage
     }
     
@@ -102,29 +92,12 @@ const register = async () => {
   }
 
   if (data.value) {
-    showToast('Usuario registrado con éxito. Por favor, revise su email para activar su cuenta.', 'success')
+    showSuccessNotification.value = true
     setTimeout(() => {
-      window.location.href = '/mi-cuenta/register-success'
-    }, 1500)
+      router.push({ name: 'login' })
+    }, 4000)
   }
 }
-
-// Computed property para verificar si el formulario es válido
-const isFormValid = computed(() => {
-  const { first_name, last_name, email, password, privacyPolicies } = form.value
-  
-  // Verificar que todos los campos tengan contenido
-  const hasAllFields = !!(first_name && last_name && email && password)
-  
-  // Verificar que el email tenga formato válido (básico)
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  const isEmailValid = emailRegex.test(email)
-  
-  // Verificar que se aceptaron las políticas
-  const policiesAccepted = privacyPolicies === true
-  
-  return hasAllFields && isEmailValid && policiesAccepted
-})
 
 const onSubmit = () => {
   refVForm.value?.validate()
@@ -157,15 +130,6 @@ const onSubmit = () => {
           <p class="mb-0 text-body-1 text-medium-emphasis">
             {{ t('register.subtitle') }}
           </p>
-          <VAlert
-            color="info"
-            variant="tonal"
-            density="compact"
-            class="mt-4 mb-0"
-            icon="tabler-info-circle"
-          >
-            <span class="text-body-2">Todos los campos son obligatorios para completar tu registro.</span>
-          </VAlert>
         </VCardText>
 
         <VCardText>
@@ -266,7 +230,7 @@ const onSubmit = () => {
                   size="large"
                   rounded="lg"
                   :loading="isSubmitting"
-                  :disabled="isSubmitting || !isFormValid"
+                  :disabled="isSubmitting"
                   class="font-weight-bold text-uppercase letter-spacing-1 hover-lift"
                 >
                   {{ t('register.sign_up') }}
@@ -294,6 +258,14 @@ const onSubmit = () => {
       </VCard>
     </VCol>
   </VRow>
+  <VSnackbar
+    v-model="showSuccessNotification"
+    color="success"
+    location="top end"
+    :timeout="4000"
+  >
+    Registro exitoso. Hemos enviado un correo de bienvenida. Revisa tu bandeja de entrada.
+  </VSnackbar>
 </template>
 
 <style lang="scss">

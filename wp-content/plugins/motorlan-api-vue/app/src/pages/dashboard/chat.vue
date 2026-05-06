@@ -121,7 +121,7 @@ const chatContentContainerBg = computed(() => {
       absolute
       class="user-profile-sidebar"
       location="start"
-      :width="vuetifyDisplays.smAndDown.value ? 320 : 370"
+      width="370"
     >
       <ChatUserProfileSidebarContent @close="isUserProfileSidebarOpen = false" />
     </VNavigationDrawer>
@@ -130,7 +130,7 @@ const chatContentContainerBg = computed(() => {
     <VNavigationDrawer
       v-model="isActiveChatUserProfileSidebarOpen"
       data-allow-mismatch
-      :width="vuetifyDisplays.smAndDown.value ? 320 : 374"
+      width="374"
       absolute
       temporary
       location="end"
@@ -147,7 +147,7 @@ const chatContentContainerBg = computed(() => {
       absolute
       touchless
       location="start"
-      :width="vuetifyDisplays.smAndDown.value ? 320 : 370"
+      width="370"
       :temporary="$vuetify.display.smAndDown"
       class="chat-list-sidebar border-e"
       :permanent="$vuetify.display.mdAndUp"
@@ -248,11 +248,11 @@ const chatContentContainerBg = computed(() => {
 
         <!-- Message form -->
         <VForm
-          class="chat-log-message-form ma-3 ma-md-4 bg-surface elevation-3 rounded-xl overflow-hidden d-flex flex-column flex-sm-row align-stretch align-sm-end border"
+          class="chat-log-message-form ma-4 bg-surface elevation-3 rounded-xl overflow-hidden d-flex align-end border"
           @submit.prevent="sendMessage"
         >
             <!-- Attachments -->
-            <div class="d-flex align-center gap-1 ps-2 pe-2 pt-2 pt-sm-0 py-sm-2 flex-wrap">
+            <div class="d-flex align-center gap-1 ps-2 py-2">
                  <IconBtn @click="refInputEl?.click()" variant="text" color="medium-emphasis" size="small">
                   <VIcon
                     icon="tabler-paperclip"
@@ -274,7 +274,7 @@ const chatContentContainerBg = computed(() => {
             v-model="msg"
             variant="plain"
             density="comfortable"
-            class="chat-message-input flex-grow-1 px-2 px-sm-0"
+            class="chat-message-input flex-grow-1 px-2"
             placeholder="Escribe un mensaje..."
             auto-grow
             rows="1"
@@ -284,7 +284,7 @@ const chatContentContainerBg = computed(() => {
             @keydown.enter.exact.prevent="sendMessage"
           />
 
-           <div class="pe-2 ps-2 ps-sm-0 py-2">
+           <div class="pe-2 py-2">
               <VBtn
                 icon="tabler-send"
                 variant="flat"
@@ -292,7 +292,7 @@ const chatContentContainerBg = computed(() => {
                 size="small"
                 :disabled="!msg"
                 @click="sendMessage"
-                class="elevation-2 w-100 w-sm-auto"
+                class="elevation-2"
               />
            </div>
 
@@ -309,7 +309,7 @@ const chatContentContainerBg = computed(() => {
       <!-- 👉 Start conversation -->
       <div
         v-else
-        class="d-flex h-100 align-center justify-center flex-column bg-surface-container-lowest px-4 text-center"
+        class="d-flex h-100 align-center justify-center flex-column bg-surface-container-lowest"
       >
         <div class="bg-surface rounded-circle pa-8 elevation-3 mb-6">
             <VIcon
@@ -320,11 +320,11 @@ const chatContentContainerBg = computed(() => {
         </div>
         
         <h3 class="text-h5 font-weight-bold mb-2 text-high-emphasis">
-            Comienza a conectar!
+            ¡Comienza a conectar!
         </h3>
         
         <p class="text-center text-medium-emphasis mb-6" style="max-width: 400px;">
-          Selecciona un contacto de la izquierda para ver el historial o iniciar una nueva conversacion.
+          Selecciona un contacto de la izquierda para ver el historial o iniciar una nueva conversación.
         </p>
 
         <VBtn

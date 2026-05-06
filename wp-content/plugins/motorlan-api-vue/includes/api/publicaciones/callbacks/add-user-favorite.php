@@ -16,14 +16,6 @@ if (!defined('WPINC')) {
  * @return WP_REST_Response|WP_Error
  */
 function motorlan_add_user_favorite(WP_REST_Request $request) {
-    // Validate Content-Type
-    if ( function_exists( 'motorlan_validate_json_content_type' ) ) {
-        $valid_type = motorlan_validate_json_content_type( $request );
-        if ( is_wp_error( $valid_type ) ) {
-            return $valid_type;
-        }
-    }
-
     $user_id = get_current_user_id();
     $params = $request->get_json_params();
     $post_id = intval($params['publicacion_id'] ?? 0);
@@ -38,8 +30,6 @@ function motorlan_add_user_favorite(WP_REST_Request $request) {
     if (!in_array($post_id, $favorites)) {
         $favorites[] = $post_id;
         update_user_meta($user_id, 'motorlan_favorites', $favorites);
-        
-        do_action( 'motorlan_user_interested', $post_id, $user_id );
     }
 
     return new WP_REST_Response(['message' => 'Agregado a favoritos'], 201);

@@ -44,17 +44,35 @@ function motorlan_update_publicacion_by_uuid(WP_REST_Request $request) {
     }
 
     // --- Handle Slug ---
-    // Solo cambiar el slug si se envía explícitamente. No regenerar automáticamente
-    // para evitar romper URLs existentes (SEO, enlaces compartidos, etc.)
+    $current_post = get_post($post_id);
+    $new_slug = '';
+
     if (isset($params['slug']) && !empty($params['slug'])) {
-        $current_post_obj = get_post($post_id);
+        // User provided a manual slug, ensure it's unique
         $new_slug = motorlan_make_slug_unique(sanitize_title($params['slug']), $post_id);
-        if ($new_slug !== $current_post_obj->post_name) {
-            wp_update_post([
-                'ID' => $post_id,
-                'post_name' => $new_slug,
-            ]);
-        }
+    } elseif (isset($params['title']) || isset($params['acf'])) {
+        // If title or ACF fields (which compose the slug) change, we should probably update the slug
+        // However, we only do this if it's explicitly desired or if it's a draft.
+        // For now, let's regenerate it to match the new format if it doesn't match.
+        
+        $acf_data = isset($params['acf']) ? (is_string($params['acf']) ? json_decode($params['acf'], true) : $params['acf']) : get_fields($post_id);
+        $title = $params['title'] ?? get_the_title($post_id);
+        $categories = isset($params['categories']) ? (is_string($params['categories']) ? json_decode($params['categories'], true) : $params['categories']) : null;
+        $tipo = isset($params['tipo']) ? (is_string($params['tipo']) ? json_decode($params['tipo'], true) : $params['tipo']) : null;
+
+        $slug_data = [
+            'title' => $title,
+            'acf'   => $acf_data,
+            'tipo'  => $tipo
+        ];
+        $new_slug = motorlan_generate_publicacion_slug($slug_data, $post_id);
+    }
+
+    if (!empty($new_slug) && $new_slug !== $current_post->post_name) {
+        wp_update_post([
+            'ID' => $post_id,
+            'post_name' => $new_slug,
+        ]);
     }
     // --- Handle Post Status ---
     // This is critical for the post to be 'published', 'draft', etc.
@@ -119,63 +137,7 @@ function motorlan_update_publicacion_by_uuid(WP_REST_Request $request) {
 
     // --- Handle ACF Fields ---
     $acf_data = isset($params['acf']) ? (is_string($params['acf']) ? json_decode($params['acf'], true) : $params['acf']) : [];
-
-    // Manejar marca personalizada: guardar como pendiente para aprobación del admin
-    $is_admin = current_user_can('administrator');
-    if (!empty($params['marca_custom'])) {
-        $custom_brand_name = strtoupper(sanitize_text_field($params['marca_custom']));
-        $existing_term = get_term_by('name', $custom_brand_name, 'marca');
-        if ($existing_term) {
-            $acf_data['marca'] = $existing_term->term_id;
-            delete_post_meta($post_id, '_pending_brand_name');
-        } elseif ($is_admin) {
-            // Admin: crear la marca directamente sin necesidad de aprobación
-            $new_term = wp_insert_term($custom_brand_name, 'marca');
-            if (is_wp_error($new_term)) {
-                return new WP_Error('brand_create_error', 'Error al crear la marca: ' . $new_term->get_error_message(), ['status' => 500]);
-            }
-            $acf_data['marca'] = $new_term['term_id'];
-            delete_post_meta($post_id, '_pending_brand_name');
-        } else {
-            // Usuario normal: diferir a aprobación del admin
-            update_post_meta($post_id, '_pending_brand_name', $custom_brand_name);
-            $acf_data['marca'] = -1; // Valor temporal
-        }
-    }
-
-    // Si marca es un valor válido (> 0), limpiar cualquier _pending_brand_name residual
-    if (isset($acf_data['marca']) && is_numeric($acf_data['marca']) && (int)$acf_data['marca'] > 0) {
-        delete_post_meta($post_id, '_pending_brand_name');
-    }
-
-    // --- Validate Required Fields ---
-    $required_acf_fields = ['marca', 'tipo_o_referencia', 'velocidad'];
-    foreach ($required_acf_fields as $field) {
-        if (array_key_exists($field, $acf_data) && ($acf_data[$field] === null || $acf_data[$field] === '')) {
-             return new WP_Error("missing_{$field}", "El campo {$field} es obligatorio y no puede quedar vacío.", ['status' => 400]);
-        }
-    }
-
-    // Validate Potencia/Par logic if either is being updated
-    $tipo_alimentacion = array_key_exists('tipo_de_alimentacion', $acf_data) ? $acf_data['tipo_de_alimentacion'] : get_field('tipo_de_alimentacion', $post_id);
-    $is_ac = $tipo_alimentacion === 'ac';
-
-    // Resolver valores: usar lo enviado, o lo guardado en BD
-    $current_potencia = array_key_exists('potencia', $acf_data) ? $acf_data['potencia'] : get_field('potencia', $post_id);
-    $current_par = array_key_exists('par_nominal', $acf_data) ? $acf_data['par_nominal'] : get_field('par_nominal', $post_id);
-
-    if ($is_ac) {
-        if ($current_potencia === null || $current_potencia === '' || $current_potencia === false) {
-            return new WP_Error('missing_power', 'La potencia es obligatoria para motores AC.', ['status' => 400]);
-        }
-    } else {
-        $has_potencia = $current_potencia !== null && $current_potencia !== '' && $current_potencia !== false;
-        $has_par = $current_par !== null && $current_par !== '' && $current_par !== false;
-        if (!$has_potencia && !$has_par) {
-            return new WP_Error('missing_power_or_torque', 'Debe especificar Potencia o Par Nominal.', ['status' => 400]);
-        }
-    }
-
+    
     $checkbox_acf_fields = ['servomotores', 'regulacion_electronica_drivers'];
     foreach ($checkbox_acf_fields as $checkbox_field) {
         if (array_key_exists($checkbox_field, $acf_data)) {
@@ -283,9 +245,5 @@ function motorlan_update_publicacion_by_uuid(WP_REST_Request $request) {
     }
     update_field('documentacion_adicional', $uploaded_docs, $post_id);
 
-    $updated_post = get_post($post_id);
-    return new WP_REST_Response([
-        'message' => 'Publicación actualizada correctamente',
-        'slug'    => $updated_post->post_name,
-    ], 200);
+    return new WP_REST_Response(['message' => 'Publicación actualizada correctamente'], 200);
 }

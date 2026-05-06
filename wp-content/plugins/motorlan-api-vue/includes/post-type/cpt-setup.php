@@ -40,7 +40,7 @@ function motorlan_register_publicaciones_cpt() {
         'show_ui'            => true,
         'show_in_menu'       => true,
         'query_var'          => true,
-        'rewrite'            => array( 'slug' => '/' ),
+        'rewrite'            => array( 'slug' => 'publicacion' ),
         'capability_type'    => 'post',
         'has_archive'        => true,
         'hierarchical'       => false,

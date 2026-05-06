@@ -28,8 +28,7 @@ const logout = async () => {
   ability.update([])
 
   // Redirect to login with full page reload to clear all state
-  const vueBase = (window as any).wpData?.vue_base || '/';
-  window.location.href = `${vueBase}login`
+  window.location.href = '/login'
 }
 
 interface ProfileItem {
@@ -43,6 +42,7 @@ interface ProfileItem {
 const userProfileList: ProfileItem[] = [
   { type: 'divider' },
   { type: 'navItem', icon: 'tabler-user', title: 'Profile', to: { name: 'dashboard-user-profile' } },
+  { type: 'navItem', icon: 'tabler-settings', title: 'Settings', to: { name: 'dashboard-user-account' } },
   { type: 'divider' },
 ]
 </script>

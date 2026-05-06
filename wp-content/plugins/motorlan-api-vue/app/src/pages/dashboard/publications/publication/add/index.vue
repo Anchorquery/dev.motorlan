@@ -48,7 +48,6 @@ const steps = computed(() => [
 const marcas = ref<{ title: string; value: number }[]>([])
 const categories = ref<{ title: string; value: number }[]>([])
 const tipos = ref<{ title: string; value: number; slug: string }[]>([])
-const countries = ref<{ title: string; value: string }[]>([])
 
 // Load initial data
 onMounted(async () => {
@@ -56,19 +55,16 @@ onMounted(async () => {
     const marcasFetch = useApi('/wp-json/motorlan/v1/marcas', { immediate: false }).get().json()
     const categoriesFetch = useApi('/wp-json/motorlan/v1/publicacion-categories', { immediate: false }).get().json()
     const tiposFetch = useApi('/wp-json/motorlan/v1/tipos', { immediate: false }).get().json()
-    const countriesFetch = useApi('/wp-json/motorlan/v1/countries', { immediate: false }).get().json()
 
     await Promise.all([
        marcasFetch.execute(),
        categoriesFetch.execute(),
        tiposFetch.execute(),
-       countriesFetch.execute(),
     ])
 
     if (marcasFetch.data.value) marcas.value = marcasFetch.data.value.map((m: any) => ({ title: m.name, value: m.term_id }))
     if (categoriesFetch.data.value) categories.value = categoriesFetch.data.value.map((c: any) => ({ title: c.name, value: c.term_id }))
     if (tiposFetch.data.value) tipos.value = tiposFetch.data.value.map((t: any) => ({ title: t.name, value: t.term_id, slug: t.slug }))
-    if (countriesFetch.data.value) countries.value = countriesFetch.data.value
     
     // Check if user is logged in
     if (!userStore.getIsLoggedIn) {
@@ -90,16 +86,7 @@ const handleTypeSelect = (slug: string) => {
     // Find ID from slug
     if (!tipos.value) return 
     
-    let targetSlug = slug
-    if (slug === 'motor-ac') {
-        targetSlug = 'motor'
-        setFormState({ acf: { ...formState.value.acf, tipo_de_alimentacion: 'ac' } })
-    } else if (slug === 'motor-dc') {
-        targetSlug = 'motor'
-        setFormState({ acf: { ...formState.value.acf, tipo_de_alimentacion: 'dc' } })
-    }
-
-    const typeObj = tipos.value.find(t => t.slug === targetSlug)
+    const typeObj = tipos.value.find(t => t.slug === slug)
     if (typeObj) {
         setFormState({ tipo: [typeObj.value] })
     }
@@ -112,13 +99,7 @@ const selectedTypeSlug = computed(() => {
     
     const selectedId = formState.value.tipo[0]
     const typeObj = tipos.value.find(t => t.value === selectedId)
-    if (!typeObj) return null
-
-    if (typeObj.slug === 'motor') {
-        return formState.value.acf.tipo_de_alimentacion === 'dc' ? 'motor-dc' : 'motor-ac'
-    }
-
-    return typeObj.slug
+    return typeObj ? typeObj.slug : null
 })
 
 
@@ -177,12 +158,7 @@ const submitForm = async (status: string) => {
         formData.append('tipo', JSON.stringify(formState.value.tipo))
         
         // ACF - separate files
-        const { motor_image, motor_gallery, documentacion_adicional, marca_custom, ...acfRest } = formState.value.acf
-        // Si es marca personalizada (Otros), enviar el nombre en vez del ID
-        if (acfRest.marca === -1 && marca_custom) {
-          acfRest.marca = null
-          formData.append('marca_custom', marca_custom)
-        }
+        const { motor_image, motor_gallery, documentacion_adicional, ...acfRest } = formState.value.acf
         formData.append('acf', JSON.stringify(acfRest))
         
         // Main Image
@@ -237,6 +213,7 @@ const buildPublicationSlug = () => {
         formState.value.title,
         formState.value.acf.tipo_o_referencia,
         formState.value.acf.potencia ? `${formState.value.acf.potencia} kW` : null,
+        formState.value.acf.velocidad ? `${formState.value.acf.velocidad} rpm` : null,
       ].filter(Boolean) as string[]
 
       return parts.length ? slugify(parts.join(' ')) : ''
@@ -301,7 +278,6 @@ watch(() => [formState.value.tipo, formState.value.acf.marca, formState.value.ac
                             :form-state="formState" 
                             :marcas="marcas" 
                             :categories="categories"
-                            :tipos="tipos"
                             @update:form-state="setFormState" 
                         />
                     </VForm>
@@ -312,7 +288,7 @@ watch(() => [formState.value.tipo, formState.value.acf.marca, formState.value.ac
                     <VForm ref="step2Form" @submit.prevent>
                         <StepTechSpecs
                              :form-state="formState"
-                             :tipos="tipos"
+                             :is-motor="true"
                              @update:form-state="setFormState"
                         />
                     </VForm>
@@ -333,7 +309,6 @@ watch(() => [formState.value.tipo, formState.value.acf.marca, formState.value.ac
                     <VForm ref="step4Form" @submit.prevent>
                         <StepLocationCondition
                             :form-state="formState"
-                            :country-options="countries"
                             @update:form-state="setFormState"
                         />
                     </VForm>

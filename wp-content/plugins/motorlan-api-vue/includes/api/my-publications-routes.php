@@ -163,9 +163,8 @@ function motorlan_format_publication_item($post_id) {
         'uuid'             => $uuid,
         'title'            => get_the_title($post_id),
         'slug'             => get_post_field('post_name', $post_id),
-        'link'             => motorlan_get_store_url($post_id),
         'status'           => get_field('publicar_acf', $post_id) ?: get_post_status($post_id),
-        'imagen_destacada' => motorlan_format_image_for_frontend(get_field('motor_image', $post_id, true)),
+        'imagen_destacada' => get_field('motor_image', $post_id, true),
         'author_id'        => get_post_field('post_author', $post_id),
         'categories'       => motorlan_get_post_taxonomy_details($post_id, 'categoria'),
         'tipo'             => motorlan_get_post_taxonomy_details($post_id, 'tipo'),
@@ -175,7 +174,6 @@ function motorlan_format_publication_item($post_id) {
     if (function_exists('get_field')) {
         $acf_fields = [
             'marca', 'tipo_o_referencia', 'estado_del_articulo', 'descripcion', 'precio_de_venta',
-            'velocidad', 'potencia', 'par_nominal'
         ];
 
         foreach ($acf_fields as $field_name) {

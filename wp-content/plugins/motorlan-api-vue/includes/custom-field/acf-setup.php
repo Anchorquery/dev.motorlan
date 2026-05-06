@@ -111,7 +111,12 @@ acf_add_local_field_group(array(
 			'key' => 'field_6643d3c3b034c',
 			'label' => 'País (localización)',
 			'name' => 'pais',
-			'type' => 'text',
+			'type' => 'select',
+			'choices' => array(
+				'España' => 'España',
+				'Portugal' => 'Portugal',
+				'Francia' => 'Francia',
+			),
 			'allow_null' => 1,
 		),
 		array(
@@ -200,14 +205,13 @@ acf_add_local_field_group(array(
 		),
 		array(
 			'key' => 'field_6643d3c3b0356',
-			'label' => 'Consultar precio',
+			'label' => 'Precio negociable',
 			'name' => 'precio_negociable',
 			'type' => 'radio',
 			'choices' => array(
-				'yes' => 'Sí',
-				'no' => 'No',
+				'Sí' => 'Sí',
+				'No' => 'No',
 			),
-			'default_value' => 'no',
 			'layout' => 'horizontal',
 		),
 		array(

@@ -16,14 +16,6 @@ if (!defined('WPINC')) {
  * @return WP_REST_Response|WP_Error
  */
 function motorlan_duplicate_publicacion(WP_REST_Request $request) {
-    // Validate Content-Type
-    if ( function_exists( 'motorlan_validate_json_content_type' ) ) {
-        $valid_type = motorlan_validate_json_content_type( $request );
-        if ( is_wp_error( $valid_type ) ) {
-            return $valid_type;
-        }
-    }
-
     $original_post_id = $request->get_param('id');
     $original_post = get_post($original_post_id);
 
