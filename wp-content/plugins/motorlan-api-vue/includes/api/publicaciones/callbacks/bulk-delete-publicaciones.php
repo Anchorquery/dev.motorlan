@@ -16,6 +16,14 @@ if (!defined('WPINC')) {
  * @return WP_REST_Response|WP_Error
  */
 function motorlan_bulk_delete_publicaciones(WP_REST_Request $request) {
+    // Validate Content-Type
+    if ( function_exists( 'motorlan_validate_json_content_type' ) ) {
+        $valid_type = motorlan_validate_json_content_type( $request );
+        if ( is_wp_error( $valid_type ) ) {
+            return $valid_type;
+        }
+    }
+
     $params = $request->get_json_params();
     $ids = $params['ids'] ?? [];
 

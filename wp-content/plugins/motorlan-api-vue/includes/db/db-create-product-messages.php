@@ -25,6 +25,7 @@ function motorlan_create_product_messages_table() {
         display_name VARCHAR(191) NULL,
         avatar VARCHAR(512) NULL,
         message TEXT NOT NULL,
+        guest_email VARCHAR(191) NULL,
         created_at DATETIME NOT NULL,
         PRIMARY KEY  (id),
         UNIQUE KEY message_key (message_key),

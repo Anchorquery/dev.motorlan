@@ -237,7 +237,7 @@
       "torque_label": "PAR (Nm)",
       "brands_label": "Marcas",
       "state_label": "Estado",
-      "type_model_label": "Tipo / modelo",
+      "type_model_label": "Modelo",
       "responsibility_note": "IMPORTANTE: Motorlan no se hace responsable de aquellos equipos que se vendan directamente entre vendedor-comprador sin una revisión previa en su taller especializado."
     },
     "default_message": "Hola, me interesa saber el precio de la publicación"
@@ -260,9 +260,12 @@
       "type": "Tipo de Publicación",
       "title": "Título de la publicación",
       "title_placeholder": "Título",
-      "reference": "Tipo o referencia",
+      "reference": "Modelo",
       "reference_placeholder": "Referencia",
       "brand": "Marca",
+      "brand_other": "Otros (nueva marca)",
+      "brand_custom_label": "Nueva marca",
+      "brand_custom_placeholder": "Nombre de la nueva marca",
       "category": "Categoría",
       "power": "Potencia (kW)",
       "power_placeholder": "100",
@@ -288,7 +291,11 @@
       "price_placeholder": "1000",
       "stock": "Stock",
       "stock_placeholder": "1",
-      "negotiable_price": "Precio negociable",
+      "negotiable_price": "Consultar precio",
+      "consult_price": "Consultar precio",
+      "consult_price_hint": "Si se marca, el público verá \"Consultar precio\". Tú seguirás viendo el precio como referencia.",
+      "show_price": "Mostrar precio en la publicación",
+      "no_price": "Sin precio",
       "publish_acf": "Estado de la publicación",
       "publish_status_publish": "Publicar",
       "publish_status_draft": "Borrador"
@@ -407,13 +414,17 @@
     "delete_selected_dialog_text": "¿Estás seguro de que quieres eliminar las {count} publicaciones seleccionadas? Esta acción no se puede deshacer."
   },
   "select_publication_type": {
-    "title": "Selecciona el Tipo de Publicación",
+    "title": "Selecciona el Tipo de Producto",
     "subtitle": "Elige qué tipo de producto quieres añadir a la store.",
+    "motor_ac_title": "Motor AC",
+    "motor_ac_description": "Publica un motor eléctrico de corriente alterna.",
+    "motor_dc_title": "Motor DC",
+    "motor_dc_description": "Publica un motor eléctrico de corriente continua (con escobillas).",
     "motor_title": "Motor",
     "motor_description": "Publica un motor eléctrico, con todos sus detalles técnicos como potencia, velocidad, etc.",
     "regulator_title": "Regulador",
     "regulator_description": "Publica un regulador o driver, con sus especificaciones técnicas.",
-    "other_spare_part_title": "Otro Repuesto",
+    "other_spare_part_title": "Otros",
     "other_spare_part_description": "Publica cualquier otro tipo de repuesto o componente relacionado."
   },
   "edit_publication": {
@@ -424,7 +435,7 @@
     "section_title": "Detalles de la Publicación",
     "publication_title": "Título de la publicación",
     "publication_title_placeholder": "Título",
-    "reference": "Tipo o referencia",
+    "reference": "Modelo",
     "reference_placeholder": "Referencia",
     "brand": "Marca",
     "category": "Categoría",
@@ -447,7 +458,7 @@
     "price_placeholder": "1000",
     "stock": "Stock",
     "stock_placeholder": "1",
-    "negotiable_price": "Precio negociable",
+    "negotiable_price": "Consultar precio",
     "rent_option": "Posibilidad de alquiler",
     "power_supply_type": "Tipo de alimentación",
     "servomotors": "Servomotores",
@@ -583,12 +594,22 @@
     "title": "Interesados",
     "search_placeholder": "Buscar por usuario o publicación...",
     "user": "Usuario",
+    "buyer": "Comprador",
+    "seller": "Vendedor",
     "publication": "Publicación",
     "actions": "Acciones",
     "date": "Fecha",
     "load_error": "No se pudieron cargar las conversaciones",
     "no_data_title": "No hay conversaciones",
-    "no_data_text": "Aún no has recibido consultas de interés."
+    "no_data_text": "Aún no has recibido consultas de interés.",
+    "no_data_text_buyer": "Aún no has realizado ninguna consulta.",
+    "buyer_label": "Comprador interesado",
+    "seller_label": "Vendedor del equipo",
+    "view_chat": "Ver Chat",
+    "go_to_publication": "Ir a la publicación"
+  },
+  "motor": {
+    "consult_price": "Consultar precio"
   },
   "notifications": {
     "title": "Notificaciones",
@@ -655,5 +676,6 @@
   "Mis Compras": "Mis Compras",
   "Mi Cuenta": "Mi Cuenta",
   "Ofertas Recibidas": "Ofertas Recibidas",
-  "Ofertas Enviadas": "Ofertas Enviadas"
+  "Ofertas de Precio": "Ofertas de Precio",
+  "Consultas Enviadas": "Consultas Enviadas"
 }

@@ -4,10 +4,12 @@ import { useRoute } from 'vue-router'
 import { useApi } from '@/composables/useApi'
 import { useToast } from '@/composables/useToast'
 import { useI18n } from 'vue-i18n'
+import { useMotorFormatter } from '@/composables/useMotorFormatter'
 
 const route = useRoute()
 const { showToast } = useToast()
 const { t } = useI18n()
+const { formatMotorName } = useMotorFormatter()
 
 const publication = ref<any>(null)
 const questions = ref<any[]>([])
@@ -59,7 +61,7 @@ onMounted(fetchPublicationAndQuestions)
 <template>
   <VCard>
     <VCardTitle v-if="publication">
-      {{ t('questions.page_title') }} "{{ publication.title }}"
+      {{ t('questions.page_title') }} "{{ formatMotorName(publication) || publication.title }}"
     </VCardTitle>
     <VCardText>
       <VProgressCircular

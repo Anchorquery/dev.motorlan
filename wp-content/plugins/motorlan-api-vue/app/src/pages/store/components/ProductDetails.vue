@@ -7,6 +7,8 @@ import type { Publicacion } from '@/interfaces/publicacion'
 import { useApi } from '@/composables/useApi'
 import { useUserStore } from '@/@core/stores/user'
 import { createUrl } from '@/@core/composable/createUrl'
+import { useSanitize } from '@/composables/useSanitize'
+import { useCountries } from '@/composables/useCountries'
 
 const props = defineProps<{ 
   publicacion: Publicacion; 
@@ -14,8 +16,10 @@ const props = defineProps<{
   isPreview?: boolean;
 }>()
 const emit = defineEmits(['open-chat'])
+const { sanitize } = useSanitize()
+const { getCountryName, fetchCountries } = useCountries()
 
-const brand = computed(() => (props.publicacion as any).marca_name || '-')
+const brand = computed(() => props.publicacion.marca_name || '-')
 
 
 // Estado de favorito
@@ -32,7 +36,8 @@ const isLoggedIn = computed(() =>
 )
 
 onMounted(async () => {
-  
+  await fetchCountries()
+
   if (!isLoggedIn.value)
     await userStore.fetchUserSession()
 
@@ -42,7 +47,7 @@ onMounted(async () => {
       if (error.value)
         throw error.value
       if (favorites.value?.data && Array.isArray(favorites.value.data)) {
-        isFavorite.value = favorites.value.data.some((f: any) => f.id === props.publicacion.id)
+        isFavorite.value = favorites.value.data.some((f: { id: number }) => f.id === props.publicacion.id)
       }
     } catch (e) {
       console.error('Error cargando favoritos', e)
@@ -77,10 +82,28 @@ const sellerSales = computed(() => {
 })
 const location = computed(() => {
   const { pais, provincia } = props.publicacion.acf
-  if (pais && provincia)
-    return `${pais} / ${provincia}`
-  return pais || provincia || ''
+  const countryName = getCountryName(pais)
+  if (countryName && provincia)
+    return `${countryName} / ${provincia}`
+  return countryName || provincia || ''
 })
+const isConsultPrice = computed(() => isNegotiable.value)
+
+const showPrice = computed(() => {
+  // Mostrar precio si hay precio Y no esta marcado "Consultar precio"
+  // O si es el owner (siempre ve el precio como referencia)
+  if (isConsultPrice.value && !isOwner.value) return false
+  return hasPrice.value
+})
+
+const hasPrice = computed(() => {
+  const price = props.publicacion.acf?.precio_de_venta
+  
+  if (price === null || price === undefined) return false
+
+  return Number(price) > 0
+})
+
 const negotiableLabel = computed(() => {
   const val = props.publicacion.acf.precio_negociable
   if (typeof val === 'string')
@@ -88,7 +111,7 @@ const negotiableLabel = computed(() => {
   return val ? 'Negociable' : 'No negociable'
 })
 
-const categories = computed(() => props.publicacion.categories.map((c: any) => c.name).join(', '))
+const categories = computed(() => props.publicacion.categories.map((c: { name: string }) => c.name).join(', '))
 
 const productTitleUpper = computed(() => (props.publicacion.title ? props.publicacion.title.toUpperCase() : ''))
 
@@ -124,7 +147,7 @@ const isOfferDialogOpen = ref(false)
 
 const offerAmount = ref<number | null>(null)
 const offerMessage = ref('')
-const offer = ref<any | null>(null)
+const offer = ref<null | { id: number }>(null)
 const isSubmittingOffer = ref(false)
 
 
@@ -206,6 +229,24 @@ const share = () => {
 
 const router = useRouter()
 
+// Check if the current product has a price already requested in this session (for guests)
+const hasRequestedPrice = computed(() => {
+  try {
+    const list = JSON.parse(localStorage.getItem('motorlan_requested_prices') || '[]')
+    return list.includes(props.publicacion.id)
+  } catch (e) {
+    return false
+  }
+})
+
+import { useI18n } from 'vue-i18n'
+const { t } = useI18n()
+
+const chatButtonText = computed(() => {
+  if (hasRequestedPrice.value) return 'Abrir chat'
+  return t('motor.consult_price')
+})
+
 const openChatModal = () => {
   emit('open-chat')
 }
@@ -258,7 +299,7 @@ const removeOffer = async () => {
   <div class="product-details flex-grow-1">
     <div class="d-flex align-center gap-6 mb-4">
       <div
-        v-if="isLoggedIn"
+        v-if="isLoggedIn && !isOwner"
         class="d-flex align-center gap-2 pointer"
         @click="toggleFavorite"
       >
@@ -294,19 +335,34 @@ const removeOffer = async () => {
           <h3 class="text-h6 mb-1">{{ productTitleUpper }}</h3>
         </div>
         <VRow class="motor-details" dense>
-          <VCol cols="12" sm="6">
-            <div class="detail-item d-flex align-center">
-              <VIcon icon="tabler-arrows-left-right" class="mr-1" />
-              <span>{{ negotiableLabel }}</span>
+          <!-- Precio visible: no tiene "Consultar precio" marcado, o es el owner -->
+          <VCol v-if="showPrice" cols="12">
+            <div class="detail-item d-flex align-center mb-2">
+              <VIcon icon="tabler-currency-euro" class="mr-1" color="primary" />
+              <span class="text-h5 font-weight-bold text-primary">{{ Number(props.publicacion.acf.precio_de_venta).toLocaleString('es-ES') }} €</span>
+              <VChip v-if="isConsultPrice && isOwner" size="x-small" color="info" variant="tonal" class="ml-2">referencia</VChip>
             </div>
           </VCol>
-          <VCol cols="12" sm="6">
+          <!-- Consultar precio marcado (publico) o sin precio -->
+          <VCol v-else-if="isConsultPrice" cols="12">
+            <div class="detail-item d-flex align-center mb-2">
+              <VIcon icon="tabler-currency-euro" class="mr-1" />
+              <span class="text-h6 font-weight-bold text-warning">Consultar precio</span>
+            </div>
+          </VCol>
+          <VCol v-else cols="12">
+            <div class="detail-item d-flex align-center mb-2">
+              <VIcon icon="tabler-currency-euro" class="mr-1" />
+              <span class="text-body-1 font-weight-medium">Consultar precio</span>
+            </div>
+          </VCol>
+        <!--<VCol cols="12" sm="6">
             <div class="detail-item d-flex align-center">
               <VIcon icon="tabler-cube" class="mr-1" />
               <span>{{ props.publicacion.tipo[0].name || 'N/A' }}</span>
             </div>
-          </VCol>
-          <VCol cols="12" sm="6">
+          </VCol>-->  
+          <VCol v-if="categories" cols="12" sm="6">
             <div class="detail-item d-flex align-center">
               <VIcon icon="tabler-category" class="mr-1" />
               <span>{{ categories }}</span>
@@ -345,12 +401,6 @@ const removeOffer = async () => {
               <span>Stock: {{ props.publicacion.acf.stock ?? 'N/A' }}</span>
             </div>
           </VCol>
-          <VCol cols="12" sm="6">
-            <div class="detail-item d-flex align-center">
-              <VIcon icon="tabler-calendar-clock" class="mr-1" />
-              <span>Alquiler: {{ props.publicacion.acf.posibilidad_de_alquiler || 'No' }}</span>
-            </div>
-          </VCol>
           <VCol v-if="sellerSales !== null" cols="12" sm="6">
             <div class="detail-item d-flex align-center">
               <VIcon icon="tabler-chart-bar" class="mr-1" />
@@ -371,7 +421,7 @@ const removeOffer = async () => {
       v-if="props.publicacion.acf.descripcion"
       class="contact-card pa-4 mb-6"
     >
-      <p v-html="props.publicacion.acf.descripcion" />
+      <p v-html="sanitize(props.publicacion.acf.descripcion)" />
     </div>
 
     <div class="d-flex flex-wrap gap-4 mb-6">
@@ -383,24 +433,7 @@ const removeOffer = async () => {
         >
           Consultar precio
         </VBtn>
-        <VBtn
-          v-if="isNegotiable"
-          variant="outlined"
-          color="error"
-          class="px-6 flex-grow-1 action-btn"
-          @click="openOfferDialog"
-        >
-          {{ offer ? 'Editar oferta' : 'Hacer una oferta' }}
-        </VBtn>
-        <VBtn
-          v-if="offer && isNegotiable"
-          variant="text"
-          color="error"
-          class="px-6 flex-grow-1 action-btn"
-          @click="removeOffer"
-        >
-          Quitar oferta
-        </VBtn>
+        <!-- Botones de oferta eliminados - ya no aplica "Precio negociable" -->
       </template>
     </div>
 
@@ -428,8 +461,8 @@ const removeOffer = async () => {
             type="number"
             class="mt-4"
             :rules="[
-              v => !!v || 'El monto es requerido',
-              v => v > 0 || 'El monto debe ser mayor a 0'
+              (v: number | null) => !!v || 'El monto es requerido',
+              (v: number | null) => (v && v > 0) || 'El monto debe ser mayor a 0'
             ]"
           />
           <VTextarea

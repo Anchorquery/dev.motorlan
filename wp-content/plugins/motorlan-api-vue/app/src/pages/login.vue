@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { nextTick, ref } from 'vue'
+import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAbility } from '@casl/vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { VForm } from 'vuetify/components/VForm'
 import { useGenerateImageVariant } from '@core/composable/useGenerateImageVariant'
 import authV2LoginIllustrationBorderedDark from '@images/pages/auth-v2-login-illustration-bordered-dark.png'
@@ -33,7 +33,7 @@ definePage({
 const isPasswordVisible = ref(false)
 
 const route = useRoute()
-const router = useRouter()
+
 const ability = useAbility()
 const { showToast } = useToast()
 const userStore = useUserStore()
@@ -109,20 +109,33 @@ const login = async () => {
     // Check if profile is complete
     const { nombre, apellidos } = profile?.personal_data || {}
 
-    await nextTick(() => {
-      showToast('Inicio de sesión exitoso')
+    showToast('Inicio de sesión exitoso')
 
-      if (!profile?.personal_data || !nombre || !apellidos) {
-        showToast('Por favor, completa tu perfil para continuar.', 'warning')
-        router.replace({ name: 'dashboard-user-account' })
+    // Usar window.location.href para forzar recarga completa
+    // Esto garantiza que todos los componentes se inicialicen con los permisos correctos
+    
+    // Obtener base dinámica de WordPress (ej: /mi-cuenta/ o /)
+    const vueBase = (window as any).wpData?.vue_base || '/';
+    const cleanBase = vueBase.endsWith('/') ? vueBase : `${vueBase}/`;
+    
+    if (!profile?.personal_data || !nombre || !apellidos) {
+      showToast('Por favor, completa tu perfil para continuar.', 'warning')
+      window.location.href = `${cleanBase}dashboard/user/account`
+    }
+    else {
+      if (route.query.to) {
+        const target = String(route.query.to)
+        // Si el target ya empieza con la base o es path absoluto, usarlo. Si no, añadir base.
+        const redirectUrl = target.startsWith(cleanBase) || target.startsWith('http') 
+          ? target 
+          : `${cleanBase}${target.startsWith('/') ? target.slice(1) : target}`
+        
+        window.location.href = redirectUrl
       }
       else {
-        if (route.query.to)
-          router.replace(String(route.query.to))
-        else
-          router.replace({ path: '/dashboard/purchases/purchases' })
+        window.location.href = `${cleanBase}dashboard/purchases/purchases`
       }
-    })
+    }
   }
   catch (err: any) {
     console.error('Login Error:', err)

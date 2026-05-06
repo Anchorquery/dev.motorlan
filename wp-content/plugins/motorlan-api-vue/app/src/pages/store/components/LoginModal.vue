@@ -5,6 +5,7 @@ import { useAbility } from '@casl/vue'
 import { useToast } from '@/composables/useToast'
 import { requiredValidator } from '@core/utils/validators'
 import { useUserStore } from '@/@core/stores/user'
+import { useSanitize } from '@/composables/useSanitize'
 
 const props = defineProps<{
   isDialogVisible: boolean
@@ -18,6 +19,7 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const ability = useAbility()
 const { showToast } = useToast()
+const { sanitize } = useSanitize()
 
 const isPasswordVisible = ref(false)
 const errors = ref<Record<string, string | undefined>>({
@@ -133,7 +135,7 @@ const closeDialog = () => {
           variant="tonal"
           class="mb-4"
         >
-          <div v-html="genericError" />
+          <div v-html="sanitize(genericError)" />
         </VAlert>
 
         <VForm

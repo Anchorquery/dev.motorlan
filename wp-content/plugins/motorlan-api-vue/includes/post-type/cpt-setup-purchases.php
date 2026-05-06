@@ -156,8 +156,8 @@ function motorlan_register_oferta_cpt() {
         'labels'             => $labels,
         'public'             => true,
         'publicly_queryable' => true,
-        'show_ui'            => true,
-        'show_in_menu'       => true,
+        'show_ui'            => false, // Hidden because we use a custom Admin Page (admin-offers-setup.php)
+        'show_in_menu'       => false,
         'query_var'          => true,
         'rewrite'            => array( 'slug' => 'oferta' ),
         'capability_type'    => 'post',

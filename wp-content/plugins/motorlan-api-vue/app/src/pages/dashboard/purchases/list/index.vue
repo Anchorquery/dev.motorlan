@@ -5,9 +5,11 @@ import { useRouter } from 'vue-router'
 import type { Compra } from '@/interfaces/compra'
 import { useApi } from '@/composables/useApi'
 import { createUrl } from '@/@core/composable/createUrl'
+import { useMotorFormatter } from '@/composables/useMotorFormatter'
 
 const { t } = useI18n()
 const router = useRouter()
+const { formatMotorName } = useMotorFormatter()
 
 const headers = [
   { title: 'Publicacion', key: 'publicacion' },
@@ -125,7 +127,7 @@ const totalPurchases = computed(() => purchasesData.value?.pagination.total || 0
               rounded
             />
             <div class="d-flex flex-column">
-              <span class="text-body-1 font-weight-medium text-high-emphasis">{{ item.acf.motor.title }}</span>
+              <span class="text-body-1 font-weight-medium text-high-emphasis">{{ formatMotorName(item.acf.motor) || item.acf.motor.title }}</span>
               <span class="text-body-2">{{ item.acf.motor.acf.marca }}</span>
             </div>
           </div>

@@ -28,3 +28,4 @@ require_once $callbacks_path . 'get-marcas.php';
 require_once $callbacks_path . 'get-user-favorites.php';
 require_once $callbacks_path . 'add-user-favorite.php';
 require_once $callbacks_path . 'remove-user-favorite.php';
+require_once $callbacks_path . 'get-countries.php';

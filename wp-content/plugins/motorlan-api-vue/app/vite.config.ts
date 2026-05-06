@@ -101,7 +101,8 @@ export default ({ mode }) => {
         '@api-utils': fileURLToPath(new URL('./src/plugins/fake-api/utils/', import.meta.url)),
       },
     },
-    base: '/',
+    // Ajustamos la base para que NO busque en la raíz del dominio, sino en la carpeta del plugin.
+    base: '/wp-content/plugins/motorlan-api-vue/app/dist/',
 
     // 2. Configuración del servidor de desarrollo para solucionar CORS y HMR.
     server: {
@@ -121,7 +122,7 @@ export default ({ mode }) => {
       },
       proxy: {
         '/wp-json': {
-          target: 'http://dev.motorlan.es',
+          target: 'https://www.motorlan.es',
           changeOrigin: true,
           secure: false,
         },
@@ -131,35 +132,28 @@ export default ({ mode }) => {
       // 2. Directorio de salida, que en tu caso es 'dist'.
       outDir: 'dist',
 
-      // 3. Desactiva los sourcemaps en producción para reducir el tamaño de los archivos.
+      // 3. Generar manifest.json para que WordPress sepa qué archivos cargar
+      manifest: false,
+
+      // 4. Desactiva los sourcemaps en producción para reducir el tamaño de los archivos.
       sourcemap: false,
 
-      // 4. Límite de advertencia para el tamaño de los chunks (ya lo tenías).
-      chunkSizeWarningLimit: 5000,
+      // 5. Límite de advertencia para el tamaño de los chunks.
+      chunkSizeWarningLimit: 1000,
 
-      // 5. Configuración de Rollup para controlar los archivos de salida.
+      // 6. Configuración de Rollup.
       rollupOptions: {
-        // 6. Define el punto de entrada principal de tu aplicación.
-        // Asegúrate de que la ruta sea correcta (ej. 'src/main.js' o 'src/main.ts').
+        // Define el punto de entrada principal.
         input: {
           app: 'src/main.ts',
         },
         output: {
-          // 7. Elimina los hashes de los nombres de archivo para tener nombres estáticos.
-          // Esto es CRUCIAL para poder encolar los scripts en WordPress.
-          entryFileNames: 'js/app.js', // Archivo JS principal
-          chunkFileNames: 'js/[name].js', // Otros chunks de JS (si los hay)
-          assetFileNames: assetInfo => { // Archivos de assets (CSS, imágenes, etc.)
-            if (assetInfo.name.endsWith('.css'))
-              return 'css/style.css' // Nombre estático para el archivo CSS
-
-            return 'assets/[name].[ext]' // Otros assets
-          },
-          inlineDynamicImports: true,
+          entryFileNames: 'assets/[name].js',
+          chunkFileNames: 'assets/[name].js',
+          assetFileNames: 'assets/[name].[ext]',
         },
       },
     },
-
     optimizeDeps: {
       exclude: ['vuetify'],
       entries: [

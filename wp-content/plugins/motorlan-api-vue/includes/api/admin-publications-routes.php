@@ -89,34 +89,49 @@ function motorlan_admin_get_publications_callback($request) {
             // Basic info
             $item = [
                 'id' => $post_id,
-                'uuid' => get_post_meta($post_id, 'uuid', true), // Add UUID
+                'uuid' => get_post_meta($post_id, 'uuid', true),
                 'title' => get_the_title(),
+                'slug' => get_post_field('post_name', $post_id),
                 'status' => get_post_status(),
                 'date' => get_the_date('Y-m-d H:i:s'),
-                'link' => get_permalink(),
+                'link' => motorlan_get_store_url( $post_id ),
             ];
 
-            // Image
-            $featured_img_url = get_the_post_thumbnail_url($post_id, 'thumbnail');
-            if (!$featured_img_url) {
-                // Fallback to ACF motor_image
-                $image_field = get_field('motor_image', $post_id);
-                if ($image_field) {
-                    if (is_array($image_field) && isset($image_field['sizes']['thumbnail'])) {
-                        $featured_img_url = $image_field['sizes']['thumbnail'];
-                    } elseif (is_array($image_field) && isset($image_field['url'])) {
-                         $featured_img_url = $image_field['url'];
-                    } elseif (is_numeric($image_field)) {
-                        $featured_img_url = wp_get_attachment_image_url($image_field, 'thumbnail');
-                    } elseif (is_string($image_field)) {
-                        $featured_img_url = $image_field;
-                    }
-                }
-            }
-            $item['image'] = $featured_img_url ? $featured_img_url : '';
+            $item['image'] = motorlan_format_image_for_frontend($post_id ? get_post_thumbnail_id($post_id) ?: get_field('motor_image', $post_id, false) : null);
 
             // Price (ACF)
             $item['price'] = get_field('precio_de_venta', $post_id);
+
+            // ACF Data for formatting
+            $marca_id = get_field('marca', $post_id);
+            $marca_name = '';
+            $pending_brand = get_post_meta($post_id, '_pending_brand_name', true);
+            if (!empty($pending_brand)) {
+                $marca_name = $pending_brand;
+                $item['pending_brand'] = $pending_brand;
+            } elseif ($marca_id && is_numeric($marca_id) && (int) $marca_id !== -1) {
+                $term = get_term($marca_id);
+                if ($term && !is_wp_error($term)) {
+                    $marca_name = $term->name;
+                }
+            }
+
+            $item['acf'] = [
+                'marca' => $marca_name ? ['name' => $marca_name] : null,
+                'tipo_o_referencia' => get_field('tipo_o_referencia', $post_id),
+                'velocidad' => get_field('velocidad', $post_id),
+                'potencia' => get_field('potencia', $post_id),
+                'par_nominal' => get_field('par_nominal', $post_id),
+                'precio_de_venta' => $item['price'], // Keep for consistency
+            ];
+
+            // Tipo Taxonomy
+            $tipos = wp_get_post_terms($post_id, 'tipo');
+            if (!empty($tipos) && !is_wp_error($tipos)) {
+                $item['tipo'] = array_map(function($t) {
+                    return ['name' => $t->name, 'slug' => $t->slug, 'id' => $t->term_id];
+                }, $tipos);
+            }
 
             // Author info
             $author_id = get_post_field('post_author', $post_id);
@@ -164,6 +179,14 @@ function motorlan_admin_delete_publication_callback($request) {
  * Update a publication (status mainly).
  */
 function motorlan_admin_update_publication_callback($request) {
+    // Validate Content-Type
+    if ( function_exists( 'motorlan_validate_json_content_type' ) ) {
+        $valid_type = motorlan_validate_json_content_type( $request );
+        if ( is_wp_error( $valid_type ) ) {
+            return $valid_type;
+        }
+    }
+
     $post_id = $request['id'];
     $post = get_post($post_id);
 
@@ -189,6 +212,14 @@ function motorlan_admin_update_publication_callback($request) {
         return $result;
     }
 
+    // Sincronizar campo ACF si se cambió el estado
+    if (isset($params['status'])) {
+        if (function_exists('update_field')) {
+            update_field('publicar_acf', sanitize_text_field($params['status']), $post_id);
+        }
+        update_post_meta($post_id, 'publicar_acf', sanitize_text_field($params['status']));
+    }
+
     return new WP_REST_Response(['message' => 'Publicación actualizada correctamente.'], 200);
 }
 
@@ -196,6 +227,14 @@ function motorlan_admin_update_publication_callback($request) {
  * Contact the publisher.
  */
 function motorlan_admin_contact_publisher_callback($request) {
+    // Validate Content-Type
+    if ( function_exists( 'motorlan_validate_json_content_type' ) ) {
+        $valid_type = motorlan_validate_json_content_type( $request );
+        if ( is_wp_error( $valid_type ) ) {
+            return $valid_type;
+        }
+    }
+
     $post_id = $request['id'];
     $post = get_post($post_id);
 
@@ -222,17 +261,8 @@ function motorlan_admin_contact_publisher_callback($request) {
     $sent = wp_mail($author->user_email, $subject, $message);
 
     // Optional: Create an internal notification if system exists
-    if (class_exists('Motorlan_Notification_Manager')) {
-        $notification_manager = new Motorlan_Notification_Manager();
-        $notification_manager->create_notification(
-            $author_id,
-            'admin_message',
-            $subject,
-            $message,
-            ['post_id' => $post_id],
-            ['web'] // Email already sent directly
-        );
-    }
+    // Optional: Create an internal notification
+    do_action( 'motorlan_admin_contact_publisher', $post_id, $message, $subject );
 
     if (!$sent) {
         return new WP_Error('email_failed', 'No se pudo enviar el correo electrónico', ['status' => 500]);

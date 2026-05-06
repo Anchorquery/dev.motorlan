@@ -49,7 +49,8 @@ export interface Publicacion {
   acf: {
     marca: string
     tipo_o_referencia: string
-    precio_de_venta: number
+    precio_de_venta: number | null
+    mostrar_precio: string
     [key: string]: any
   }
   marca_name?: string

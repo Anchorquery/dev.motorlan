@@ -4,10 +4,12 @@ import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { useApi } from '@/composables/useApi'
 import { useToast } from '@/composables/useToast'
+import { useMotorFormatter } from '@/composables/useMotorFormatter'
 
 const { t } = useI18n()
 const router = useRouter()
 const { showToast } = useToast()
+const { formatMotorName } = useMotorFormatter()
 
 const headers = [
   { title: t('publication_list.publication'), value: 'publicacion' },
@@ -72,6 +74,8 @@ const rejectPublication = async () => {
 
 const getImageBySize = (image: any, size = 'thumbnail'): string => {
   if (!image) return ''
+  if (typeof image === 'string') return image
+  
   if (Array.isArray(image) && image.length > 0) image = image[0]
   
   if (image.sizes && image.sizes[size]) return image.sizes[size]
@@ -86,7 +90,7 @@ onMounted(() => {
 <template>
   <div>
     <VCard class="motor-card-enhanced overflow-visible">
-      <VCardTitle class="pa-6 pb-0">
+      <VCardTitle class="pa-6 pb-0 admin-approvals-header">
         <div class="d-flex align-center gap-3">
           <VAvatar size="40" color="primary" variant="tonal">
             <VIcon icon="tabler-shield-check" />
@@ -100,6 +104,7 @@ onMounted(() => {
 
       <VDivider class="mt-4" />
 
+      <div class="admin-approvals-table-shell">
       <VDataTable
         :headers="headers"
         :items="publications"
@@ -109,17 +114,33 @@ onMounted(() => {
       >
         <!-- publicacion  -->
         <template #item.publicacion="{ item }">
-          <div class="d-flex align-center gap-3 py-3">
+          <div class="d-flex align-center gap-3 py-3" style="max-width: 280px;">
             <VAvatar
               size="48"
               variant="tonal"
               rounded
-              class="border"
+              class="border flex-shrink-0"
               :image="getImageBySize((item as any).imagen_destacada)"
             />
-            <div class="d-flex flex-column">
-              <span class="text-body-1 font-weight-bold text-high-emphasis">{{ (item as any).title }}</span>
-              <span class="text-caption text-medium-emphasis">{{ (item as any).acf?.marca?.name }}</span>
+            <div class="d-flex flex-column overflow-hidden">
+              <span 
+                class="text-body-1 font-weight-bold text-high-emphasis text-truncate"
+                style="max-width: 200px;"
+              >
+                {{ formatMotorName(item as any) }}
+                <VTooltip activator="parent" location="top">{{ formatMotorName(item as any) }}</VTooltip>
+              </span>
+              <span class="text-caption text-medium-emphasis">
+                <template v-if="(item as any).pending_brand">
+                  <VChip color="warning" size="small" variant="elevated" prepend-icon="tabler-tag-starred">
+                    {{ (item as any).pending_brand }}
+                    <VTooltip activator="parent" location="top">Nueva marca propuesta por el usuario</VTooltip>
+                  </VChip>
+                </template>
+                <template v-else>
+                  {{ (item as any).acf?.marca?.name }}
+                </template>
+              </span>
             </div>
           </div>
         </template>
@@ -139,12 +160,14 @@ onMounted(() => {
 
         <!-- precio -->
         <template #item.precio="{ item }">
-          <span class="text-body-1 text-primary font-weight-bold">{{ (item as any).acf?.precio_de_venta }}€</span>
+          <span v-if="(item as any).acf?.precio_negociable === 'yes' || (item as any).acf?.precio_negociable === true" class="text-body-1 text-warning font-weight-bold">Consultar precio</span>
+          <span v-else-if="(item as any).acf?.precio_de_venta" class="text-body-1 text-primary font-weight-bold">{{ (item as any).acf?.precio_de_venta }}€</span>
+          <span v-else class="text-body-2 text-medium-emphasis">-</span>
         </template>
 
         <!-- Actions -->
         <template #item.actions="{ item }">
-            <div class="d-flex gap-2">
+          <div class="d-flex gap-2 flex-wrap admin-approvals-actions">
             <VBtn
               color="success"
               variant="tonal"
@@ -199,6 +222,7 @@ onMounted(() => {
           </div>
         </template>
       </VDataTable>
+      </div>
     </VCard>
 
     <!-- 👉 Reject Dialog -->
@@ -248,6 +272,31 @@ onMounted(() => {
     </VDialog>
   </div>
 </template>
+
+<style scoped>
+.admin-approvals-table-shell {
+  overflow-x: auto;
+}
+
+.admin-approvals-actions :deep(.v-btn),
+.admin-approvals-actions :deep(.icon-btn) {
+  min-height: 36px;
+}
+
+@media (max-width: 959px) {
+  .admin-approvals-header {
+    align-items: flex-start;
+  }
+
+  .admin-approvals-actions {
+    width: 100%;
+  }
+
+  .admin-approvals-actions :deep(.v-btn) {
+    width: 100%;
+  }
+}
+</style>
 
 <style scoped>
 .text-premium-title {

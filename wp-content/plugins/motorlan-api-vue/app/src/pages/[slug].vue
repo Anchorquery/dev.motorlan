@@ -80,40 +80,7 @@ const docs = computed(() => {
 
 const title = computed(() => {
   if (!publicacion.value) return "";
-
-  // Nomenclature: Tipo de producto_Marca_Tipo/modelo_Potencia o Par_Velocidad
-  
-  // 1. Tipo
-  const tipo = publicacion.value.tipo && publicacion.value.tipo.length > 0 ? publicacion.value.tipo[0].name : '';
-  
-  // 2. Marca
-  const marca = (publicacion.value as any).marca_name || '';
-
-  // 3. Modelo
-  const modelo = publicacion.value.acf.tipo_o_referencia || '';
-
-  // 4. Potencia o Par
-  let powerOrTorque = '';
-  if (publicacion.value.acf.potencia) {
-      powerOrTorque = `${publicacion.value.acf.potencia} kW`;
-  } else if (publicacion.value.acf.par_nominal) {
-      powerOrTorque = `${publicacion.value.acf.par_nominal} Nm`;
-  }
-
-  // 5. Velocidad
-  const velocidad = publicacion.value.acf.velocidad
-      ? `${publicacion.value.acf.velocidad} rpm`
-      : '';
-
-  const parts = [
-    tipo,
-    marca,
-    modelo,
-    powerOrTorque,
-    velocidad,
-  ].filter(p => !!p && String(p).trim() !== '');
-
-  return parts.join(' ').toUpperCase();
+  return publicacion.value.title;
 });
 
 const getInitials = (value: string): string => {
@@ -144,7 +111,7 @@ onMounted(() => {
         <!-- Seller row with chat button above the buy button -->
 
 
-        <ProductDetails :publicacion="publicacion" @open-chat="isChatModalVisible = true" />
+        <ProductDetails :publicacion="publicacion" :disable-actions="isOwner" @open-chat="isChatModalVisible = true" />
                 <div class="d-flex align-center mb-4" v-if="publicacion.author">
           <VAvatar size="48" class="mr-4" :color="publicacion.author.avatar ? undefined : 'primary'">
             <VImg v-if="publicacion.author.avatar" :src="publicacion.author.avatar" :alt="publicacion.author.name || 'Vendedor'" />
@@ -180,7 +147,7 @@ onMounted(() => {
 
     <RelatedProducts :current-id="publicacion.id" />
     <ChatModal
-      v-if="isChatModalVisible"
+      v-if="isChatModalVisible && !isOwner"
       :publicacion="publicacion"
       :room-key="chatRoomKeyFromQuery"
       @close="isChatModalVisible = false"

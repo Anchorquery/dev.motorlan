@@ -1,13 +1,25 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { createUrl } from '@/@core/composable/createUrl'
 import { useApi } from '@/composables/useApi'
 import type { Publicacion } from '@/interfaces/publicacion'
 import { useUserStore } from '@/@core/stores/user'
+import ChatModal from '@/components/ChatModal.vue'
+import { useMotorFormatter } from '@/composables/useMotorFormatter'
+import { useCountries } from '@/composables/useCountries'
+import RatingModal from '@/components/RatingModal.vue'
 
 const route = useRoute()
 const uuid = route.params.uuid as string
+const { formatMotorName } = useMotorFormatter()
+const { getCountryName, fetchCountries } = useCountries()
+
+const showRatingModal = ref(false)
+
+const handleRatingSuccess = () => {
+    fetchPurchase()
+}
 
 const purchase = ref()
 const isPurchaseLoading = ref(true)
@@ -33,7 +45,16 @@ const fetchPurchase = async () => {
   }
 }
 
-void fetchPurchase()
+
+
+
+onMounted(() => {
+  fetchCountries()
+  if (uuid) fetchPurchase()
+  if (route.query.openChat === 'true') {
+     isChatModalOpen.value = true
+  }
+})
 
 // Current user + derived viewer role and publication data
 const userStore = useUserStore()
@@ -96,27 +117,13 @@ const opinionError = ref<string | null>(null)
 const motorAcf = computed(() => (publication.value?.acf || {}) as Record<string, any>)
 const sellerAcf = computed(() => (purchase.value?.motor?.author?.acf || {}) as Record<string, any>)
 
-const formatProductTitle = (publication?: Publicacion | null) => {
-  if (!publication)
-    return ''
-
-  const acf = (publication.acf || {}) as Record<string, any>
-  const parts = [
-    publication.title,
-    acf.tipo_o_referencia,
-    acf.potencia ? `${acf.potencia} kW` : null,
-    acf.velocidad ? `${acf.velocidad} rpm` : null,
-  ].filter(Boolean) as string[]
-
-  return parts.join(' ').toUpperCase()
-}
-
+// Usa el composable centralizado para formatear el nombre
 const productTitle = computed(() => {
   const motor = publication.value as Publicacion | null | undefined
-  const formatted = formatProductTitle(motor || null)
-
-  if (formatted)
-    return formatted
+  if (motor) {
+    const formatted = formatMotorName(motor)
+    if (formatted) return formatted
+  }
 
   if (purchase.value?.title)
     return String(purchase.value.title).toUpperCase()
@@ -188,11 +195,12 @@ const productLink = computed(() => {
   if (!productSlug.value)
     return null
 
-  return { name: 'store-slug', params: { slug: productSlug.value } }
+  // URL absoluta para navegación cross-base (desde mi-cuenta a la tienda)
+  return `/marketplace-motorlan/${productSlug.value}/`
 })
 
 const locationLabel = computed(() => {
-  const country = motorAcf.value.pais
+  const country = getCountryName(motorAcf.value.pais)
   const province = motorAcf.value.provincia
 
   if (country && province)
@@ -278,10 +286,10 @@ const sellerWhatsappHref = computed(() => {
 
 const hasSellerMetrics = computed(() => sellerRating.value !== null || sellerSalesLabel.value !== null)
 
-const messagesRoute = computed(() => ({
-  name: 'dashboard-purchases-chat-uuid',
-  params: { uuid },
-}))
+const isChatModalOpen = ref(false)
+const openChat = () => {
+  isChatModalOpen.value = true
+}
 
 const quantityValue = computed(() => {
   const raw = (purchase.value as any)?.cantidad ?? (purchase.value as any)?.quantity ?? 1
@@ -484,7 +492,7 @@ const purchaseModeLabel = computed(() => {
   if (hasOffer.value)
     return 'Compra por oferta'
 
-  return isNegotiable.value ? 'Oferta negociable' : 'Compra directa'
+  return isNegotiable.value ? 'Consultar precio' : 'Compra directa'
 })
 
 const purchaseModeDescription = computed(() => {
@@ -496,7 +504,7 @@ const purchaseModeDescription = computed(() => {
   }
 
   return isNegotiable.value
-    ? 'El vendedor marco este articulo como negociable. Revisa el acuerdo con el vendedor.'
+    ? 'El precio de este artículo es bajo consulta. Contacta con el vendedor para acordar el precio.'
     : 'Compra realizada al precio publicado sin negociacion.'
 })
 
@@ -534,9 +542,9 @@ const statusInfo = computed(() => {
       tone: 'info',
     },
     pendiente: {
-      label: 'Pendiente',
-      title: 'Tu pago esta pendiente',
-      description: withDate('registramos tu orden. Te avisaremos cuando avance.'),
+      label: 'Venta Registrada',
+      title: 'Acuerdo pendiente',
+      description: withDate('Coordina el pago y la entrega directamente con el vendedor.'),
       tone: 'warning',
     },
     cancelado: {
@@ -631,15 +639,20 @@ const sendOpinion = async () => {
     v-else-if="purchase"
     class="purchase-page"
   >
-    <div class="purchase-breadcrumbs">
-      <RouterLink
-        class="purchase-breadcrumbs__link"
-        :to="{ name: 'dashboard-purchases-purchases' }"
-      >
-        Compras
-      </RouterLink>
-      <span class="purchase-breadcrumbs__separator">/</span>
-      <span class="purchase-breadcrumbs__current">Estado de la compra</span>
+    <div class="px-6 pt-6 pb-4 bg-surface mb-6 rounded-lg elevation-1 d-flex align-center gap-2">
+       <VBtn
+          variant="text"
+          color="medium-emphasis"
+          size="small"
+          :to="{ name: 'dashboard-purchases-purchases' }"
+          prepend-icon="tabler-shopping-cart"
+        >
+          Compras
+        </VBtn>
+        <VIcon icon="tabler-chevron-right" size="14" color="medium-emphasis" />
+        <span class="text-caption text-high-emphasis font-weight-bold text-uppercase tracking-wide">
+          {{ productTitle || 'Detalle de Compra' }}
+        </span>
     </div>
 
     <VRow
@@ -653,241 +666,224 @@ const sendOpinion = async () => {
         lg="9"
       >
         <div class="purchase-main">
-          <VCard class="purchase-card summary-card">
-          <VCardText>
-              <div class="summary-header">
-                <div class="summary-info">
-                  <h1 class="summary-title">
-                    <RouterLink
-                      v-if="productLink"
-                      :to="productLink"
-                      class="summary-title__link"
+          <VCard class="mb-6 rounded-xl overflow-hidden border" flat>
+            <VCardText class="pa-0">
+               <!-- Product Header Section -->
+               <div class="pa-6 d-flex flex-column flex-md-row gap-6">
+                  <!-- Product Image -->
+                  <div class="flex-shrink-0">
+                    <VAvatar
+                      rounded="lg"
+                      size="120"
+                      color="surface-variant"
+                      class="elevation-2"
                     >
-                      {{ productTitle }}
-                    </RouterLink>
-                    <span v-else>{{ productTitle }}</span>
-                  </h1>
-                  <div class="summary-meta">
-                    <span>{{ quantityLabel }}</span>
-                    <span v-if="productLink">|</span>
-                    <RouterLink
-                      v-if="productLink"
-                      class="summary-link"
-                      :to="productLink"
-                    >
-                      Ver detalle
-                    </RouterLink>
+                       <VImg
+                          v-if="productImage"
+                          :src="productImage"
+                          cover
+                        />
+                        <VIcon v-else icon="tabler-photo-off" size="48" color="medium-emphasis" />
+                    </VAvatar>
                   </div>
-                  <div
-                    v-if="locationLabel"
-                    class="summary-location"
-                  >
-                    <VIcon
-                      icon="mdi-map-marker"
-                      size="18"
-                      class="mr-1"
-                    />
-                      <span>{{ locationLabel }}</span>
+
+                  <!-- Product Info -->
+                  <div class="flex-grow-1 min-w-0">
+                     <div class="d-flex flex-wrap gap-2 mb-2">
+                        <VChip
+                           v-if="statusSummaryLabel"
+                           size="small"
+                           :color="statusInfo.tone"
+                           variant="tonal"
+                           class="font-weight-bold text-uppercase"
+                           label
+                        >
+                           {{ statusSummaryLabel }}
+                        </VChip>
+                        <VChip
+                           v-if="purchaseModeLabel"
+                           size="small"
+                           color="secondary"
+                           variant="tonal"
+                           class="font-weight-bold text-uppercase"
+                           label
+                        >
+                           {{ purchaseModeLabel }}
+                        </VChip>
+                     </div>
+
+                     <h1 class="text-h5 font-weight-bold text-high-emphasis mb-2 line-clamp-2">
+                        <a 
+                          v-if="productLink"
+                          :href="productLink"
+                          target="_blank"
+                          class="text-high-emphasis text-decoration-none hover:text-primary transition-colors"
+                        >
+                          {{ productTitle }}
+                        </a>
+                        <span v-else>{{ productTitle }}</span>
+                     </h1>
+
+                     <div v-if="locationLabel" class="d-flex align-center gap-1 text-medium-emphasis text-body-2 mb-4">
+                        <VIcon icon="tabler-map-pin" size="16" />
+                        <span>{{ locationLabel }}</span>
+                     </div>
+
+                     <div class="d-flex align-end justify-space-between flex-wrap gap-4 mt-auto">
+                        <div>
+                           <div class="text-caption text-medium-emphasis text-uppercase font-weight-bold mb-1">Total a pagar</div>
+                           <div class="text-h4 font-weight-bold text-primary">
+                              {{ totalPriceLabel }}
+                           </div>
+                           <div v-if="summaryPriceNotes.length" class="text-caption text-medium-emphasis mt-1">
+                              {{ summaryPriceNotes.join(', ') }}
+                           </div>
+                        </div>
+
+                         <div class="d-flex gap-3">
+                             <VBtn
+                                v-if="productLink"
+                                :href="productLink"
+                                target="_blank"
+                                variant="tonal"
+                                color="primary"
+                                append-icon="tabler-external-link"
+                              >
+                                Ver Producto
+                              </VBtn>
+                         </div>
+                     </div>
                   </div>
-                  <div
-                    v-if="statusSummaryLabel || purchaseModeLabel || productTypeLabel"
-                    class="summary-tags"
-                  >
-                    <span
-                      v-if="productTypeLabel"
-                      class="summary-tag"
-                    >
-                      {{ productTypeLabel }}
-                    </span>
-                    <span
-                      v-if="statusSummaryLabel"
-                      class="summary-tag"
-                    >
-                      {{ statusSummaryLabel }}
-                    </span>
-                    <span
-                      v-if="purchaseModeLabel"
-                      class="summary-tag summary-tag--highlight"
-                    >
-                      {{ purchaseModeLabel }}
-                    </span>
-                  </div>
-                  <div class="summary-price">
-                    <span class="summary-price__label">Precio</span>
-                    <span class="summary-price__value">{{ totalPriceLabel }}</span>
-                    <span
-                      v-for="note in summaryPriceNotes"
-                      :key="note"
-                      class="summary-price__note"
-                    >
-                      {{ note }}
-                    </span>
-                  </div>
-                </div>
-                <VAvatar
-                  v-if="productImage"
-                  :image="productImage"
-                  size="64"
-                  class="summary-avatar"
-                />
-                <VAvatar
-                  v-else
-                  size="64"
-                  class="summary-avatar summary-avatar--placeholder"
-                >
-                  <VIcon
-                    icon="mdi-image-off"
-                    size="28"
-                  />
-                </VAvatar>
-              </div>
+               </div>
             </VCardText>
           </VCard>
 
-          <VCard class="purchase-card seller-card">
-            <VCardTitle>{{ partyTitle }}</VCardTitle>
-            <VCardText>
-              <div class="seller-card__header">
-                <VAvatar
-                  v-if="partyAvatar"
-                  :image="partyAvatar"
-                  size="56"
-                  class="mr-4"
-                />
-                <VAvatar
-                  v-else
-                  size="56"
-                  color="primary"
-                  class="mr-4"
-                >
-                  <span class="avatar-initials">{{ partyInitials }}</span>
-                </VAvatar>
-                <div class="seller-card__identity">
-                  <div class="seller-card__name">{{ partyName }}</div>
-                  <div
-                    v-if="sellerCompany"
-                    class="seller-card__company"
-                  >
-                    {{ sellerCompany }}
-                  </div>
-                  <div
-                    v-if="locationLabel"
-                    class="seller-card__location"
-                  >
-                    <VIcon
-                      icon="mdi-map-marker"
-                      size="18"
-                      class="mr-1"
+          <VCard class="mb-6 rounded-xl overflow-hidden border" flat>
+             <VCardText class="pa-0 d-flex flex-column h-100">
+               <div class="px-6 py-4 border-b bg-surface-variant-lighten d-flex align-center gap-2">
+                  <VIcon icon="tabler-user-circle" color="primary" />
+                  <h3 class="text-subtitle-1 font-weight-bold text-high-emphasis mb-0">{{ partyTitle }}</h3>
+               </div>
+               
+               <div class="pa-6 d-flex flex-column flex-grow-1">
+                 <div class="d-flex align-center mb-6">
+                    <VAvatar
+                      :image="partyAvatar || undefined"
+                      :color="partyAvatar ? undefined : 'primary-lighten-4'"
+                      variant="elevated"
+                      size="64"
+                      class="mr-4 elevation-2"
+                    >
+                      <span v-if="!partyAvatar" class="text-h5 font-weight-bold text-primary">{{ partyInitials }}</span>
+                    </VAvatar>
+                    
+                    <div class="min-w-0">
+                       <div class="text-h6 font-weight-bold text-high-emphasis text-truncate mb-1">
+                          {{ partyName }}
+                       </div>
+                       <div v-if="sellerCompany" class="text-body-2 text-medium-emphasis d-flex align-center gap-1 mb-1">
+                          <VIcon icon="tabler-building-skyscraper" size="14" />
+                          <span>{{ sellerCompany }}</span>
+                       </div>
+                       <div v-if="locationLabel" class="text-body-2 text-medium-emphasis d-flex align-center gap-1">
+                          <VIcon icon="tabler-map-pin" size="14" />
+                          <span>{{ locationLabel }}</span>
+                       </div>
+                    </div>
+                 </div>
+
+                 <!-- Metrics -->
+                 <div v-if="hasSellerMetrics" class="d-flex gap-4 mb-6">
+                    <div v-if="sellerRating !== null" class="d-flex align-center gap-1 bg-surface-variant px-3 py-1 rounded-pill">
+                       <VRating
+                          :model-value="sellerRating"
+                          color="warning"
+                          density="compact"
+                          half-increments
+                          readonly
+                          size="16"
+                        />
+                        <span class="text-caption font-weight-bold">{{ sellerRatingLabel }}</span>
+                    </div>
+                     <div v-if="sellerSalesText" class="d-flex align-center gap-1 bg-surface-variant px-3 py-1 rounded-pill">
+                       <VIcon icon="tabler-shopping-bag" size="14" color="medium-emphasis" />
+                       <span class="text-caption font-weight-bold">{{ sellerSalesText }}</span>
+                    </div>
+                 </div>
+
+                 <!-- Contact -->
+                 <div v-if="partyHasContact" class="mb-6">
+                    <a v-if="partyEmail" :href="`mailto:${partyEmail}`" class="d-flex align-center gap-2 text-decoration-none text-body-2 text-high-emphasis px-3 py-2 rounded hover:bg-surface-variant transition-colors">
+                       <div class="v-avatar v-theme--light v-avatar--density-default v-avatar--variant-tonal v-avatar--rounded" style="width: 32px; height: 32px;">
+                          <VIcon icon="tabler-mail" size="18" color="primary" />
+                       </div>
+                       <span>{{ partyEmail }}</span>
+                    </a>
+                 </div>
+
+                 <div class="mt-auto pt-4 border-t d-flex gap-3">
+                    <VBtn
+                      block
+                      color="primary"
+                      size="large"
+                      height="48"
+                      prepend-icon="tabler-message-circle" 
+                      class="flex-grow-1 font-weight-bold shadow-primary"
+                      @click="openChat"
+                    >
+                      Abrir chat
+                    </VBtn>
+                    
+                    <VBtn
+                      v-if="productLink"
+                      :href="productLink"
+                      target="_blank"
+                      variant="tonal"
+                      color="secondary"
+                      icon="tabler-external-link"
+                      size="large"
+                      class="rounded-lg"
                     />
-                    <span>{{ locationLabel }}</span>
-                  </div>
-                </div>
-              </div>
-              <div
-                v-if="hasSellerMetrics"
-                class="seller-card__metrics"
-              >
-                <div
-                  v-if="sellerRating !== null"
-                  class="seller-card__metrics-item"
-                >
-                  <VRating
-                    :model-value="sellerRating"
-                    color="warning"
-                    density="compact"
-                    half-increments
-                    readonly
-                    size="18"
-                    class="mr-2"
-                  />
-                  <span>{{ sellerRatingLabel }}</span>
-                </div>
-                <div
-                  v-if="sellerSalesText"
-                  class="seller-card__metrics-item"
-                >
-                  <VIcon
-                    icon="mdi-store"
-                    size="18"
-                    class="mr-1"
-                  />
-                  <span>{{ sellerSalesText }}</span>
-                </div>
-              </div>
-              <div
-                v-if="partyHasContact"
-                class="seller-card__contact"
-              >
-                <a
-                  v-if="partyEmail"
-                  :href="`mailto:${partyEmail}`"
-                  class="seller-card__contact-item"
-                >
-                  <VIcon
-                    icon="mdi-email-outline"
-                    size="18"
-                    class="mr-1"
-                  />
-                  {{ partyEmail }}
-                </a>
-              </div>
-              <div class="seller-card__actions">
-                <VBtn
-                  v-if="productLink"
-                  :to="productLink"
-                  color="primary"
-                  variant="tonal"
-                >
-                  Ver publicacion
-                </VBtn>
-                <VBtn
-                  :to="messagesRoute"
-                  color="secondary"
-                  variant="text"
-                >
-                  Abrir chat
-                </VBtn>
-              </div>
-            </VCardText>
+                 </div>
+               </div>
+             </VCardText>
           </VCard>
 
-          <VCard class="purchase-card status-card motor-card-enhanced">
-            <VCardText>
-              <div :class="['status-chip', `status-chip--${statusInfo.tone}`]">
-                {{ statusInfo.label }}
-              </div>
-              <h2 class="status-title text-premium-title">
+          <VCard class="mb-6 rounded-xl overflow-hidden border" flat>
+            <VCardText class="pa-6 text-center" :class="`bg-${statusInfo.tone}-lighten-5`">
+              <VAvatar
+                 :color="statusInfo.tone"
+                 variant="tonal"
+                 size="64"
+                 class="mb-4"
+              >
+                 <VIcon icon="tabler-info-circle" size="32" />
+              </VAvatar>
+              
+              <h2 class="text-h5 font-weight-bold text-high-emphasis mb-2">
                 {{ statusInfo.title }}
               </h2>
-              <p class="status-description">
+              
+              <div class="d-flex justify-center mb-4">
+                 <VChip
+                    :color="statusInfo.tone"
+                    label
+                    class="font-weight-bold"
+                 >
+                    {{ statusInfo.label }}
+                 </VChip>
+              </div>
+              
+              <p class="text-body-1 text-medium-emphasis max-w-sm mx-auto mb-0">
                 {{ statusInfo.description }}
               </p>
-              <p
-                v-if="statusRawLabel"
-                class="status-description status-description--muted"
-              >
-                Estado reportado: {{ statusRawLabel }}
-              </p>
-              <p
-                v-if="purchaseModeDescription"
-                class="status-description status-description--muted"
-              >
-                {{ purchaseModeDescription }}
-              </p>
-              <div
-                v-if="productLink"
-                class="status-actions"
-              >
-                <VBtn
-                  color="primary"
-                  variant="outlined"
-                  :to="productLink"
-                >
-                  Volver a comprar
-                </VBtn>
+              
+              <div v-if="statusRawLabel" class="text-caption text-disabled mt-2">
+                 Estado técnico: {{ statusRawLabel }}
               </div>
             </VCardText>
           </VCard>
+
 
           <VCard
             v-if="hasOffer"
@@ -957,105 +953,26 @@ const sendOpinion = async () => {
             </VCardText>
           </VCard>
 
-          <VCard class="purchase-card opinion-card">
-            <VCardTitle>Que te parecio tu producto?</VCardTitle>
-            <VCardText>
-              <VAlert
-                v-if="opinionSuccess"
-                type="success"
-                variant="tonal"
-                class="mb-4"
-              >
-                Gracias por compartir tu opinion.
-              </VAlert>
-              <VAlert
-                v-if="opinionError"
-                type="error"
-                variant="tonal"
-                class="mb-4"
-              >
-                {{ opinionError }}
-              </VAlert>
-              <VRating
-                v-model="opinion.rating"
-                class="mb-4"
-                color="warning"
-                size="32"
-              />
-              <VTextarea
-                v-model="opinion.comment"
-                label="Comparte tu experiencia"
-                rows="3"
-                auto-grow
-                hide-details="auto"
-              />
-              <VBtn
-                color="error"
-                class="mt-4"
-                :loading="isSubmittingOpinion"
-                :disabled="isSubmittingOpinion || (!opinion.rating && !opinion.comment)"
-                @click="sendOpinion"
-              >
-                Enviar
-              </VBtn>
-            </VCardText>
-          </VCard>
+          <!-- Sección de Ayuda y Mensajes eliminada por solicitud -->
 
-          <VCard class="purchase-card help-card">
-            <VCardTitle>Ayuda con la compra</VCardTitle>
-            <VList density="comfortable">
-              <VListItem
-                v-for="item in helpItems"
-                :key="item.id"
-                class="help-item"
-                rounded="lg"
-              >
-                <VListItemTitle>{{ item.title }}</VListItemTitle>
-                <template #append>
-                  <VIcon
-                    icon="mdi-chevron-right"
-                    size="18"
-                  />
-                </template>
-              </VListItem>
-            </VList>
-          </VCard>
-
-          <VCard class="purchase-card messages-card">
-            <VCardTitle>Mensajes con el {{ isBuyer ? 'vendedor' : 'comprador' }}</VCardTitle>
-            <VList density="comfortable">
-              <VListItem
-                class="messages-item"
-                rounded="lg"
-                :to="messagesRoute"
-                link
-              >
-                <template #prepend>
-                  <VAvatar
-                    v-if="partyAvatar"
-                    :image="partyAvatar"
-                    size="40"
-                    class="mr-3"
-                  />
-                  <VAvatar
-                    v-else
-                    size="40"
-                    color="primary"
-                    class="mr-3"
-                  >
-                    <span class="avatar-initials">{{ partyInitials }}</span>
-                  </VAvatar>
-                </template>
-                <VListItemTitle>{{ partyName }}</VListItemTitle>
-                <VListItemSubtitle>Ir al chat de la compra</VListItemSubtitle>
-                <template #append>
-                  <VIcon
-                    icon="mdi-chevron-right"
-                    size="18"
-                  />
-                </template>
-              </VListItem>
-            </VList>
+          <!-- Rating CTA Card (If not rated yet and purchase is completed/delivered mechanism exists, or always show for now as requested) -->
+          <VCard 
+            v-if="!purchase?.review_done && viewerRole === 'buyer'"
+            class="purchase-card rating-card mb-6"
+          >
+             <VCardText class="d-flex flex-column flex-sm-row align-center justify-space-between gap-4 pa-6">
+                 <div>
+                    <h3 class="text-h6 font-weight-bold mb-1">¿Qué tal tu experiencia?</h3>
+                    <p class="text-body-2 text-medium-emphasis mb-0">Ayuda a otros usuarios calificando al vendedor</p>
+                 </div>
+                 <VBtn
+                    color="warning"
+                    prepend-icon="tabler-star"
+                    @click="showRatingModal = true"
+                 >
+                    Valorar Vendedor
+                 </VBtn>
+             </VCardText>
           </VCard>
         </div>
       </VCol>
@@ -1152,6 +1069,25 @@ const sendOpinion = async () => {
     </VRow>
   </VContainer>
 
+  <!-- Chat Modal -->
+  <ChatModal
+    v-if="uuid"
+    v-model:is-open="isChatModalOpen"
+    :purchase-uuid="uuid"
+    context-type="purchase"
+    :publication-title="productTitle"
+    :publication-image="productImage"
+  />
+  
+  <RatingModal
+    v-if="showRatingModal"
+    v-model="showRatingModal"
+    :purchase-uuid="uuid"
+    target-role="seller"
+    :target-name="partyName"
+    @success="handleRatingSuccess"
+  />
+
   <VContainer
     v-else
     class="purchase-page__empty"
@@ -1172,6 +1108,15 @@ const sendOpinion = async () => {
         </VBtn>
       </VCardActions>
     </VCard>
+    <!-- Chat Modal -->
+    <ChatModal
+      v-if="purchase?.uuid"
+      v-model:is-open="isChatModalOpen"
+      :purchase-uuid="purchase.uuid"
+      context-type="purchase"
+      :publication-title="productTitle"
+      :publication-image="productImage"
+    />
   </VContainer>
 </template>
 

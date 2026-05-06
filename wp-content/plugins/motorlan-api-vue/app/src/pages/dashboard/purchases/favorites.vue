@@ -5,9 +5,11 @@ import { createUrl } from '@/@core/composable/createUrl'
 import { useApi } from '@/composables/useApi'
 import { useUserStore } from '@/@core/stores/user'
 import type { ImagenDestacada, Publicacion } from '@/interfaces/publicacion'
+import { useMotorFormatter } from '@/composables/useMotorFormatter'
 
 const router = useRouter()
 const userStore = useUserStore()
+const { formatMotorName } = useMotorFormatter()
 
 const currentUser = computed(() => userStore.getUser)
 
@@ -91,23 +93,24 @@ const removeFavorite = async (motorId: number) => {
 }
 
 const goToDetail = (item: Publicacion) => {
-  router.push(`/${item.slug}`)
+  // Navegar a la tienda con URL absoluta (no usar router.push porque estamos en otra base)
+  window.open(`/marketplace-motorlan/${item.slug}/`, '_blank')
 }
 
-const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail'): string => {
+const getImageBySize = (image: any, size = 'thumbnail'): string => {
+  if (!image)
+    return ''
+  if (typeof image === 'string')
+    return image
   let imageObj: ImagenDestacada | null = null
-
   if (Array.isArray(image) && image.length > 0)
     imageObj = image[0]
   else if (image && !Array.isArray(image))
     imageObj = image as ImagenDestacada
-
   if (!imageObj)
     return ''
-
   if (imageObj.sizes && imageObj.sizes[size])
     return imageObj.sizes[size] as string
-
   return imageObj.url || ''
 }
 </script>
@@ -173,7 +176,7 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
               class="text-body-1 font-weight-medium text-premium-title"
               :class="{ 'cursor-pointer': (item as any).author?.id === currentUser?.id || currentUser?.isAdmin }"
               @click="(item as any).author?.id === currentUser?.id || currentUser?.isAdmin ? router.push(`/dashboard/publications/publication/edit/${(item as any).uuid}`) : null"
-            >{{ item.title }}</span>
+            >{{ formatMotorName(item) || item.title }}</span>
             <span class="text-body-2 text-muted">{{ (item.acf.marca as any)?.name }}</span>
           </div>
         </div>
@@ -186,8 +189,14 @@ const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail
 
       <!-- precio -->
       <template #item.precio="{ item }">
-        <span class="text-body-1 font-weight-medium text-premium-price">
-          {{ item.acf.precio_de_venta ? formatCurrency(item.acf.precio_de_venta) : 'Consultar' }}
+        <span v-if="item.acf?.precio_negociable === 'yes' || item.acf?.precio_negociable === true" class="text-body-1 font-weight-medium text-warning">
+          Consultar precio
+        </span>
+        <span v-else-if="item.acf?.precio_de_venta" class="text-body-1 font-weight-medium text-premium-price">
+          {{ formatCurrency(item.acf.precio_de_venta) }}
+        </span>
+        <span v-else class="text-body-1 font-weight-medium text-premium-price">
+          Consultar
         </span>
       </template>
 

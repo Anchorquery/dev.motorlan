@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(php -l:*)",
+      "Bash(more:*)",
+      "Bash(wp eval \"echo admin_url\\(''admin.php?page=motorlan-migration''\\);\")",
+      "Bash(find \"C:/laragon/www/dev.motorlan/wp-content/plugins/motorlan-api-vue/app/src\" -type f \\\\\\( -name \"*store*\" -o -name \"*locales*\" -o -name \"*i18n*\" \\\\\\) 2>/dev/null | head -20)",
+      "Bash(find \"C:\\\\laragon\\\\www\\\\dev.motorlan\\\\wp-content\\\\plugins\\\\motorlan-api-vue\" -type f \\\\\\( -name \"*.php\" -o -name \"*marcas*\" -o -name \"*publication*\" \\\\\\) | grep -E \"\\\\.\\(php|js|ts\\)$\" | head -40)",
+      "Bash(cd:*)"
+    ]
+  }
+}

@@ -352,16 +352,30 @@ function motorlan_get_my_purchases_callback( $request ) {
             $offer_id_raw = get_post_meta( $post_id, 'offer_id', true );
             $offer_id     = $offer_id_raw ? (int) $offer_id_raw : 0;
 
+            // Obtener fecha de compra: primero intentar meta directo para evitar
+            // comportamiento de ACF date_picker que retorna fecha actual si vacío
+            $fecha_raw = get_post_meta( $post_id, 'fecha_compra', true );
+            if ( empty( $fecha_raw ) ) {
+                // Fallback a la fecha de creación del post
+                $fecha_raw = get_the_date( 'd/m/Y', $post_id );
+            } else {
+                // Si el valor está en formato ACF (Ymd), convertir a d/m/Y
+                if ( preg_match( '/^\d{8}$/', $fecha_raw ) ) {
+                    $fecha_raw = date_i18n( 'd/m/Y', strtotime( $fecha_raw ) );
+                }
+            }
+
             $data[] = array(
                 'uuid'         => get_field('uuid', $post_id),
                 'title'        => get_the_title(),
-                'fecha_compra' => get_field('fecha_compra', $post_id),
+                'fecha_compra' => $fecha_raw,
                 'publicacion'  => $publicacion_data,
                 'vendedor'     => get_field('vendedor', $post_id) ?: get_post_meta($post_id, 'vendedor_id', true),
                 'comprador'    => get_field('comprador', $post_id) ?: get_post_meta($post_id, 'comprador_id', true),
                 'estado'       => get_field('estado', $post_id) ?: get_post_meta($post_id, 'estado', true),
                 'tipo_venta'   => $tipo_venta ?: '',
                 'offer_id'     => $offer_id,
+                'review_done'  => (bool) get_post_meta($post_id, '_review_by_buyer_done', true),
             );
         }
         wp_reset_postdata();
@@ -679,19 +693,7 @@ function motorlan_create_purchase_callback( WP_REST_Request $request ) {
     }
 
     // Notify seller
-    $notification_manager = new Motorlan_Notification_Manager();
-    $notification_manager->create_notification(
-        $seller_id,
-        'new_purchase',
-        "Nueva compra de {$buyer_name} en \"{$publicacion_title}\"",
-        "El usuario {$buyer_name} ha iniciado una compra para tu publicación.",
-        array(
-            'purchase_uuid' => $uuid,
-            'purchase_id'   => $purchase_id,
-            'url'           => '/purchases/' . $uuid,
-        ),
-        array( 'web', 'email' )
-    );
+    do_action( 'motorlan_new_purchase', $purchase_id );
 
     return new WP_REST_Response( array( 'uuid' => $uuid ), 201 );
 }
@@ -713,6 +715,11 @@ function motorlan_get_purchase_callback( WP_REST_Request $request ) {
     }
 
     $purchase_id = $purchases[0]->ID;
+
+    // Security check: IDOR protection
+    if ( ! motorlan_user_can_access_purchase( $purchase_id, get_current_user_id() ) ) {
+        return new WP_Error( 'forbidden', 'No tienes permisos para ver esta compra.', array( 'status' => 403 ) );
+    }
 
 
     // Obtener publicacion asociada (o legado 'motor')
@@ -776,10 +783,21 @@ function motorlan_get_purchase_callback( WP_REST_Request $request ) {
         $published_price = (float) $publicacion_data['acf']['precio_de_venta'];
     }
 
+    // Obtener fecha de compra evitando comportamiento de ACF date_picker
+    $fecha_compra_raw = get_post_meta( $purchase_id, 'fecha_compra', true );
+    if ( empty( $fecha_compra_raw ) ) {
+        $purchase_post = get_post( $purchase_id );
+        $fecha_compra_raw = $purchase_post ? date_i18n( 'd/m/Y', strtotime( $purchase_post->post_date ) ) : '';
+    } else {
+        if ( preg_match( '/^\d{8}$/', $fecha_compra_raw ) ) {
+            $fecha_compra_raw = date_i18n( 'd/m/Y', strtotime( $fecha_compra_raw ) );
+        }
+    }
+
     $data = array(
         'uuid'         => $uuid,
         'title'        => get_the_title( $purchase_id ),
-        'fecha_compra' => get_field( 'fecha_compra', $purchase_id ),
+        'fecha_compra' => $fecha_compra_raw,
         'publicacion'  => $publicacion_data,
         'vendedor'     => get_field( 'vendedor', $purchase_id ),
         'comprador'    => get_field( 'comprador', $purchase_id ),
@@ -793,6 +811,7 @@ function motorlan_get_purchase_callback( WP_REST_Request $request ) {
         'offer_id'     => $offer_id,
         'offer'        => $offer_data,
         'precio_publicado' => $published_price,
+        'review_done'  => (bool) get_post_meta($purchase_id, '_review_by_buyer_done', true),
     );
 
     return new WP_REST_Response( array( 'data' => $data ), 200 );
@@ -888,6 +907,14 @@ function motorlan_add_purchase_message_callback( WP_REST_Request $request ) {
  * Add an opinion for a purchase.
  */
 function motorlan_add_purchase_opinion_callback( WP_REST_Request $request ) {
+    // Validate Content-Type
+    if ( function_exists( 'motorlan_validate_json_content_type' ) ) {
+        $valid_type = motorlan_validate_json_content_type( $request );
+        if ( is_wp_error( $valid_type ) ) {
+            return $valid_type;
+        }
+    }
+
     $uuid       = sanitize_text_field( $request['uuid'] );
     $valoracion = absint( $request->get_param( 'valoracion' ) );
     $comentario = sanitize_textarea_field( $request->get_param( 'comentario' ) );
@@ -904,6 +931,13 @@ function motorlan_add_purchase_opinion_callback( WP_REST_Request $request ) {
     }
 
     $purchase_id = $purchases[0]->ID;
+
+    // Validate if current user is the buyer of this purchase
+    $buyer_id = (int) ( get_field( 'comprador', $purchase_id ) ?: get_post_meta( $purchase_id, 'comprador_id', true ) );
+    if ( get_current_user_id() !== $buyer_id ) {
+        return new WP_Error( 'forbidden', 'Solo el comprador puede dejar una opinión.', array( 'status' => 403 ) );
+    }
+
     $related  = get_field( 'publicacion', $purchase_id );
     if ( ! $related ) {
         $related = get_field( 'motor', $purchase_id );

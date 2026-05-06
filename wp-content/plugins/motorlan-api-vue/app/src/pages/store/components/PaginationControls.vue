@@ -9,8 +9,15 @@ defineProps<{ totalPages: number }>()
     v-if="totalPages > 1"
     v-model="page"
     :length="totalPages"
-    :total-visible="5"
-    class="mt-6"
+    :total-visible="$vuetify.display.smAndDown ? 3 : 5"
+    class="mt-6 pagination-controls"
   />
 </template>
+
+<style scoped>
+.pagination-controls {
+  width: 100%;
+  justify-content: center;
+}
+</style>
 

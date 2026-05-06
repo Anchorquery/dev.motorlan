@@ -205,7 +205,7 @@
       "publication_type": "Type de Publication",
       "title": "Titre de la publication",
       "title_placeholder": "Titre",
-      "reference": "Type ou référence",
+      "reference": "Modèle",
       "reference_placeholder": "Référence",
       "brand": "Marque",
       "category": "Catégorie",
@@ -233,7 +233,9 @@
       "price_placeholder": "1000",
       "stock": "Stock",
       "stock_placeholder": "1",
-      "negotiable_price": "Prix négociable",
+      "negotiable_price": "Consulter le prix",
+      "consult_price": "Consulter le prix",
+      "consult_price_hint": "Si coché, le public verra \"Consulter le prix\". Vous continuerez à voir le prix comme référence.",
       "publish_acf": "Publier (ACF)",
       "publish_status_publish": "Publier",
       "publish_status_draft": "Brouillon"
@@ -301,6 +303,9 @@
       "warranty_request_success": "Demande de garantie réussie. Publication effectuée.",
       "warranty_request_error": "Erreur lors de la demande de garantie : {message}"
     }
+  },
+  "motor": {
+    "consult_price": "Consulter le prix"
   },
   "notifications": {
     "title": "Notifications",

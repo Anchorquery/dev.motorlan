@@ -16,6 +16,14 @@ if (!defined('WPINC')) {
  * @return WP_REST_Response|WP_Error
  */
 function motorlan_update_publicacion_status(WP_REST_Request $request) {
+    // Validate Content-Type
+    if ( function_exists( 'motorlan_validate_json_content_type' ) ) {
+        $valid_type = motorlan_validate_json_content_type( $request );
+        if ( is_wp_error( $valid_type ) ) {
+            return $valid_type;
+        }
+    }
+
     $post_id = $request->get_param('id');
     $params = $request->get_json_params();
     $new_status = $params['status'] ?? '';
@@ -69,23 +77,11 @@ function motorlan_update_publicacion_status(WP_REST_Request $request) {
 
     // Notificar a los admins si el estado es pending
     if ($new_status === 'pending' && !$is_admin) {
-        if (class_exists('Motorlan_Notification_Manager')) {
-            $notification_manager = new Motorlan_Notification_Manager();
-            $admins = get_users(['role' => 'administrator']);
-            foreach ($admins as $admin) {
-                $notification_manager->create_notification(
-                    $admin->ID,
-                    'pending_approval',
-                    'Solicitud de publicación',
-                    'El usuario ' . wp_get_current_user()->display_name . ' ha solicitado publicar "' . get_the_title($post_id) . '".',
-                    [
-                        'post_id' => $post_id,
-                        'url' => '/dashboard/admin/approvals',
-                    ],
-                    ['web', 'email']
-                );
-            }
-        }
+        do_action( 'motorlan_publication_pending_approval', $post_id );
+    }
+
+    if ($new_status === 'sold') {
+        do_action( 'motorlan_publication_sold_manually', $post_id );
     }
 
     return new WP_REST_Response(['message' => 'Status updated successfully', 'new_status' => $new_status], 200);

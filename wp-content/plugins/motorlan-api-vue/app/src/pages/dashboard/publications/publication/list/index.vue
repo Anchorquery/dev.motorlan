@@ -7,10 +7,12 @@ import type { ImagenDestacada, Publicacion } from '../../../../../interfaces/pub
 import { useApi } from '@/composables/useApi'
 import { debounce } from '@/utils/debounce'
 import { useUserStore } from '@/@core/stores/user'
+import { useMotorFormatter } from '@/composables/useMotorFormatter'
 
 const { t } = useI18n()
 const router = useRouter()
 const userStore = useUserStore()
+const { formatMotorName } = useMotorFormatter()
 
 const headers = [
   { title: t('publication_list.publication'), value: 'publicacion' },
@@ -253,9 +255,14 @@ const changeStatus = () => {
   })
 }
 
-const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail'): string => {
-  let imageObj: ImagenDestacada | null = null
+const getImageBySize = (image: any, size = 'thumbnail'): string => {
+  if (!image)
+    return ''
+  
+  if (typeof image === 'string')
+    return image
 
+  let imageObj: ImagenDestacada | null = null
   if (Array.isArray(image) && image.length > 0)
     imageObj = image[0]
   else if (image && !Array.isArray(image))
@@ -308,7 +315,7 @@ const canEdit = (item: any) => {
       </VCardTitle>
 
       <VCardText class="pa-6">
-        <VRow>
+        <VRow class="publication-list-toolbar">
            <VCol cols="12" md="4">
               <AppTextField
                 v-model="searchQuery"
@@ -368,7 +375,7 @@ const canEdit = (item: any) => {
 
       <VDivider />
 
-      <div class="px-6 py-4 d-flex align-center justify-space-between flex-wrap gap-4">
+      <div class="px-6 py-4 d-flex align-center justify-space-between flex-wrap gap-4 publication-list-actions">
          <div class="d-flex align-center gap-2">
             <AppSelect
             v-model="itemsPerPage"
@@ -411,6 +418,7 @@ const canEdit = (item: any) => {
        <VDivider />
 
       <!-- 👉 Datatable  -->
+      <div class="publication-table-shell">
       <VDataTableServer
         v-model:items-per-page="itemsPerPage"
         v-model:model-value="selectedRows"
@@ -427,21 +435,27 @@ const canEdit = (item: any) => {
       >
        <!-- publicacion  -->
        <template #item.publicacion="{ item }">
-         <div class="d-flex align-center gap-3 py-2">
-            <VAvatar
-              v-if="(item as any).imagen_destacada"
-              size="48"
-              variant="tonal"
-              rounded
-              class="border"
-              :image="getImageBySize((item as any).imagen_destacada, 'thumbnail')"
-            />
-            <div class="d-flex flex-column">
-              <span class="text-body-1 font-weight-medium text-high-emphasis">{{ (item as any).title }}</span>
-              <span class="text-caption text-medium-emphasis">{{ (item as any).acf.marca?.name }}</span>
-            </div>
-          </div>
-        </template>
+          <div class="d-flex align-center gap-3 py-2" style="max-width: 280px;">
+             <VAvatar
+               v-if="(item as any).imagen_destacada"
+               size="48"
+               variant="tonal"
+               rounded
+               class="border flex-shrink-0"
+               :image="getImageBySize((item as any).imagen_destacada, 'thumbnail')"
+             />
+             <div class="d-flex flex-column overflow-hidden">
+               <span 
+                 class="text-body-1 font-weight-medium text-high-emphasis text-truncate"
+                 style="max-width: 200px;"
+               >
+                 {{ formatMotorName(item as any) || (item as any).title }}
+                 <VTooltip activator="parent" location="top">{{ formatMotorName(item as any) || (item as any).title }}</VTooltip>
+               </span>
+               <span class="text-caption text-medium-emphasis">{{ (item as any).acf.marca?.name }}</span>
+             </div>
+           </div>
+         </template>
 
         <!-- referencia -->
         <template #item.referencia="{ item }">
@@ -450,7 +464,9 @@ const canEdit = (item: any) => {
 
         <!-- precio -->
         <template #item.precio="{ item }">
-          <span class="text-body-1 text-primary font-weight-bold">{{ (item as any).acf.precio_de_venta }}€</span>
+          <span v-if="(item as any).acf.precio_negociable === 'yes' || (item as any).acf.precio_negociable === true" class="text-body-1 text-warning font-weight-bold">Consultar precio</span>
+          <span v-else-if="(item as any).acf.precio_de_venta" class="text-body-1 text-primary font-weight-bold">{{ (item as any).acf.precio_de_venta }}€</span>
+          <span v-else class="text-body-2 text-medium-emphasis">-</span>
         </template>
 
         <!-- status -->
@@ -469,6 +485,18 @@ const canEdit = (item: any) => {
         <!-- Actions -->
         <template #item.actions="{ item }">
           <div class="d-flex justify-end gap-2">
+            <IconBtn
+              v-if="(item as any).status === 'publish'"
+              color="success"
+              variant="tonal"
+              size="small"
+              :href="`/marketplace-motorlan/${(item as any).slug}/`"
+              target="_blank"
+            >
+              <VIcon icon="tabler-eye" size="18" />
+              <VTooltip activator="parent" location="top">{{ t('Ver Publicación') }}</VTooltip>
+            </IconBtn>
+
             <IconBtn 
               :color="canEdit(item) ? 'primary' : 'warning'" 
               variant="tonal" 
@@ -512,7 +540,10 @@ const canEdit = (item: any) => {
                     <VListItemTitle>{{ t('publication_list.duplicate') }}</VListItemTitle>
                   </VListItem>
 
-                  <VDivider v-if="(item as any).status !== 'publish' || (item as any).status !== 'paused' || (item as any).status !== 'draft'" class="my-1" />
+                  <VDivider
+                    v-if="!['publish', 'paused', 'draft'].includes((item as any).status)"
+                    class="my-1"
+                  />
 
                   <VListItem
                     v-if="(item as any).status !== 'publish'"
@@ -576,6 +607,7 @@ const canEdit = (item: any) => {
           />
         </template>
       </VDataTableServer>
+      </div>
     </VCard>
 
     <!-- 👉 Loading overlay -->
@@ -735,3 +767,32 @@ const canEdit = (item: any) => {
     </VDialog>
   </div>
 </template>
+
+<style scoped>
+.publication-table-shell {
+  overflow-x: auto;
+}
+
+.publication-list-toolbar {
+  row-gap: 1rem;
+}
+
+.publication-list-actions {
+  row-gap: 0.75rem;
+}
+
+@media (max-width: 959px) {
+  .publication-list-toolbar :deep(.v-col),
+  .publication-list-actions > * {
+    width: 100%;
+  }
+
+  .publication-list-actions {
+    align-items: stretch;
+  }
+
+  .publication-list-actions .v-btn {
+    width: 100%;
+  }
+}
+</style>
