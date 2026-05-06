@@ -19,6 +19,7 @@ interface Author {
 interface PublicationItem {
   id: number
   uuid: string
+  slug: string
   title: string
   status: string
   date: string

@@ -134,8 +134,8 @@ const getImageBySize = (image: any, size = 'thumbnail'): string => {
 
 <template>
   <VCard class="motor-card-enhanced">
-    <VCardText class="pa-6">
-      <VRow>
+    <VCardText class="pa-6 questions-toolbar">
+      <VRow class="ga-3">
         <VCol cols="12" sm="4">
           <AppTextField
             v-model="searchQuery"
@@ -166,6 +166,7 @@ const getImageBySize = (image: any, size = 'thumbnail'): string => {
 
     <VDivider />
 
+    <div class="questions-table-shell">
     <VDataTableServer
       v-model:items-per-page="itemsPerPage"
       v-model:page="page"
@@ -219,11 +220,11 @@ const getImageBySize = (image: any, size = 'thumbnail'): string => {
       </template>
 
       <template #item.actions="{ item }: { item: any }">
-        <div class="d-flex gap-1">
+        <div class="d-flex gap-1 flex-wrap questions-actions">
           <!-- Reply Dialog -->
           <VDialog
             v-if="!item.respuesta"
-            max-width="600px"
+            :max-width="$vuetify.display.smAndDown ? 360 : 600"
           >
             <template #activator="{ props }">
               <IconBtn 
@@ -303,7 +304,7 @@ const getImageBySize = (image: any, size = 'thumbnail'): string => {
           <!-- View Dialog -->
           <VDialog
             v-if="item.respuesta"
-            max-width="600px"
+            :max-width="$vuetify.display.smAndDown ? 360 : 600"
           >
             <template #activator="{ props }">
               <IconBtn 
@@ -385,5 +386,24 @@ const getImageBySize = (image: any, size = 'thumbnail'): string => {
         />
       </template>
     </VDataTableServer>
+    </div>
   </VCard>
 </template>
+
+<style scoped>
+.questions-table-shell {
+  overflow-x: auto;
+}
+
+@media (max-width: 959px) {
+  .questions-toolbar :deep(.v-col),
+  .questions-toolbar :deep(.v-field),
+  .questions-toolbar :deep(.v-btn) {
+    width: 100%;
+  }
+
+  .questions-actions {
+    width: 100%;
+  }
+}
+</style>

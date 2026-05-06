@@ -308,7 +308,7 @@ const canEdit = (item: any) => {
       </VCardTitle>
 
       <VCardText class="pa-6">
-        <VRow>
+        <VRow class="publication-list-toolbar">
            <VCol cols="12" md="4">
               <AppTextField
                 v-model="searchQuery"
@@ -368,7 +368,7 @@ const canEdit = (item: any) => {
 
       <VDivider />
 
-      <div class="px-6 py-4 d-flex align-center justify-space-between flex-wrap gap-4">
+      <div class="px-6 py-4 d-flex align-center justify-space-between flex-wrap gap-4 publication-list-actions">
          <div class="d-flex align-center gap-2">
             <AppSelect
             v-model="itemsPerPage"
@@ -411,6 +411,7 @@ const canEdit = (item: any) => {
        <VDivider />
 
       <!-- 👉 Datatable  -->
+      <div class="publication-table-shell">
       <VDataTableServer
         v-model:items-per-page="itemsPerPage"
         v-model:model-value="selectedRows"
@@ -512,7 +513,10 @@ const canEdit = (item: any) => {
                     <VListItemTitle>{{ t('publication_list.duplicate') }}</VListItemTitle>
                   </VListItem>
 
-                  <VDivider v-if="(item as any).status !== 'publish' || (item as any).status !== 'paused' || (item as any).status !== 'draft'" class="my-1" />
+                  <VDivider
+                    v-if="!['publish', 'paused', 'draft'].includes((item as any).status)"
+                    class="my-1"
+                  />
 
                   <VListItem
                     v-if="(item as any).status !== 'publish'"
@@ -576,6 +580,7 @@ const canEdit = (item: any) => {
           />
         </template>
       </VDataTableServer>
+      </div>
     </VCard>
 
     <!-- 👉 Loading overlay -->
@@ -735,3 +740,32 @@ const canEdit = (item: any) => {
     </VDialog>
   </div>
 </template>
+
+<style scoped>
+.publication-table-shell {
+  overflow-x: auto;
+}
+
+.publication-list-toolbar {
+  row-gap: 1rem;
+}
+
+.publication-list-actions {
+  row-gap: 0.75rem;
+}
+
+@media (max-width: 959px) {
+  .publication-list-toolbar :deep(.v-col),
+  .publication-list-actions > * {
+    width: 100%;
+  }
+
+  .publication-list-actions {
+    align-items: stretch;
+  }
+
+  .publication-list-actions .v-btn {
+    width: 100%;
+  }
+}
+</style>
