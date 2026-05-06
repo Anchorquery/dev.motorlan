@@ -145,10 +145,22 @@ function motorlan_approve_publication_callback($request) {
         delete_post_meta($post_id, '_pending_brand_name');
     }
 
-    $result = wp_update_post([
+    // Regenerar slug y título para reflejar la marca aprobada
+    $new_slug  = motorlan_generate_slug_by_post_id($post_id);
+    $new_title = motorlan_format_motor_name($post_id);
+
+    $update_data = [
         'ID'          => $post_id,
         'post_status' => 'publish',
-    ]);
+    ];
+    if ($new_slug) {
+        $update_data['post_name'] = $new_slug;
+    }
+    if ($new_title) {
+        $update_data['post_title'] = $new_title;
+    }
+
+    $result = wp_update_post($update_data);
 
     if (is_wp_error($result)) {
         return $result;

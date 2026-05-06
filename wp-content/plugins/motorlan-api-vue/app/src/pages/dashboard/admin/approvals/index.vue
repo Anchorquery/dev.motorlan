@@ -90,7 +90,7 @@ onMounted(() => {
 <template>
   <div>
     <VCard class="motor-card-enhanced overflow-visible">
-      <VCardTitle class="pa-6 pb-0">
+      <VCardTitle class="pa-6 pb-0 admin-approvals-header">
         <div class="d-flex align-center gap-3">
           <VAvatar size="40" color="primary" variant="tonal">
             <VIcon icon="tabler-shield-check" />
@@ -104,6 +104,7 @@ onMounted(() => {
 
       <VDivider class="mt-4" />
 
+      <div class="admin-approvals-table-shell">
       <VDataTable
         :headers="headers"
         :items="publications"
@@ -166,7 +167,7 @@ onMounted(() => {
 
         <!-- Actions -->
         <template #item.actions="{ item }">
-            <div class="d-flex gap-2">
+          <div class="d-flex gap-2 flex-wrap admin-approvals-actions">
             <VBtn
               color="success"
               variant="tonal"
@@ -221,6 +222,7 @@ onMounted(() => {
           </div>
         </template>
       </VDataTable>
+      </div>
     </VCard>
 
     <!-- 👉 Reject Dialog -->
@@ -270,6 +272,31 @@ onMounted(() => {
     </VDialog>
   </div>
 </template>
+
+<style scoped>
+.admin-approvals-table-shell {
+  overflow-x: auto;
+}
+
+.admin-approvals-actions :deep(.v-btn),
+.admin-approvals-actions :deep(.icon-btn) {
+  min-height: 36px;
+}
+
+@media (max-width: 959px) {
+  .admin-approvals-header {
+    align-items: flex-start;
+  }
+
+  .admin-approvals-actions {
+    width: 100%;
+  }
+
+  .admin-approvals-actions :deep(.v-btn) {
+    width: 100%;
+  }
+}
+</style>
 
 <style scoped>
 .text-premium-title {

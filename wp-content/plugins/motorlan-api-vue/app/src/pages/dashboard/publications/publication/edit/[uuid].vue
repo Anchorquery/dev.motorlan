@@ -34,6 +34,15 @@ const isLoading = ref(false)
 const activeTab = ref(0)
 const postId = ref<number | null>(null)
 
+// Snapshot de campos que afectan slug/URL para detectar cambios
+const originalSlugFields = ref({ title: '', tipo_o_referencia: '', potencia: '' })
+
+const slugFieldsChanged = computed(() => {
+    return formState.value.title !== originalSlugFields.value.title
+        || formState.value.acf.tipo_o_referencia !== originalSlugFields.value.tipo_o_referencia
+        || String(formState.value.acf.potencia ?? '') !== originalSlugFields.value.potencia
+})
+
 // Data for selects
 // Data for selects
 const marcas = ref<{ title: string; value: number }[]>([])
@@ -138,7 +147,14 @@ const fetchPublication = async (uuid: string) => {
         if (typeof mappedState.acf.estado_del_articulo === 'string' && conditionMap[mappedState.acf.estado_del_articulo]) mappedState.acf.estado_del_articulo = conditionMap[mappedState.acf.estado_del_articulo]
 
         setFormState(mappedState)
-        
+
+        // Guardar snapshot de campos que afectan slug
+        originalSlugFields.value = {
+            title: mappedState.title || '',
+            tipo_o_referencia: mappedState.acf.tipo_o_referencia || '',
+            potencia: String(mappedState.acf.potencia ?? ''),
+        }
+
     } catch (e) {
         console.error(e)
         showToast(t('edit_publication.fetch_error', 'Error al cargar publicación'), 'error')
@@ -232,11 +248,23 @@ const updatePublication = async (status: string) => {
         formData.append('documentacion_adicional_nombres', JSON.stringify(newDocNames))
         
         // API Call
-        await useApi(`/wp-json/motorlan/v1/publicaciones/uuid/${motorUuid}`, {
+        const { data: responseData } = await useApi(`/wp-json/motorlan/v1/publicaciones/uuid/${motorUuid}`, {
             method: 'POST',
             body: formData
-        })
-        
+        }).json()
+
+        // Actualizar slug con el valor real del backend
+        if (responseData.value?.slug) {
+            formState.value.slug = responseData.value.slug
+        }
+
+        // Actualizar snapshot para que el aviso de URL desaparezca
+        originalSlugFields.value = {
+            title: formState.value.title || '',
+            tipo_o_referencia: formState.value.acf.tipo_o_referencia || '',
+            potencia: String(formState.value.acf.potencia ?? ''),
+        }
+
         showToast(t('edit_publication.update_success', 'Publicación actualizada'), 'success')
         
     } catch (e: any) {
@@ -330,14 +358,14 @@ const statusColor = computed(() => {
     <VForm ref="formRef" v-model="isFormValid" @submit.prevent :disabled="isReadOnly">
         
         <!-- Header -->
-        <div class="d-flex flex-wrap justify-space-between gap-4 mb-6 align-center">
+        <div class="edit-publication-header d-flex flex-wrap justify-space-between gap-4 mb-6 align-center">
             <VCardTitle class="pa-6 pb-0">
           <div class="d-flex justify-space-between align-center flex-wrap gap-4">
             <span class="text-h5 font-weight-bold text-premium-title">{{ pageTitle }}</span>
             <span class="text-caption text-medium-emphasis">Los campos marcados con <span class="text-error">*</span> son obligatorios</span>
           </div>
         </VCardTitle>
-            <div class="d-flex gap-4">
+            <div class="edit-publication-header__actions d-flex gap-4 flex-wrap">
                  <VBtn 
                     variant="tonal" 
                     color="secondary"
@@ -369,7 +397,12 @@ const statusColor = computed(() => {
              <VCol cols="12" md="8">
                  <!-- Tabs for better organization in Edit mode -->
                 <VCard class="mb-6">
-                    <VTabs v-model="activeTab" grow color="primary">
+                    <VTabs
+                      v-model="activeTab"
+                      grow
+                      color="primary"
+                      class="edit-publication-tabs"
+                    >
                         <VTab :value="0"><VIcon start icon="tabler-info-circle"/> {{ t('edit_publication.tabs.basic', 'Básico') }}</VTab>
                         <VTab :value="1"><VIcon start icon="tabler-list-details"/> {{ t('edit_publication.tabs.specs', 'Especificaciones') }}</VTab>
                         <VTab :value="2"><VIcon start icon="tabler-photo"/> {{ t('edit_publication.tabs.media', 'Multimedia') }}</VTab>
@@ -433,7 +466,7 @@ const statusColor = computed(() => {
              <VCol cols="12" md="4">
                   <!-- Maybe some analytics or quick status info here -->
                   <!-- Publication Summary Sidebar -->
-                  <VCard class="mb-6">
+                  <VCard class="mb-6 edit-publication-sidebar">
                        <VCardItem class="pb-4">
                            <template #prepend>
                                <div class="d-flex align-center justify-center rounded bg-light-primary" style="width: 80px; height: 80px; overflow: hidden;">
@@ -492,10 +525,19 @@ const statusColor = computed(() => {
                        
                        <VDivider />
                        
-                       <VCardActions class="pa-4">
-                            <VBtn 
-                                block 
-                                variant="outlined" 
+                       <VCardActions class="pa-4 flex-column ga-2">
+                            <VAlert
+                                v-if="slugFieldsChanged"
+                                type="info"
+                                density="compact"
+                                variant="tonal"
+                                class="w-100 mb-1"
+                            >
+                                La URL se actualizara al guardar
+                            </VAlert>
+                            <VBtn
+                                block
+                                variant="outlined"
                                 :href="`/marketplace-motorlan/${formState.slug || ''}/`"
                                 target="_blank"
                                 prepend-icon="tabler-external-link"
@@ -511,3 +553,46 @@ const statusColor = computed(() => {
     </VForm>
   </div>
 </template>
+
+<style scoped>
+.edit-publication-wrapper {
+  max-width: 100%;
+}
+
+.edit-publication-header__actions {
+  width: 100%;
+}
+
+.edit-publication-header__actions :deep(.v-btn) {
+  min-width: 160px;
+  flex: 1 1 160px;
+}
+
+.edit-publication-tabs {
+  overflow-x: auto;
+}
+
+.edit-publication-sidebar {
+  position: sticky;
+  top: 1.5rem;
+}
+
+@media (max-width: 959px) {
+  .edit-publication-header {
+    align-items: stretch;
+  }
+
+  .edit-publication-header :deep(.v-card-title) {
+    width: 100%;
+    padding: 0;
+  }
+
+  .edit-publication-header__actions :deep(.v-btn) {
+    width: 100%;
+  }
+
+  .edit-publication-sidebar {
+    position: static;
+  }
+}
+</style>

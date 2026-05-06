@@ -283,5 +283,9 @@ function motorlan_update_publicacion_by_uuid(WP_REST_Request $request) {
     }
     update_field('documentacion_adicional', $uploaded_docs, $post_id);
 
-    return new WP_REST_Response(['message' => 'Publicación actualizada correctamente'], 200);
+    $updated_post = get_post($post_id);
+    return new WP_REST_Response([
+        'message' => 'Publicación actualizada correctamente',
+        'slug'    => $updated_post->post_name,
+    ], 200);
 }

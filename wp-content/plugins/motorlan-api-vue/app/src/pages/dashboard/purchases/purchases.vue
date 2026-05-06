@@ -195,31 +195,31 @@ const goToProduct = (pub: any) => {
     id="purchase-list"
     title="Mis Compras"
   >
-    <VCardText>
-      <div class="d-flex flex-wrap gap-4">
-        <div class="d-flex align-center">
+    <VCardText class="purchase-toolbar">
+      <VRow class="ga-3">
+        <VCol cols="12" md="8">
           <!-- 👉 Search  -->
           <AppTextField
             v-model="searchQuery"
-            placeholder="Buscar Compra"
-            style="inline-size: 200px;"
-            class="me-3"
+            placeholder="Buscar compra"
+            prepend-inner-icon="tabler-search"
+            clearable
           />
-        </div>
+        </VCol>
 
-        <VSpacer />
-        <div class="d-flex gap-4 flex-wrap align-center">
+        <VCol cols="12" md="4" class="d-flex justify-md-end">
           <AppSelect
             v-model="itemsPerPage"
             :items="[5, 10, 20, 25, 50]"
           />
-        </div>
-      </div>
+        </VCol>
+      </VRow>
     </VCardText>
 
     <VDivider />
 
     <!-- 👉 Datatable  -->
+    <div class="purchase-table-shell">
     <VDataTableServer
       v-model:items-per-page="itemsPerPage"
       v-model:page="page"
@@ -343,5 +343,19 @@ const goToProduct = (pub: any) => {
         />
       </template>
     </VDataTableServer>
+    </div>
   </VCard>
 </template>
+
+<style scoped>
+.purchase-table-shell {
+  overflow-x: auto;
+}
+
+@media (max-width: 959px) {
+  .purchase-toolbar :deep(.v-field),
+  .purchase-toolbar :deep(.v-btn) {
+    width: 100%;
+  }
+}
+</style>
