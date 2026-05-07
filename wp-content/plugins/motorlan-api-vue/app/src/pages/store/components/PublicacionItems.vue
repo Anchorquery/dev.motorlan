@@ -24,14 +24,13 @@ defineProps<{ publicaciones: Publicacion[]; loading: boolean }>()
       <VCol
         v-for="publicacion in publicaciones"
         :key="publicacion.id"
-        cols="12"
-        sm="6"
+        cols="6"
         lg="4"
         xl="3"
         class="d-flex"
       >
         <VCard class="motor-card-enhanced flex-grow-1">
-          <VCardText class="pa-4 d-flex flex-column h-100">
+          <VCardText class="pa-2 pa-sm-4 d-flex flex-column h-100">
             <div class="motor-image mb-4">
               <VImg
                 :src="(!Array.isArray(publicacion.imagen_destacada) && publicacion.imagen_destacada?.url) || '/placeholder.png'"
@@ -46,15 +45,12 @@ defineProps<{ publicaciones: Publicacion[]; loading: boolean }>()
               {{ publicacion.title }}
             </div>
 
-            <div class="text-body-2 text-medium-emphasis mb-4 motor-card__meta">
-              Explora los detalles de esta publicacion y revisa disponibilidad, caracteristicas y contacto.
-            </div>
-
             <div class="mt-auto pt-2 d-flex justify-end align-center">
               <VBtn
                 color="error"
                 variant="tonal"
-                class="rounded-pill px-6 font-weight-medium"
+                class="rounded-pill font-weight-medium px-2 px-sm-6"
+                size="small"
                 :to="`/${publicacion.slug}`"
               >
                 Ver detalle
@@ -112,7 +108,4 @@ defineProps<{ publicaciones: Publicacion[]; loading: boolean }>()
   min-height: 2.5em;
 }
 
-.motor-card__meta {
-  line-height: 1.5;
-}
 </style>

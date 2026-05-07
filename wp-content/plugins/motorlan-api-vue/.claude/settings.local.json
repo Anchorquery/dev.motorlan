@@ -1,12 +1,19 @@
 {
   "permissions": {
     "allow": [
-      "Bash(php -l:*)",
-      "Bash(more:*)",
-      "Bash(wp eval \"echo admin_url\\(''admin.php?page=motorlan-migration''\\);\")",
-      "Bash(find \"C:/laragon/www/dev.motorlan/wp-content/plugins/motorlan-api-vue/app/src\" -type f \\\\\\( -name \"*store*\" -o -name \"*locales*\" -o -name \"*i18n*\" \\\\\\) 2>/dev/null | head -20)",
-      "Bash(find \"C:\\\\laragon\\\\www\\\\dev.motorlan\\\\wp-content\\\\plugins\\\\motorlan-api-vue\" -type f \\\\\\( -name \"*.php\" -o -name \"*marcas*\" -o -name \"*publication*\" \\\\\\) | grep -E \"\\\\.\\(php|js|ts\\)$\" | head -40)",
-      "Bash(cd:*)"
+      "Bash(npx vue-tsc *)",
+      "Bash(.\\\\node_modules\\\\.bin\\\\vite build *)",
+      "Bash(npx vite *)",
+      "Bash(yarn install *)",
+      "Bash(python3 -c \"import sys,json; p=json.load\\(sys.stdin\\); print\\('scripts:', list\\(p.get\\('scripts',{}\\).keys\\(\\)\\)\\)\")",
+      "Bash(cd \"C:/laragon/www/dev.motorlan\" && find . -name \"*.log\" -newer wp-config.php 2>/dev/null | head -5)",
+      "Bash(cat \"C:/laragon/www/dev.motorlan/wp-content/debug.log\" 2>/dev/null | tail -30 || cat \"C:/laragon/tmp/php_error.log\" 2>/dev/null | tail -30 || echo \"no log found\")",
+      "Bash(ls \"C:/laragon/tmp/\" 2>/dev/null | grep -i log; ls \"C:/laragon/logs/\" 2>/dev/null | grep -i php; ls \"C:/laragon/etc/apache2/logs/\" 2>/dev/null | head -5)",
+      "Bash(php -l \"C:/laragon/www/dev.motorlan/wp-content/plugins/motorlan-api-vue/includes/vue-app-setup.php\")",
+      "Bash(php -l \"C:/laragon/www/dev.motorlan/wp-content/plugins/motorlan-api-vue/includes/api/purchases-routes.php\")",
+      "Bash(php -l \"C:/laragon/www/dev.motorlan/wp-content/plugins/motorlan-api-vue/motorlan-api-vue.php\")",
+      "Bash(xargs -I{} php -l {})",
+      "Bash(node_modules/.bin/vite build *)"
     ]
   }
 }

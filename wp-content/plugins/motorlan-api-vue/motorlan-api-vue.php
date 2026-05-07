@@ -3,7 +3,7 @@
  * Plugin Name: motorlan-api-vue
  * Plugin URI:  https://motorlan.com
  * Description: API para conectar con VUE
- * Version:     1.2
+ * Version:     1.3
  * Author:      Adaki - Daniel H
  * Author URI:  https://motorlan.com
  */
@@ -17,7 +17,7 @@ if ( ! defined( 'WPINC' ) ) {
 
 
 // Define plugin constants
-define( 'MOTORLAN_API_VUE_VERSION', '1.2' );
+define( 'MOTORLAN_API_VUE_VERSION', '1.3' );
 define( 'MOTORLAN_API_VUE_PATH', plugin_dir_path( __FILE__ ) );
 define( 'MOTORLAN_API_VUE_URL', plugin_dir_url( __FILE__ ) );
 

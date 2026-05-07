@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { ref, watch, computed, onMounted } from 'vue'
+import { useDisplay } from 'vuetify'
 import { useRouter } from 'vue-router'
 import { createUrl } from '@/@core/composable/createUrl'
 import { useApi } from '@/composables/useApi'
 import type { ImagenDestacada } from '@/interfaces/publicacion'
-import RatingModal from '@/components/RatingModal.vue'
 
 const router = useRouter()
+const display = useDisplay()
+const isMobile = computed(() => display.smAndDown.value)
 
 const normalizeStatus = (status: string) => status?.toLowerCase() ?? ''
 
@@ -25,25 +27,6 @@ const itemsPerPage = ref(10)
 const page = ref(1)
 const sortBy = ref()
 const orderBy = ref()
-
-// Rating Flow
-const showRatingModal = ref(false)
-const selectedPurchaseUuid = ref('')
-const selectedSellerName = ref('')
-
-const handleRateSeller = (item: any) => {
-  selectedPurchaseUuid.value = item.uuid
-  // Attempt to resolve seller name (fallback to generic)
-  // item.vendedor is usually ID or object, backend normalization helps but not always present here as name
-  // If we had seller object in item.vendedor, we could use display_name
-  selectedSellerName.value = 'al Vendedor' 
-  showRatingModal.value = true
-}
-
-const handleRatingSuccess = () => {
-  fetchPurchases() // Refresh list to update review_done status
-}
-
 
 // Update data table options
 const updateOptions = (options: any) => {
@@ -124,20 +107,20 @@ const totalPurchases = computed(() => {
   return 0
 })
 
-const getImageBySize = (image: any, size = 'thumbnail'): string => {
-  if (!image)
-    return ''
-  if (typeof image === 'string')
-    return image
+const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail'): string => {
   let imageObj: ImagenDestacada | null = null
+
   if (Array.isArray(image) && image.length > 0)
     imageObj = image[0]
   else if (image && !Array.isArray(image))
     imageObj = image as ImagenDestacada
+
   if (!imageObj)
     return ''
+
   if (imageObj.sizes && imageObj.sizes[size])
     return imageObj.sizes[size] as string
+
   return imageObj.url || ''
 }
 
@@ -169,7 +152,13 @@ const resolveBrandName = (value: any): string | null => {
 const formatPublicationTitle = (pub: any): string => {
   if (!pub)
     return ''
-  return pub.title || ''
+  const acf = pub.acf || {}
+  const parts = [
+    pub.title,
+    resolveBrandName(acf.marca),
+    acf.velocidad ? `${acf.velocidad} rpm` : null,
+  ].filter(Boolean) as string[]
+  return parts.join(' • ')
 }
 
 const resolvePurchaseType = (item: any): { text: string; color: string } => {
@@ -182,11 +171,14 @@ const resolvePurchaseType = (item: any): { text: string; color: string } => {
   return { text: 'Directa', color: 'success' }
 }
 
-// Navegación a la tienda (URL absoluta para cross-base)
-const goToProduct = (pub: any) => {
-  if (pub?.slug) {
-    window.open(`/marketplace-motorlan/${pub.slug}/`, '_blank')
-  }
+const goToPurchase = (item: any) => {
+  router.push(`/dashboard/purchases/${item.uuid}`)
+}
+
+const goToPublication = (item: any) => {
+  const slug = (item.publicacion || item.motor)?.slug
+  if (slug)
+    router.push({ name: 'store-slug', params: { slug } })
 }
 </script>
 
@@ -218,132 +210,204 @@ const goToProduct = (pub: any) => {
 
     <VDivider />
 
-    <!-- 👉 Datatable  -->
-    <div class="purchase-table-shell">
-    <VDataTableServer
-      v-model:items-per-page="itemsPerPage"
-      v-model:page="page"
-      :headers="headers"
-      :items="purchases"
-      :items-length="totalPurchases"
-      :loading="isTableLoading"
-      class="text-no-wrap"
-      @update:options="updateOptions"
-    >
-      <!-- Publicación -->
-      <template #item.publicacion="{ item }">
-        <div
-          v-if="item.publicacion || item.motor"
-          class="d-flex align-center gap-x-4"
-          style="max-width: 280px;"
-        >
-          <VAvatar
-            v-if="(item.publicacion || item.motor)?.imagen_destacada"
-            size="38"
-            variant="tonal"
-            rounded
-            class="flex-shrink-0"
-            :image="getImageBySize((item.publicacion || item.motor).imagen_destacada, 'thumbnail')"
+    <template v-if="isMobile">
+      <div class="purchase-cards-shell">
+        <VRow class="ga-4">
+          <VCol
+            v-for="item in purchases"
+            :key="item.uuid"
+            cols="12"
+          >
+            <VCard class="purchase-card-mobile">
+              <VCardText class="pa-4">
+                <div class="d-flex align-start gap-3">
+                  <VAvatar
+                    v-if="(item.publicacion || item.motor)?.imagen_destacada"
+                    size="52"
+                    variant="tonal"
+                    rounded
+                    :image="getImageBySize((item.publicacion || item.motor).imagen_destacada, 'thumbnail')"
+                  />
+                  <div class="flex-grow-1">
+                    <div
+                      class="text-subtitle-1 font-weight-bold text-high-emphasis mb-1 cursor-pointer"
+                      @click="goToPublication(item)"
+                    >
+                      {{ formatPublicationTitle(item.publicacion || item.motor) }}
+                    </div>
+                    <div
+                      v-if="(item.publicacion || item.motor)?.acf?.tipo_o_referencia"
+                      class="text-body-2 text-medium-emphasis"
+                    >
+                      Ref: {{ (item.publicacion || item.motor).acf.tipo_o_referencia }}
+                    </div>
+                  </div>
+                </div>
+
+                <VDivider class="my-4" />
+
+                <div class="purchase-card-mobile__meta">
+                  <div>
+                    <div class="text-caption text-medium-emphasis text-uppercase">
+                      Fecha
+                    </div>
+                    <div class="text-body-2 font-weight-medium">
+                      {{ item.fecha_compra }}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div class="text-caption text-medium-emphasis text-uppercase">
+                      Tipo
+                    </div>
+                    <VChip
+                      v-bind="resolvePurchaseType(item)"
+                      density="comfortable"
+                      label
+                      size="small"
+                    />
+                  </div>
+
+                  <div>
+                    <div class="text-caption text-medium-emphasis text-uppercase">
+                      Estado
+                    </div>
+                    <VChip
+                      v-bind="resolveStatus(item.estado)"
+                      density="comfortable"
+                      label
+                      size="small"
+                    />
+                  </div>
+                </div>
+
+                <div class="d-flex gap-2 mt-4">
+                  <VBtn
+                    block
+                    color="primary"
+                    variant="tonal"
+                    prepend-icon="tabler-eye"
+                    @click="goToPurchase(item)"
+                  >
+                    Ver detalle
+                  </VBtn>
+                  <VBtn
+                    block
+                    color="secondary"
+                    variant="tonal"
+                    prepend-icon="tabler-external-link"
+                    :disabled="!(item.publicacion || item.motor)?.slug"
+                    @click="goToPublication(item)"
+                  >
+                    Ver publicación
+                  </VBtn>
+                </div>
+              </VCardText>
+            </VCard>
+          </VCol>
+        </VRow>
+
+        <div class="mt-4">
+          <TablePagination
+            v-model:page="page"
+            :items-per-page="itemsPerPage"
+            :total-items="totalPurchases"
           />
-          <div class="d-flex flex-column overflow-hidden">
-            <span
-              class="text-body-1 font-weight-medium text-high-emphasis cursor-pointer text-truncate"
-              style="max-width: 200px;"
-              @click="() => {
-                const pub = item.publicacion || item.motor
-                if (pub) goToProduct(pub)
-              }"
-            >
-              {{ formatPublicationTitle(item.publicacion || item.motor) }}
-              <VTooltip activator="parent" location="top">{{ formatPublicationTitle(item.publicacion || item.motor) }}</VTooltip>
-            </span>
-            <span
-              v-if="(item.publicacion || item.motor)?.acf?.tipo_o_referencia"
-              class="text-body-2 text-medium-emphasis"
-              >Ref: {{ (item.publicacion || item.motor).acf.tipo_o_referencia }}</span>
-          </div>
         </div>
-      </template>
+      </div>
+    </template>
 
-      <!-- fecha_compra -->
-      <template #item.fecha_compra="{ item }">
-        <span class="text-body-1 text-high-emphasis">{{ item.fecha_compra }}</span>
-      </template>
-
-      <!-- tipo_compra -->
-      <template #item.tipo_compra="{ item }">
-        <VChip
-          v-bind="resolvePurchaseType(item)"
-          density="default"
-          label
-          size="small"
-        />
-      </template>
-
-      <!-- estado -->
-      <template #item.estado="{ item }">
-        <VChip
-          v-bind="resolveStatus(item.estado)"
-          density="default"
-          label
-          size="small"
-        />
-      </template>
-
-      <!-- Actions -->
-      <template #item.actions="{ item }">
-        <IconBtn
-          class="me-1"
-          @click="router.push(`/dashboard/purchases/${item.uuid}`)"
+    <template v-else>
+      <!-- 👉 Datatable  -->
+      <div class="purchase-table-shell">
+        <VDataTableServer
+          v-model:items-per-page="itemsPerPage"
+          v-model:page="page"
+          :headers="headers"
+          :items="purchases"
+          :items-length="totalPurchases"
+          :loading="isTableLoading"
+          class="text-no-wrap"
+          @update:options="updateOptions"
         >
-          <VIcon icon="tabler-eye" />
-        </IconBtn>
-        
-        <IconBtn
-          class="me-1"
-          :disabled="!(item.publicacion || item.motor)?.slug"
-          @click="() => {
-            const slug = (item.publicacion || item.motor)?.slug
-            if (slug) goToProduct(slug)
-          }"
-        >
-          <VIcon icon="tabler-external-link" />
-        </IconBtn>
-
-        <!-- Rate Button -->
-        <VTooltip location="top" v-if="!item.review_done">
-          <template #activator="{ props }">
-            <IconBtn
-              v-bind="props"
-              color="warning"
-              @click="handleRateSeller(item)"
+          <!-- Publicación -->
+          <template #item.publicacion="{ item }">
+            <div
+              v-if="item.publicacion || item.motor"
+              class="d-flex align-center gap-x-4"
             >
-              <VIcon icon="tabler-star" />
+              <VAvatar
+                v-if="(item.publicacion || item.motor)?.imagen_destacada"
+                size="38"
+                variant="tonal"
+                rounded
+                :image="getImageBySize((item.publicacion || item.motor).imagen_destacada, 'thumbnail')"
+              />
+              <div class="d-flex flex-column">
+                <span
+                  class="text-body-1 font-weight-medium text-high-emphasis cursor-pointer"
+                  @click="goToPublication(item)"
+                >{{ formatPublicationTitle(item.publicacion || item.motor) }}</span>
+                <span
+                  v-if="(item.publicacion || item.motor)?.acf?.tipo_o_referencia"
+                  class="text-body-2 text-medium-emphasis"
+                >Ref: {{ (item.publicacion || item.motor).acf.tipo_o_referencia }}</span>
+              </div>
+            </div>
+          </template>
+
+          <!-- fecha_compra -->
+          <template #item.fecha_compra="{ item }">
+            <span class="text-body-1 text-high-emphasis">{{ item.fecha_compra }}</span>
+          </template>
+
+          <!-- tipo_compra -->
+          <template #item.tipo_compra="{ item }">
+            <VChip
+              v-bind="resolvePurchaseType(item)"
+              density="default"
+              label
+              size="small"
+            />
+          </template>
+
+          <!-- estado -->
+          <template #item.estado="{ item }">
+            <VChip
+              v-bind="resolveStatus(item.estado)"
+              density="default"
+              label
+              size="small"
+            />
+          </template>
+
+          <!-- Actions -->
+          <template #item.actions="{ item }">
+            <IconBtn
+              class="me-1"
+              @click="goToPurchase(item)"
+            >
+              <VIcon icon="tabler-eye" />
+            </IconBtn>
+            <IconBtn
+              :disabled="!(item.publicacion || item.motor)?.slug"
+              @click="goToPublication(item)"
+            >
+              <VIcon icon="tabler-external-link" />
             </IconBtn>
           </template>
-          <span>Valorar Vendedor</span>
-        </VTooltip>
-      </template>
 
-      <!-- pagination -->
-      <template #bottom>
-        <TablePagination
-          v-model:page="page"
-          :items-per-page="itemsPerPage"
-          :total-items="totalPurchases"
-        />
-        
-        <RatingModal
-          v-if="showRatingModal"
-          v-model="showRatingModal"
-          :purchase-uuid="selectedPurchaseUuid"
-          target-role="seller"
-          :target-name="selectedSellerName"
-          @success="handleRatingSuccess"
-        />
-      </template>
-    </VDataTableServer>
-    </div>
+          <!-- pagination -->
+          <template #bottom>
+            <TablePagination
+              v-model:page="page"
+              :items-per-page="itemsPerPage"
+              :total-items="totalPurchases"
+            />
+          </template>
+        </VDataTableServer>
+      </div>
+    </template>
   </VCard>
 </template>
 
@@ -352,10 +416,30 @@ const goToProduct = (pub: any) => {
   overflow-x: auto;
 }
 
+.purchase-cards-shell {
+  padding: 1rem 0 0;
+}
+
+.purchase-card-mobile {
+  border-radius: 18px;
+  border: 1px solid rgba(218, 41, 28, 0.08);
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.06);
+}
+
+.purchase-card-mobile__meta {
+  display: grid;
+  gap: 0.875rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 @media (max-width: 959px) {
   .purchase-toolbar :deep(.v-field),
   .purchase-toolbar :deep(.v-btn) {
     width: 100%;
+  }
+
+  .purchase-card-mobile__meta {
+    grid-template-columns: 1fr;
   }
 }
 </style>

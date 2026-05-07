@@ -84,6 +84,7 @@ declare module 'vue-router/auto-routes' {
     'store-components-publicacion-questions': RouteRecordInfo<'store-components-publicacion-questions', '/store/components/PublicacionQuestions', Record<never, never>, Record<never, never>>,
     'store-components-related-products': RouteRecordInfo<'store-components-related-products', '/store/components/RelatedProducts', Record<never, never>, Record<never, never>>,
     'store-components-search-bar': RouteRecordInfo<'store-components-search-bar', '/store/components/SearchBar', Record<never, never>, Record<never, never>>,
+    'store-components-store-mobile-nav': RouteRecordInfo<'store-components-store-mobile-nav', '/store/components/StoreMobileNav', Record<never, never>, Record<never, never>>,
     'store-components-tienda-filters': RouteRecordInfo<'store-components-tienda-filters', '/store/components/TiendaFilters', Record<never, never>, Record<never, never>>,
     'verify-email': RouteRecordInfo<'verify-email', '/verify-email', Record<never, never>, Record<never, never>>,
   }

@@ -1,18 +1,19 @@
 <script setup lang="ts">
 // @ts-nocheck
 import { ref, computed, onMounted, watch } from 'vue'
+import { useDisplay } from 'vuetify'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import type { ImagenDestacada, Publicacion } from '../../../../../interfaces/publicacion'
 import { useApi } from '@/composables/useApi'
 import { debounce } from '@/utils/debounce'
 import { useUserStore } from '@/@core/stores/user'
-import { useMotorFormatter } from '@/composables/useMotorFormatter'
 
 const { t } = useI18n()
 const router = useRouter()
 const userStore = useUserStore()
-const { formatMotorName } = useMotorFormatter()
+const display = useDisplay()
+const isMobile = computed(() => display.mdAndDown.value)
 
 const headers = [
   { title: t('publication_list.publication'), value: 'publicacion' },
@@ -255,14 +256,9 @@ const changeStatus = () => {
   })
 }
 
-const getImageBySize = (image: any, size = 'thumbnail'): string => {
-  if (!image)
-    return ''
-  
-  if (typeof image === 'string')
-    return image
-
+const getImageBySize = (image: ImagenDestacada | null | any[], size = 'thumbnail'): string => {
   let imageObj: ImagenDestacada | null = null
+
   if (Array.isArray(image) && image.length > 0)
     imageObj = image[0]
   else if (image && !Array.isArray(image))
@@ -305,6 +301,13 @@ const canEdit = (item: any) => {
   // Si está en revisión (pending), y no es admin, no puede editar
   return item.status !== 'pending'
 }
+const openPublication = (item: any) => {
+  if (!item?.uuid)
+    return
+
+  router.push(`/dashboard/publications/publication/edit/${item.uuid}`)
+}
+
 </script>
 
 <template>
@@ -418,7 +421,10 @@ const canEdit = (item: any) => {
        <VDivider />
 
       <!-- 👉 Datatable  -->
-      <div class="publication-table-shell">
+      <div
+        v-if="!isMobile"
+        class="publication-table-shell"
+      >
       <VDataTableServer
         v-model:items-per-page="itemsPerPage"
         v-model:model-value="selectedRows"
@@ -435,27 +441,21 @@ const canEdit = (item: any) => {
       >
        <!-- publicacion  -->
        <template #item.publicacion="{ item }">
-          <div class="d-flex align-center gap-3 py-2" style="max-width: 280px;">
-             <VAvatar
-               v-if="(item as any).imagen_destacada"
-               size="48"
-               variant="tonal"
-               rounded
-               class="border flex-shrink-0"
-               :image="getImageBySize((item as any).imagen_destacada, 'thumbnail')"
-             />
-             <div class="d-flex flex-column overflow-hidden">
-               <span 
-                 class="text-body-1 font-weight-medium text-high-emphasis text-truncate"
-                 style="max-width: 200px;"
-               >
-                 {{ formatMotorName(item as any) || (item as any).title }}
-                 <VTooltip activator="parent" location="top">{{ formatMotorName(item as any) || (item as any).title }}</VTooltip>
-               </span>
-               <span class="text-caption text-medium-emphasis">{{ (item as any).acf.marca?.name }}</span>
-             </div>
-           </div>
-         </template>
+         <div class="d-flex align-center gap-3 py-2">
+            <VAvatar
+              v-if="(item as any).imagen_destacada"
+              size="48"
+              variant="tonal"
+              rounded
+              class="border"
+              :image="getImageBySize((item as any).imagen_destacada, 'thumbnail')"
+            />
+            <div class="d-flex flex-column">
+              <span class="text-body-1 font-weight-medium text-high-emphasis">{{ (item as any).title }}</span>
+              <span class="text-caption text-medium-emphasis">{{ (item as any).acf.marca?.name }}</span>
+            </div>
+          </div>
+        </template>
 
         <!-- referencia -->
         <template #item.referencia="{ item }">
@@ -464,9 +464,7 @@ const canEdit = (item: any) => {
 
         <!-- precio -->
         <template #item.precio="{ item }">
-          <span v-if="(item as any).acf.precio_negociable === 'yes' || (item as any).acf.precio_negociable === true" class="text-body-1 text-warning font-weight-bold">Consultar precio</span>
-          <span v-else-if="(item as any).acf.precio_de_venta" class="text-body-1 text-primary font-weight-bold">{{ (item as any).acf.precio_de_venta }}€</span>
-          <span v-else class="text-body-2 text-medium-emphasis">-</span>
+          <span class="text-body-1 text-primary font-weight-bold">{{ (item as any).acf.precio_de_venta }}€</span>
         </template>
 
         <!-- status -->
@@ -485,18 +483,6 @@ const canEdit = (item: any) => {
         <!-- Actions -->
         <template #item.actions="{ item }">
           <div class="d-flex justify-end gap-2">
-            <IconBtn
-              v-if="(item as any).status === 'publish'"
-              color="success"
-              variant="tonal"
-              size="small"
-              :href="`/marketplace-motorlan/${(item as any).slug}/`"
-              target="_blank"
-            >
-              <VIcon icon="tabler-eye" size="18" />
-              <VTooltip activator="parent" location="top">{{ t('Ver Publicación') }}</VTooltip>
-            </IconBtn>
-
             <IconBtn 
               :color="canEdit(item) ? 'primary' : 'warning'" 
               variant="tonal" 
@@ -607,6 +593,157 @@ const canEdit = (item: any) => {
           />
         </template>
       </VDataTableServer>
+      </div>
+
+      <div
+        v-else
+        class="publication-cards-shell"
+      >
+        <VRow class="g-4">
+          <VCol
+            v-for="item in publicaciones"
+            :key="(item as any).id"
+            cols="12"
+          >
+            <VCard
+              class="publication-card-mobile"
+              variant="flat"
+            >
+              <VCardText class="pa-4">
+                <div class="d-flex align-start gap-3">
+                  <VCheckboxBtn
+                    v-model="selectedRows"
+                    :value="(item as any).id"
+                    density="compact"
+                    class="mt-1"
+                  />
+
+                  <VAvatar
+                    v-if="(item as any).imagen_destacada"
+                    size="56"
+                    rounded
+                    variant="tonal"
+                    class="border"
+                    :image="getImageBySize((item as any).imagen_destacada, 'thumbnail')"
+                  />
+
+                  <div class="flex-grow-1 min-w-0">
+                    <div class="d-flex align-center justify-space-between gap-2 mb-1">
+                      <VChip
+                        v-bind="resolveStatus((item as any).status)"
+                        density="comfortable"
+                        label
+                        size="small"
+                        class="font-weight-medium"
+                      >
+                        {{ resolveStatus((item as any).status).text }}
+                      </VChip>
+
+                      <IconBtn
+                        color="secondary"
+                        variant="text"
+                        size="small"
+                      >
+                        <VIcon icon="tabler-dots-vertical" size="18" />
+                        <VMenu activator="parent">
+                          <VList density="compact">
+                            <VListItem
+                              value="edit"
+                              @click="openPublication(item)"
+                            >
+                              <template #prepend>
+                                <VIcon icon="tabler-pencil" size="18" class="me-2" />
+                              </template>
+                              <VListItemTitle>Editar</VListItemTitle>
+                            </VListItem>
+
+                            <VListItem
+                              value="duplicate"
+                              @click="openDuplicateDialog((item as any).id)"
+                            >
+                              <template #prepend>
+                                <VIcon icon="tabler-copy" size="18" class="me-2" />
+                              </template>
+                              <VListItemTitle>{{ t('publication_list.duplicate') }}</VListItemTitle>
+                            </VListItem>
+
+                            <VListItem
+                              v-if="(item as any).status !== 'publish'"
+                              value="publish"
+                              @click="openStatusDialog((item as any).id, 'publish')"
+                            >
+                              <template #prepend>
+                                <VIcon icon="tabler-player-play" color="success" size="18" class="me-2" />
+                              </template>
+                              <VListItemTitle>{{ t('publication_list.publish') }}</VListItemTitle>
+                            </VListItem>
+
+                            <VListItem
+                              v-if="(item as any).status !== 'paused'"
+                              value="pause"
+                              @click="openStatusDialog((item as any).id, 'paused')"
+                            >
+                              <template #prepend>
+                                <VIcon icon="tabler-player-pause" color="warning" size="18" class="me-2" />
+                              </template>
+                              <VListItemTitle>{{ t('publication_list.pause') }}</VListItemTitle>
+                            </VListItem>
+
+                            <VListItem
+                              v-if="(item as any).status !== 'draft'"
+                              value="draft"
+                              @click="openStatusDialog((item as any).id, 'draft')"
+                            >
+                              <template #prepend>
+                                <VIcon icon="tabler-file-text" size="18" class="me-2" />
+                              </template>
+                              <VListItemTitle>{{ t('publication_list.move_to_draft') }}</VListItemTitle>
+                            </VListItem>
+
+                            <VDivider class="my-1" />
+
+                            <VListItem
+                              value="delete"
+                              color="error"
+                              @click="openDeleteDialog((item as any).id)"
+                            >
+                              <template #prepend>
+                                <VIcon icon="tabler-trash" color="error" size="18" class="me-2" />
+                              </template>
+                              <VListItemTitle class="text-error">{{ t('publication_list.delete') }}</VListItemTitle>
+                            </VListItem>
+                          </VList>
+                        </VMenu>
+                      </IconBtn>
+                    </div>
+
+                    <button
+                      type="button"
+                      class="publication-card-mobile__title text-left"
+                      @click="openPublication(item)"
+                    >
+                      {{ (item as any).title }}
+                    </button>
+
+                    <div class="publication-card-mobile__meta text-caption text-medium-emphasis">
+                      <span>{{ (item as any).acf?.marca?.name || 'Sin marca' }}</span>
+                      <span>Ref: {{ (item as any).acf?.tipo_o_referencia || '—' }}</span>
+                      <span>{{ (item as any).acf?.precio_de_venta || '—' }} €</span>
+                    </div>
+                  </div>
+                </div>
+              </VCardText>
+            </VCard>
+          </VCol>
+        </VRow>
+
+        <div class="mt-4">
+          <TablePagination
+            v-model:page="page"
+            :items-per-page="itemsPerPage"
+            :total-items="totalPublicaciones"
+          />
+        </div>
       </div>
     </VCard>
 
@@ -781,6 +918,36 @@ const canEdit = (item: any) => {
   row-gap: 0.75rem;
 }
 
+.publication-cards-shell {
+  padding: 1rem 1.5rem 1.5rem;
+}
+
+.publication-card-mobile {
+  border-radius: 18px;
+  border: 1px solid rgba(218, 41, 28, 0.08);
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.06);
+}
+
+.publication-card-mobile__title {
+  display: block;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  margin: 0 0 0.35rem;
+  font-size: 0.98rem;
+  font-weight: 600;
+  color: rgb(var(--v-theme-on-surface));
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+.publication-card-mobile__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.75rem;
+}
+
 @media (max-width: 959px) {
   .publication-list-toolbar :deep(.v-col),
   .publication-list-actions > * {
@@ -793,6 +960,10 @@ const canEdit = (item: any) => {
 
   .publication-list-actions .v-btn {
     width: 100%;
+  }
+
+  .publication-cards-shell {
+    padding-inline: 0;
   }
 }
 </style>
