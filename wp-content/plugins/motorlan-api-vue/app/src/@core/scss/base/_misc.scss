@@ -1,4 +1,14 @@
 // ℹ️ scrollable-content allows creating fixed header and scrollable content for VNavigationDrawer (Used when perfect scrollbar is used)
+.layout-wrapper,
+.layout-page-content,
+.v-application,
+.v-application__wrap,
+html,
+body {
+  max-width: 100%;
+  overflow-x: clip;
+}
+
 .scrollable-content {
   &.v-navigation-drawer {
     .v-navigation-drawer__content {
@@ -17,4 +27,68 @@ code {
   font-weight: 400;
   padding-block: 0.2em;
   padding-inline: 0.4em;
+}
+
+.layout-wrapper.layout-nav-type-vertical {
+  .layout-page-content {
+    .v-table__wrapper {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .v-table__wrapper > table {
+      min-width: 760px;
+    }
+  }
+
+  @media (max-width: 959px) {
+    .layout-page-content {
+      .v-data-table,
+      .v-data-table-server,
+      .v-table {
+        border-radius: 18px;
+      }
+
+      .v-table__wrapper > table {
+        min-width: 100%;
+        table-layout: fixed;
+      }
+
+      .v-table__wrapper th,
+      .v-table__wrapper td {
+        white-space: normal;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+      }
+
+      .v-data-table-footer,
+      .v-table-footer,
+      .v-data-table__footer {
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        justify-content: center;
+      }
+
+      .v-data-table-footer .v-select,
+      .v-table-footer .v-select,
+      .v-data-table__footer .v-select {
+        min-inline-size: 110px;
+      }
+
+      .v-data-table-footer .v-pagination,
+      .v-table-footer .v-pagination,
+      .v-data-table__footer .v-pagination {
+        max-width: 100%;
+      }
+
+      .v-data-table .d-flex.justify-end.gap-2 {
+        flex-wrap: wrap;
+        justify-content: flex-start;
+      }
+
+      .v-data-table .v-btn {
+        min-inline-size: auto;
+      }
+    }
+  }
 }

@@ -113,25 +113,30 @@ function motorlan_enqueue_vue_app() {
         );
     } else {
         // --- MODO PRODUCCIÓN ---
+        // Versión dinámica basada en mtime del archivo → cache-bust automático en cada build
+        $dist = plugin_dir_path(__FILE__) . '../app/dist/';
+        $css_ver = file_exists($dist . 'css/style.css') ? filemtime($dist . 'css/style.css') : MOTORLAN_API_VUE_VERSION;
+        $js_ver  = file_exists($dist . 'js/app.js')     ? filemtime($dist . 'js/app.js')     : MOTORLAN_API_VUE_VERSION;
+
         wp_enqueue_style(
             'motorlan-vue-app-css',
             plugin_dir_url(__FILE__) . '../app/dist/css/style.css',
             [],
-            MOTORLAN_API_VUE_VERSION,
+            $css_ver,
             'all'
         );
         wp_enqueue_style(
             'motorlan-vue-app-loader-css',
             plugin_dir_url(__FILE__) . '../app/dist/loader.css',
             [],
-            MOTORLAN_API_VUE_VERSION,
+            $css_ver,
             'all'
         );
         wp_enqueue_script(
             'motorlan-vue-app-js',
             plugin_dir_url(__FILE__) . '../app/dist/js/app.js',
-            ['wp-data-bridge'], // Depende del puente
-            MOTORLAN_API_VUE_VERSION,
+            ['wp-data-bridge'],
+            $js_ver,
             true
         );
     }

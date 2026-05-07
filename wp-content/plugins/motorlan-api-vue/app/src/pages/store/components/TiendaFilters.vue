@@ -17,6 +17,7 @@ defineProps<{
   parOptions: any[]
   potenciaOptions: any[]
   velocidadOptions: any[]
+  showHeader?: boolean
 }>()
 
 const typeModel = defineModel<string>('typeModel')
@@ -101,39 +102,44 @@ const clearFilters = () => {
     class="store-filters-card"
     variant="flat"
   >
-    <VCardText class="pa-4 pa-lg-5">
-      <div class="d-flex align-center justify-space-between gap-3 mb-4">
-        <div>
-          <div class="d-flex align-center mb-1">
-            <VIcon
-              size="18"
-              class="me-2"
-              color="error"
-            >
-              mdi-filter-variant
-            </VIcon>
-            <span class="text-error font-weight-bold text-uppercase store-filters-card__eyebrow">
-              Filtros
-            </span>
+    <VCardText
+      class="pa-4 pa-lg-5"
+      :class="{ 'pt-2': !showHeader }"
+    >
+      <div v-if="showHeader !== false">
+        <div class="d-flex align-center justify-space-between gap-3 mb-4">
+          <div>
+            <div class="d-flex align-center mb-1">
+              <VIcon
+                size="18"
+                class="me-2"
+                color="error"
+              >
+                mdi-filter-variant
+              </VIcon>
+              <span class="text-error font-weight-bold text-uppercase store-filters-card__eyebrow">
+                Filtros
+              </span>
+            </div>
+            <div class="text-body-2 text-medium-emphasis">
+              Ajusta la busqueda desde aqui o usa la barra superior.
+            </div>
           </div>
-          <div class="text-body-2 text-medium-emphasis">
-            Ajusta la busqueda desde aqui o usa la barra superior.
-          </div>
+
+          <VBtn
+            v-if="hasFiltersActive"
+            variant="text"
+            color="error"
+            density="comfortable"
+            class="px-2"
+            @click="clearFilters"
+          >
+            Limpiar
+          </VBtn>
         </div>
 
-        <VBtn
-          v-if="hasFiltersActive"
-          variant="text"
-          color="error"
-          density="comfortable"
-          class="px-2"
-          @click="clearFilters"
-        >
-          Limpiar
-        </VBtn>
+        <VDivider class="mb-4" color="error" />
       </div>
-
-      <VDivider class="mb-4" color="error" />
 
       <VTextField
         v-model="typeModel"
@@ -276,9 +282,13 @@ const clearFilters = () => {
   gap: 0.85rem;
 }
 
-.store-filters-card__note {
-  line-height: 1.4;
-}
+  .store-filters-card__note {
+    line-height: 1.4;
+  }
+
+  .store-filters-card :deep(.v-card-text.pt-2) {
+    padding-top: 0.5rem !important;
+  }
 
 @media (max-width: 959px) {
   .store-filters-card {

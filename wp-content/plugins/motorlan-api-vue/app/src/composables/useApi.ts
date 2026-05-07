@@ -30,6 +30,7 @@ export const useApi = createFetch({
     async beforeFetch({ options }) {
       const nextOptions: RequestInit = { ...options }
       const headers = new Headers(nextOptions.headers as any)
+      const method = String(nextOptions.method || 'GET').toUpperCase()
       const body = nextOptions.body as any
       const isFormData = body instanceof FormData
 
@@ -48,8 +49,9 @@ export const useApi = createFetch({
       if (shouldSerializeBody)
         nextOptions.body = JSON.stringify(body)
 
-      // Set content type for non-FormData requests
-      if (!isFormData)
+      // Set content type only when we are actually sending a body.
+      // Keeping GET requests "simple" avoids unnecessary preflight failures on public endpoints.
+      if (!isFormData && shouldSerializeBody && method !== 'GET' && method !== 'HEAD')
         headers.set('Content-Type', 'application/json')
 
       // Add WordPress nonce for CSRF protection

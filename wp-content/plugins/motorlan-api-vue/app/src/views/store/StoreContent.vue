@@ -8,7 +8,8 @@ import TiendaFilters from '@/pages/store/components/TiendaFilters.vue'
 import SearchBar from '@/pages/store/components/SearchBar.vue'
 import PublicacionItems from '@/pages/store/components/PublicacionItems.vue'
 import PaginationControls from '@/pages/store/components/PaginationControls.vue'
-import { useApi } from '@/composables/useApi'
+import StoreMobileNav from '@/pages/store/components/StoreMobileNav.vue'
+import { usePublicApi } from '@/composables/usePublicApi'
 import type { Publicacion } from '@/interfaces/publicacion'
 import { useStoreFiltersStore } from '@/views/store/useStoreFiltersStore'
 
@@ -35,6 +36,19 @@ interface Term {
   term_id: number
   name: string
   slug: string
+}
+
+type ApiListResponse<T> = {
+  data?: T[]
+  pagination?: {
+    total?: number
+    totalPages?: number
+    last_page?: number
+    currentPage?: number
+    current_page?: number
+    perPage?: number
+    per_page?: number
+  }
 }
 
 const isFiltersDrawerOpen = ref(false)
@@ -97,6 +111,19 @@ const itemsPerPage = ref(9)
 const marcas = ref<Term[]>([])
 const tipos = ref<Term[]>([])
 
+const normalizeArrayResponse = <T>(payload: unknown): T[] => {
+  if (Array.isArray(payload))
+    return payload as T[]
+
+  if (payload && typeof payload === 'object') {
+    const data = (payload as ApiListResponse<T>).data
+    if (Array.isArray(data))
+      return data
+  }
+
+  return []
+}
+
 const publicacionesApiUrl = computed(() => {
   const baseUrl = '/wp-json/motorlan/v1/store/publicaciones'
 
@@ -125,7 +152,7 @@ const publicacionesApiUrl = computed(() => {
   return `${baseUrl}?${filteredParams}`
 })
 
-const { data: publicacionesData, isFetching, execute: fetchPublicaciones } = useApi<any>(publicacionesApiUrl, { immediate: false }).get().json()
+const { data: publicacionesData, isFetching, execute: fetchPublicaciones } = usePublicApi<any>(publicacionesApiUrl, { immediate: false }).get().json()
 const isSearching = ref(true)
 
 const isLoading = computed(() => isFetching.value || isSearching.value)
@@ -198,12 +225,11 @@ onMounted(async () => {
   loadFiltersFromUrl()
 
   try {
-    const { data: brandsData, execute: executeBrands } = useApi<any>('/wp-json/motorlan/v1/marcas', { immediate: false }).get().json()
+    const { data: brandsData, execute: executeBrands } = usePublicApi<any>('/wp-json/motorlan/v1/marcas', { immediate: false }).get().json()
     await executeBrands()
 
     if (brandsData.value) {
-      const raw = brandsData.value
-      marcas.value = Array.isArray(raw) ? raw : (raw.data || [])
+      marcas.value = normalizeArrayResponse<Term>(brandsData.value)
     }
   }
   catch (e) {
@@ -211,12 +237,11 @@ onMounted(async () => {
   }
 
   try {
-    const { data: tiposData, execute: executeTipos } = useApi<any>('/wp-json/motorlan/v1/tipos', { immediate: false }).get().json()
+    const { data: tiposData, execute: executeTipos } = usePublicApi<any>('/wp-json/motorlan/v1/tipos', { immediate: false }).get().json()
     await executeTipos()
 
     if (tiposData.value) {
-      const raw = tiposData.value
-      tipos.value = Array.isArray(raw) ? raw : (raw.data || [])
+      tipos.value = normalizeArrayResponse<Term>(tiposData.value)
     }
   }
   catch (e) {
@@ -226,8 +251,23 @@ onMounted(async () => {
   applyFilters()
 })
 
-const totalPublicaciones = computed(() => publicacionesData.value?.pagination.total || 0)
-const totalPages = computed(() => publicacionesData.value?.pagination.totalPages || 1)
+const publicacionesResponse = computed<ApiListResponse<Publicacion> | Publicacion[] | null>(() => publicacionesData.value ?? null)
+
+const totalPublicaciones = computed(() => {
+  const pagination = publicacionesResponse.value && !Array.isArray(publicacionesResponse.value)
+    ? publicacionesResponse.value.pagination
+    : undefined
+
+  return pagination?.total ?? 0
+})
+
+const totalPages = computed(() => {
+  const pagination = publicacionesResponse.value && !Array.isArray(publicacionesResponse.value)
+    ? publicacionesResponse.value.pagination
+    : undefined
+
+  return pagination?.totalPages ?? pagination?.last_page ?? 1
+})
 
 const resultSummary = computed(() => {
   if (!totalPublicaciones.value)
@@ -236,7 +276,17 @@ const resultSummary = computed(() => {
   return `${totalPublicaciones.value} publicaciones encontradas`
 })
 
-const publicaciones = computed((): Publicacion[] => publicacionesData.value?.data || publicacionesData.value || [])
+const publicaciones = computed((): Publicacion[] => {
+  const response = publicacionesResponse.value
+
+  if (!response)
+    return []
+
+  if (Array.isArray(response))
+    return response
+
+  return Array.isArray(response.data) ? response.data : []
+})
 
 const search = () => {
   page.value = 1
@@ -248,35 +298,26 @@ const search = () => {
 
 <template>
   <div class="store-shell">
+    <!-- ── Drawer lateral — solo desktop ──────────────────────────── -->
     <VNavigationDrawer
+      v-if="display.mdAndUp.value"
       v-model="isFiltersDrawerOpen"
       temporary
       location="end"
-      width="390"
+      :width="390"
       class="store-filters-drawer"
     >
       <div class="d-flex flex-column h-100 pa-4">
-        <div class="d-flex align-center justify-space-between mb-4">
-          <div>
-            <div class="text-overline text-error font-weight-bold">
-              Filtros
-            </div>
-            <div class="text-body-2 text-medium-emphasis">
-              Refina la busqueda desde un panel comodo para mobile.
-            </div>
-          </div>
-
-          <IconBtn
-            variant="text"
-            color="default"
-            @click="isFiltersDrawerOpen = false"
-          >
+        <div class="d-flex align-center justify-space-between mb-3">
+          <span class="text-subtitle-1 font-weight-bold">Filtros</span>
+          <IconBtn variant="text" color="default" @click="isFiltersDrawerOpen = false">
             <VIcon icon="tabler-x" />
           </IconBtn>
         </div>
-
+        <VDivider class="mb-3" />
         <div class="flex-grow-1 overflow-y-auto pe-1">
           <TiendaFilters
+            :show-header="false"
             v-model:type-model="typeModel"
             v-model:selected-technology="selectedTechnology"
             v-model:selected-par="selectedPar"
@@ -296,6 +337,84 @@ const search = () => {
       </div>
     </VNavigationDrawer>
 
+    <!-- ── Bottom Sheet — solo mobile ─────────────────────────────── -->
+    <VBottomSheet
+      v-if="display.smAndDown.value"
+      v-model="isFiltersDrawerOpen"
+      :max-height="'88dvh'"
+      class="store-filters-sheet"
+    >
+      <VSheet class="store-filters-sheet__inner d-flex flex-column" rounded="t-xl">
+        <!-- Handle de arrastre -->
+        <div class="store-filters-sheet__handle-wrap">
+          <span class="store-filters-sheet__handle" />
+        </div>
+
+        <!-- Cabecera pegajosa -->
+        <div class="store-filters-sheet__header px-4 pt-1 pb-3 d-flex align-center justify-space-between">
+          <div class="d-flex align-center gap-2">
+            <VIcon icon="mdi-filter-variant" color="error" size="20" />
+            <span class="text-subtitle-1 font-weight-bold">Filtros</span>
+            <VChip v-if="activeFiltersCount" color="error" size="x-small" label>
+              {{ activeFiltersCount }}
+            </VChip>
+          </div>
+          <div class="d-flex align-center gap-2">
+            <VBtn
+              v-if="activeFiltersCount"
+              variant="text"
+              color="error"
+              size="small"
+              density="comfortable"
+              @click="clearAllFilters"
+            >
+              Limpiar
+            </VBtn>
+            <IconBtn variant="text" color="default" @click="isFiltersDrawerOpen = false">
+              <VIcon icon="tabler-x" size="20" />
+            </IconBtn>
+          </div>
+        </div>
+
+        <VDivider />
+
+        <!-- Contenido scrollable -->
+        <div class="flex-grow-1 overflow-y-auto px-4 py-3">
+          <TiendaFilters
+            :show-header="false"
+            v-model:type-model="typeModel"
+            v-model:selected-technology="selectedTechnology"
+            v-model:selected-par="selectedPar"
+            v-model:selected-potencia="selectedPotencia"
+            v-model:selected-velocidad="selectedVelocidad"
+            v-model:selected-brand="selectedBrand"
+            v-model:selected-state="selectedState"
+            v-model:selected-tipo="selectedTipo"
+            :marcas="marcas"
+            :tipos="tipos"
+            :technology-options="technologyOptions"
+            :par-options="parOptions"
+            :potencia-options="potenciaOptions"
+            :velocidad-options="velocidadOptions"
+          />
+        </div>
+
+        <!-- Footer con botón Aplicar -->
+        <div class="store-filters-sheet__footer px-4 pt-3 pb-4">
+          <VBtn
+            color="error"
+            block
+            size="large"
+            rounded="lg"
+            @click="search"
+          >
+            <VIcon icon="tabler-check" class="me-2" />
+            Ver resultados
+          </VBtn>
+        </div>
+      </VSheet>
+    </VBottomSheet>
+
     <VContainer
       fluid
       class="store-container px-4 px-md-6 py-4 py-md-6"
@@ -305,7 +424,6 @@ const search = () => {
         :loading="isSearching"
         :active-filters-count="activeFiltersCount"
         @search="search"
-        @open-filters="isFiltersDrawerOpen = true"
         @reset="clearAllFilters"
       />
 
@@ -321,6 +439,7 @@ const search = () => {
         >
           <div class="store-sidebar">
             <TiendaFilters
+              :show-header="true"
               v-model:type-model="typeModel"
               v-model:selected-technology="selectedTechnology"
               v-model:selected-par="selectedPar"
@@ -370,7 +489,7 @@ const search = () => {
             :loading="isLoading"
           />
 
-          <div class="d-flex justify-center">
+          <div class="d-flex justify-center w-100">
             <PaginationControls
               v-model:page="page"
               :total-pages="totalPages"
@@ -378,18 +497,34 @@ const search = () => {
           </div>
         </VCol>
       </VRow>
+
+      <StoreMobileNav
+        :active-filters-count="activeFiltersCount"
+        @open-filters="isFiltersDrawerOpen = true"
+      />
     </VContainer>
   </div>
 </template>
 
 <style scoped>
+/* ── Shell ───────────────────────────────────────────── */
 .store-shell {
   min-height: 100vh;
+  overflow-x: clip;
   background:
     radial-gradient(circle at top, rgba(218, 41, 28, 0.06), transparent 26%),
     linear-gradient(180deg, #fff 0%, #fff7f6 100%);
+  /* Espacio para la barra mobile: altura barra (~58px) + safe area */
+  padding-bottom: 1rem;
 }
 
+@media (max-width: 959px) {
+  .store-shell {
+    padding-bottom: calc(74px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* ── Layout ──────────────────────────────────────────── */
 .store-container {
   max-width: 1600px;
 }
@@ -403,13 +538,53 @@ const search = () => {
   min-width: 0;
 }
 
-.store-filters-drawer {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.99), rgba(255, 248, 247, 0.98));
-}
-
 @media (max-width: 959px) {
   .store-sidebar {
     position: static;
   }
+}
+
+/* ── Desktop drawer ──────────────────────────────────── */
+.store-filters-drawer {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.99), rgba(255, 248, 247, 0.98));
+}
+
+/* ── Mobile bottom sheet ─────────────────────────────── */
+.store-filters-sheet :deep(.v-overlay__content) {
+  /* Ancho completo sin márgenes laterales */
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+}
+
+.store-filters-sheet__inner {
+  background: linear-gradient(180deg, #ffffff, #fff8f7);
+  max-height: 88dvh;
+}
+
+.store-filters-sheet__handle-wrap {
+  display: flex;
+  justify-content: center;
+  padding: 10px 0 4px;
+}
+
+.store-filters-sheet__handle {
+  display: block;
+  width: 38px;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.store-filters-sheet__header {
+  flex-shrink: 0;
+}
+
+.store-filters-sheet__footer {
+  flex-shrink: 0;
+  border-top: 1px solid rgba(0, 0, 0, 0.07);
+  background: rgba(255, 255, 255, 0.98);
+  /* Padding extra para safe area de iOS */
+  padding-bottom: max(1rem, env(safe-area-inset-bottom, 1rem));
 }
 </style>

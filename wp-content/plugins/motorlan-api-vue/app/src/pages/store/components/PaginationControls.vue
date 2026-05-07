@@ -17,7 +17,15 @@ defineProps<{ totalPages: number }>()
 <style scoped>
 .pagination-controls {
   width: 100%;
+}
+
+.pagination-controls :deep(.v-pagination__list) {
+  display: flex;
+  flex-wrap: wrap;
   justify-content: center;
+  width: 100%;
+  padding: 0;
+  margin: 0;
 }
 </style>
 
