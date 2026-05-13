@@ -26,3 +26,5 @@ wp-config.php
 /wp-content/plugins/jwt-authentication-for-wp-rest-api/admin/ui/dist
 wp-content/plugins/motorlan-api-vue/.agent/skills/
 /wp-content/plugins/motorlan-api-vue/app/dist
+/wp-content
+wp-config-sample.php
