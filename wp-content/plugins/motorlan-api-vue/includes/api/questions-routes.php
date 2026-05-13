@@ -182,9 +182,25 @@ function motorlan_create_question_callback( WP_REST_Request $request ) {
         "Nueva pregunta de {$user_who_asked->display_name} en \"{$publication_title}\"",
         $pregunta,
         [
-            'publication_id' => $publicacion_id,
-            'question_id'    => $post_id,
-            'url'            => '/dashboard/publications/questions',
+            'publication_id'    => $publicacion_id,
+            'question_id'       => $post_id,
+            'publication_title' => $publication_title,
+            'url'               => '/dashboard/publications/questions',
+        ],
+        ['web', 'email']
+    );
+
+    // Copia al remitente
+    $notification_manager->create_notification(
+        $user_id,
+        'question_sent',
+        "Pregunta enviada sobre \"{$publication_title}\"",
+        $pregunta,
+        [
+            'publication_id'    => $publicacion_id,
+            'question_id'       => $post_id,
+            'publication_title' => $publication_title,
+            'url'               => '/dashboard/purchases/questions',
         ],
         ['web', 'email']
     );
@@ -198,6 +214,29 @@ function motorlan_answer_question_callback( WP_REST_Request $request ) {
 
     update_field( 'respuesta', $respuesta, $question_id );
     update_field( 'answer_date', current_time( 'mysql' ), $question_id );
+
+    // Notificar al usuario que preguntó
+    $asker_id          = (int) get_field( 'usuario', $question_id );
+    $publicacion_id    = (int) get_field( 'publicacion', $question_id );
+    $publication_title = $publicacion_id ? get_the_title( $publicacion_id ) : '';
+
+    if ( $asker_id && class_exists( 'Motorlan_Notification_Manager' ) ) {
+        $notification_manager = new Motorlan_Notification_Manager();
+        $notification_manager->create_notification(
+            $asker_id,
+            'question_answered',
+            "Respuesta a tu pregunta sobre \"{$publication_title}\"",
+            $respuesta,
+            [
+                'publication_id'    => $publicacion_id,
+                'question_id'       => $question_id,
+                'publication_title' => $publication_title,
+                'answer'            => $respuesta,
+                'url'               => '/dashboard/purchases/questions',
+            ],
+            ['web', 'email']
+        );
+    }
 
     return new WP_REST_Response( array( 'success' => true ), 200 );
 }

@@ -394,17 +394,6 @@ function motorlan_forgot_password_callback(WP_REST_Request $request)
     // Build reset URL
     $reset_url = home_url("/reset-password?key={$reset_key}&login=" . rawurlencode($user->user_login));
 
-    // Send email
-    $subject = 'Restablecer contraseña - Motorlan';
-    $message = sprintf(
-        "Hola %s,\n\nHas solicitado restablecer tu contraseña.\n\nHaz clic en el siguiente enlace para crear una nueva contraseña:\n\n%s\n\nEste enlace expirará en 24 horas.\n\nSi no solicitaste este cambio, ignora este email.\n\nSaludos,\nEl equipo de Motorlan",
-        $user->display_name,
-        $reset_url
-    );
-
-    $sent = wp_mail($user->user_email, $subject, $message);
-
-    // Also send via notification manager if available
     if (class_exists('Motorlan_Notification_Manager')) {
         $notification_manager = new Motorlan_Notification_Manager();
         $notification_manager->create_notification(

@@ -13,7 +13,9 @@
       "Bash(php -l \"C:/laragon/www/dev.motorlan/wp-content/plugins/motorlan-api-vue/includes/api/purchases-routes.php\")",
       "Bash(php -l \"C:/laragon/www/dev.motorlan/wp-content/plugins/motorlan-api-vue/motorlan-api-vue.php\")",
       "Bash(xargs -I{} php -l {})",
-      "Bash(node_modules/.bin/vite build *)"
+      "Bash(node_modules/.bin/vite build *)",
+      "Bash(php -l \"C:\\\\laragon\\\\www\\\\dev.motorlan\\\\wp-content\\\\plugins\\\\motorlan-api-vue\\\\includes\\\\classes\\\\class-motorlan-notification-manager.php\" \"C:\\\\laragon\\\\www\\\\dev.motorlan\\\\wp-content\\\\plugins\\\\motorlan-api-vue\\\\includes\\\\email-templates\\\\new_offer.php\" \"C:\\\\laragon\\\\www\\\\dev.motorlan\\\\wp-content\\\\plugins\\\\motorlan-api-vue\\\\includes\\\\email-templates\\\\offer_accepted.php\" \"C:\\\\laragon\\\\www\\\\dev.motorlan\\\\wp-content\\\\plugins\\\\motorlan-api-vue\\\\includes\\\\email-templates\\\\new_purchase.php\" \"C:\\\\laragon\\\\www\\\\dev.motorlan\\\\wp-content\\\\plugins\\\\motorlan-api-vue\\\\includes\\\\email-templates\\\\new_message.php\" \"C:\\\\laragon\\\\www\\\\dev.motorlan\\\\wp-content\\\\plugins\\\\motorlan-api-vue\\\\includes\\\\email-templates\\\\new_question.php\" \"C:\\\\laragon\\\\www\\\\dev.motorlan\\\\wp-content\\\\plugins\\\\motorlan-api-vue\\\\includes\\\\email-templates\\\\password_reset.php\" \"C:\\\\laragon\\\\www\\\\dev.motorlan\\\\wp-content\\\\plugins\\\\motorlan-api-vue\\\\includes\\\\email-templates\\\\password_reset_code.php\" \"C:\\\\laragon\\\\www\\\\dev.motorlan\\\\wp-content\\\\plugins\\\\motorlan-api-vue\\\\includes\\\\email-templates\\\\base.php\")",
+      "Bash(npm install *)"
     ]
   }
 }

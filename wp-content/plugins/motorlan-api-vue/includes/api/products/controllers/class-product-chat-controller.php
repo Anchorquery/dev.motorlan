@@ -372,9 +372,10 @@ if ( ! class_exists( 'Motorlan_Product_Chat_Controller' ) ) {
             $product    = $this->get_product( $product_id );
             if ( is_wp_error( $product ) ) return $product;
 
-            $message   = sanitize_textarea_field( (string) $request->get_param( 'message' ) );
-            $room_key  = sanitize_text_field( (string) $request->get_param( 'room_key' ) );
-            $viewer_nm = sanitize_text_field( (string) $request->get_param( 'viewer_name' ) );
+            $message     = sanitize_textarea_field( (string) $request->get_param( 'message' ) );
+            $room_key    = sanitize_text_field( (string) $request->get_param( 'room_key' ) );
+            $viewer_nm   = sanitize_text_field( (string) $request->get_param( 'viewer_name' ) );
+            $guest_email = sanitize_email( (string) $request->get_param( 'guest_email' ) );
 
             if ( '' === $message ) {
                 return new WP_Error( 'no_message', __( 'Debes escribir un mensaje.', 'motorlan-api-vue' ), array( 'status' => 400 ) );
@@ -398,22 +399,71 @@ if ( ! class_exists( 'Motorlan_Product_Chat_Controller' ) ) {
             if ( is_wp_error( $row ) ) return $row;
 
             // Notification Logic
-            if ( $sender_role !== 'seller' ) {
-                $post = get_post( $product_id );
-                $author_id = (int) $post->post_author;
-                
-                if ( $author_id && class_exists( 'Motorlan_Notification_Manager' ) ) {
-                    $notif_manager = new Motorlan_Notification_Manager();
-                    $notif_title = __( 'Nuevo mensaje en tu publicación', 'motorlan-api-vue' );
-                    $notif_data = [
-                        'url' => '/dashboard/inquiries?room_key=' . $room_key,
-                        'room_key' => $room_key,
-                        'product_id' => $product_id,
-                        'product_title' => get_the_title( $product_id ),
-                        'sender_name' => $display_name
-                    ];
-                    // Also send email
-                    $notif_manager->create_notification( $author_id, 'new_message', $notif_title, $message, $notif_data, ['web', 'email'] );
+            if ( class_exists( 'Motorlan_Notification_Manager' ) ) {
+                $post          = get_post( $product_id );
+                $author_id     = (int) $post->post_author;
+                $product_title = get_the_title( $product_id );
+                $room_url      = '/dashboard/inquiries?room_key=' . $room_key;
+
+                if ( $sender_role === 'seller' ) {
+                    list( , $viewer_id ) = $this->parse_room_key( $room_key );
+                    $receiver_id = is_numeric( $viewer_id ) ? (int) $viewer_id : 0;
+                } else {
+                    $receiver_id = $author_id;
+                }
+                $receiver_user = $receiver_id ? get_userdata( $receiver_id ) : null;
+                $receiver_name = $receiver_user ? $receiver_user->display_name : __( 'el destinatario', 'motorlan-api-vue' );
+
+                $notif_manager = new Motorlan_Notification_Manager();
+
+                if ( $receiver_id && $receiver_id !== $current_user_id ) {
+                    $notif_title_for_receiver = ( $sender_role === 'seller' )
+                        ? sprintf( __( 'Nuevo mensaje del vendedor sobre "%s"', 'motorlan-api-vue' ), $product_title )
+                        : __( 'Nuevo mensaje en tu publicación', 'motorlan-api-vue' );
+                    $notif_manager->create_notification(
+                        $receiver_id,
+                        'new_message',
+                        $notif_title_for_receiver,
+                        $message,
+                        [
+                            'url'           => $room_url,
+                            'room_key'      => $room_key,
+                            'product_id'    => $product_id,
+                            'product_title' => $product_title,
+                            'sender_name'   => $display_name,
+                        ],
+                        ['web', 'email']
+                    );
+                }
+
+                $copy_title = sprintf( __( 'Mensaje enviado sobre "%s"', 'motorlan-api-vue' ), $product_title );
+                $copy_data  = [
+                    'url'            => $room_url,
+                    'room_key'       => $room_key,
+                    'product_id'     => $product_id,
+                    'product_title'  => $product_title,
+                    'recipient_name' => $receiver_name,
+                ];
+
+                if ( $current_user_id ) {
+                    // Copia al remitente autenticado (web + email)
+                    $notif_manager->create_notification(
+                        $current_user_id,
+                        'message_sent',
+                        $copy_title,
+                        $message,
+                        $copy_data,
+                        ['web', 'email']
+                    );
+                } elseif ( ! empty( $guest_email ) ) {
+                    // Copia al remitente invitado (solo email)
+                    $notif_manager->send_template_email(
+                        $guest_email,
+                        'message_sent',
+                        $copy_title,
+                        $message,
+                        $copy_data
+                    );
                 }
             }
 

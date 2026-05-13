@@ -489,8 +489,17 @@ if ( ! class_exists( 'Motorlan_Purchase_Chat_Controller' ) ) {
 				$new_message = $persisted;
 			}
 
-            // Notify the other party
-            $receiver_id = ( $sender_role === 'seller' ) ? $participants['buyer_id'] : $participants['seller_id'];
+            // Notify the other party + copy sender
+            $receiver_id   = ( $sender_role === 'seller' ) ? $participants['buyer_id'] : $participants['seller_id'];
+            $receiver_user = $receiver_id ? get_userdata( $receiver_id ) : null;
+            $receiver_name = $receiver_user ? $receiver_user->display_name : 'el destinatario';
+            $chat_url      = '/dashboard/purchases/chat/' . $request['uuid'];
+            $publication_id = (int) get_field( 'publicacion', $purchase_id );
+            if ( ! $publication_id ) {
+                $publication_id = (int) get_post_meta( $purchase_id, 'publicacion', true );
+            }
+            $product_title = $publication_id ? get_the_title( $publication_id ) : '';
+
             $notification_manager = new Motorlan_Notification_Manager();
             $notification_manager->create_notification(
                 $receiver_id,
@@ -500,10 +509,30 @@ if ( ! class_exists( 'Motorlan_Purchase_Chat_Controller' ) ) {
                 array(
                     'purchase_uuid' => $request['uuid'],
                     'purchase_id'   => $purchase_id,
-                    'url'           => '/purchases/' . $request['uuid'],
+                    'product_title' => $product_title ?: 'tu compra',
+                    'sender_name'   => $display_name,
+                    'url'           => $chat_url,
                 ),
                 array( 'web', 'email' )
             );
+
+            // Copia al remitente
+            if ( $current_user_id ) {
+                $notification_manager->create_notification(
+                    $current_user_id,
+                    'message_sent',
+                    "Mensaje enviado a {$receiver_name}",
+                    wp_trim_words( $message, 10, '...' ),
+                    array(
+                        'purchase_uuid'  => $request['uuid'],
+                        'purchase_id'    => $purchase_id,
+                        'product_title'  => $product_title ?: 'tu compra',
+                        'recipient_name' => $receiver_name,
+                        'url'            => $chat_url,
+                    ),
+                    array( 'web', 'email' )
+                );
+            }
 
 			$response_message                    = $this->format_message( $new_message, $current_user_id );
 			$response_message['is_current_user'] = true;

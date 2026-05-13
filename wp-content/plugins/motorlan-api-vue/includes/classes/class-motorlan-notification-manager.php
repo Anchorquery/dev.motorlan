@@ -193,27 +193,6 @@ class Motorlan_Notification_Manager {
 
         $to = $user->user_email;
 
-        // --- CONFIGURACIÓN DE MODO PRUEBA ---
-        // Email al que se redirigirán todos los correos en modo prueba
-        $test_mode_email = 'daniel@adaki.net';
-        
-        // Matriz de whitelist: Emails reales permitidos.
-        // Agrega aquí los emails que DEBEN recibir el correo original.
-        $allowed_emails = [
-            'daniel@adaki.net',
-            // 'otro@email.com',
-        ];
-
-        // Lógica de redirección
-        if ( ! in_array( $to, $allowed_emails, true ) ) {
-            // Opcional: Agregar nota al título o cuerpo para indicar redirección (comentado por defecto)
-             $title = "[REDIRECTED from $to] " . $title;
-            $message = "Original recipient: $to <br/>" . $message;
-            
-            $to = $test_mode_email;
-        }
-        // ------------------------------------
-
         $subject = "[Motorlan] " . $title;
         
         $body = $this->get_email_template( $type, [
@@ -253,16 +232,71 @@ class Motorlan_Notification_Manager {
 
         $base_template_path = MOTORLAN_API_VUE_PATH . 'includes/email-templates/base.php';
         if ( ! file_exists( $base_template_path ) ) {
-            return $content; // Fallback to content only if base is missing
+            return $content;
         }
 
-        $base_html = file_get_contents( $base_template_path );
+        $subject   = $args['title'] ?? 'Notificación de Motorlan';
+        $logo_url  = $this->get_site_logo_url();
+        $site_name = get_bloginfo( 'name' ) ?: 'Motorlan';
+        $site_url  = home_url( '/' );
+        $year      = date( 'Y' );
 
-        // Replace placeholders
-        $subject = $args['title'] ?? 'Notificación de Motorlan';
-        $full_html = str_replace( '{{subject}}', $subject, $base_html );
-        $full_html = str_replace( '{{content}}', $content, $full_html );
+        ob_start();
+        include $base_template_path;
+        return ob_get_clean();
+    }
 
-        return $full_html;
+    /**
+     * Envía un email basado en plantilla a una dirección arbitraria (útil para guests).
+     *
+     * @param string  $to_email
+     * @param string  $type     Nombre de la plantilla.
+     * @param string  $title    Asunto.
+     * @param string  $message  Cuerpo principal pasado a la plantilla.
+     * @param array   $data     Datos extra para la plantilla.
+     * @param WP_User|null $user
+     * @return bool
+     */
+    public function send_template_email( $to_email, $type, $title, $message, $data = [], $user = null ) {
+        $to_email = sanitize_email( $to_email );
+        if ( ! $to_email || ! is_email( $to_email ) ) {
+            return false;
+        }
+
+        $body = $this->get_email_template( $type, [
+            'title'   => $title,
+            'message' => $message,
+            'data'    => $data,
+            'user'    => $user,
+        ] );
+
+        if ( empty( $body ) ) {
+            return false;
+        }
+
+        $subject = "[Motorlan] " . $title;
+        $headers = ['Content-Type: text/html; charset=UTF-8'];
+
+        return wp_mail( $to_email, $subject, $body, $headers );
+    }
+
+    /**
+     * Devuelve URL del logo del sitio (custom logo > site icon > vacío).
+     */
+    private function get_site_logo_url() {
+        $custom_logo_id = get_theme_mod( 'custom_logo' );
+        if ( $custom_logo_id ) {
+            $url = wp_get_attachment_image_url( $custom_logo_id, 'full' );
+            if ( $url ) {
+                return $url;
+            }
+        }
+
+        $site_icon = get_site_icon_url( 192 );
+        if ( $site_icon ) {
+            return $site_icon;
+        }
+
+        return '';
     }
 }

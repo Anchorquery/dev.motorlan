@@ -688,7 +688,7 @@ function motorlan_create_purchase_callback( WP_REST_Request $request ) {
         array(
             'purchase_uuid' => $uuid,
             'purchase_id'   => $purchase_id,
-            'url'           => '/purchases/' . $uuid,
+            'url'           => '/dashboard/publications/sales/' . $uuid,
         ),
         array( 'web', 'email' )
     );

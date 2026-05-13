@@ -409,7 +409,8 @@ function motorlan_handle_create_offer($request) {
         array(
             'offer_id'       => $offer_id,
             'publication_id' => $post_id,
-                'url'            => '/dashboard/publications/offers-received',
+            'amount'         => $amount,
+            'url'            => '/dashboard/publications/offers-received',
         ),
         array( 'web', 'email' )
     );
