@@ -357,41 +357,30 @@ if ( ! class_exists( 'Motorlan_Purchase_Chat_Controller' ) ) {
 		 * @param WP_REST_Request $request Request object.
 		 *
 		 * @return WP_REST_Response|WP_Error
+		 */
 		public function get_messages( WP_REST_Request $request ) {
 			$purchase = $this->get_purchase_from_request( $request );
 			if ( is_wp_error( $purchase ) ) {
 				return $purchase;
 			}
+
 			$purchase_id     = $purchase->ID;
 			$current_user_id = get_current_user_id();
-			$purchase_uuid   = $request['uuid'];
+			if ( ! motorlan_user_can_access_purchase( $purchase_id, $current_user_id ) ) {
+				return new WP_Error(
+					'forbidden',
+					__( 'You are not allowed to access these messages.', 'motorlan-api-vue' ),
+					array( 'status' => 403 )
+				);
+			}
 
 			$since_timestamp = $request->get_param( 'since_timestamp' );
 			$since_timestamp = $since_timestamp ? strtotime( sanitize_text_field( $since_timestamp ) ) : null;
 
-			// 1. Cache Check (Fast Path - Bypass Rate Limiter)
-			$cache_key = 'motorlan_purch_msg_' . md5( $purchase_uuid . '_' . ( $since_timestamp ?? 'all' ) . '_' . $current_user_id );
-			$cached_response = get_transient( $cache_key );
-			
-			if ( false !== $cached_response && is_array( $cached_response ) ) {
-				return new WP_REST_Response( $cached_response, 200 );
-			}
-
-			// 2. Rate Limiting (Missing Cache, protect DB)
-			if ( class_exists( 'Motorlan_Rate_Limiter' ) ) {
-				$user_identifier = Motorlan_Rate_Limiter::get_user_identifier();
-				// 200/min for GET
-				$rate_check = Motorlan_Rate_Limiter::check( 'purchase_messages_get', $user_identifier, 200, 60 );
-				
-				if ( is_wp_error( $rate_check ) ) {
-					Motorlan_Rate_Limiter::send_rate_limit_headers( $rate_check );
-					return $rate_check;
-				}
-			}
-
 			$messages      = array();
 			$table_ready   = $this->ensure_table_exists();
 			$server_time   = gmdate( 'Y-m-d H:i:s' );
+			$purchase_uuid = $request['uuid'];
 
 			if ( $table_ready ) {
 				$this->maybe_migrate_legacy_messages( $purchase_id, $purchase_uuid );
@@ -409,24 +398,21 @@ if ( ! class_exists( 'Motorlan_Purchase_Chat_Controller' ) ) {
 			}
 
 			$participants = motorlan_get_purchase_participants( $purchase_id );
+			$viewer_role  = ( $participants['seller_id'] === $current_user_id ) ? 'seller' : 'buyer';
 
-			$response_data = array(
-				'data' => $messages,
-				'meta' => array(
-					'purchase_id'      => $purchase_id,
-					'purchase_uuid'    => $purchase_uuid,
-					'current_user_id'  => $current_user_id,
-					'participants'     => $participants,
-					'server_timestamp' => $server_time,
+			return new WP_REST_Response(
+				array(
+					'data' => $messages,
+					'meta' => array(
+						'current_user_id'  => $current_user_id,
+						'viewer_role'      => $viewer_role,
+						'purchase_uuid'    => $purchase_uuid,
+						'server_timestamp' => $server_time,
+					),
 				),
+				200
 			);
-	
-			// Guardar en cache por 10 segundos
-			set_transient( $cache_key, $response_data, 10 );
-	
-			return new WP_REST_Response( $response_data, 200 );
 		}
-
 
 		/**
 		 * Create a new message for the conversation.
@@ -436,35 +422,10 @@ if ( ! class_exists( 'Motorlan_Purchase_Chat_Controller' ) ) {
 		 * @return WP_REST_Response|WP_Error
 		 */
 		public function create_message( WP_REST_Request $request ) {
-			// Rate limiting (20/min for POST)
-			if ( class_exists( 'Motorlan_Rate_Limiter' ) ) {
-				$user_identifier = Motorlan_Rate_Limiter::get_user_identifier();
-				$rate_check = Motorlan_Rate_Limiter::check( 'purchase_messages_post', $user_identifier, 20, 60 );
-				
-				if ( is_wp_error( $rate_check ) ) {
-					Motorlan_Rate_Limiter::send_rate_limit_headers( $rate_check );
-					return $rate_check;
-				}
-			}
-
-			// Validate Content-Type
-			if ( function_exists( 'motorlan_validate_json_content_type' ) ) {
-				$valid_type = motorlan_validate_json_content_type( $request );
-				if ( is_wp_error( $valid_type ) ) {
-					return $valid_type;
-				}
-			}
-
 			$purchase = $this->get_purchase_from_request( $request );
 			if ( is_wp_error( $purchase ) ) {
 				return $purchase;
 			}
-			
-			// Invalidate cache
-			$purchase_uuid = $request['uuid'];
-			global $wpdb;
-			$base_key = '_transient_motorlan_purch_msg_' . md5( $purchase_uuid );
-			$wpdb->query( $wpdb->prepare( "DELETE FROM $wpdb->options WHERE option_name LIKE %s", $wpdb->esc_like( $base_key ) . '%' ) );
 
 			$purchase_id     = $purchase->ID;
 			$current_user_id = get_current_user_id();
@@ -528,9 +489,50 @@ if ( ! class_exists( 'Motorlan_Purchase_Chat_Controller' ) ) {
 				$new_message = $persisted;
 			}
 
-            // Notify the other party
-            $receiver_id = ( $sender_role === 'seller' ) ? $participants['buyer_id'] : $participants['seller_id'];
-            do_action( 'motorlan_new_purchase_message', $receiver_id, $display_name, $message, $purchase_id, $request['uuid'] );
+            // Notify the other party + copy sender
+            $receiver_id   = ( $sender_role === 'seller' ) ? $participants['buyer_id'] : $participants['seller_id'];
+            $receiver_user = $receiver_id ? get_userdata( $receiver_id ) : null;
+            $receiver_name = $receiver_user ? $receiver_user->display_name : 'el destinatario';
+            $chat_url      = '/dashboard/purchases/chat/' . $request['uuid'];
+            $publication_id = (int) get_field( 'publicacion', $purchase_id );
+            if ( ! $publication_id ) {
+                $publication_id = (int) get_post_meta( $purchase_id, 'publicacion', true );
+            }
+            $product_title = $publication_id ? get_the_title( $publication_id ) : '';
+
+            $notification_manager = new Motorlan_Notification_Manager();
+            $notification_manager->create_notification(
+                $receiver_id,
+                'new_message',
+                "Nuevo mensaje de {$display_name}",
+                wp_trim_words( $message, 10, '...' ),
+                array(
+                    'purchase_uuid' => $request['uuid'],
+                    'purchase_id'   => $purchase_id,
+                    'product_title' => $product_title ?: 'tu compra',
+                    'sender_name'   => $display_name,
+                    'url'           => $chat_url,
+                ),
+                array( 'web', 'email' )
+            );
+
+            // Copia al remitente
+            if ( $current_user_id ) {
+                $notification_manager->create_notification(
+                    $current_user_id,
+                    'message_sent',
+                    "Mensaje enviado a {$receiver_name}",
+                    wp_trim_words( $message, 10, '...' ),
+                    array(
+                        'purchase_uuid'  => $request['uuid'],
+                        'purchase_id'    => $purchase_id,
+                        'product_title'  => $product_title ?: 'tu compra',
+                        'recipient_name' => $receiver_name,
+                        'url'            => $chat_url,
+                    ),
+                    array( 'web', 'email' )
+                );
+            }
 
 			$response_message                    = $this->format_message( $new_message, $current_user_id );
 			$response_message['is_current_user'] = true;

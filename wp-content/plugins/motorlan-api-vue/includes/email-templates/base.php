@@ -1,140 +1,80 @@
 <?php
-// Base Email Template
-// Brand Colors: Fagor Red #e42313, Dark #25293C, Gray #F8F7FA
-$primary_color = '#e42313';
-$bg_color = '#F4F5F7';
-$card_bg = '#FFFFFF';
-$text_color = '#2F2B3D';
-$text_muted = '#808390';
-?>
-<!DOCTYPE html>
+/**
+ * Base email layout. Receives variables from notification manager:
+ *
+ * @var string $subject
+ * @var string $content   HTML del cuerpo del correo (ya renderizado).
+ * @var string $logo_url  URL del logo del sitio (puede estar vacío).
+ * @var string $site_name Nombre del sitio.
+ * @var string $site_url  URL pública.
+ * @var string $year
+ */
+if ( ! defined( 'WPINC' ) ) {
+    die;
+}
+?><!DOCTYPE html>
 <html lang="es" xmlns="http://www.w3.org/1999/xhtml" xmlns:o="urn:schemas-microsoft-com:office:office">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="x-apple-disable-message-reformatting">
-    <title>{{subject}}</title>
+    <meta name="color-scheme" content="light dark">
+    <meta name="supported-color-schemes" content="light dark">
+    <title><?php echo esc_html( $subject ); ?></title>
     <!--[if mso]>
     <style type="text/css">
-        body, table, td, a { font-family: Arial, sans-serif !important; }
+        body, table, td, a { font-family: Arial, Helvetica, sans-serif !important; }
     </style>
     <![endif]-->
     <style>
-        /* General Resets */
-        body { margin: 0; padding: 0; -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; width: 100% !important; background-color: <?php echo $bg_color; ?>; }
-        img { border: 0; outline: none; text-decoration: none; -ms-interpolation-mode: bicubic; }
+        body { margin: 0; padding: 0; width: 100% !important; -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; background-color: #f4f6f8; }
         table { border-collapse: collapse; mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
-        
-        /* Typography */
-        body, table, td, p, a { font-family: 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif; color: <?php echo $text_color; ?>; }
-        
-        /* Layout */
-        .wrapper { width: 100%; table-layout: fixed; background-color: <?php echo $bg_color; ?>; padding: 40px 0; }
-        .container { width: 100%; max-width: 600px; margin: 0 auto; background-color: <?php echo $card_bg; ?>; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-        
-        .header { background-color: #ffffff; padding: 30px 20px; text-align: center; border-bottom: 3px solid <?php echo $primary_color; ?>; }
-        .content { padding: 40px 30px; font-size: 16px; line-height: 1.6; color: <?php echo $text_color; ?>; }
-        
-        .footer { padding: 30px 20px; text-align: center; font-size: 13px; color: <?php echo $text_muted; ?>; background-color: <?php echo $bg_color; ?>; }
-        .footer a { color: <?php echo $text_muted; ?>; text-decoration: underline; }
-        
-        /* Components */
-        .button { 
-            background-color: <?php echo $primary_color; ?>; 
-            color: #ffffff !important; 
-            padding: 14px 30px; 
-            text-decoration: none; 
-            border-radius: 6px; 
-            font-weight: 600; 
-            display: inline-block; 
-            margin: 20px 0; 
-            text-align: center;
-            font-size: 16px;
-            mso-padding-alt: 0;
-            cursor: pointer;
-        }
-        /* Button hover fallback */
-        .button:hover { background-color: #c91f11; }
-
-        h1 { font-size: 24px; font-weight: 700; margin-top: 0; margin-bottom: 20px; color: #1a1a1a; }
-        p { margin-bottom: 15px; }
-        a { color: <?php echo $primary_color; ?>; text-decoration: none; font-weight: 500; }
-        
-        .product-card { background-color: #f9f9f9; border: 1px solid #eeeeee; border-radius: 8px; padding: 15px; margin: 20px 0; display: block; }
-        .product-img { width: 80px; height: 80px; object-fit: cover; border-radius: 4px; display: inline-block; vertical-align: middle; background-color: #ddd; }
-        .product-info { display: inline-block; vertical-align: middle; margin-left: 15px; width: calc(100% - 110px); }
-        .product-title { font-weight: 600; font-size: 15px; margin: 0 0 5px 0; color: #333; }
-        .product-price { color: <?php echo $primary_color; ?>; font-weight: 700; margin: 0; }
-
-        .info-box { background-color: #eef2f5; border-left: 4px solid #6c757d; padding: 15px; margin: 20px 0; font-size: 14px; color: #555; }
-
-        /* Dark Mode Support */
-        @media (prefers-color-scheme: dark) {
-            body, .wrapper { background-color: #1A1A1A !important; }
-            .container { background-color: #2D2D2D !important; box-shadow: none !important; }
-            .header { background-color: #252525 !important; border-bottom-color: <?php echo $primary_color; ?> !important; }
-            .content { color: #E0E0E0 !important; }
-            h1 { color: #FFFFFF !important; }
-            p, span, div { color: #E0E0E0 !important; }
-            .product-card { background-color: #333333 !important; border-color: #444444 !important; }
-            .product-title { color: #FFFFFF !important; }
-            .info-box { background-color: #333333 !important; border-left-color: #999999 !important; color: #CCCCCC !important; }
-            .footer { background-color: #1A1A1A !important; color: #888888 !important; }
-            .button { background-color: <?php echo $primary_color; ?> !important; color: #FFFFFF !important; }
-        }
-        
-        /* Mobile */
-        @media only screen and (max-width: 600px) {
-            .container { width: 100% !important; border-radius: 0 !important; }
-            .content { padding: 25px 20px !important; }
-            .wrapper { padding: 0 !important; }
-            .product-img { width: 60px; height: 60px; }
-            .product-info { width: calc(100% - 80px); }
+        img { border: 0; outline: none; text-decoration: none; -ms-interpolation-mode: bicubic; display: block; }
+        a { color: #005b96; text-decoration: none; }
+        .btn:hover { opacity: 0.92; }
+        @media only screen and (max-width: 620px) {
+            .container { width: 100% !important; }
+            .px-32 { padding-left: 20px !important; padding-right: 20px !important; }
+            .py-32 { padding-top: 24px !important; padding-bottom: 24px !important; }
+            .h1 { font-size: 22px !important; line-height: 28px !important; }
         }
     </style>
 </head>
-<body>
-    <div class="wrapper">
-        <center>
-            <table border="0" cellpadding="0" cellspacing="0" width="100%">
-                <tr>
-                    <td align="center">
-                        <table class="container" border="0" cellpadding="0" cellspacing="0">
-                            <!-- Header -->
-                            <tr>
-                                <td class="header">
-                                    <a href="https://www.motorlan.es" target="_blank">
-                                        <img src="https://www.motorlan.es/wp-content/uploads/2025/11/logo-motorlan-trans-1.png" alt="Motorlan" width="180" style="display: block; border: 0; margin: 0 auto; max-width: 100%;">
-                                    </a>
-                                </td>
-                            </tr>
-                            
-                            <!-- Main Content -->
-                            <tr>
-                                <td class="content">
-                                    {{content}}
-                                </td>
-                            </tr>
-                            
-                            <!-- Footer -->
-                            <tr>
-                                <td class="footer">
-                                    <p>&copy; <?php echo date('Y'); ?> <strong>Motorlan</strong></p>
-                                    <p>
-                                        <a href="https://www.motorlan.es/mi-cuenta/dashboard/notifications">Preferencias</a> • 
-                                        <a href="https://www.motorlan.es/politica-de-privacidad/">Privacidad</a>
-                                    </p>
-                                    <p style="margin-top:20px; font-size: 11px; opacity: 0.7;">
-                                        Este es un mensaje automático, por favor no respondas a este correo.
-                                    </p>
-                                </td>
-                            </tr>
-                        </table>
-                    </td>
-                </tr>
-            </table>
-        </center>
-    </div>
+<body style="margin:0;padding:0;background-color:#f4f6f8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2937;">
+    <span style="display:none;visibility:hidden;opacity:0;height:0;width:0;font-size:1px;line-height:1px;color:#f4f6f8;overflow:hidden;mso-hide:all;">
+        <?php echo esc_html( $subject ); ?>
+    </span>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f4f6f8;">
+        <tr>
+            <td align="center" style="padding:32px 16px;">
+                <table role="presentation" class="container" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px;max-width:600px;background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.06);">
+                    <tr>
+                        <td align="center" style="background:linear-gradient(135deg,#005b96 0%,#0073aa 100%);padding:28px 32px;">
+                            <?php if ( ! empty( $logo_url ) ) : ?>
+                                <a href="<?php echo esc_url( $site_url ); ?>" style="text-decoration:none;display:inline-block;">
+                                    <img src="<?php echo esc_url( $logo_url ); ?>" alt="<?php echo esc_attr( $site_name ); ?>" width="160" style="max-width:160px;height:auto;display:block;margin:0 auto;">
+                                </a>
+                            <?php else : ?>
+                                <a href="<?php echo esc_url( $site_url ); ?>" style="color:#ffffff;text-decoration:none;font-size:24px;font-weight:700;letter-spacing:0.5px;">
+                                    <?php echo esc_html( $site_name ); ?>
+                                </a>
+                            <?php endif; ?>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="px-32 py-32" style="padding:36px 40px;font-size:15px;line-height:1.6;color:#1f2937;">
+                            <?php echo $content; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="background:#f9fafb;border-top:1px solid #e5e7eb;padding:24px 32px;text-align:center;font-size:12px;line-height:1.5;color:#6b7280;">
+                            <p style="margin:0 0 6px;">Este es un correo automático, por favor no respondas a este mensaje.</p>
+                            <p style="margin:0;">&copy; <?php echo esc_html( $year ); ?> <a href="<?php echo esc_url( $site_url ); ?>" style="color:#6b7280;text-decoration:underline;"><?php echo esc_html( $site_name ); ?></a>. Todos los derechos reservados.</p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
 </body>
 </html>

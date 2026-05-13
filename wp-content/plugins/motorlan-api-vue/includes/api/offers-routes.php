@@ -205,16 +205,63 @@ function motorlan_offers_prepare_offer_item($offer) {
 }
 
 function motorlan_offers_create_purchase_from_offer($offer) {
-    if (!function_exists('motorlan_create_purchase')) {
-        require_once MOTORLAN_API_VUE_PATH . 'includes/api/motor-helpers.php';
-    }
-
     $motor_id = (int) $offer->publication_id;
     $buyer_id = (int) $offer->user_id;
     $amount = (float) $offer->offer_amount;
-    $seller_id = (int) get_post_field('post_author', $motor_id);
 
-    return motorlan_create_purchase( $motor_id, $buyer_id, $amount, $seller_id, $offer->id );
+    $motor_title = get_the_title($motor_id);
+    if (!$motor_title) {
+        return new WP_Error('invalid_publication', 'La publicación asociada a la oferta no existe.', array('status' => 404));
+    }
+
+    $buyer = get_userdata($buyer_id);
+    $buyer_name = $buyer ? $buyer->display_name : '';
+
+    $purchase_id = wp_insert_post(array(
+        'post_type' => 'compra',
+        'post_status' => 'publish',
+        'post_name' => 'Compra ' . $motor_title,
+        'post_title' => $motor_title . ' - ' . $buyer_name,
+    ));
+
+    if (is_wp_error($purchase_id)) {
+        return $purchase_id;
+    }
+
+    $uuid = wp_generate_uuid4();
+    $seller_id = (int) get_post_field('post_author', $motor_id);
+    $today = current_time('d/m/Y');
+
+    if (function_exists('update_field')) {
+        update_field('uuid', $uuid, $purchase_id);
+        update_field('motor', $motor_id, $purchase_id);
+        update_field('vendedor', $seller_id, $purchase_id);
+        update_field('comprador', $buyer_id, $purchase_id);
+        update_field('usuario', $buyer_id, $purchase_id);
+        update_field('precio_compra', $amount, $purchase_id);
+        update_field('estado', 'completed', $purchase_id);
+        update_field('fecha_compra', $today, $purchase_id);
+    } else {
+        update_post_meta($purchase_id, 'uuid', $uuid);
+        update_post_meta($purchase_id, 'motor', $motor_id);
+        update_post_meta($purchase_id, 'vendedor', $seller_id);
+        update_post_meta($purchase_id, 'comprador', $buyer_id);
+        update_post_meta($purchase_id, 'usuario', $buyer_id);
+        update_post_meta($purchase_id, 'precio_compra', $amount);
+        update_post_meta($purchase_id, 'estado', 'completed');
+        update_post_meta($purchase_id, 'fecha_compra', $today);
+    }
+
+    update_post_meta($purchase_id, 'vendedor_id', $seller_id);
+    update_post_meta($purchase_id, 'comprador_id', $buyer_id);
+    update_post_meta($purchase_id, 'offer_id', (int) $offer->id);
+    update_post_meta($purchase_id, 'precio_compra', $amount);
+    update_post_meta($purchase_id, 'tipo_venta', 'sale');
+
+    return array(
+        'uuid' => $uuid,
+        'id' => $purchase_id,
+    );
 }
 
 function motorlan_register_offers_routes() {
@@ -280,15 +327,8 @@ function motorlan_register_offers_routes() {
 }
 
 function motorlan_handle_create_offer($request) {
-    // Validate Content-Type
-    if ( function_exists( 'motorlan_validate_json_content_type' ) ) {
-        $valid_type = motorlan_validate_json_content_type( $request );
-        if ( is_wp_error( $valid_type ) ) {
-            return $valid_type;
-        }
-    }
-
     global $wpdb;
+
     $table_name = motorlan_offers_get_table_name();
     $user_id = get_current_user_id();
     $post_id = (int) $request['id'];
@@ -355,7 +395,25 @@ function motorlan_handle_create_offer($request) {
     $offer_payload = motorlan_offers_prepare_offer_item($offer);
 
     // Notify seller
-    do_action( 'motorlan_offer_created', $offer_id );
+    $seller_id = (int) $publication->post_author;
+    $buyer = get_userdata($user_id);
+    $buyer_name = $buyer ? $buyer->display_name : 'Usuario';
+    $publication_title = get_the_title($post_id);
+
+    $notification_manager = new Motorlan_Notification_Manager();
+    $notification_manager->create_notification(
+        $seller_id,
+        'new_offer',
+        "Nueva oferta de {$buyer_name}",
+        "Has recibido una oferta de {$amount}€ por \"{$publication_title}\"",
+        array(
+            'offer_id'       => $offer_id,
+            'publication_id' => $post_id,
+            'amount'         => $amount,
+            'url'            => '/dashboard/publications/offers-received',
+        ),
+        array( 'web', 'email' )
+    );
 
     return new WP_REST_Response(array(
         'success' => true,
@@ -471,14 +529,6 @@ function motorlan_handle_get_received_offers($request) {
 }
 
 function motorlan_handle_update_offer_status($request) {
-    // Validate Content-Type
-    if ( function_exists( 'motorlan_validate_json_content_type' ) ) {
-        $valid_type = motorlan_validate_json_content_type( $request );
-        if ( is_wp_error( $valid_type ) ) {
-            return $valid_type;
-        }
-    }
-
     global $wpdb;
     $table_name = motorlan_offers_get_table_name();
     $offer_id = (int) $request['id'];
@@ -533,7 +583,21 @@ function motorlan_handle_update_offer_status($request) {
         $updated_offer = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table_name WHERE id = %d", $offer_id));
 
         // Notify Buyer
-        do_action( 'motorlan_offer_status_updated', $offer_id, 'accepted' );
+        $buyer_id = (int) $offer->user_id;
+        $publication_title = get_the_title($offer->publication_id);
+        $notification_manager = new Motorlan_Notification_Manager();
+        $notification_manager->create_notification(
+            $buyer_id,
+            'offer_accepted',
+            "¡Oferta aceptada para \"{$publication_title}\"!",
+            "El vendedor ha aceptado tu oferta. Tienes 24 horas para confirmar la compra.",
+            array(
+                'offer_id'       => $offer_id,
+                'publication_id' => $offer->publication_id,
+                'url'            => '/dashboard/purchases/offers-sent',
+            ),
+            array( 'web', 'email' )
+        );
 
         return new WP_REST_Response(array(
 
@@ -568,14 +632,6 @@ function motorlan_handle_update_offer_status($request) {
 }
 
 function motorlan_handle_confirm_offer($request) {
-    // Validate Content-Type
-    if ( function_exists( 'motorlan_validate_json_content_type' ) ) {
-        $valid_type = motorlan_validate_json_content_type( $request );
-        if ( is_wp_error( $valid_type ) ) {
-            return $valid_type;
-        }
-    }
-
     global $wpdb;
 
     $table_name = motorlan_offers_get_table_name();
@@ -613,20 +669,8 @@ function motorlan_handle_confirm_offer($request) {
         return new WP_Error('invalid_status', 'La oferta no puede confirmarse en su estado actual.', array('status' => 400));
     }
 
-    // Start Transaction to prevent race conditions
-    $wpdb->query('START TRANSACTION');
-
-    // Lock the stock row (pessimistic locking)
-    // We select meta_id to lock the specific row in postmeta
-    $wpdb->get_results( $wpdb->prepare("SELECT meta_id FROM {$wpdb->postmeta} WHERE post_id = %d AND meta_key = 'stock' FOR UPDATE", $offer->publication_id) );
-
-    // Re-fetch stock directly from DB to ensure we have the locked value (bypass WP object cache)
-    $current_stock = $wpdb->get_var( $wpdb->prepare("SELECT meta_value FROM {$wpdb->postmeta} WHERE post_id = %d AND meta_key = 'stock'", $offer->publication_id) );
-    
-    // Cast to int, treating empty as 0
-    $current_stock = (int) $current_stock;
-
-    if ($current_stock <= 0) {
+    $stock = motorlan_offers_get_stock($offer->publication_id);
+    if ($stock <= 0) {
         $wpdb->update(
             $table_name,
             array(
@@ -637,20 +681,16 @@ function motorlan_handle_confirm_offer($request) {
             ),
             array('id' => $offer_id)
         );
-        
-        $wpdb->query('COMMIT'); // Commit the status change
 
         return new WP_Error('no_stock', 'La publicación se quedó sin stock al intentar confirmar la oferta.', array('status' => 400));
     }
 
     $purchase_data = motorlan_offers_create_purchase_from_offer($offer);
-    
     if (is_wp_error($purchase_data)) {
-        $wpdb->query('ROLLBACK');
         return $purchase_data;
     }
 
-    $new_stock = max(0, $current_stock - 1);
+    $new_stock = max(0, $stock - 1);
 
     if (function_exists('update_field')) {
         update_field('stock', $new_stock, $offer->publication_id);
@@ -666,7 +706,7 @@ function motorlan_handle_confirm_offer($request) {
 
     $confirmed_at = current_time('mysql');
 
-    $updated = $wpdb->update(
+    $wpdb->update(
         $table_name,
         array(
             'status' => MOTORLAN_OFFER_STATUS_CONFIRMED,
@@ -675,13 +715,6 @@ function motorlan_handle_confirm_offer($request) {
         ),
         array('id' => $offer_id)
     );
-
-    if ( $updated === false ) {
-        $wpdb->query('ROLLBACK');
-        return new WP_Error('db_error', 'Error al actualizar el estado de la oferta.', array('status' => 500));
-    }
-
-    $wpdb->query('COMMIT');
 
     $updated_offer = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table_name WHERE id = %d", $offer_id));
 

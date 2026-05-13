@@ -1,45 +1,38 @@
 <?php
-// Arguments available: $args['title'], $args['message'], $args['data'], $args['user']
-$data = $args['data'] ?? [];
-$product_image = $data['product_image'] ?? '';
-$product_title = $data['product_title'] ?? 'Producto'; // Fallback if data missing (usually listener provides it, but sometimes it might be just title)
-// Listener for offer_created puts title in message, but let's see. 
-// Ah, listener passes 'publication_title' in data? No, in listener I passed 'product_image' but title is not explicitly in 'on_offer_created' data array, I just used it in subject string.
-// Let me double check on_offer_created in listener.
-// I see I didn't add 'product_title' to data in on_offer_created, only used it for subject. I should fix that if I want to use it here independently. 
-// For now, I will extract it from the message if needed or just rely on 'Has recibido una oferta...'
+/**
+ * Email template for a new offer notification.
+ *
+ * @var array $args
+ */
 
-// Actually, I can update the listener again to be sure, or just proceed. 
-// Let's assume for now I'll use what's available. Listener has 'offer_amount'.
-$offer_amount = $data['offer_amount'] ?? '---';
-$url = get_site_url() . $data['url'];
+if ( ! defined( 'WPINC' ) ) {
+    die;
+}
+
+$publication_id    = $args['data']['publication_id'] ?? 0;
+$publication_title = get_the_title( $publication_id );
+$offer_amount      = $args['data']['amount'] ?? '';
+$offers_url        = ! empty( $args['data']['url'] ) ? home_url( $args['data']['url'] ) : home_url( '/dashboard/publications/offers-received' );
 ?>
-
-<h1><?php esc_html_e( '¡Nueva Oferta Recibida!', 'motorlan-api-vue' ); ?></h1>
-
-<p><?php printf( esc_html__( 'Hola %s,', 'motorlan-api-vue' ), esc_html( $args['user']->display_name ) ); ?></p>
-
-<p><?php echo wp_kses_post( $args['message'] ); ?></p>
-
-<?php if ( ! empty( $product_image ) ) : ?>
-<div class="product-card">
-    <img src="<?php echo esc_url($product_image); ?>" alt="<?php esc_attr_e( 'Producto', 'motorlan-api-vue' ); ?>" class="product-img">
-    <div class="product-info">
-        <div class="product-title"><?php esc_html_e( 'Oferta de:', 'motorlan-api-vue' ); ?> <?php echo esc_html($offer_amount); ?>€</div>
-        <?php if (!empty($data['product_price'])): ?>
-            <div style="font-size: 14px; color: #888;"><?php printf( esc_html__( 'Precio original: %s€', 'motorlan-api-vue' ), esc_html( $data['product_price'] ) ); ?></div>
-        <?php endif; ?>
-    </div>
-</div>
+<h2 class="h1" style="margin:0 0 16px;font-size:24px;line-height:30px;font-weight:700;color:#111827;"><?php echo esc_html( $args['title'] ); ?></h2>
+<p style="margin:0 0 16px;">Has recibido una nueva oferta para tu publicación <strong>"<?php echo esc_html( $publication_title ); ?>"</strong>.</p>
+<?php if ( ! empty( $offer_amount ) ) : ?>
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 24px;">
+    <tr>
+        <td style="background:#f3f6f9;padding:18px 20px;border-radius:8px;text-align:center;">
+            <div style="font-size:13px;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Importe ofertado</div>
+            <div style="font-size:28px;font-weight:700;color:#005b96;"><?php echo esc_html( $offer_amount ); ?>€</div>
+        </td>
+    </tr>
+</table>
+<?php else : ?>
+<p style="margin:0 0 16px;"><?php echo esc_html( $args['message'] ?? '' ); ?></p>
 <?php endif; ?>
-
-<p><?php esc_html_e( 'Comprueba los detalles de la oferta y decide si aceptarla o rechazarla.', 'motorlan-api-vue' ); ?></p>
-
-<div style="text-align: center;">
-    <a href="<?php echo esc_url($url); ?>" class="button"><?php esc_html_e( 'Ver Oferta', 'motorlan-api-vue' ); ?></a>
-</div>
-
-<p style="margin-top: 30px; font-size: 14px; color: #666;">
-    <?php esc_html_e( 'Si no puedes hacer clic en el botón, copia y pega este enlace:', 'motorlan-api-vue' ); ?><br>
-    <?php echo esc_url($url); ?>
-</p>
+<p style="margin:0 0 16px;">Revisa los detalles y decide si la aceptas o la rechazas:</p>
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 0;">
+    <tr>
+        <td align="center" style="border-radius:8px;background:#0073aa;">
+            <a class="btn" href="<?php echo esc_url( $offers_url ); ?>" style="display:inline-block;padding:13px 28px;font-weight:600;font-size:15px;color:#ffffff;text-decoration:none;border-radius:8px;">Gestionar ofertas</a>
+        </td>
+    </tr>
+</table>

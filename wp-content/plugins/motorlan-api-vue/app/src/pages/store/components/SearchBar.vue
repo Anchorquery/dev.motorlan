@@ -16,8 +16,11 @@ const onSearch = () => emit('search')
         Tienda Motorlan
       </div>
       <h1 class="text-h4 text-md-h3 font-weight-bold mb-2 text-primary">
-        Motores, reguladores, repuestos y más.
+        Compra y venta de motores industriales
       </h1>
+      <p class="text-body-2 text-medium-emphasis mb-0">
+        Motores, reguladores, repuestos y más.
+      </p>
     </div>
 
     <div class="store-navbar__controls">

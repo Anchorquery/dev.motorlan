@@ -47,9 +47,7 @@ class Motorlan_Notification_Manager {
         }
 
         if ( in_array( 'email', $channels, true ) ) {
-            // Schedule immediate async execution instead of blocking
-            // Using time() + 1 to ensure it runs very soon but in a separate process/spawn if possible by WP
-            wp_schedule_single_event( time(), 'motorlan_async_email_notification', array( $user_id, $type, $title, $message, $data ) );
+            $this->send_email_notification( $user_id, $type, $title, $message, $data );
         }
 
         do_action( 'motorlan_notification_created', $user_id, $type, $data );
@@ -179,7 +177,7 @@ class Motorlan_Notification_Manager {
     }
 
     /**
-     * Envía una notificación por correo electrónico (Método directo para uso por Cron/Async).
+     * Envía una notificación por correo electrónico.
      *
      * @param int    $user_id
      * @param string $type
@@ -187,22 +185,13 @@ class Motorlan_Notification_Manager {
      * @param string $message
      * @param array  $data
      */
-    public function send_email_notification_direct( $user_id, $type, $title, $message, $data ) {
-        $to = '';
-        $user = null;
-
-        if ( $user_id ) {
-            $user = get_userdata( $user_id );
-            if ( $user ) {
-                $to = $user->user_email;
-            }
-        } elseif ( ! empty( $data['direct_email'] ) ) {
-            $to = $data['direct_email'];
-        }
-
-        if ( empty( $to ) ) {
+    private function send_email_notification( $user_id, $type, $title, $message, $data ) {
+        $user = get_userdata( $user_id );
+        if ( ! $user ) {
             return;
         }
+
+        $to = $user->user_email;
 
         $subject = "[Motorlan] " . $title;
         
@@ -229,7 +218,7 @@ class Motorlan_Notification_Manager {
      * @param array  $args          Argumentos para pasar a la plantilla.
      * @return string Contenido del correo renderizado.
      */
-    public function get_email_template( $template_name, $args = [] ) {
+    private function get_email_template( $template_name, $args = [] ) {
         $template_path = MOTORLAN_API_VUE_PATH . 'includes/email-templates/' . sanitize_file_name( $template_name ) . '.php';
 
         if ( ! file_exists( $template_path ) ) {
@@ -243,16 +232,71 @@ class Motorlan_Notification_Manager {
 
         $base_template_path = MOTORLAN_API_VUE_PATH . 'includes/email-templates/base.php';
         if ( ! file_exists( $base_template_path ) ) {
-            return $content; // Fallback to content only if base is missing
+            return $content;
         }
 
-        $base_html = file_get_contents( $base_template_path );
+        $subject   = $args['title'] ?? 'Notificación de Motorlan';
+        $logo_url  = $this->get_site_logo_url();
+        $site_name = get_bloginfo( 'name' ) ?: 'Motorlan';
+        $site_url  = home_url( '/' );
+        $year      = date( 'Y' );
 
-        // Replace placeholders
-        $subject = $args['title'] ?? 'Notificación de Motorlan';
-        $full_html = str_replace( '{{subject}}', $subject, $base_html );
-        $full_html = str_replace( '{{content}}', $content, $full_html );
+        ob_start();
+        include $base_template_path;
+        return ob_get_clean();
+    }
 
-        return $full_html;
+    /**
+     * Envía un email basado en plantilla a una dirección arbitraria (útil para guests).
+     *
+     * @param string  $to_email
+     * @param string  $type     Nombre de la plantilla.
+     * @param string  $title    Asunto.
+     * @param string  $message  Cuerpo principal pasado a la plantilla.
+     * @param array   $data     Datos extra para la plantilla.
+     * @param WP_User|null $user
+     * @return bool
+     */
+    public function send_template_email( $to_email, $type, $title, $message, $data = [], $user = null ) {
+        $to_email = sanitize_email( $to_email );
+        if ( ! $to_email || ! is_email( $to_email ) ) {
+            return false;
+        }
+
+        $body = $this->get_email_template( $type, [
+            'title'   => $title,
+            'message' => $message,
+            'data'    => $data,
+            'user'    => $user,
+        ] );
+
+        if ( empty( $body ) ) {
+            return false;
+        }
+
+        $subject = "[Motorlan] " . $title;
+        $headers = ['Content-Type: text/html; charset=UTF-8'];
+
+        return wp_mail( $to_email, $subject, $body, $headers );
+    }
+
+    /**
+     * Devuelve URL del logo del sitio (custom logo > site icon > vacío).
+     */
+    private function get_site_logo_url() {
+        $custom_logo_id = get_theme_mod( 'custom_logo' );
+        if ( $custom_logo_id ) {
+            $url = wp_get_attachment_image_url( $custom_logo_id, 'full' );
+            if ( $url ) {
+                return $url;
+            }
+        }
+
+        $site_icon = get_site_icon_url( 192 );
+        if ( $site_icon ) {
+            return $site_icon;
+        }
+
+        return '';
     }
 }

@@ -1,24 +1,39 @@
 <?php
-// Welcome Email
-$url = get_site_url() . '/login';
+/**
+ * Email template for the welcome message sent after user registration.
+ *
+ * @var array $args
+ */
+
+if ( ! defined( 'WPINC' ) ) {
+    die;
+}
+
+$user      = $args['user'] ?? null;
+$data      = $args['data'] ?? [];
+$name      = $data['name'] ?? ( $user ? $user->display_name : '' );
+$username  = $data['username'] ?? ( $user ? $user->user_login : '' );
+$login_url = $data['login_url'] ?? home_url( '/login' );
+$message   = $args['message'] ?? '';
 ?>
-
-<h1><?php esc_html_e( '¡Bienvenido/a a Motorlan!', 'motorlan-api-vue' ); ?></h1>
-
-<p><?php printf( esc_html__( 'Hola %s,', 'motorlan-api-vue' ), esc_html( $args['user']->display_name ) ); ?></p>
-
-<p><?php esc_html_e( 'Gracias por unirte a la mayor comunidad de compra-venta de recambios industriales y robótica.', 'motorlan-api-vue' ); ?></p>
-
-<p><?php esc_html_e( 'Tu cuenta ha sido creada correctamente. Ahora puedes:', 'motorlan-api-vue' ); ?></p>
-
-<ul>
-    <li><?php esc_html_e( 'Publicar tus productos y llegar a miles de compradores.', 'motorlan-api-vue' ); ?></li>
-    <li><?php esc_html_e( 'Guardar tus búsquedas y productos favoritos.', 'motorlan-api-vue' ); ?></li>
-    <li><?php esc_html_e( 'Contactar directamente con vendedores profesionales.', 'motorlan-api-vue' ); ?></li>
-</ul>
-
-<div style="text-align: center;">
-    <a href="<?php echo esc_url($url); ?>" class="button"><?php esc_html_e( 'Acceder a mi Cuenta', 'motorlan-api-vue' ); ?></a>
-</div>
-
-<p><?php esc_html_e( 'Si tienes alguna pregunta, nuestro equipo de soporte está aquí para ayudarte.', 'motorlan-api-vue' ); ?></p>
+<h2 class="h1" style="margin:0 0 16px;font-size:24px;line-height:30px;font-weight:700;color:#111827;"><?php echo esc_html( $args['title'] ); ?></h2>
+<p style="margin:0 0 16px;">Hola <?php echo esc_html( $name ); ?>,</p>
+<p style="margin:0 0 16px;"><?php echo esc_html( $message ); ?></p>
+<?php if ( ! empty( $username ) ) : ?>
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 24px;">
+    <tr>
+        <td style="background:#f3f6f9;padding:14px 18px;border-radius:8px;">
+            Tu nombre de usuario: <strong><?php echo esc_html( $username ); ?></strong>
+        </td>
+    </tr>
+</table>
+<?php endif; ?>
+<p style="margin:0 0 16px;">Ya puedes iniciar sesión y empezar a publicar o explorar:</p>
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 0;">
+    <tr>
+        <td align="center" style="border-radius:8px;background:#005b96;">
+            <a class="btn" href="<?php echo esc_url( $login_url ); ?>" style="display:inline-block;padding:13px 28px;font-weight:600;font-size:15px;color:#ffffff;text-decoration:none;border-radius:8px;">Iniciar sesión</a>
+        </td>
+    </tr>
+</table>
+<p style="margin:24px 0 0;font-size:13px;color:#6b7280;">Si no creaste esta cuenta, ignora este mensaje.</p>
