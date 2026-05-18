@@ -3,7 +3,6 @@ import { computed, ref, onMounted } from "vue";
 import { useRoute } from "vue-router";
 import { useUserStore } from "@/@core/stores/user";
 import ProductImage from "@/pages/store/components/ProductImage.vue";
-import { createFetch } from '@vueuse/core'
 import { createUrl } from "@/@core/composable/createUrl";
 import ProductDetails from "@/pages/store/components/ProductDetails.vue";
 import PublicacionInfo from "@/pages/store/components/PublicacionInfo.vue";
@@ -12,6 +11,7 @@ import RelatedProducts from "@/pages/store/components/RelatedProducts.vue";
 import ChatModal from "@/pages/store/components/ChatModal.vue";
 import EmptyState from "@/pages/store/components/EmptyState.vue";
 import type { Publicacion } from "@/interfaces/publicacion";
+import { usePublicApi } from "@/composables/usePublicApi";
 
 definePage({
   meta: {
@@ -23,18 +23,6 @@ definePage({
 const route = useRoute();
 
 const userStore = useUserStore();
-
-// Define a public API client that bypasses the global useApi (which forces auth headers and redirects on 401)
-// This ensures the product page is truly public even if the user has an expired token in their cookies.
-const usePublicApi = createFetch({
-  baseUrl: (import.meta.env.VITE_API_BASE_URL?.trim() ?? '') || ((window as any)?.wpData?.site_url ?? window.location.origin),
-  options: {
-      async onFetchError({ error }) {
-          console.error('Public API Error:', error);
-          return { error };
-      }
-  },
-})
 
 const { data, isFetching, execute } = usePublicApi<any>(
   createUrl(() => `/wp-json/motorlan/v1/publicaciones/${route.params.slug}`),

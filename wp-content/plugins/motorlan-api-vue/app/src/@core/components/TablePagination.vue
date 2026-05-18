@@ -20,11 +20,11 @@ const updatePage = (value: number) => {
 </script>
 
 <template>
-  <div>
+  <div class="table-pagination-shell">
     <VDivider />
 
-    <div class="d-flex align-center justify-sm-space-between justify-center flex-wrap gap-3 px-6 py-3">
-      <p class="text-disabled mb-0">
+    <div class="table-pagination-content d-flex align-center justify-sm-space-between justify-center flex-wrap gap-3 px-4 px-sm-6 py-3">
+      <p class="table-pagination-meta text-disabled mb-0">
         {{ paginationMeta({ page, itemsPerPage }, totalItems) }}
       </p>
 
@@ -32,9 +32,27 @@ const updatePage = (value: number) => {
         :model-value="page"
         active-color="primary"
         :length="Math.ceil(totalItems / itemsPerPage)"
-        :total-visible="$vuetify.display.xs ? 1 : Math.min(Math.ceil(totalItems / itemsPerPage), 5)"
+        :size="$vuetify.display.smAndDown ? 'small' : 'default'"
+        :total-visible="$vuetify.display.smAndDown ? 3 : Math.min(Math.ceil(totalItems / itemsPerPage), 5)"
         @update:model-value="updatePage"
       />
     </div>
   </div>
 </template>
+
+<style scoped>
+@media (max-width: 599px) {
+  .table-pagination-content {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .table-pagination-meta {
+    text-align: center;
+  }
+
+  .table-pagination-content :deep(.v-pagination) {
+    justify-content: center;
+  }
+}
+</style>

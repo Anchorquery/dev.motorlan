@@ -6,7 +6,25 @@
       "Bash(wp eval \"echo admin_url\\(''admin.php?page=motorlan-migration''\\);\")",
       "Bash(find \"C:/laragon/www/dev.motorlan/wp-content/plugins/motorlan-api-vue/app/src\" -type f \\\\\\( -name \"*store*\" -o -name \"*locales*\" -o -name \"*i18n*\" \\\\\\) 2>/dev/null | head -20)",
       "Bash(find \"C:\\\\laragon\\\\www\\\\dev.motorlan\\\\wp-content\\\\plugins\\\\motorlan-api-vue\" -type f \\\\\\( -name \"*.php\" -o -name \"*marcas*\" -o -name \"*publication*\" \\\\\\) | grep -E \"\\\\.\\(php|js|ts\\)$\" | head -40)",
-      "Bash(cd:*)"
+      "Bash(cd:*)",
+      "Bash(Get-ChildItem -Path \"C:\\\\laragon\\\\www\\\\dev.motorlan\\\\wp-content\\\\plugins\\\\motorlan-api-vue\\\\app\\\\src\" -Recurse -Directory)",
+      "Bash(Select-Object -First 20)",
+      "Bash(git checkout *)",
+      "Bash(sed -n '169,174p' app/src/pages/dashboard/favorites/list/index.vue)",
+      "Bash(sed -n '267,271p' app/src/pages/dashboard/favorites/list/index.vue)",
+      "Bash(sed -n '198,204p' app/src/pages/dashboard/inquiries/index.vue)",
+      "Bash(sed -n '305,312p' app/src/pages/dashboard/inquiries/index.vue)",
+      "Bash(sed -n '168,174p' app/src/pages/dashboard/purchases/inquiries.vue)",
+      "Bash(sed -n '270,278p' app/src/pages/dashboard/purchases/inquiries.vue)",
+      "Bash(sed -n '105,111p' app/src/pages/dashboard/questions/list/index.vue)",
+      "Bash(sed -n '120,126p' app/src/views/apps/user/view/UserInvoiceTable.vue)",
+      "Bash(sed -n '200,208p' app/src/views/apps/user/view/UserInvoiceTable.vue)",
+      "Bash(sed -n '129,135p' app/src/views/apps/user/view/UserTabAccount.vue)",
+      "Bash(sed -n '219,226p' app/src/views/apps/user/view/UserTabAccount.vue)",
+      "Bash(sed -n '145,152p' app/src/views/apps/user/view/UserTabSecurity.vue)",
+      "Bash(cd C:/laragon/www/dev.motorlan && find wp-content/plugins/motorlan-api-vue -name \"*.php\" | grep -v node_modules | head -30 && echo \"===\" && find wp-content/mu-plugins wp-content/plugins -maxdepth 2 -name \"*.php\" 2>/dev/null | grep -i \"mail\\\\|smtp\\\\|email\" | grep -v node_modules)",
+      "Bash(xargs grep -l \"wp_mail\\\\|mail\\\\|email\\\\|smtp\" -i)",
+      "Bash(xargs grep -l \"publicaciones/uuid\\\\|publicaciones/\\\\[\")"
     ]
   }
 }

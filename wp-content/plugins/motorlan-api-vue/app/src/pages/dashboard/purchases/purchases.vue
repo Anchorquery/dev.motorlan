@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { createUrl } from '@/@core/composable/createUrl'
 import { useApi } from '@/composables/useApi'
@@ -7,16 +8,17 @@ import type { ImagenDestacada } from '@/interfaces/publicacion'
 import RatingModal from '@/components/RatingModal.vue'
 
 const router = useRouter()
+const { t } = useI18n()
 
 const normalizeStatus = (status: string) => status?.toLowerCase() ?? ''
 
-const headers = [
-  { title: 'Publicación', key: 'publicacion' },
-  { title: 'Fecha de Compra', key: 'fecha_compra' },
-  { title: 'Tipo', key: 'tipo_compra' },
-  { title: 'Estado', key: 'estado' },
-  { title: 'Acciones', key: 'actions', sortable: false },
-]
+const headers = computed(() => [
+  { title: t('purchases.headers.publicacion'), key: 'publicacion' },
+  { title: t('purchases.headers.fecha_compra'), key: 'fecha_compra' },
+  { title: t('purchases.headers.tipo'), key: 'tipo_compra' },
+  { title: t('purchases.headers.estado'), key: 'estado' },
+  { title: t('purchases.headers.actions'), key: 'actions', sortable: false },
+])
 
 const searchQuery = ref('')
 
@@ -36,7 +38,7 @@ const handleRateSeller = (item: any) => {
   // Attempt to resolve seller name (fallback to generic)
   // item.vendedor is usually ID or object, backend normalization helps but not always present here as name
   // If we had seller object in item.vendedor, we could use display_name
-  selectedSellerName.value = 'al Vendedor' 
+  selectedSellerName.value = t('purchases.seller')
   showRatingModal.value = true
 }
 
@@ -56,17 +58,17 @@ const resolveStatus = (status: string) => {
   switch (normalizeStatus(status)) {
     case 'pending':
     case 'pendiente':
-      return { text: 'Pendiente', color: 'warning' }
+      return { text: t('purchases.status.pending'), color: 'warning' }
     case 'completed':
     case 'completado':
-      return { text: 'Completado', color: 'success' }
+      return { text: t('purchases.status.completed'), color: 'success' }
     case 'cancelled':
     case 'cancelado':
-      return { text: 'Cancelado', color: 'error' }
+      return { text: t('purchases.status.cancelled'), color: 'error' }
     case 'rejected':
-      return { text: 'Rechazado', color: 'error' }
+      return { text: t('purchases.status.rejected'), color: 'error' }
     default:
-      return { text: status || 'Desconocido', color: 'info' }
+      return { text: status || t('purchases.status.unknown'), color: 'info' }
   }
 }
 
@@ -176,10 +178,10 @@ const resolvePurchaseType = (item: any): { text: string; color: string } => {
   const raw = String(item?.tipo_venta || '').toLowerCase()
   const offerId = Number(item?.offer_id || 0)
   if (offerId)
-    return { text: 'Oferta', color: 'info' }
+    return { text: t('purchases.types.offer'), color: 'info' }
   if (raw === 'rent' || raw === 'alquiler' || raw === 'rental')
-    return { text: 'Alquiler', color: 'primary' }
-  return { text: 'Directa', color: 'success' }
+    return { text: t('purchases.types.rent'), color: 'primary' }
+  return { text: t('purchases.types.direct'), color: 'success' }
 }
 
 // Navegación a la tienda (URL absoluta para cross-base)
@@ -193,7 +195,7 @@ const goToProduct = (pub: any) => {
 <template>
   <VCard
     id="purchase-list"
-    title="Mis Compras"
+    :title="t('purchases.title')"
   >
     <VCardText class="purchase-toolbar">
       <VRow class="ga-3">
@@ -201,7 +203,7 @@ const goToProduct = (pub: any) => {
           <!-- 👉 Search  -->
           <AppTextField
             v-model="searchQuery"
-            placeholder="Buscar compra"
+            :placeholder="t('purchases.search_placeholder')"
             prepend-inner-icon="tabler-search"
             clearable
           />
@@ -321,7 +323,7 @@ const goToProduct = (pub: any) => {
               <VIcon icon="tabler-star" />
             </IconBtn>
           </template>
-          <span>Valorar Vendedor</span>
+          <span>{{ t('purchases.rate_seller') }}</span>
         </VTooltip>
       </template>
 
@@ -350,6 +352,8 @@ const goToProduct = (pub: any) => {
 <style scoped>
 .purchase-table-shell {
   overflow-x: auto;
+  width: 100%;
+  -webkit-overflow-scrolling: touch;
 }
 
 @media (max-width: 959px) {

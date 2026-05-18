@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useProductChat } from '@/composables/useProductChat'
 import { useApi } from '@/composables/useApi'
 import { createUrl } from '@/@core/composable/createUrl'
@@ -9,6 +10,7 @@ const props = defineProps<{ productId: number; roomKey: string; productTitle?: s
 const emit = defineEmits(['close', 'read'])
 
 const chat = useProductChat(props.productId, { roomKey: props.roomKey })
+const { t, locale } = useI18n()
 
 const messagesContainer = ref<HTMLElement | null>(null)
 const messageText = ref('')
@@ -27,8 +29,21 @@ const lastSaleUuid = ref('')
 
 const canSendMessage = computed(() => !chat.isLocked.value && messageText.value.trim().length > 0 && !chat.isSending.value)
 
-const timeFormatter = new Intl.DateTimeFormat('es-VE', { hour: '2-digit', minute: '2-digit' })
-const dateFormatter = new Intl.DateTimeFormat('es-VE', { day: 'numeric', month: 'long' })
+const getLocaleCode = () => {
+  const lang = (locale.value || 'es').toLowerCase()
+  const localeMap: Record<string, string> = {
+    es: 'es-ES',
+    en: 'en-US',
+    eu: 'eu-ES',
+    fr: 'fr-FR',
+    ar: 'ar',
+  }
+
+  return localeMap[lang] || 'es-ES'
+}
+
+const timeFormatter = computed(() => new Intl.DateTimeFormat(getLocaleCode(), { hour: '2-digit', minute: '2-digit' }))
+const dateFormatter = computed(() => new Intl.DateTimeFormat(getLocaleCode(), { day: 'numeric', month: 'long' }))
 
 const capitalize = (value: string | undefined): string => {
   if (!value)
@@ -41,7 +56,7 @@ const getInitials = (value: string): string => {
   return parts.slice(0, 2).map(part => part.toUpperCase()).join('') || 'U'
 }
 
-const formatMessageTime = (value: string) => timeFormatter.format(new Date(value))
+const formatMessageTime = (value: string) => timeFormatter.value.format(new Date(value))
 
 const groupedMessages = computed(() => {
   const items = chat.messages.value
@@ -58,7 +73,7 @@ const groupedMessages = computed(() => {
     .map(([key, bucket]) => {
       bucket.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
       const first = bucket[0]
-      const label = capitalize(dateFormatter.format(new Date(first?.created_at ?? Date.now())))
+      const label = capitalize(dateFormatter.value.format(new Date(first?.created_at ?? Date.now())))
       return { key, label, items: bucket }
     })
 })
@@ -91,7 +106,7 @@ const handleRetryMessages = async () => {
 }
 
 const handleMarkAsSold = async () => {
-  if (!confirm('¿Confirmas que has vendido este artículo a este usuario? Esto generará una compra y descontará el stock.')) {
+  if (!confirm(t('chat.confirm_sale'))) {
     return
   }
   
@@ -103,7 +118,7 @@ const handleMarkAsSold = async () => {
     }).json()
 
     if (error.value) {
-      alert(error.value.value?.message || error.value.data?.message || 'Error al registrar la venta')
+      alert(error.value.value?.message || error.value.data?.message || t('chat.sale_error'))
       return
     }
 
@@ -113,20 +128,20 @@ const handleMarkAsSold = async () => {
         showRatingModal.value = true
     } else {
         // Fallback if no UUID returned (should not happen with new endpoint)
-        alert('Venta registrada correctamente')
+        alert(t('chat.sale_success'))
         emit('close')
         emit('read')
     }
   } catch (e) {
     console.error(e)
-    alert('Ocurrió un error inesperado')
+    alert(t('chat.unexpected_error'))
   } finally {
     isMarkingSold.value = false
   }
 }
 
 const handleRatingSuccess = () => {
-    alert('¡Gracias por tu valoración!')
+    alert(t('chat.rating_thanks'))
     showRatingModal.value = false
     emit('close') // Close chat modal too as flow is complete
     emit('read')
@@ -170,7 +185,7 @@ onBeforeUnmount(() => {
     <VCard class="chat-modal rounded-xl overflow-hidden elevation-10">
       <!-- Header -->
       <VCardTitle class="d-flex justify-space-between align-center py-3 px-4 bg-surface elevation-0 border-b">
-        <span class="text-h6 font-weight-bold text-high-emphasis">Responder consulta</span>
+        <span class="text-h6 font-weight-bold text-high-emphasis">{{ t('chat.reply_title') }}</span>
         <VBtn
           icon="tabler-x"
           variant="text"
@@ -199,11 +214,11 @@ onBeforeUnmount(() => {
         </VAvatar>
         <div class="product-details flex-grow-1 min-w-0">
           <p class="text-subtitle-2 font-weight-bold text-truncate mb-0 text-high-emphasis">
-            {{ productTitle || 'Consulta sobre el producto' }}
+            {{ productTitle || t('chat.product_inquiry') }}
           </p>
           <div class="d-flex align-center gap-1 text-caption text-medium-emphasis">
             <VIcon icon="tabler-message-circle" size="14" />
-            <span>Consulta de comprador interesado</span>
+            <span>{{ t('chat.inquiry_by_buyer') }}</span>
           </div>
         </div>
         
@@ -215,7 +230,7 @@ onBeforeUnmount(() => {
           :loading="isMarkingSold"
           @click="handleMarkAsSold"
         >
-          Vender
+          {{ t('chat.sell') }}
         </VBtn>
       </div>
 

@@ -433,6 +433,7 @@ const statusColor = computed(() => {
                                 <StepTechSpecs
                                      :form-state="formState"
                                      :tipos="tipos"
+                                     :show-type-selector="true"
                                      @update:form-state="setFormState"
                                 />
                              </VWindowItem>

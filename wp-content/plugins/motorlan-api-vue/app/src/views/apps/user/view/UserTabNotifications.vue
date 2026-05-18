@@ -33,9 +33,9 @@ const notifications = ref([
     title="Notifications"
     subtitle="You will receive notification for the below selected items."
   >
-    <VCardText class="px-0">
+    <VCardText class="px-0 user-tab-notification__body">
       <VDivider />
-      <VTable class="text-no-wrap">
+      <VTable class="text-no-wrap user-tab-notification__table">
         <thead>
           <tr>
             <th scope="col">
@@ -87,3 +87,22 @@ const notifications = ref([
     </VCardText>
   </VCard>
 </template>
+
+<style scoped>
+.user-tab-notification__body {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.user-tab-notification__table {
+  min-width: 100%;
+}
+
+@media (max-width: 599px) {
+  .user-tab-notification__table :deep(th),
+  .user-tab-notification__table :deep(td) {
+    padding-block: 0.75rem;
+    padding-inline: 0.75rem;
+  }
+}
+</style>

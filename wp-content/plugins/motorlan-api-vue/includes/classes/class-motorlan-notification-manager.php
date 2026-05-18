@@ -47,9 +47,7 @@ class Motorlan_Notification_Manager {
         }
 
         if ( in_array( 'email', $channels, true ) ) {
-            // Schedule immediate async execution instead of blocking
-            // Using time() + 1 to ensure it runs very soon but in a separate process/spawn if possible by WP
-            wp_schedule_single_event( time(), 'motorlan_async_email_notification', array( $user_id, $type, $title, $message, $data ) );
+            $this->send_email_notification_direct( $user_id, $type, $title, $message, $data );
         }
 
         do_action( 'motorlan_notification_created', $user_id, $type, $data );

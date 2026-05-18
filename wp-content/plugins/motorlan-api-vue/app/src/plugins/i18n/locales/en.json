@@ -1,4 +1,12 @@
 {
+  "2": "2",
+  "3": "3",
+  "5": "5",
+  "10": "10",
+  "20": "20",
+  "25": "25",
+  "50": "50",
+  "100": "100",
   "UI Elements": "UI Elements",
   "Forms & Tables": "Forms & Tables",
   "Pages": "Pages",
@@ -103,7 +111,6 @@
   "Page Not Found - 404": "Page Not Found - 404",
   "Not Authorized - 401": "Not Authorized - 401",
   "Server Error - 500": "Server Error - 500",
-  "2": "2",
   "Forms": "Forms",
   "Timeline": "Timeline",
   "Disabled Menu": "Disabled Menu",
@@ -133,7 +140,6 @@
   "Wizard Pages": "Wizard Pages",
   "Form Wizard": "Form Wizard",
   "Numbered": "Numbered",
-  "3": "3",
   "ecommerce": "motors",
   "Ecommerce": "Ecommerce",
   "Editors": "Editors",
@@ -160,12 +166,6 @@
   "Logistics": "Logistics",
   "Dashboard": "Dashboard",
   "Fleet": "Fleet",
-  "5": "5",
-  "10": "10",
-  "20": "20",
-  "25": "25",
-  "50": "50",
-  "100": "100",
   "Compras": "Purchases",
   "Preguntas": "Questions",
   "Opiniones": "Reviews",
@@ -176,35 +176,35 @@
   "Cuenta": "Account",
   "Estadísticas": "Statistics",
   "Tipo": "Type",
-    "custom": {
-      "unknown": "Unknown",
-      "draft": "Draft",
-      "published": "Published",
-      "paused": "Paused",
-      "pending": "Under Review"
+  "custom": {
+    "unknown": "Unknown",
+    "draft": "Draft",
+    "published": "Published",
+    "paused": "Paused",
+    "pending": "Under Review"
+  },
+  "admin_approvals": {
+    "title": "Pending Approvals",
+    "subtitle": "Review and manage user publication requests.",
+    "approve_success": "Publication approved successfully",
+    "approve_error": "Error approving publication",
+    "reject_success": "Publication rejected",
+    "reject_error": "Error rejecting publication",
+    "no_data_title": "No pending publications",
+    "no_data_subtitle": "Everything is up to date for now.",
+    "buttons": {
+      "approve": "Approve",
+      "reject": "Reject",
+      "cancel": "Cancel",
+      "confirm_reject": "Confirm Reject"
     },
-    "admin_approvals": {
-      "title": "Pending Approvals",
-      "subtitle": "Review and manage user publication requests.",
-      "approve_success": "Publication approved successfully",
-      "approve_error": "Error approving publication",
-      "reject_success": "Publication rejected",
-      "reject_error": "Error rejecting publication",
-      "no_data_title": "No pending publications",
-      "no_data_subtitle": "Everything is up to date for now.",
-      "buttons": {
-        "approve": "Approve",
-        "reject": "Reject",
-        "cancel": "Cancel",
-        "confirm_reject": "Confirm Reject"
-      },
-      "reject_dialog": {
-        "title": "Reject Publication",
-        "text": "Indicate the reason why this publication is not approved. The user will receive this information.",
-        "reason_label": "Reason for rejection",
-        "reason_placeholder": "E.g.: Missing technical specifications in the description."
-      }
-    },
+    "reject_dialog": {
+      "title": "Reject Publication",
+      "text": "Indicate the reason why this publication is not approved. The user will receive this information.",
+      "reason_label": "Reason for rejection",
+      "reason_placeholder": "E.g.: Missing technical specifications in the description."
+    }
+  },
   "store": {
     "par_options": {
       "range1": "0-50",
@@ -226,6 +226,72 @@
       "recents": "Recents",
       "price_asc": "Price asc",
       "price_desc": "Price desc"
+    },
+    "search": {
+      "eyebrow": "Motorlan Store",
+      "title": "Buy and sell industrial motors",
+      "subtitle": "Motors, regulators, spare parts and more.",
+      "placeholder": "Search...",
+      "button": "SEARCH",
+      "clear": "Clear"
+    },
+    "publications": {
+      "loading": "Loading publications...",
+      "view_detail": "View detail",
+      "empty_title": "No publications found",
+      "empty_subtitle": "Try adjusting the search filters."
+    },
+    "related": {
+      "title": "Related products",
+      "subtitle": "Other listings you may be interested in",
+      "more_info": "+ Info"
+    },
+    "mobile_nav": {
+      "aria_label": "Store navigation",
+      "filters": "Filters",
+      "login": "Log in",
+      "dashboard": "Dashboard",
+      "add_publication": "New publication",
+      "publish": "Publish",
+      "profile": "Profile"
+    },
+    "empty": {
+      "title": "Publication not found",
+      "message": "Sorry, we couldn't find the publication you're looking for. The link may be incorrect or the publication may have been removed.",
+      "action": "Back to store"
+    },
+    "questions": {
+      "title": "Questions and answers",
+      "placeholder": "Write your question...",
+      "ask": "Ask",
+      "empty": "No questions yet.",
+      "sent_success": "Question sent",
+      "sent_error": "Error sending the question"
+    },
+    "filters": {
+      "title": "Filters",
+      "clear": "Clear",
+      "type_model_label": "Search by model",
+      "product_type": "Product Type",
+      "type_all": "All",
+      "type_motor_ac": "AC Motor",
+      "type_motor_dc": "DC Motor",
+      "type_regulador": "Regulator",
+      "type_otros": "Other",
+      "brands_label": "Brand",
+      "select_brands": "Select brands",
+      "power_label": "Power",
+      "select_power": "Select power",
+      "torque_label": "Torque",
+      "select_torque": "Select torque",
+      "speed_label": "Speed",
+      "select_speed": "Select speed",
+      "state_label": "Condition",
+      "select_state": "Select state",
+      "state_new": "New",
+      "state_used": "Used",
+      "state_restored": "Refurbished",
+      "responsibility_note": "The vehicle is responsible for verifying the correct fitment."
     }
   },
   "contact_modal": {
@@ -556,7 +622,91 @@
     "new_platform": "New to our platform?",
     "create_account": "Create an account",
     "or": "or",
-    "login_to_interact": "Log in as a customer to contact the seller, make offers or buy this equipment."
+    "login_to_interact": "Log in as a customer to contact the seller, make offers or buy this equipment.",
+    "unknown_error": "An unknown error occurred. Please try again.",
+    "success": "Login successful",
+    "complete_profile": "Please complete your profile to continue.",
+    "connection_error": "Failed to connect to the server. Please check your connection."
+  },
+  "inquiries": {
+    "title": "Inquiries",
+    "search_placeholder": "Search by user or publication...",
+    "user": "User",
+    "buyer": "Buyer",
+    "seller": "Seller",
+    "publication": "Publication",
+    "actions": "Actions",
+    "date": "Date",
+    "show": "Show",
+    "load_error": "Could not load conversations",
+    "no_data_title": "No conversations",
+    "no_data_text": "You have not received any inquiries yet.",
+    "no_data_text_buyer": "You have not sent any inquiries yet.",
+    "buyer_label": "Interested buyer",
+    "seller_label": "Equipment seller",
+    "buyer_interested": "Interested buyer",
+    "user_unknown": "Unknown user",
+    "view_chat": "View chat",
+    "go_to_publication": "Go to publication"
+  },
+  "chat": {
+    "product": "Product",
+    "consult_price": "Consult price",
+    "seller": "Seller",
+    "buyer": "Buyer",
+    "with_seller": "Chat with seller",
+    "with_buyer": "Chat with buyer",
+    "security_note": "For your security, do not share direct contact details.",
+    "loading_conversation": "Loading conversation...",
+    "retry": "Retry",
+    "no_messages": "No messages yet.",
+    "start_with_seller": "Start the conversation with the seller.",
+    "start_with_buyer": "Start the conversation with the buyer.",
+    "message_placeholder": "Write a message...",
+    "message_placeholder_active": "Write your message...",
+    "reply_title": "Reply inquiry",
+    "product_inquiry": "Product inquiry",
+    "inquiry_by_buyer": "Buyer inquiry",
+    "sell": "Sell",
+    "confirm_sale": "Confirm that you sold this item to this user? This will create a purchase and deduct stock.",
+    "sale_error": "Error recording the sale",
+    "sale_success": "Sale recorded successfully",
+    "unexpected_error": "An unexpected error occurred",
+    "rating_thanks": "Thank you for your rating!",
+    "inquiry_sent_success": "Inquiry sent successfully!",
+    "inquiry_sent_body": "We have sent your message to the seller. You will receive a copy in your email",
+    "follow_up_title": "Want to follow up?",
+    "follow_up_body": "Create your account now to save your chat history, bookmark items and receive alerts about new products.",
+    "create_account_free": "Create my free account",
+    "close_window": "Close window",
+    "contact_product_title": "Inquiry about this product",
+    "contact_product_body": "Complete your details to contact the seller. You will receive a copy in your email.",
+    "name_label": "Your name *",
+    "name_placeholder": "e.g. Juan Perez",
+    "email_label": "Your email *",
+    "email_placeholder": "example@email.com",
+    "message_label": "Message *",
+    "terms_prefix": "I accept the ",
+    "terms_connector": " and the ",
+    "terms_of_use": "terms of use",
+    "privacy_policy": "privacy policy",
+    "contact_now": "CONTACT NOW",
+    "chatting_as": "You are chatting as",
+    "guest": "Guest",
+    "chatting_as_suffix": "to save your history.",
+    "register": "Register",
+    "chat_started": "Chat started",
+    "waiting_for_seller": "Wait for the seller's reply.",
+    "write_message": "Write your message...",
+    "visibility_note": "Your message will be visible to the other party and will be recorded in the conversation.",
+    "status": {
+      "delivered": "Delivered",
+      "sent": "Sent",
+      "processing": "In progress",
+      "pending": "Pending",
+      "cancelled": "Cancelled",
+      "progress": "In progress"
+    }
   },
   "register": {
     "title": "Create your account",
@@ -642,6 +792,48 @@
   "Mis Compras": "My Purchases",
   "Mi Cuenta": "My Account",
   "Ofertas Recibidas": "Offers Received",
-  "Ofertas Enviadas": "Offers Sent",
+  "offers": {
+    "sent": "Offers Sent"
+  },
+  "rating_modal": {
+    "title_seller": "Rate the seller",
+    "title_buyer": "Rate the buyer",
+    "experience_with": "How was your experience with {name}?",
+    "experience_default": "How was your experience?",
+    "stars": "{rating} stars",
+    "comment_label": "Comment",
+    "comment_placeholder": "Tell us about your experience",
+    "comment_required": "Comment is required",
+    "max_chars": "Maximum 1000 characters",
+    "cancel": "Cancel",
+    "submit": "Submit",
+    "connection_error": "Connection error while sending the review",
+    "submit_error": "Error sending the review"
+  },
+  "purchases": {
+    "title": "My Purchases",
+    "search_placeholder": "Search purchase",
+    "rate_seller": "Rate Seller",
+    "seller": "Seller",
+    "headers": {
+      "publicacion": "Publication",
+      "fecha_compra": "Purchase Date",
+      "tipo": "Type",
+      "estado": "Status",
+      "actions": "Actions"
+    },
+    "status": {
+      "pending": "Pending",
+      "completed": "Completed",
+      "cancelled": "Cancelled",
+      "rejected": "Rejected",
+      "unknown": "Unknown"
+    },
+    "types": {
+      "offer": "Offer",
+      "rent": "Rental",
+      "direct": "Direct"
+    }
+  },
   "date": "Date"
 }

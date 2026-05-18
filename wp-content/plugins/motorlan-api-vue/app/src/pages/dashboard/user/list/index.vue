@@ -291,6 +291,7 @@ const widgetData = ref([
       <VDivider />
 
       <!-- SECTION datatable -->
+      <div class="table-responsive-shell">
       <VDataTableServer
         v-model:items-per-page="itemsPerPage"
         v-model:model-value="selectedRows"
@@ -420,6 +421,7 @@ const widgetData = ref([
           />
         </template>
       </VDataTableServer>
+      </div>
       <!-- SECTION -->
     </VCard>
     <!-- 👉 Add New User -->
@@ -429,3 +431,11 @@ const widgetData = ref([
     />
   </section>
 </template>
+
+<style scoped>
+.table-responsive-shell {
+  overflow-x: auto;
+  width: 100%;
+  -webkit-overflow-scrolling: touch;
+}
+</style>

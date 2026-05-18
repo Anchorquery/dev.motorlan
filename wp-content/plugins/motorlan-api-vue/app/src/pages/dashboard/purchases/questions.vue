@@ -130,6 +130,7 @@ const getImageBySize = (image: any, size = 'thumbnail'): string => {
     <VDivider />
 
     <!-- 👉 Datatable  -->
+    <div class="table-responsive-shell">
     <VDataTableServer
       v-model:items-per-page="itemsPerPage"
       v-model:page="page"
@@ -228,5 +229,14 @@ const getImageBySize = (image: any, size = 'thumbnail'): string => {
         />
       </template>
     </VDataTableServer>
+    </div>
   </VCard>
 </template>
+
+<style scoped>
+.table-responsive-shell {
+  overflow-x: auto;
+  width: 100%;
+  -webkit-overflow-scrolling: touch;
+}
+</style>

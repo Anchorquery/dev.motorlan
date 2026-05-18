@@ -1,7 +1,9 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import type { Publicacion } from '@/interfaces/publicacion'
 
 defineProps<{ publicaciones: Publicacion[]; loading: boolean }>()
+const { t } = useI18n()
 </script>
 
 <template>
@@ -12,7 +14,7 @@ defineProps<{ publicaciones: Publicacion[]; loading: boolean }>()
       color="error"
     />
     <p class="mt-4 text-medium-emphasis">
-      Cargando publicaciones...
+      {{ t('store.publications.loading') }}
     </p>
   </div>
 
@@ -24,14 +26,13 @@ defineProps<{ publicaciones: Publicacion[]; loading: boolean }>()
       <VCol
         v-for="publicacion in publicaciones"
         :key="publicacion.id"
-        cols="12"
-        sm="6"
+        cols="6"
         lg="4"
         xl="3"
         class="d-flex"
       >
         <VCard class="motor-card-enhanced flex-grow-1">
-          <VCardText class="pa-4 d-flex flex-column h-100">
+          <VCardText class="pa-2 pa-sm-4 d-flex flex-column h-100">
             <div class="motor-image mb-4">
               <VImg
                 :src="(!Array.isArray(publicacion.imagen_destacada) && publicacion.imagen_destacada?.url) || '/placeholder.png'"
@@ -46,18 +47,15 @@ defineProps<{ publicaciones: Publicacion[]; loading: boolean }>()
               {{ publicacion.title }}
             </div>
 
-            <div class="text-body-2 text-medium-emphasis mb-4 motor-card__meta">
-              Explora los detalles de esta publicacion y revisa disponibilidad, caracteristicas y contacto.
-            </div>
-
             <div class="mt-auto pt-2 d-flex justify-end align-center">
               <VBtn
                 color="error"
                 variant="tonal"
-                class="rounded-pill px-6 font-weight-medium"
+                class="rounded-pill font-weight-medium px-2 px-sm-6"
+                size="small"
                 :to="`/${publicacion.slug}`"
               >
-                Ver detalle
+                {{ t('store.publications.view_detail') }}
               </VBtn>
             </div>
           </VCardText>
@@ -70,10 +68,10 @@ defineProps<{ publicaciones: Publicacion[]; loading: boolean }>()
       class="text-center py-12"
     >
       <p class="text-h6 mb-2">
-        No se encontraron publicaciones
+        {{ t('store.publications.empty_title') }}
       </p>
       <p class="text-medium-emphasis mb-0">
-        Intenta ajustar los filtros de busqueda.
+        {{ t('store.publications.empty_subtitle') }}
       </p>
     </div>
   </template>
@@ -110,9 +108,5 @@ defineProps<{ publicaciones: Publicacion[]; loading: boolean }>()
 .motor-card__title {
   line-height: 1.25;
   min-height: 2.5em;
-}
-
-.motor-card__meta {
-  line-height: 1.5;
 }
 </style>

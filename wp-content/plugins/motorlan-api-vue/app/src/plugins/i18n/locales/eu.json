@@ -1,7 +1,14 @@
 {
+  "2": "2",
+  "3": "3",
+  "5": "5",
+  "10": "10",
+  "20": "20",
+  "25": "25",
+  "50": "50",
+  "100": "100",
   "Motors Shop": "Motorren Denda",
   "UI Elements": "UI Elementuak",
-
   "Forms & Tables": "Formularioak eta Taulak",
   "Pages": "Orrialdeak",
   "Charts & Maps": "Grafikoak eta Mapak",
@@ -105,7 +112,6 @@
   "Page Not Found - 404": "Orria ez da aurkitu - 404",
   "Not Authorized - 401": "Baimenik gabe - 401",
   "Server Error - 500": "Zerbitzariaren errorea - 500",
-  "2": "2",
   "Forms": "Formularioak",
   "Timeline": "Denbora-lerroa",
   "Disabled Menu": "Desgaitutako menua",
@@ -135,7 +141,6 @@
   "Wizard Pages": "Morroiaren orriak",
   "Form Wizard": "Formulario-morroia",
   "Numbered": "Zenbakituta",
-  "3": "3",
   "ecommerce": "merkataritza elektronikoa",
   "Ecommerce": "Merkataritza elektronikoa",
   "Editors": "Editoreak",
@@ -159,12 +164,6 @@
   "Logistics": "Logistika",
   "Dashboard": "Arbela",
   "Fleet": "Flota",
-  "5": "5",
-  "10": "10",
-  "20": "20",
-  "25": "25",
-  "50": "50",
-  "100": "100",
   "Compras": "Erosketak",
   "Preguntas": "Galderak",
   "Opiniones": "Iritziak",
@@ -205,7 +204,66 @@
     }
   },
   "store": {
-    "contact_modal": {
+  
+    "search": {
+      "eyebrow": "Motorlan denda",
+      "title": "Industria motorrak erosi eta saldu",
+      "subtitle": "Motorrak, erreguladoreak, ordezko piezak eta gehiago.",
+      "placeholder": "Bilatu...",
+      "button": "BILATU",
+      "clear": "Garbitu"
+    },
+    "publications": {
+      "loading": "Argitalpenak kargatzen...",
+      "view_detail": "Xehetasuna ikusi",
+      "empty_title": "Ez da argitalpenik aurkitu",
+      "empty_subtitle": "Saiatu bilaketa-iragazkiak doitzen."
+    },
+    "related": {
+      "title": "Erlazionatutako produktuak",
+      "subtitle": "Interesgarria izan dakizukeen beste argitalpen batzuk",
+      "more_info": "+ Info"
+    },
+    "mobile_nav": {
+      "aria_label": "Denda nabigazioa",
+      "filters": "Iragazkiak",
+      "login": "Sartu",
+      "dashboard": "Aginte-panela",
+      "add_publication": "Argitalpen berria",
+      "publish": "Argitaratu",
+      "profile": "Profila"
+    },
+    "empty": {
+      "title": "Argitalpena ez da aurkitu",
+      "message": "Barkatu, ezin izan dugu bilatzen ari zaren argitalpena aurkitu. Baliteke esteka okerra izatea edo argitalpena ezabatuta egotea.",
+      "action": "Itzuli dendara"
+    },
+    "questions": {
+      "title": "Galderak eta erantzunak",
+      "placeholder": "Idatzi zure galdera...",
+      "ask": "Galdetu",
+      "empty": "Oraindik ez dago galderarik.",
+      "sent_success": "Galdera bidali da",
+      "sent_error": "Errorea galdera bidaltzean"
+    },
+    "filters": {
+      "title": "Iragazkiak",
+      "clear": "Garbitu",
+      "type_all": "Guztiak",
+      "type_motor_ac": "AC motorra",
+      "type_motor_dc": "DC motorra",
+      "type_regulador": "Erreguladorea",
+      "type_otros": "Beste batzuk",
+      "select_brands": "Markak hautatu",
+      "select_power": "Potentzia hautatu",
+      "select_torque": "PAR (Nm) hautatu",
+      "select_speed": "Abiadura hautatu",
+      "select_state": "Egoera hautatu",
+      "state_new": "Berria",
+      "state_used": "Erabilia",
+      "state_restored": "Berritua"
+    },
+  "contact_modal": {
       "default_message": "Kaixo, argitalpenaren prezioa jakitea interesatzen zait"
     },
     "filters": {
@@ -566,7 +624,11 @@
     "new_platform": "Berria gure plataforman?",
     "create_account": "Sortu kontu bat",
     "or": "edo",
-    "login_to_interact": "Hasi saioa bezero gisa saltzailearekin harremanetan jartzeko, eskaintzak egiteko edo ekipo hau erosteko."
+    "login_to_interact": "Hasi saioa bezero gisa saltzailearekin harremanetan jartzeko, eskaintzak egiteko edo ekipo hau erosteko.",
+    "unknown_error": "Errore ezezagun bat gertatu da. Saiatu berriro.",
+    "success": "Saioa behar bezala hasi da",
+    "complete_profile": "Mesedez, osatu zure profila jarraitzeko.",
+    "connection_error": "Ezin izan da zerbitzariarekin konektatu. Egiaztatu zure konexioa."
   },
   "register": {
     "title": "Sortu zure kontua",
@@ -591,7 +653,10 @@
     "date": "Data",
     "load_error": "Ezin izan dira elkarrizketak kargatu",
     "no_data_title": "Ez dago elkarrizketarik",
-    "no_data_text": "Oraindik ez duzu interes kontsultarik jaso."
+    "no_data_text": "Oraindik ez duzu interes kontsultarik jaso.",
+    "show": "Erakutsi",
+    "buyer_interested": "Erosle interesatua",
+    "user_unknown": "Erabiltzaile ezezaguna"
   },
   "motor": {
     "consult_price": "Prezioa kontsultatu"
@@ -658,5 +723,107 @@
   "Mis Compras": "Nire Erosketak",
   "Mi Cuenta": "Nire Kontua",
   "Ofertas Recibidas": "Jasotako Eskaintzak",
-  "Ofertas Enviadas": "Bidalitako Eskaintzak"
+  "Ofertas Enviadas": "Bidalitako Eskaintzak",
+  "chat": {
+    "product": "Produktua",
+    "consult_price": "Prezioa kontsultatu",
+    "seller": "Saltzailea",
+    "buyer": "Eroslea",
+    "with_seller": "Saltzailearekin txata",
+    "with_buyer": "Eroslearekin txata",
+    "security_note": "Zure segurtasunerako, ez partekatu harreman zuzeneko daturik.",
+    "loading_conversation": "Elkarrizketa kargatzen...",
+    "retry": "Saiatu berriro",
+    "no_messages": "Oraindik ez dago mezurik.",
+    "start_with_seller": "Hasi elkarrizketa saltzailearekin.",
+    "start_with_buyer": "Hasi elkarrizketa eroslearekin.",
+    "message_placeholder": "Idatzi mezu bat...",
+    "message_placeholder_active": "Idatzi zure mezua...",
+    "reply_title": "Kontsultari erantzun",
+    "product_inquiry": "Produktuari buruzko kontsulta",
+    "inquiry_by_buyer": "Erosle interesatuaren kontsulta",
+    "sell": "Saldu",
+    "confirm_sale": "Ziur zaude artikulu hau erabiltzaile honi saldu diozula? Honek erosketa bat sortuko du eta stocka kenduko du.",
+    "sale_error": "Errorea salmenta erregistratzean",
+    "sale_success": "Salmenta behar bezala erregistratu da",
+    "unexpected_error": "Ustekabeko errorea gertatu da",
+    "rating_thanks": "Eskerrik asko zure balorazioagatik!",
+    "inquiry_sent_success": "Kontsulta behar bezala bidali da!",
+    "inquiry_sent_body": "Zure mezua saltzaileari bidali diogu. Kopia bat jasoko duzu zure posta elektronikoan",
+    "follow_up_title": "Jarraipena egin nahi duzu?",
+    "follow_up_body": "Sortu zure kontua orain zure txat-historia gordetzeko, elementuak gogokoetan jartzeko eta produktu berrien alertak jasotzeko.",
+    "create_account_free": "Sortu nire doako kontua",
+    "close_window": "Itxi leihoa",
+    "contact_product_title": "Produktu honi buruzko kontsulta",
+    "contact_product_body": "Bete zure datuak saltzailearekin harremanetan jartzeko. Kopia bat jasoko duzu zure e-postan.",
+    "name_label": "Zure izena *",
+    "name_placeholder": "Adib. Juan Perez",
+    "email_label": "Zure e-posta *",
+    "email_placeholder": "adibidea@posta.com",
+    "message_label": "Mezua *",
+    "terms_prefix": "Onartzen ditut ",
+    "terms_connector": " eta ",
+    "terms_of_use": "erabilera baldintzak",
+    "privacy_policy": "pribatutasun politika",
+    "contact_now": "ORAIN KONTAKTATU",
+    "chatting_as": "Honela ari zara txateatzen",
+    "guest": "Gonbidatua",
+    "chatting_as_suffix": "zure historia gordetzeko.",
+    "register": "Eman izena",
+    "chat_started": "Txata hasi da",
+    "waiting_for_seller": "Itxaron saltzailearen erantzunari.",
+    "write_message": "Idatzi zure mezua...",
+    "offers": {
+      "sent": "Bidalitako eskaintzak"
+    },
+    "rating_modal": {
+      "title_seller": "Baloratu saltzailea",
+      "title_buyer": "Baloratu eroslea",
+      "experience_with": "Nolakoa izan da zure esperientzia {name}rekin?",
+      "experience_default": "Nolakoa izan da zure esperientzia?",
+      "stars": "{rating} izar",
+      "comment_label": "Iruzkina",
+      "comment_placeholder": "Kontatu zure esperientzia",
+      "comment_required": "Iruzkina derrigorrezkoa da",
+      "max_chars": "Gehienez 1000 karaktere",
+      "cancel": "Utzi",
+      "submit": "Bidali",
+      "connection_error": "Konexio errorea balorazioa bidaltzean",
+      "submit_error": "Errorea balorazioa bidaltzean"
+    },
+    "visibility_note": "Zure mezua beste aldearentzat ikusgai egongo da eta elkarrizketan erregistratuko da.",
+    "status": {
+      "delivered": "Entregatua",
+      "sent": "Bidalia",
+      "processing": "Prozesatzen",
+      "pending": "Zain",
+      "cancelled": "Bertan behera utzita",
+      "progress": "Prozesatzen"
+    }
+  },
+  "purchases": {
+    "title": "Nire erosketak",
+    "search_placeholder": "Erosketa bilatu",
+    "rate_seller": "Baloratu saltzailea",
+    "seller": "Saltzailea",
+    "headers": {
+      "publicacion": "Argitalpena",
+      "fecha_compra": "Erosketa data",
+      "tipo": "Mota",
+      "estado": "Egoera",
+      "actions": "Ekintzak"
+    },
+    "status": {
+      "pending": "Zain",
+      "completed": "Osatuta",
+      "cancelled": "Bertan behera utzita",
+      "rejected": "Baztertua",
+      "unknown": "Ezezaguna"
+    },
+    "types": {
+      "offer": "Eskaintza",
+      "rent": "Alokairua",
+      "direct": "Zuzena"
+    }
+  }
 }

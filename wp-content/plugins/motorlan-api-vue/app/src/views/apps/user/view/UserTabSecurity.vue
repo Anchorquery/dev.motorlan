@@ -145,6 +145,7 @@ const recentDevices = [
 
       <VCard title="Recent devices">
         <VDivider />
+        <div class="table-responsive-shell">
         <VDataTable
           :items="recentDevices"
           :headers="recentDeviceHeader"
@@ -166,6 +167,7 @@ const recentDevices = [
           <!-- TODO Refactor this after vuetify provides proper solution for removing default footer -->
           <template #bottom />
         </VDataTable>
+        </div>
       </VCard>
     </VCol>
   </VRow>
@@ -176,3 +178,11 @@ const recentDevices = [
     :sms-code="smsVerificationNumber"
   />
 </template>
+
+<style scoped>
+.table-responsive-shell {
+  overflow-x: auto;
+  width: 100%;
+  -webkit-overflow-scrolling: touch;
+}
+</style>

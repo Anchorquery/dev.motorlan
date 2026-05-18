@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useProductChat } from '@/composables/useProductChat'
 import type { Publicacion } from '@/interfaces/publicacion'
 import { useUserStore } from '@/@core/stores/user'
@@ -21,9 +22,23 @@ const userStore = useUserStore()
 const guestId = ref<string>('')
 const initialViewerName = ref<string | null>(null)
 const isSuccess = ref(false)
+const { t, locale } = useI18n()
 
-import { useI18n } from 'vue-i18n'
-const { t } = useI18n()
+const getLocaleCode = () => {
+  const lang = (locale.value || 'es').toLowerCase()
+  const localeMap: Record<string, string> = {
+    es: 'es-ES',
+    en: 'en-US',
+    eu: 'eu-ES',
+    fr: 'fr-FR',
+    ar: 'ar',
+  }
+
+  return localeMap[lang] || 'es-ES'
+}
+
+const timeFormatter = computed(() => new Intl.DateTimeFormat(getLocaleCode(), { hour: '2-digit', minute: '2-digit' }))
+const dateFormatter = computed(() => new Intl.DateTimeFormat(getLocaleCode(), { day: 'numeric', month: 'long' }))
 
 // Guest Form State
 import { getStoredGuestEmail, setStoredGuestEmail, setStoredGuestName } from '@/utils/guest'
@@ -160,9 +175,6 @@ const isLoadingMessages = computed(() => chat.isFetchingMessages.value && !chat.
 
 const canSendMessage = computed(() => !chat.isLocked.value && messageText.value.trim().length > 0 && !chat.isSending.value)
 
-const timeFormatter = new Intl.DateTimeFormat('es-VE', { hour: '2-digit', minute: '2-digit' })
-const dateFormatter = new Intl.DateTimeFormat('es-VE', { day: 'numeric', month: 'long' })
-
 const capitalize = (value: string | undefined): string => {
   if (!value)
     return ''
@@ -176,7 +188,7 @@ const getInitials = (value: string): string => {
   return parts.slice(0, 2).map(part => part.toUpperCase()).join('') || 'U'
 }
 
-const formatMessageTime = (value: string) => timeFormatter.format(new Date(value))
+const formatMessageTime = (value: string) => timeFormatter.value.format(new Date(value))
 
 const groupedMessages = computed(() => {
   const items = chat.messages.value
@@ -200,7 +212,7 @@ const groupedMessages = computed(() => {
       bucket.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
 
       const first = bucket[0]
-      const label = capitalize(dateFormatter.format(new Date(first?.created_at ?? Date.now())))
+      const label = capitalize(dateFormatter.value.format(new Date(first?.created_at ?? Date.now())))
 
       return {
         key,
@@ -299,7 +311,7 @@ onBeforeUnmount(() => {
     <VCard class="chat-modal rounded-xl overflow-hidden elevation-10">
       <!-- Header -->
       <VCardTitle class="d-flex justify-space-between align-center py-3 px-4 bg-surface elevation-0 border-b">
-        <span class="text-h6 font-weight-bold text-high-emphasis">Chat con el vendedor</span>
+        <span class="text-h6 font-weight-bold text-high-emphasis">{{ t('chat.with_seller') }}</span>
         <VBtn
           icon="tabler-x"
           variant="text"
@@ -329,7 +341,7 @@ onBeforeUnmount(() => {
               <span class="text-truncate">
                 {{ (props.publicacion.author.first_name || props.publicacion.author.last_name) 
                     ? `${props.publicacion.author.first_name || ''} ${props.publicacion.author.last_name || ''}`.trim()
-                    : 'Vendedor'
+                    : t('chat.seller')
                 }}
               </span>
             </div>
@@ -343,7 +355,7 @@ onBeforeUnmount(() => {
           size="16"
           color="primary"
         />
-        <span>Por tu seguridad, no compartas datos de contacto directo.</span>
+        <span>{{ t('chat.security_note') }}</span>
       </div>
 
       <!-- Success View -->
@@ -353,11 +365,11 @@ onBeforeUnmount(() => {
         </div>
         
         <h3 class="text-h5 font-weight-bold mb-2 text-high-emphasis">
-          ¡Consulta enviada con éxito!
+          {{ t('chat.inquiry_sent_success') }}
         </h3>
         
         <p class="text-body-1 text-medium-emphasis mb-8" style="max-width: 400px;">
-          Hemos enviado tu mensaje al vendedor. Recibirás una copia de la consulta en tu correo electrónico<br><strong>{{ formEmail }}</strong>.
+          {{ t('chat.inquiry_sent_body') }}<br><strong>{{ formEmail }}</strong>.
         </p>
 
         <VCard
@@ -369,10 +381,10 @@ onBeforeUnmount(() => {
             <VIcon icon="tabler-user-plus" color="primary" size="24" class="mt-1" />
             <div>
               <p class="text-subtitle-2 font-weight-bold mb-1 text-high-emphasis">
-                ¿Quieres hacer seguimiento?
+                {{ t('chat.follow_up_title') }}
               </p>
               <p class="text-caption text-medium-emphasis mb-3">
-                Regístrate ahora para guardar tu historial de chats, marcar favoritos y recibir alertas de nuevos productos.
+                {{ t('chat.follow_up_body') }}
               </p>
               <VBtn
                 variant="outlined"
@@ -382,7 +394,7 @@ onBeforeUnmount(() => {
                 prepend-icon="tabler-login"
                 class="px-4"
               >
-                Crear mi cuenta gratis
+                {{ t('chat.create_account_free') }}
               </VBtn>
             </div>
           </div>
@@ -393,7 +405,7 @@ onBeforeUnmount(() => {
           color="medium-emphasis"
           @click="emit('close')"
         >
-          Cerrar ventana
+          {{ t('chat.close_window') }}
         </VBtn>
       </VCardText>
 
@@ -401,29 +413,28 @@ onBeforeUnmount(() => {
       <VCardText v-else-if="showGuestForm" class="pa-6 bg-background flex-grow-1 overflow-y-auto">
         <div class="text-center mb-6">
           <VIcon icon="tabler-mail-fast" size="48" color="primary" class="mb-3" />
-          <h3 class="text-h6 font-weight-bold mb-1">Consulta sobre este motor</h3>
+          <h3 class="text-h6 font-weight-bold mb-1">{{ t('chat.contact_product_title') }}</h3>
           <p class="text-body-2 text-medium-emphasis">
-            Completa tus datos para contactar al vendedor. Recibirás una copia en tu email.
+            {{ t('chat.contact_product_body') }}
           </p>
         </div>
-
         <VForm @submit.prevent="handleGuestSubmit">
           <AppTextField
             v-model="formName"
-            label="Tu nombre *"
-            placeholder="Ej. Juan Pérez"
+            :label="t('chat.name_label')"
+            :placeholder="t('chat.name_placeholder')"
             class="mb-4"
           />
           <AppTextField
             v-model="formEmail"
-            label="Tu e-mail *"
-            placeholder="ejemplo@correo.com"
+            :label="t('chat.email_label')"
+            :placeholder="t('chat.email_placeholder')"
             type="email"
             class="mb-4"
           />
           <AppTextarea
             v-model="formMessage"
-            label="Mensaje *"
+            :label="t('chat.message_label')"
             rows="3"
             class="mb-4"
           />
@@ -438,7 +449,7 @@ onBeforeUnmount(() => {
             >
               <template #label>
                 <div class="text-caption text-medium-emphasis ml-2">
-                  Acepto las <a href="#" class="text-primary text-decoration-none">condiciones de uso</a> y <a href="#" class="text-primary text-decoration-none">políticas de privacidad</a>.
+                  {{ t('chat.terms_prefix') }}<a href="#" class="text-primary text-decoration-none">{{ t('chat.terms_of_use') }}</a>{{ t('chat.terms_connector') }}<a href="#" class="text-primary text-decoration-none">{{ t('chat.privacy_policy') }}</a>.
                 </div>
               </template>
             </VCheckbox>
@@ -452,7 +463,7 @@ onBeforeUnmount(() => {
             :disabled="!isFormValid"
             :loading="isSendingMessage"
           >
-            CONTACTAR AHORA
+            {{ t('chat.contact_now') }}
           </VBtn>
         </VForm>
       </VCardText>
@@ -474,7 +485,7 @@ onBeforeUnmount(() => {
               size="40"
               width="3"
             />
-            <span class="text-caption">Cargando conversación...</span>
+            <span class="text-caption">{{ t('chat.loading_conversation') }}</span>
           </div>
 
           <!-- Alert for Guests -->
@@ -487,8 +498,8 @@ onBeforeUnmount(() => {
             closable
           >
             <div class="text-caption">
-              Estás chateando como <strong>{{ initialViewerName || 'Invitado' }}</strong>. 
-              <span class="text-decoration-underline cursor-pointer">Regístrate</span> para guardar tu historial.
+              {{ t('chat.chatting_as') }} <strong>{{ initialViewerName || t('chat.guest') }}</strong>. 
+              <span class="text-decoration-underline cursor-pointer">{{ t('chat.register') }}</span> {{ t('chat.chatting_as_suffix') }}
             </div>
           </VAlert>
 
@@ -509,7 +520,7 @@ onBeforeUnmount(() => {
                 class="ms-2"
                 @click="handleRetryMessages"
               >
-                Reintentar
+                {{ t('chat.retry') }}
               </VBtn>
             </div>
           </VAlert>
@@ -524,10 +535,10 @@ onBeforeUnmount(() => {
             </div>
             <div class="text-center">
               <p class="text-body-2 font-weight-medium mb-1 text-high-emphasis">
-                Chat iniciado
+                {{ t('chat.no_messages') }}
               </p>
               <p class="text-caption">
-                Espera la respuesta del vendedor.
+                {{ t('chat.start_with_seller') }}
               </p>
             </div>
           </div>
@@ -612,7 +623,7 @@ onBeforeUnmount(() => {
             :disabled="isConversationLocked"
             auto-grow
             hide-details
-            placeholder="Escribe un mensaje..."
+            :placeholder="t('chat.write_message')"
             rows="1"
             max-rows="4"
             density="comfortable"

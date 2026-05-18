@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
 interface Props {
@@ -11,12 +12,10 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   icon: 'tabler-search-off',
-  title: 'Publicación no encontrada',
-  message: 'Lo sentimos, no hemos podido encontrar la publicación que buscas. Es posible que el enlace sea incorrecto o que la publicación haya sido eliminada.',
-  actionLabel: 'Volver a la tienda',
-  actionLink: '/store'
+  actionLink: '/store',
 })
 
+const { t } = useI18n()
 const router = useRouter()
 
 const handleAction = () => {
@@ -41,11 +40,11 @@ const handleAction = () => {
       </div>
 
       <h2 class="text-h4 font-weight-bold mb-3 text-high-emphasis">
-        {{ props.title }}
+        {{ props.title || t('store.empty.title') }}
       </h2>
 
       <p class="text-body-1 text-medium-emphasis mb-8 mx-auto message-text">
-        {{ props.message }}
+        {{ props.message || t('store.empty.message') }}
       </p>
 
       <div class="d-flex justify-center gap-4">
@@ -57,7 +56,7 @@ const handleAction = () => {
           @click="handleAction"
           class="action-btn"
         >
-          {{ props.actionLabel }}
+          {{ props.actionLabel || t('store.empty.action') }}
         </VBtn>
       </div>
     </VCard>

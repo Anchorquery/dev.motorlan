@@ -86,12 +86,12 @@ const deleteInvoice = async (id: number) => {
 <template>
   <section v-if="invoices">
     <VCard id="invoice-list">
-      <VCardText>
-        <div class="d-flex align-center justify-space-between flex-wrap gap-4">
+      <VCardText class="invoice-list-toolbar">
+        <div class="invoice-list-toolbar__row d-flex align-center justify-space-between flex-wrap gap-4">
           <div class="text-h5">
             Invoice List
           </div>
-          <div class="d-flex align-center gap-x-4">
+          <div class="invoice-list-toolbar__actions d-flex align-center gap-x-4">
             <AppSelect
               :model-value="itemsPerPage"
               :items="[
@@ -101,7 +101,7 @@ const deleteInvoice = async (id: number) => {
                 { value: 100, title: '100' },
                 { value: -1, title: 'All' },
               ]"
-              style="inline-size: 6.25rem;"
+              class="invoice-list-actions"
               @update:model-value="itemsPerPage = parseInt($event, 10)"
             />
 
@@ -120,6 +120,7 @@ const deleteInvoice = async (id: number) => {
       <VDivider />
 
       <!-- SECTION Datatable -->
+      <div class="table-responsive-shell">
       <VDataTableServer
         v-model:items-per-page="itemsPerPage"
         v-model:page="page"
@@ -200,19 +201,50 @@ const deleteInvoice = async (id: number) => {
           />
         </template>
       </VDataTableServer>
+      </div>
       <!-- !SECTION -->
     </VCard>
   </section>
 </template>
 
 <style lang="scss">
+.table-responsive-shell {
+  overflow-x: auto;
+  width: 100%;
+  -webkit-overflow-scrolling: touch;
+}
+
 #invoice-list {
   .invoice-list-actions {
-    inline-size: 8rem;
+    inline-size: 6.25rem;
   }
 
   .invoice-list-search {
     inline-size: 12rem;
+  }
+
+  .invoice-list-toolbar__row,
+  .invoice-list-toolbar__actions {
+    min-inline-size: 0;
+  }
+}
+
+@media (max-width: 599px) {
+  #invoice-list {
+    .invoice-list-toolbar__row,
+    .invoice-list-toolbar__actions {
+      width: 100%;
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .invoice-list-actions {
+      inline-size: 100%;
+    }
+
+    .invoice-list-toolbar :deep(.v-btn) {
+      width: 100%;
+    }
   }
 }
 </style>

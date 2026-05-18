@@ -1,8 +1,11 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { onMounted, ref } from 'vue'
 import { createUrl } from '@/@core/composable/createUrl'
 import { useApi } from '@/composables/useApi'
+import { usePublicApi } from '@/composables/usePublicApi'
 
+const { t } = useI18n()
 const props = defineProps<{ publicacionId: number }>()
 
 const newQuestion = ref('')
@@ -13,7 +16,7 @@ const snackbar = ref({ show: false, text: '', color: 'success' as 'success' | 'e
 
 const fetchQuestions = async () => {
   try {
-    const { data } = await useApi<any>(
+    const { data } = await usePublicApi<any>(
       createUrl(`/wp-json/motorlan/v1/publicaciones/${props.publicacionId}/questions`),
     ).get().json()
 
@@ -33,12 +36,12 @@ const submitQuestion = async () => {
       createUrl(`/wp-json/motorlan/v1/publicaciones/${props.publicacionId}/questions`),
     ).post({ pregunta: newQuestion.value })
     newQuestion.value = ''
-    snackbar.value = { show: true, text: 'Pregunta enviada', color: 'success' }
+    snackbar.value = { show: true, text: t('store.questions.sent_success'), color: 'success' }
     await fetchQuestions()
   }
   catch (error) {
     console.error(error)
-    snackbar.value = { show: true, text: 'Error al enviar la pregunta', color: 'error' }
+    snackbar.value = { show: true, text: t('store.questions.sent_error'), color: 'error' }
   }
   finally {
     loading.value = false
@@ -51,7 +54,7 @@ onMounted(fetchQuestions)
 <template>
   <div class="publicacion-questions mt-8">
     <h2 class="text-h5 mb-4">
-      Preguntas y respuestas
+      {{ t('store.questions.title') }}
     </h2>
     <VForm
       class="d-flex align-center gap-4 mb-6"
@@ -59,7 +62,7 @@ onMounted(fetchQuestions)
     >
       <VTextField
         v-model="newQuestion"
-        label="Escribe tu pregunta..."
+        :label="t('store.questions.placeholder')"
         class="flex-grow-1"
       />
       <VBtn
@@ -67,7 +70,7 @@ onMounted(fetchQuestions)
         type="submit"
         :loading="loading"
       >
-        Preguntar
+        {{ t('store.questions.ask') }}
       </VBtn>
     </VForm>
 
@@ -102,7 +105,7 @@ onMounted(fetchQuestions)
       v-else
       class="text-body-2"
     >
-      No hay preguntas todavía.
+      {{ t('store.questions.empty') }}
     </div>
     <VSnackbar
       v-model="snackbar.show"

@@ -105,6 +105,7 @@ const totalQuestions = computed(() => questionsData.value?.pagination?.total || 
       <VDivider />
 
       <!-- Datatable -->
+      <div class="table-responsive-shell">
       <VDataTableServer
         v-model:items-per-page="itemsPerPage"
         v-model:page="page"
@@ -181,6 +182,15 @@ const totalQuestions = computed(() => questionsData.value?.pagination?.total || 
           />
         </template>
       </VDataTableServer>
+      </div>
     </VCard>
   </div>
 </template>
+
+<style scoped>
+.table-responsive-shell {
+  overflow-x: auto;
+  width: 100%;
+  -webkit-overflow-scrolling: touch;
+}
+</style>

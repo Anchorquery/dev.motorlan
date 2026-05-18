@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { computed } from 'vue'
 import navItems from '@/navigation/vertical'
 import { themeConfig } from '@themeConfig'
 // Components
@@ -12,6 +13,10 @@ import SidebarNotifications from '@/layouts/components/SidebarNotifications.vue'
 // @layouts plugin
 import { VerticalNavLayout } from '@layouts'
 
+const languages = computed(() => {
+  const wpLanguages = (window as any)?.wpData?.languages
+  return Array.isArray(wpLanguages) && wpLanguages.length ? wpLanguages : themeConfig.app.i18n.langConfig
+})
 </script>
 
 <template>
@@ -22,7 +27,7 @@ import { VerticalNavLayout } from '@layouts'
       <NavBarNotifications />
       <NavbarThemeSwitcher />
       <NavbarShortcuts />
-      <NavBarI18n :languages="themeConfig.app.i18n.langConfig" />
+      <NavBarI18n :languages="languages" />
     </template>
 
     <template #before-vertical-nav-items>

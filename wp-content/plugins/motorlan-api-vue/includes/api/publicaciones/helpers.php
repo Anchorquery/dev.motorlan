@@ -41,9 +41,24 @@ function motorlan_build_publicaciones_query_args($params) {
 
     $filterable_fields = [
         'marca', 'tipo_o_referencia', 'potencia', 'velocidad', 'par_nominal', 'voltaje', 'intensidad',
-        'pais', 'provincia', 'posibilidad_de_alquiler', 'tipo_de_alimentacion',
+        'pais', 'provincia', 'posibilidad_de_alquiler',
         'servomotores', 'regulacion_electronica_drivers', 'precio_de_venta', 'precio_negociable', 'uuid','estado_del_articulo'
     ];
+
+    // tipo_de_alimentacion: accept both new values ('ac'/'dc') and legacy ACF radio values
+    if (!empty($params['tipo_de_alimentacion'])) {
+        $val = sanitize_text_field($params['tipo_de_alimentacion']);
+        $legacy_map = ['ac' => 'Alterna (C.A.)', 'dc' => 'Continua (C.C.)'];
+        if (isset($legacy_map[$val])) {
+            $meta_query[] = [
+                'relation' => 'OR',
+                ['key' => 'tipo_de_alimentacion', 'value' => $val, 'compare' => '='],
+                ['key' => 'tipo_de_alimentacion', 'value' => $legacy_map[$val], 'compare' => '='],
+            ];
+        } else {
+            $meta_query[] = ['key' => 'tipo_de_alimentacion', 'value' => $val, 'compare' => '='];
+        }
+    }
 
     // Helper to parse range strings like "10-50"
     $parse_range = function($value) {

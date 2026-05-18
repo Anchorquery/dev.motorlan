@@ -408,6 +408,8 @@ const getImageBySize = (image: any, size = 'thumbnail'): string => {
 <style scoped>
 .questions-table-shell {
   overflow-x: auto;
+  width: 100%;
+  -webkit-overflow-scrolling: touch;
 }
 
 @media (max-width: 959px) {

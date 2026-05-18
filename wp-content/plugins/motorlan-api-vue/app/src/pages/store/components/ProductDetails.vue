@@ -338,7 +338,6 @@ const removeOffer = async () => {
           <!-- Precio visible: no tiene "Consultar precio" marcado, o es el owner -->
           <VCol v-if="showPrice" cols="12">
             <div class="detail-item d-flex align-center mb-2">
-              <VIcon icon="tabler-currency-euro" class="mr-1" color="primary" />
               <span class="text-h5 font-weight-bold text-primary">{{ Number(props.publicacion.acf.precio_de_venta).toLocaleString('es-ES') }} €</span>
               <VChip v-if="isConsultPrice && isOwner" size="x-small" color="info" variant="tonal" class="ml-2">referencia</VChip>
             </div>

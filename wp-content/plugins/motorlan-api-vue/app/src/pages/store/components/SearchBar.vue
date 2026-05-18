@@ -1,32 +1,35 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+
 defineProps<{
   loading: boolean
   activeFiltersCount?: number
 }>()
 
-const emit = defineEmits(['search', 'open-filters', 'reset'])
+const emit = defineEmits(['search', 'reset'])
 const searchTerm = defineModel<string>('searchTerm')
 const onSearch = () => emit('search')
+const { t } = useI18n()
 </script>
 
 <template>
   <section class="store-navbar mb-6">
     <div class="store-navbar__hero">
       <div class="text-overline text-error font-weight-bold mb-1">
-        Tienda Motorlan
+        {{ t('store.search.eyebrow') }}
       </div>
       <h1 class="text-h4 text-md-h3 font-weight-bold mb-2 text-primary">
-        Compra y venta de motores industriales
+        {{ t('store.search.title') }}
       </h1>
-      <p class="text-body-2 text-medium-emphasis mb-0 store-navbar__subtitle">
-        Motores, reguladores, repuestos y mas, con busqueda y filtros rapidos desde la barra superior.
+      <p class="text-body-2 text-medium-emphasis mb-0">
+        {{ t('store.search.subtitle') }}
       </p>
     </div>
 
     <div class="store-navbar__controls">
       <AppTextField
         v-model="searchTerm"
-        placeholder="Buscar..."
+        :placeholder="t('store.search.placeholder')"
         hide-details
         class="flex-grow-1"
         @keydown.enter="onSearch"
@@ -38,23 +41,7 @@ const onSearch = () => emit('search')
         :loading="loading"
         @click="onSearch"
       >
-        BUSCAR
-      </VBtn>
-
-      <VBtn
-        variant="tonal"
-        color="error"
-        class="store-navbar__btn"
-        @click="emit('open-filters')"
-      >
-        Filtros
-        <VBadge
-          v-if="activeFiltersCount"
-          :content="activeFiltersCount"
-          inline
-          color="error"
-          class="ms-2"
-        />
+        {{ t('store.search.button') }}
       </VBtn>
 
       <VBtn
@@ -64,7 +51,7 @@ const onSearch = () => emit('search')
         class="store-navbar__btn"
         @click="emit('reset')"
       >
-        Limpiar
+        {{ t('store.search.clear') }}
       </VBtn>
     </div>
   </section>
@@ -90,10 +77,6 @@ const onSearch = () => emit('search')
 .store-navbar__hero {
   min-width: 280px;
   max-width: 700px;
-}
-
-.store-navbar__subtitle {
-  max-width: 62ch;
 }
 
 .store-navbar__controls {

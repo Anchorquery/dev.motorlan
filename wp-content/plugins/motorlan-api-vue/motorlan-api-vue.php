@@ -51,10 +51,12 @@ require_once MOTORLAN_API_VUE_PATH . 'includes/classes/class-motorlan-security-l
 
 require_once MOTORLAN_API_VUE_PATH . 'includes/classes/class-motorlan-notification-manager.php';
 require_once MOTORLAN_API_VUE_PATH . 'includes/classes/class-motorlan-notification-listener.php';
+require_once MOTORLAN_API_VUE_PATH . 'includes/i18n/motorlan-i18n.php';
 require_once MOTORLAN_API_VUE_PATH . 'includes/admin/admin-mods.php';
 require_once MOTORLAN_API_VUE_PATH . 'includes/admin/admin-migration.php';
 require_once MOTORLAN_API_VUE_PATH . 'includes/admin/admin-offers-setup.php'; // New Offers Admin Page
 require_once MOTORLAN_API_VUE_PATH . 'includes/admin/admin-email-debug.php'; // Email Debug Tool
+require_once MOTORLAN_API_VUE_PATH . 'includes/admin/admin-translations.php';
 require_once MOTORLAN_API_VUE_PATH . 'includes/admin/acf-purchases-sync.php';
 require_once MOTORLAN_API_VUE_PATH . 'includes/vue-app-setup.php';
 require_once MOTORLAN_API_VUE_PATH . 'includes/cron/cron-jobs.php';

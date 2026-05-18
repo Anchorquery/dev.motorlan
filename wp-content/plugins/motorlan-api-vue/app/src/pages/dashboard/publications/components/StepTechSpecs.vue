@@ -8,6 +8,7 @@ import type { PublicationFormState } from '@/composables/usePublicationForm'
 const props = defineProps<{
   formState: PublicationFormState
   tipos: { title: string; value: number; slug: string }[]
+  showTypeSelector?: boolean
 }>()
 
 const emit = defineEmits(['update:formState'])
@@ -91,10 +92,7 @@ const isCurrentMotor = computed(() => {
         <h3 class="text-h5 font-weight-bold mb-4">{{ t('add_publication.sections.tech_specs', 'Especificaciones Técnicas') }}</h3>
     </VCol>
 
-    <!-- Product Type Selector (Hidden as it's redundant from Step 0) -->
-    <!-- The type is already selected in the first screen of the wizard -->
-
-    <VCol cols="12" v-if="false">
+    <VCol v-if="showTypeSelector" cols="12">
       <VLabel class="mb-2 text-body-2 font-weight-medium">{{ t('add_publication.post_details.type') }} *</VLabel>
       <VRadioGroup
         :model-value="selectedTypeSlug"

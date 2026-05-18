@@ -276,6 +276,8 @@ onMounted(() => {
 <style scoped>
 .admin-approvals-table-shell {
   overflow-x: auto;
+  width: 100%;
+  -webkit-overflow-scrolling: touch;
 }
 
 .admin-approvals-actions :deep(.v-btn),

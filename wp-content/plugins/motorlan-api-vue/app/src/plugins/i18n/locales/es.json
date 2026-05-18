@@ -1,4 +1,12 @@
 {
+  "2": "2",
+  "3": "3",
+  "5": "5",
+  "10": "10",
+  "20": "20",
+  "25": "25",
+  "50": "50",
+  "100": "100",
   "Motors Shop": "Tienda de Motores",
   "UI Elements": "Elementos de UI",
   "Forms & Tables": "Formularios y Tablas",
@@ -104,7 +112,6 @@
   "Page Not Found - 404": "Página no encontrada - 404",
   "Not Authorized - 401": "No autorizado - 401",
   "Server Error - 500": "Error del servidor - 500",
-  "2": "2",
   "Forms": "Formularios",
   "Timeline": "Línea de tiempo",
   "Disabled Menu": "Menú deshabilitado",
@@ -134,7 +141,6 @@
   "Wizard Pages": "Páginas del asistente",
   "Form Wizard": "Asistente de formulario",
   "Numbered": "Numerado",
-  "3": "3",
   "ecommerce": "motores",
   "Ecommerce": "Comercio electrónico",
   "Editors": "Editores",
@@ -161,12 +167,6 @@
   "Logistics": "Logística",
   "Dashboard": "Panel",
   "Fleet": "Flota",
-  "5": "5",
-  "10": "10",
-  "20": "20",
-  "25": "25",
-  "50": "50",
-  "100": "100",
   "Compras": "Compras",
   "Preguntas": "Preguntas",
   "Opiniones": "Opiniones",
@@ -177,35 +177,35 @@
   "Cuenta": "Cuenta",
   "Estadísticas": "Estadísticas",
   "Tipo": "Tipo",
-    "custom": {
-      "unknown": "Desconocido",
-      "draft": "Borrador",
-      "published": "Publicado",
-      "paused": "Pausado",
-      "pending": "En revisión"
+  "custom": {
+    "unknown": "Desconocido",
+    "draft": "Borrador",
+    "published": "Publicado",
+    "paused": "Pausado",
+    "pending": "En revisión"
+  },
+  "admin_approvals": {
+    "title": "Aprobaciones Pendientes",
+    "subtitle": "Revisa y gestiona las solicitudes de publicación de los usuarios.",
+    "approve_success": "Publicación aprobada con éxito",
+    "approve_error": "Error al aprobar la publicación",
+    "reject_success": "Publicación rechazada",
+    "reject_error": "Error al rechazar la publicación",
+    "no_data_title": "No hay publicaciones pendientes",
+    "no_data_subtitle": "Todo está al día por ahora.",
+    "buttons": {
+      "approve": "Aprobar",
+      "reject": "Rechazar",
+      "cancel": "Cancelar",
+      "confirm_reject": "Confirmar Rechazo"
     },
-    "admin_approvals": {
-      "title": "Aprobaciones Pendientes",
-      "subtitle": "Revisa y gestiona las solicitudes de publicación de los usuarios.",
-      "approve_success": "Publicación aprobada con éxito",
-      "approve_error": "Error al aprobar la publicación",
-      "reject_success": "Publicación rechazada",
-      "reject_error": "Error al rechazar la publicación",
-      "no_data_title": "No hay publicaciones pendientes",
-      "no_data_subtitle": "Todo está al día por ahora.",
-      "buttons": {
-        "approve": "Aprobar",
-        "reject": "Rechazar",
-        "cancel": "Cancelar",
-        "confirm_reject": "Confirmar Rechazo"
-      },
-      "reject_dialog": {
-        "title": "Rechazar Publicación",
-        "text": "Indica el motivo por el cual no se aprueba esta publicación. El usuario recibirá esta información.",
-        "reason_label": "Motivo del rechazo",
-        "reason_placeholder": "Ej: Faltan especificaciones técnicas en la descripción."
-      }
-    },
+    "reject_dialog": {
+      "title": "Rechazar Publicación",
+      "text": "Indica el motivo por el cual no se aprueba esta publicación. El usuario recibirá esta información.",
+      "reason_label": "Motivo del rechazo",
+      "reason_placeholder": "Ej: Faltan especificaciones técnicas en la descripción."
+    }
+  },
   "store": {
     "par_options": {
       "range1": "0-50",
@@ -242,6 +242,65 @@
     },
     "default_message": "Hola, me interesa saber el precio de la publicación"
   },
+
+    "search": {
+      "eyebrow": "Tienda Motorlan",
+      "title": "Compra y venta de motores industriales",
+      "subtitle": "Motores, reguladores, repuestos y más.",
+      "placeholder": "Buscar...",
+      "button": "BUSCAR",
+      "clear": "Limpiar"
+    },
+    "publications": {
+      "loading": "Cargando publicaciones...",
+      "view_detail": "Ver detalle",
+      "empty_title": "No se encontraron publicaciones",
+      "empty_subtitle": "Intenta ajustar los filtros de búsqueda."
+    },
+    "related": {
+      "title": "Productos relacionados",
+      "subtitle": "Otras publicaciones que pueden interesarte",
+      "more_info": "+ Info"
+    },
+    "mobile_nav": {
+      "aria_label": "Navegación tienda",
+      "filters": "Filtros",
+      "login": "Entrar",
+      "dashboard": "Dashboard",
+      "add_publication": "Nueva publicación",
+      "publish": "Publicar",
+      "profile": "Perfil"
+    },
+    "empty": {
+      "title": "Publicación no encontrada",
+      "message": "Lo sentimos, no hemos podido encontrar la publicación que buscas. Es posible que el enlace sea incorrecto o que la publicación haya sido eliminada.",
+      "action": "Volver a la tienda"
+    },
+    "questions": {
+      "title": "Preguntas y respuestas",
+      "placeholder": "Escribe tu pregunta...",
+      "ask": "Preguntar",
+      "empty": "No hay preguntas todavía.",
+      "sent_success": "Pregunta enviada",
+      "sent_error": "Error al enviar la pregunta"
+    },
+    "filters": {
+      "title": "Filtros",
+      "clear": "Limpiar",
+      "type_all": "Todos",
+      "type_motor_ac": "Motor AC",
+      "type_motor_dc": "Motor DC",
+      "type_regulador": "Regulador",
+      "type_otros": "Otros",
+      "select_brands": "Seleccionar marcas",
+      "select_power": "Seleccionar potencia",
+      "select_torque": "Seleccionar PAR (Nm)",
+      "select_speed": "Seleccionar velocidad",
+      "select_state": "Seleccionar estado",
+      "state_new": "Nuevo",
+      "state_used": "Usado",
+      "state_restored": "Reacondicionado"
+    },
   "add_publication": {
     "title": "Añadir Nueva Publicación",
     "step": "Paso {currentStep} de 3",
@@ -572,7 +631,11 @@
     "new_platform": "¿Nuevo en nuestra plataforma?",
     "create_account": "Crear una cuenta",
     "or": "o",
-    "login_to_interact": "Inicia sesión como cliente para contactar al vendedor, hacer ofertas o comprar este equipo."
+    "login_to_interact": "Inicia sesión como cliente para contactar al vendedor, hacer ofertas o comprar este equipo.",
+    "unknown_error": "Se produjo un error desconocido. Intentalo de nuevo.",
+    "success": "Inicio de sesion exitoso",
+    "complete_profile": "Por favor, completa tu perfil para continuar.",
+    "connection_error": "No se pudo conectar con el servidor. Revisa tu conexion."
   },
   "register": {
     "title": "Crea tu cuenta",
@@ -596,86 +659,102 @@
     "user": "Usuario",
     "buyer": "Comprador",
     "seller": "Vendedor",
-    "publication": "Publicación",
-    "actions": "Acciones",
-    "date": "Fecha",
-    "load_error": "No se pudieron cargar las conversaciones",
-    "no_data_title": "No hay conversaciones",
-    "no_data_text": "Aún no has recibido consultas de interés.",
-    "no_data_text_buyer": "Aún no has realizado ninguna consulta.",
-    "buyer_label": "Comprador interesado",
-    "seller_label": "Vendedor del equipo",
-    "view_chat": "Ver Chat",
-    "go_to_publication": "Ir a la publicación"
-  },
-  "motor": {
-    "consult_price": "Consultar precio"
-  },
-  "notifications": {
-    "title": "Notificaciones",
-    "new_count": "{count} Nueva(s)",
-    "mark_all_read": "Marcar todo como leído",
-    "mark_all_unread": "Marcar todo como no leído",
-    "no_notifications": "¡No se encontraron notificaciones!",
-    "view_all": "Ver todas las notificaciones"
-  },
-  "$vuetify": {
-    "badge": "Insignia",
-    "noDataText": "No hay datos disponibles",
-    "close": "Cerrar",
-    "open": "Abrir",
-    "loading": "Cargando",
-    "carousel": {
-      "ariaLabel": {
-        "delimiter": "Delimitador de carrusel"
-      }
+    "buyer": "Comprador",
+    "with_seller": "Chat con el vendedor",
+    "with_buyer": "Chat con el comprador",
+    "security_note": "Por tu seguridad, no compartas datos de contacto directo.",
+    "loading_conversation": "Cargando conversación...",
+    "retry": "Reintentar",
+    "no_messages": "Aún no hay mensajes.",
+    "start_with_seller": "Inicia la conversación con el vendedor.",
+    "start_with_buyer": "Inicia la conversación con el comprador.",
+    "message_placeholder": "Escribe un mensaje...",
+    "message_placeholder_active": "Escribe tu mensaje...",
+    "reply_title": "Responder consulta",
+    "product_inquiry": "Consulta sobre el producto",
+    "inquiry_by_buyer": "Consulta de comprador interesado",
+    "sell": "Vender",
+    "confirm_sale": "¿Confirmas que has vendido este artículo a este usuario? Esto generará una compra y descontará el stock.",
+    "sale_error": "Error al registrar la venta",
+    "sale_success": "Venta registrada correctamente",
+    "unexpected_error": "Ocurrió un error inesperado",
+    "rating_thanks": "¡Gracias por tu valoración!",
+    "inquiry_sent_success": "¡Consulta enviada con éxito!",
+    "inquiry_sent_body": "Hemos enviado tu mensaje al vendedor. Recibirás una copia de la consulta en tu correo electrónico",
+    "follow_up_title": "¿Quieres hacer seguimiento?",
+    "follow_up_body": "Regístrate ahora para guardar tu historial de chats, marcar favoritos y recibir alertas de nuevos productos.",
+    "create_account_free": "Crear mi cuenta gratis",
+    "close_window": "Cerrar ventana",
+    "contact_product_title": "Consulta sobre este producto",
+    "contact_product_body": "Completa tus datos para contactar al vendedor. Recibirás una copia en tu email.",
+    "name_label": "Tu nombre *",
+    "name_placeholder": "Ej. Juan Pérez",
+    "email_label": "Tu e-mail *",
+    "email_placeholder": "ejemplo@correo.com",
+    "message_label": "Mensaje *",
+    "terms_prefix": "Acepto las ",
+    "terms_connector": " y las ",
+    "terms_of_use": "condiciones de uso",
+    "privacy_policy": "políticas de privacidad",
+    "contact_now": "CONTACTAR AHORA",
+    "chatting_as": "Estás chateando como",
+    "guest": "Invitado",
+    "chatting_as_suffix": "para guardar tu historial.",
+    "register": "Regístrate",
+    "chat_started": "Chat iniciado",
+    "waiting_for_seller": "Espera la respuesta del vendedor.",
+    "write_message": "Escribe tu mensaje...",
+    "offers": {
+      "sent": "Ofertas enviadas"
     },
-    "dataIterator": {
-      "loadingText": "Cargando..."
+    "rating_modal": {
+      "title_seller": "Valora al vendedor",
+      "title_buyer": "Valora al comprador",
+      "experience_with": "¿Cómo fue tu experiencia con {name}?",
+      "experience_default": "¿Cómo fue tu experiencia?",
+      "stars": "{rating} estrellas",
+      "comment_label": "Comentario",
+      "comment_placeholder": "Cuéntanos tu experiencia",
+      "comment_required": "El comentario es obligatorio",
+      "max_chars": "Máximo 1000 caracteres",
+      "cancel": "Cancelar",
+      "submit": "Enviar",
+      "connection_error": "Error de conexión al enviar la valoración",
+      "submit_error": "Error al enviar la valoración"
     },
-    "dataFooter": {
-      "itemsPerPageText": "Elementos por página:",
-      "itemsPerPageAll": "Todos",
-      "pageText": "{0}-{1} de {2}",
-      "firstPage": "Primera página",
-      "prevPage": "Página anterior",
-      "nextPage": "Página siguiente",
-      "lastPage": "Última página"
-    },
-    "pagination": {
-      "ariaLabel": {
-        "root": "Navegación de paginación",
-        "previous": "Página anterior",
-        "first": "Primera página",
-        "last": "Última página",
-        "next": "Página siguiente",
-        "currentPage": "Página actual",
-        "page": "Ir a la página"
-      }
-    },
-    "input": {
-      "clear": "Limpiar",
-      "appendAction": "Acción de adjuntar",
-      "prependAction": "Acción de anteponer",
-      "counterSize": "Tamaño del contador",
-      "otp": "Contraseña de un solo uso"
-    },
-    "fileInput": {
-      "counterSize": "Tamaño del contador de archivos"
-    },
-    "rating": {
-      "ariaLabel": {
-        "item": "Calificación"
-      }
+    "visibility_note": "Tu mensaje será visible para la otra parte y quedará registrado en la conversación.",
+    "status": {
+      "delivered": "Entregado",
+      "sent": "Enviado",
+      "processing": "En proceso",
+      "pending": "Pendiente",
+      "cancelled": "Cancelado",
+      "progress": "En progreso"
     }
   },
-  "Gestión de Ventas": "Gestión de Ventas",
-  "Mis Publicaciones": "Mis Publicaciones",
-  "Interesados": "Interesados",
-  "Gestión de Compras": "Gestión de Compras",
-  "Mis Compras": "Mis Compras",
-  "Mi Cuenta": "Mi Cuenta",
-  "Ofertas Recibidas": "Ofertas Recibidas",
-  "Ofertas de Precio": "Ofertas de Precio",
-  "Consultas Enviadas": "Consultas Enviadas"
+  "purchases": {
+    "title": "Mis Compras",
+    "search_placeholder": "Buscar compra",
+    "rate_seller": "Valorar Vendedor",
+    "seller": "Vendedor",
+    "headers": {
+      "publicacion": "Publicación",
+      "fecha_compra": "Fecha de Compra",
+      "tipo": "Tipo",
+      "estado": "Estado",
+      "actions": "Acciones"
+    },
+    "status": {
+      "pending": "Pendiente",
+      "completed": "Completado",
+      "cancelled": "Cancelado",
+      "rejected": "Rechazado",
+      "unknown": "Desconocido"
+    },
+    "types": {
+      "offer": "Oferta",
+      "rent": "Alquiler",
+      "direct": "Directa"
+    }
+  }
 }

@@ -112,12 +112,12 @@ const moreList = [
   <VRow>
     <VCol cols="12">
       <VCard>
-        <VCardText class="d-flex justify-space-between align-center flex-wrap gap-4">
+        <VCardText class="d-flex justify-space-between align-center flex-wrap gap-4 user-tab-account__toolbar">
           <h5 class="text-h5">
             User's Projects List
           </h5>
 
-          <div style="inline-size: 250px;">
+          <div class="user-tab-account__search">
             <AppTextField
               v-model="search"
               placeholder="Search Project"
@@ -128,7 +128,7 @@ const moreList = [
         <!-- 👉 User Project List Table -->
 
         <!-- SECTION Datatable -->
-
+        <div class="table-responsive-shell">
         <VDataTable
           v-model:page="options.page"
           :headers="projectTableHeaders"
@@ -219,6 +219,7 @@ const moreList = [
             />
           </template>
         </VDataTable>
+        </div>
         <!-- !SECTION -->
       </VCard>
     </VCol>
@@ -371,3 +372,25 @@ const moreList = [
     </VCol>
   </VRow>
 </template>
+
+<style scoped>
+.table-responsive-shell {
+  overflow-x: auto;
+  width: 100%;
+  -webkit-overflow-scrolling: touch;
+}
+
+.user-tab-account__search {
+  inline-size: 250px;
+}
+
+@media (max-width: 599px) {
+  .user-tab-account__toolbar {
+    gap: 0.75rem;
+  }
+
+  .user-tab-account__search {
+    inline-size: 100%;
+  }
+}
+</style>

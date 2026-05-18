@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useProductChat } from '@/composables/useProductChat'
 import { useApi } from '@/composables/useApi'
 import { createUrl } from '@/@core/composable/createUrl'
@@ -14,6 +15,7 @@ const props = defineProps<{
 const emit = defineEmits(['close', 'read'])
 
 const chat = useProductChat(props.productId, { roomKey: props.roomKey })
+const { t, locale } = useI18n()
 
 const messagesContainer = ref<HTMLElement | null>(null)
 const messageText = ref('')
@@ -27,8 +29,21 @@ const isLoadingMessages = computed(() => chat.isFetchingMessages.value && !chat.
 
 const canSendMessage = computed(() => !chat.isLocked.value && messageText.value.trim().length > 0 && !chat.isSending.value)
 
-const timeFormatter = new Intl.DateTimeFormat('es-VE', { hour: '2-digit', minute: '2-digit' })
-const dateFormatter = new Intl.DateTimeFormat('es-VE', { day: 'numeric', month: 'long' })
+const getLocaleCode = () => {
+  const lang = (locale.value || 'es').toLowerCase()
+  const localeMap: Record<string, string> = {
+    es: 'es-ES',
+    en: 'en-US',
+    eu: 'eu-ES',
+    fr: 'fr-FR',
+    ar: 'ar',
+  }
+
+  return localeMap[lang] || 'es-ES'
+}
+
+const timeFormatter = computed(() => new Intl.DateTimeFormat(getLocaleCode(), { hour: '2-digit', minute: '2-digit' }))
+const dateFormatter = computed(() => new Intl.DateTimeFormat(getLocaleCode(), { day: 'numeric', month: 'long' }))
 
 const capitalize = (value: string | undefined): string => {
   if (!value) return ''
@@ -41,7 +56,7 @@ const getInitials = (value: string): string => {
   return parts.slice(0, 2).map(part => part.charAt(0).toUpperCase()).join('') || 'U'
 }
 
-const formatMessageTime = (value: string) => timeFormatter.format(new Date(value))
+const formatMessageTime = (value: string) => timeFormatter.value.format(new Date(value))
 
 const groupedMessages = computed(() => {
   const items = chat.messages.value
@@ -57,7 +72,7 @@ const groupedMessages = computed(() => {
     .map(([key, bucket]) => {
       bucket.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
       const first = bucket[0]
-      const label = capitalize(dateFormatter.format(new Date(first?.created_at ?? Date.now())))
+      const label = capitalize(dateFormatter.value.format(new Date(first?.created_at ?? Date.now())))
       return { key, label, items: bucket }
     })
 })
@@ -121,7 +136,7 @@ onBeforeUnmount(() => {
     <VCard class="chat-modal rounded-xl overflow-hidden elevation-10">
       <!-- Header -->
       <VCardTitle class="d-flex justify-space-between align-center py-3 px-4 bg-surface elevation-0 border-b">
-        <span class="text-h6 font-weight-bold text-high-emphasis">Chat con el vendedor</span>
+        <span class="text-h6 font-weight-bold text-high-emphasis">{{ t('chat.with_seller') }}</span>
         <VBtn
           icon="tabler-x"
           variant="text"
@@ -150,11 +165,11 @@ onBeforeUnmount(() => {
         </VAvatar>
         <div class="product-details flex-grow-1 min-w-0">
           <p class="text-subtitle-2 font-weight-bold text-truncate mb-0 text-high-emphasis">
-            {{ productTitle || 'Consulta sobre el producto' }}
+            {{ productTitle || t('chat.product_inquiry') }}
           </p>
           <div class="d-flex align-center gap-1 text-caption text-medium-emphasis">
             <VIcon icon="tabler-message-circle" size="14" />
-            <span>Consulta al vendedor</span>
+            <span>{{ t('chat.inquiry_by_buyer') }}</span>
           </div>
         </div>
       </div>
@@ -162,7 +177,7 @@ onBeforeUnmount(() => {
       <!-- Security Alert -->
       <div class="bg-primary-lighten-5 px-4 py-2 d-flex align-center gap-3 text-caption text-primary">
         <VIcon icon="tabler-shield-lock" size="16" color="primary" />
-        <span>Por tu seguridad, no compartas datos de contacto directo.</span>
+        <span>{{ t('chat.security_note') }}</span>
       </div>
 
       <!-- Chat Body -->
@@ -182,7 +197,7 @@ onBeforeUnmount(() => {
               size="40"
               width="3"
             />
-            <span class="text-caption">Cargando conversación...</span>
+            <span class="text-caption">{{ t('chat.loading_conversation') }}</span>
           </div>
 
           <!-- Error -->
@@ -202,7 +217,7 @@ onBeforeUnmount(() => {
                 class="ms-2"
                 @click="handleRetryMessages"
               >
-                Reintentar
+                {{ t('chat.retry') }}
               </VBtn>
             </div>
           </VAlert>
@@ -217,10 +232,10 @@ onBeforeUnmount(() => {
             </div>
             <div class="text-center">
               <p class="text-body-2 font-weight-medium mb-1 text-high-emphasis">
-                Aún no hay mensajes.
+                {{ t('chat.no_messages') }}
               </p>
               <p class="text-caption">
-                Inicia la conversación preguntando al vendedor.
+                {{ t('chat.start_with_seller') }}
               </p>
             </div>
           </div>

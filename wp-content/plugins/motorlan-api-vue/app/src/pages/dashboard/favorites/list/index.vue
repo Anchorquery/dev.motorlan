@@ -168,7 +168,7 @@ const removeFavorite = async () => {
 
       <VDivider class="mt-4" />
 
-      <div class="px-6 pb-6">
+      <div class="px-6 pb-6" style="overflow-x: auto; width: 100%; -webkit-overflow-scrolling: touch;">
         <VDataTableServer
           v-model:items-per-page="itemsPerPage"
           v-model:page="page"

@@ -61,7 +61,7 @@ const login = async () => {
     const responseData = await response.json().catch(() => ({}))
 
     if (!response.ok || !responseData.success) {
-      genericError.value = responseData.message || 'Error al iniciar sesión. Por favor verifica tus credenciales.'
+      genericError.value = responseData.message || t('login.connection_error')
       return
     }
 
@@ -86,14 +86,14 @@ const login = async () => {
 
     ability.update(userAbilities)
 
-    showToast('Inicio de sesión exitoso')
+    showToast(t('login.success'))
     
     // Reload the page to refresh state and ensure all components catch the new session
     window.location.reload()
   }
   catch (err: any) {
     console.error('Login Error:', err)
-    genericError.value = err.message || 'Error de conexión. Por favor intenta de nuevo.'
+    genericError.value = err.message || t('login.connection_error')
   }
   finally {
     isSubmitting.value = false
@@ -122,7 +122,7 @@ const closeDialog = () => {
   >
     <VCard class="pa-4">
       <VCardTitle class="d-flex justify-space-between align-center">
-        <span>Iniciar Sesión</span>
+        <span>{{ t('login.login_button') }}</span>
         <VBtn icon variant="text" @click="closeDialog">
           <VIcon icon="tabler-x" />
         </VBtn>

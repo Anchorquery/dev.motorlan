@@ -250,6 +250,7 @@ const openEdit = (uuid: string) => {
       </VRow>
     </VCardText>
 
+    <div class="table-responsive-shell">
     <VDataTableServer
       v-model:items-per-page="itemsPerPage"
       v-model:page="page"
@@ -365,6 +366,7 @@ const openEdit = (uuid: string) => {
         </div>
       </template>
     </VDataTableServer>
+    </div>
   </VCard>
 
   <!-- Modals -->
@@ -407,3 +409,11 @@ const openEdit = (uuid: string) => {
     </VCard>
   </VDialog>
 </template>
+
+<style scoped>
+.table-responsive-shell {
+  overflow-x: auto;
+  width: 100%;
+  -webkit-overflow-scrolling: touch;
+}
+</style>

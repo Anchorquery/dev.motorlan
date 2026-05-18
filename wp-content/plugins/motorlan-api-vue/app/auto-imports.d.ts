@@ -299,6 +299,7 @@ declare global {
   const usePrevious: typeof import('@vueuse/core')['usePrevious']
   const useProductChat: typeof import('./src/composables/useProductChat')['useProductChat']
   const useProjection: typeof import('@vueuse/math')['useProjection']
+  const usePublicApi: typeof import('./src/composables/usePublicApi')['usePublicApi']
   const usePublicationForm: typeof import('./src/composables/usePublicationForm')['usePublicationForm']
   const usePurchaseChat: typeof import('./src/composables/usePurchaseChat')['usePurchaseChat']
   const usePusherChannel: typeof import('./src/composables/usePusherChannel')['usePusherChannel']
@@ -679,6 +680,7 @@ declare module 'vue' {
     readonly usePrevious: UnwrapRef<typeof import('@vueuse/core')['usePrevious']>
     readonly useProductChat: UnwrapRef<typeof import('./src/composables/useProductChat')['useProductChat']>
     readonly useProjection: UnwrapRef<typeof import('@vueuse/math')['useProjection']>
+    readonly usePublicApi: UnwrapRef<typeof import('./src/composables/usePublicApi')['usePublicApi']>
     readonly usePublicationForm: UnwrapRef<typeof import('./src/composables/usePublicationForm')['usePublicationForm']>
     readonly usePurchaseChat: UnwrapRef<typeof import('./src/composables/usePurchaseChat')['usePurchaseChat']>
     readonly usePusherChannel: UnwrapRef<typeof import('./src/composables/usePusherChannel')['usePusherChannel']>

@@ -82,7 +82,7 @@ const login = async () => {
     const responseData = await response.json().catch(() => ({}))
 
     if (!response.ok || !responseData.success) {
-      genericError.value = responseData.message || 'An unknown error occurred. Please try again.'
+      genericError.value = responseData.message || t('login.unknown_error')
       return
     }
 
@@ -109,7 +109,7 @@ const login = async () => {
     // Check if profile is complete
     const { nombre, apellidos } = profile?.personal_data || {}
 
-    showToast('Inicio de sesión exitoso')
+    showToast(t('login.success'))
 
     // Usar window.location.href para forzar recarga completa
     // Esto garantiza que todos los componentes se inicialicen con los permisos correctos
@@ -119,7 +119,7 @@ const login = async () => {
     const cleanBase = vueBase.endsWith('/') ? vueBase : `${vueBase}/`;
     
     if (!profile?.personal_data || !nombre || !apellidos) {
-      showToast('Por favor, completa tu perfil para continuar.', 'warning')
+      showToast(t('login.complete_profile'), 'warning')
       window.location.href = `${cleanBase}dashboard/user/account`
     }
     else {
@@ -139,7 +139,7 @@ const login = async () => {
   }
   catch (err: any) {
     console.error('Login Error:', err)
-    genericError.value = err.message || 'Failed to connect to the server. Please check your connection.'
+    genericError.value = err.message || t('login.connection_error')
   }
   finally {
     isSubmitting.value = false

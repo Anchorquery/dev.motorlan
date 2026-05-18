@@ -214,7 +214,7 @@ const withdrawOffer = async (offerId: number) => {
     class="motor-card-enhanced"
   >
     <VCardTitle class="pa-6 pb-0">
-      <span class="text-h5 text-premium-title">{{ t('Ofertas Enviadas') }}</span>
+      <span class="text-h5 text-premium-title">{{ t('offers.sent') }}</span>
     </VCardTitle>
     <VCardText class="pa-6">
       <VRow class="gy-4">
@@ -262,6 +262,7 @@ const withdrawOffer = async (offerId: number) => {
 
     <VDivider />
 
+    <div class="table-responsive-shell">
     <VDataTableServer
       v-model:items-per-page="itemsPerPage"
       v-model:page="page"
@@ -357,6 +358,7 @@ const withdrawOffer = async (offerId: number) => {
         />
       </template>
     </VDataTableServer>
+    </div>
 
     <VDialog
       v-model="isDetailDialogOpen"
@@ -514,3 +516,11 @@ const withdrawOffer = async (offerId: number) => {
     </VDialog>
   </VCard>
 </template>
+
+<style scoped>
+.table-responsive-shell {
+  overflow-x: auto;
+  width: 100%;
+  -webkit-overflow-scrolling: touch;
+}
+</style>

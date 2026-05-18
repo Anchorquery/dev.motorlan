@@ -349,6 +349,7 @@ const formatPublicationTitle = (pub: any, fallbackTitle?: string): string => {
 
     <VDivider />
 
+    <div class="table-responsive-shell">
     <VDataTableServer
       v-model:items-per-page="itemsPerPage"
       v-model:page="page"
@@ -483,5 +484,14 @@ const formatPublicationTitle = (pub: any, fallbackTitle?: string): string => {
         />
       </template>
     </VDataTableServer>
+    </div>
   </VCard>
 </template>
+
+<style scoped>
+.table-responsive-shell {
+  overflow-x: auto;
+  width: 100%;
+  -webkit-overflow-scrolling: touch;
+}
+</style>

@@ -16,6 +16,8 @@ const getLocaleCode = (): string => {
     es: 'es-ES',
     en: 'en-US',
     eu: 'eu-ES', // Euskera
+    fr: 'fr-FR',
+    ar: 'ar',
   }
   return localeMap[lang] || 'es-ES'
 }
@@ -87,12 +89,12 @@ const goToProduct = (item: InquiryItem) => {
 }
 
 // Table columns
-const headers = [
+const headers = computed(() => [
   { title: t('inquiries.user'), key: 'user' },
   { title: t('inquiries.publication'), key: 'product' },
-  { title: t('inquiries.date') || 'Fecha', key: 'last_at' },
+  { title: t('inquiries.date'), key: 'last_at' },
   { title: t('inquiries.actions'), key: 'actions', sortable: false, align: 'end' as const },
-]
+])
 
 const sortBy = ref([{ key: 'last_at', order: 'desc' as const }])
 
@@ -165,7 +167,7 @@ const refresh = () => {
   <div>
     <VCard class="motor-card-enhanced overflow-visible">
       <VCardTitle class="pa-6 d-flex align-center justify-space-between flex-wrap gap-4">
-        <span class="text-h5 text-premium-title">{{ t('inquiries.title') || 'Interesados' }}</span>
+        <span class="text-h5 text-premium-title">{{ t('inquiries.title') }}</span>
       </VCardTitle>
 
       <VCardText class="pa-6 pb-0">
@@ -176,7 +178,7 @@ const refresh = () => {
           >
             <AppTextField
               v-model="searchQuery"
-              :placeholder="t('inquiries.search_placeholder') || 'Buscar...'"
+              :placeholder="t('inquiries.search_placeholder')"
               prepend-inner-icon="tabler-search"
               clearable
               class="elevation-0"
@@ -187,17 +189,17 @@ const refresh = () => {
             cols="12"
             md="2"
           >
-            <AppSelect
+              <AppSelect
               v-model="itemsPerPage"
               :items="[5, 10, 20, 25, 50]"
-              placeholder="Mostrar"
+              :placeholder="t('inquiries.show')"
               prepend-inner-icon="tabler-list-numbers"
             />
           </VCol>
         </VRow>
       </VCardText>
 
-      <div class="px-6 pb-6">
+      <div class="px-6 pb-6" style="overflow-x: auto; width: 100%; -webkit-overflow-scrolling: touch;">
         <VDataTable
           v-model:items-per-page="itemsPerPage"
           v-model:page="page"
@@ -230,8 +232,8 @@ const refresh = () => {
               <span v-else class="font-weight-bold">{{ getInitials(item.user_name || 'Usuario') }}</span>
             </VAvatar>
             <div class="d-flex flex-column">
-              <span class="font-weight-medium text-high-emphasis text-body-1">{{ item.user_name || 'Usuario desconocido' }}</span>
-              <span class="text-caption text-medium-emphasis">Comprador interesado</span>
+              <span class="font-weight-medium text-high-emphasis text-body-1">{{ item.user_name || t('inquiries.user_unknown') }}</span>
+              <span class="text-caption text-medium-emphasis">{{ t('inquiries.buyer_interested') }}</span>
             </div>
           </div>
         </template>

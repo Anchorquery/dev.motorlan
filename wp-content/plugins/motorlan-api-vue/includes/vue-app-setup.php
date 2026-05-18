@@ -1,44 +1,15 @@
 <?php
 
 function motorlan_get_language_info() {
-    $locale = get_locale();
-
-    if (defined('ICL_LANGUAGE_CODE') && ICL_LANGUAGE_CODE) {
-        $language_code = ICL_LANGUAGE_CODE;
-    } elseif (function_exists('pll_current_language')) {
-        $language_code = pll_current_language();
-    } else {
-        $language_parts = preg_split('/[-_]/', $locale);
-        $language_code = $language_parts[0] ?? '';
-    }
-
-    $language_code = strtolower($language_code ?: 'en');
-
-    $available_languages = [];
-    if (function_exists('icl_get_languages')) {
-        $languages = icl_get_languages('skip_missing=0&orderby=code');
-        if (is_array($languages)) {
-            foreach ($languages as $lang) {
-                $code = isset($lang['language_code']) ? strtolower($lang['language_code']) : (isset($lang['code']) ? strtolower($lang['code']) : '');
-                $available_languages[] = [
-                    'code' => $code,
-                    'locale' => $lang['default_locale'] ?? '',
-                    'native_name' => $lang['native_name'] ?? $lang['translated_name'] ?? '',
-                    'translated_name' => $lang['translated_name'] ?? '',
-                    'flag_url' => $lang['country_flag_url'] ?? '',
-                    'active' => !empty($lang['active']),
-                ];
-            }
-        }
-        $available_languages = array_values(array_filter($available_languages, function ($language) {
-            return !empty($language['code']);
-        }));
-    }
+    $payload = motorlan_get_vue_i18n_payload();
 
     return [
-        'current' => $language_code,
-        'locale' => $locale ?: '',
-        'available' => $available_languages,
+        'current' => $payload['current_locale'],
+        'locale' => $payload['language_locale'],
+        'available' => $payload['languages'],
+        'messages' => $payload['i18n_messages'],
+        'supported_locales' => $payload['supported_locales'],
+        'rtl_locales' => $payload['rtl_locales'],
     ];
 }
 
@@ -97,6 +68,9 @@ function motorlan_enqueue_vue_app($args = []) {
         'language' => $language_info['current'],
         'language_locale' => $language_info['locale'],
         'languages' => $language_info['available'],
+        'i18n_messages' => $language_info['messages'],
+        'supported_locales' => $language_info['supported_locales'],
+        'rtl_locales' => $language_info['rtl_locales'],
         'session_endpoint' => rest_url('motorlan/v1/session'),
         'login_endpoint' => rest_url('wp/v2/custom/login'),
         'initial_route' => $args['route'] ?? '',
@@ -121,35 +95,35 @@ function motorlan_enqueue_vue_app($args = []) {
             true
         );
     } else {
-        // --- MODO PRODUCCIÓN (Sin Manifest) ---
-        // 1. Encolar JS principal
-        wp_enqueue_script(
-            'motorlan-vue-app-js',
-            MOTORLAN_API_VUE_URL . 'app/dist/assets/app.js',
-            ['wp-data-bridge'],
-            MOTORLAN_API_VUE_VERSION . '.' . time(), // Cache busting con timestamp para desarrollo/pruebas
-            true
-        );
+        // --- MODO PRODUCCIÓN ---
+        // Versión dinámica basada en mtime del archivo → cache-bust automático en cada build
+        $dist = plugin_dir_path(__FILE__) . '../app/dist/';
+        $css_ver = file_exists($dist . 'assets/app.css') ? filemtime($dist . 'assets/app.css') : MOTORLAN_API_VUE_VERSION;
+        $js_ver  = file_exists($dist . 'assets/app.js')  ? filemtime($dist . 'assets/app.js')  : MOTORLAN_API_VUE_VERSION;
 
-        // 2. Encolar CSS principal
         wp_enqueue_style(
             'motorlan-vue-app-css',
             MOTORLAN_API_VUE_URL . 'app/dist/assets/app.css',
             [],
-            MOTORLAN_API_VUE_VERSION . '.' . time(),
+            $css_ver,
             'all'
         );
-
-        // Loader CSS estático (si se mantiene fuera del build proceso)
-        if (file_exists(MOTORLAN_API_VUE_PATH . 'app/dist/loader.css')) {
+        if (file_exists($dist . 'loader.css')) {
             wp_enqueue_style(
                 'motorlan-vue-app-loader-css',
-                plugin_dir_url(__FILE__) . '../app/dist/loader.css',
+                MOTORLAN_API_VUE_URL . 'app/dist/loader.css',
                 [],
-                MOTORLAN_API_VUE_VERSION,
+                $css_ver,
                 'all'
             );
         }
+        wp_enqueue_script(
+            'motorlan-vue-app-js',
+            MOTORLAN_API_VUE_URL . 'app/dist/assets/app.js',
+            ['wp-data-bridge'],
+            $js_ver,
+            true
+        );
     }
 }
 

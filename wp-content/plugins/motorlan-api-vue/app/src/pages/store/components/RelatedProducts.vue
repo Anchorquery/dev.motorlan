@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { createUrl } from '@/@core/composable/createUrl'
-import { useApi } from '@/composables/useApi'
+import { usePublicApi } from '@/composables/usePublicApi'
 import type { Publicacion } from '@/interfaces/publicacion'
 
 const props = defineProps<{ currentId: number }>()
+const { t } = useI18n()
 
-const { data } = useApi<any>(
+const { data } = usePublicApi<any>(
   createUrl('/wp-json/motorlan/v1/publicaciones', { query: { per_page: 8, status: 'publish' } }),
 ).get().json()
 
@@ -58,10 +60,10 @@ const resolveProductType = (publication: Publicacion) => {
   >
     <div class="d-flex align-center justify-space-between flex-wrap gap-2 mb-4">
       <h3 class="mb-0 text-h5 font-weight-bold">
-        Productos relacionados
+        {{ t('store.related.title') }}
       </h3>
       <span class="text-body-2 text-medium-emphasis">
-        Otras publicaciones que pueden interesarte
+        {{ t('store.related.subtitle') }}
       </span>
     </div>
 
@@ -101,7 +103,7 @@ const resolveProductType = (publication: Publicacion) => {
                 :to="'/' + publicacion.slug"
                 block
               >
-                + Info
+                {{ t('store.related.more_info') }}
               </VBtn>
             </div>
           </VCardText>
@@ -144,6 +146,7 @@ const resolveProductType = (publication: Publicacion) => {
 
 .related-card__type {
   display: inline-flex;
+  align-self: flex-start;
   align-items: center;
   padding: 4px 12px;
   border-radius: 999px;

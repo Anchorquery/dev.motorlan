@@ -87,6 +87,336 @@ body {
 	animation: appFadeIn 0.5s ease-in-out forwards;
 }
 
+/* Shared responsive behavior for internal data tables */
+:is(
+	.table-responsive-shell,
+	.questions-table-shell,
+	.purchase-table-shell,
+	.publication-table-shell,
+	.admin-approvals-table-shell
+) {
+	width: 100%;
+	overflow-x: auto;
+	-webkit-overflow-scrolling: touch;
+	scrollbar-gutter: stable;
+}
+
+:is(
+	.table-responsive-shell,
+	.questions-table-shell,
+	.purchase-table-shell,
+	.publication-table-shell,
+	.admin-approvals-table-shell
+) .v-table__wrapper {
+	overflow-x: auto;
+}
+
+:is(
+	.table-responsive-shell,
+	.questions-table-shell,
+	.purchase-table-shell,
+	.publication-table-shell,
+	.admin-approvals-table-shell
+) table {
+	width: 100%;
+}
+
+@media (max-width: 960px) {
+	#motorlan-app .v-data-table {
+		border: 1px solid rgba(15, 23, 42, 0.08);
+		border-radius: 14px;
+		background: #fff;
+	}
+
+	#motorlan-app .v-data-table .v-table__wrapper {
+		overflow-x: visible;
+	}
+
+	#motorlan-app .v-data-table table {
+		width: 100%;
+		min-width: 0;
+		table-layout: auto;
+	}
+
+	#motorlan-app .v-data-table thead {
+		display: none;
+	}
+
+	#motorlan-app .v-data-table tbody {
+		display: block;
+	}
+
+	#motorlan-app .v-data-table .v-data-table__tr {
+		display: block;
+		margin: 0.75rem 0;
+		border: 1px solid rgba(15, 23, 42, 0.08);
+		border-radius: 14px;
+		background: #fff;
+		overflow: hidden;
+		box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+	}
+
+	#motorlan-app .v-data-table .v-data-table__td {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr);
+		gap: 0.35rem;
+		padding: 0.9rem 1rem !important;
+		border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+		white-space: normal !important;
+		vertical-align: top;
+	}
+
+	#motorlan-app .v-data-table .v-data-table__td:last-child {
+		border-bottom: none;
+	}
+
+	#motorlan-app .v-data-table .v-data-table__td-title {
+		font-size: 0.72rem;
+		font-weight: 700;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: rgba(15, 23, 42, 0.58);
+	}
+
+	#motorlan-app .v-data-table .v-data-table__td-value {
+		min-width: 0;
+		color: rgba(15, 23, 42, 0.95);
+		white-space: normal !important;
+		overflow-wrap: anywhere;
+	}
+
+	#motorlan-app .v-data-table .v-data-table-rows-no-data,
+	#motorlan-app .v-data-table .v-data-table-rows-loading {
+		display: block;
+		margin: 0.75rem 0;
+		border: 1px dashed rgba(15, 23, 42, 0.14);
+		border-radius: 14px;
+		background: rgba(248, 250, 252, 0.9);
+	}
+
+	#motorlan-app .v-data-table .v-data-table-rows-no-data td,
+	#motorlan-app .v-data-table .v-data-table-rows-loading td {
+		padding: 1.25rem 1rem !important;
+		text-align: center;
+		color: rgba(15, 23, 42, 0.66);
+	}
+
+	#motorlan-app .v-data-table .v-data-table-footer {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.75rem;
+		justify-content: center;
+		align-items: center;
+		padding-inline: 1rem;
+	}
+
+	#motorlan-app .v-data-table .v-data-table-footer__pagination {
+		justify-content: center;
+	}
+
+	#motorlan-app .v-card-text > .d-flex.flex-wrap.gap-4,
+	#motorlan-app .v-card-text > .d-flex.flex-wrap.gap-4.ma-6,
+	#motorlan-app .purchase-toolbar,
+	#motorlan-app .publication-list-toolbar,
+	#motorlan-app .questions-toolbar {
+		flex-direction: column;
+		align-items: stretch;
+		gap: 0.75rem !important;
+	}
+
+	#motorlan-app .v-card-text > .d-flex.flex-wrap.gap-4 > *,
+	#motorlan-app .v-card-text > .d-flex.flex-wrap.gap-4.ma-6 > *,
+	#motorlan-app .purchase-toolbar > *,
+	#motorlan-app .publication-list-toolbar > *,
+	#motorlan-app .questions-toolbar > * {
+		width: 100% !important;
+		min-width: 0 !important;
+		inline-size: 100% !important;
+	}
+
+	#motorlan-app .v-card-text > .d-flex.flex-wrap.gap-4 .v-spacer,
+	#motorlan-app .v-card-text > .d-flex.flex-wrap.gap-4.ma-6 .v-spacer,
+	#motorlan-app .purchase-toolbar .v-spacer,
+	#motorlan-app .publication-list-toolbar .v-spacer,
+	#motorlan-app .questions-toolbar .v-spacer {
+		display: none;
+	}
+
+	#motorlan-app .v-card-text > .d-flex.flex-wrap.gap-4 :is(.v-field, .v-input, .v-select, .v-text-field, .v-btn),
+	#motorlan-app .v-card-text > .d-flex.flex-wrap.gap-4.ma-6 :is(.v-field, .v-input, .v-select, .v-text-field, .v-btn),
+	#motorlan-app .purchase-toolbar :is(.v-field, .v-input, .v-select, .v-text-field, .v-btn),
+	#motorlan-app .publication-list-toolbar :is(.v-field, .v-input, .v-select, .v-text-field, .v-btn),
+	#motorlan-app .questions-toolbar :is(.v-field, .v-input, .v-select, .v-text-field, .v-btn) {
+		width: 100% !important;
+		max-width: 100% !important;
+		min-width: 0 !important;
+		inline-size: 100% !important;
+	}
+
+	:is(
+		.table-responsive-shell,
+		.questions-table-shell,
+		.purchase-table-shell,
+		.publication-table-shell,
+		.admin-approvals-table-shell
+	) {
+		border: 1px solid rgba(15, 23, 42, 0.08);
+		border-radius: 14px;
+		background: #fff;
+	}
+
+	:is(
+		.table-responsive-shell,
+		.questions-table-shell,
+		.purchase-table-shell,
+		.publication-table-shell,
+		.admin-approvals-table-shell
+	) .v-data-table-rows-no-data,
+	:is(
+		.table-responsive-shell,
+		.questions-table-shell,
+		.purchase-table-shell,
+		.publication-table-shell,
+		.admin-approvals-table-shell
+	) .v-data-table-rows-loading {
+		display: block;
+		margin: 0.75rem 0;
+		border: 1px dashed rgba(15, 23, 42, 0.14);
+		border-radius: 14px;
+		background: rgba(248, 250, 252, 0.9);
+	}
+
+	:is(
+		.table-responsive-shell,
+		.questions-table-shell,
+		.purchase-table-shell,
+		.publication-table-shell,
+		.admin-approvals-table-shell
+	) .v-data-table-rows-no-data td,
+	:is(
+		.table-responsive-shell,
+		.questions-table-shell,
+		.purchase-table-shell,
+		.publication-table-shell,
+		.admin-approvals-table-shell
+	) .v-data-table-rows-loading td {
+		padding: 1.25rem 1rem !important;
+		text-align: center;
+		color: rgba(15, 23, 42, 0.66);
+	}
+
+	:is(
+		.table-responsive-shell,
+		.questions-table-shell,
+		.purchase-table-shell,
+		.publication-table-shell,
+		.admin-approvals-table-shell
+	) .v-data-table-footer {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.75rem;
+		justify-content: center;
+		align-items: center;
+		padding-inline: 1rem;
+	}
+
+	:is(
+		.table-responsive-shell,
+		.questions-table-shell,
+		.purchase-table-shell,
+		.publication-table-shell,
+		.admin-approvals-table-shell
+	) .v-data-table-footer__pagination {
+		justify-content: center;
+	}
+
+	:is(
+		.table-responsive-shell,
+		.questions-table-shell,
+		.purchase-table-shell,
+		.publication-table-shell,
+		.admin-approvals-table-shell
+	) .admin-approvals-actions,
+	:is(
+		.table-responsive-shell,
+		.questions-table-shell,
+		.purchase-table-shell,
+		.publication-table-shell,
+		.admin-approvals-table-shell
+	) .publication-list-actions {
+		width: 100%;
+	}
+
+	:is(
+		.table-responsive-shell,
+		.questions-table-shell,
+		.purchase-table-shell,
+		.publication-table-shell,
+		.admin-approvals-table-shell
+	) .v-btn {
+		max-width: 100%;
+	}
+
+	/* Compact two-column info tables into stacked cards */
+	.info-table,
+	.billing-address-table {
+		display: block;
+		width: 100%;
+	}
+
+	.info-table tbody,
+	.billing-address-table tbody,
+	.info-table tr,
+	.billing-address-table tr {
+		display: block;
+		width: 100%;
+	}
+
+	.info-table tr,
+	.billing-address-table tr {
+		margin-block-end: 0.75rem;
+		padding: 0.875rem 1rem;
+		border: 1px solid rgba(15, 23, 42, 0.08);
+		border-radius: 12px;
+		background: #fff;
+	}
+
+	.info-table td,
+	.billing-address-table td {
+		display: block;
+		width: 100%;
+		padding: 0;
+		white-space: normal !important;
+	}
+
+	.info-table td:first-child,
+	.billing-address-table td:first-child {
+		margin-block-end: 0.35rem;
+		color: rgba(15, 23, 42, 0.72);
+	}
+
+	.info-table .text-no-wrap,
+	.billing-address-table .text-no-wrap {
+		white-space: normal !important;
+	}
+
+	/* Keep notification preferences usable without crowding */
+	.user-tab-notification .v-table {
+		display: block;
+		overflow-x: auto;
+		-webkit-overflow-scrolling: touch;
+	}
+
+	.user-tab-notification .v-table table {
+		min-width: 420px;
+	}
+
+	.user-tab-notification .v-table :is(th, td) {
+		padding-block: 10px !important;
+		padding-inline: 12px !important;
+	}
+}
+
 @keyframes appFadeIn {
 	from {
 		opacity: 0;

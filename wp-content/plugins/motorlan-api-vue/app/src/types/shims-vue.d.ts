@@ -52,6 +52,22 @@ declare module 'vue-router' {
 declare global {
 	interface Window {
 		wpData?: {
+			current_locale?: string
+			language?: string
+			language_locale?: string
+			languages?: Array<{
+				code?: string
+				i18nLang?: string
+				label?: string
+				locale?: string
+				isRTL?: boolean
+				active?: boolean
+				native_name?: string
+				translated_name?: string
+			}>
+			i18n_messages?: Record<string, Record<string, any>>
+			supported_locales?: string[]
+			rtl_locales?: string[]
 			login_endpoint?: string
 			rest_nonce?: string
 			nonce?: string

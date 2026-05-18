@@ -12,8 +12,8 @@ const brandName = computed(() => (props.publicacion as any)?.marca_name || '-')
       <VIcon icon="tabler-info-circle" color="error" class="mr-2" />
       Información de la publicación
     </VCardTitle>
-    <VCardText class="pt-0">
-      <VTable class="info-table">
+    <VCardText class="pt-0 publicacion-info__body">
+      <VTable class="info-table publicacion-info__table">
         <tbody>
           <tr>
             <td class="font-weight-medium">
@@ -89,5 +89,16 @@ const brandName = computed(() => (props.publicacion as any)?.marca_name || '-')
 }
 .info-table tr + tr td {
   border-top: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+.publicacion-info__body {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 599px) {
+  .publicacion-info__table :deep(td) {
+    padding-inline: 0.25rem;
+  }
 }
 </style>

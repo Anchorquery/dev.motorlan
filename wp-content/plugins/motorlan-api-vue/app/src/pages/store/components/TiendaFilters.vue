@@ -17,6 +17,7 @@ defineProps<{
   parOptions: any[]
   potenciaOptions: any[]
   velocidadOptions: any[]
+  showHeader?: boolean
 }>()
 
 const typeModel = defineModel<string>('typeModel')
@@ -101,10 +102,13 @@ const clearFilters = () => {
     class="store-filters-card"
     variant="flat"
   >
-    <VCardText class="pa-4 pa-lg-5">
-      <div class="d-flex align-center justify-space-between gap-3 mb-4">
-        <div>
-          <div class="d-flex align-center mb-1">
+    <VCardText
+      class="pa-4 pa-lg-5"
+      :class="{ 'pt-2': !showHeader }"
+    >
+      <div v-if="showHeader !== false">
+        <div class="d-flex align-center justify-space-between gap-3 mb-4">
+          <div class="d-flex align-center">
             <VIcon
               size="18"
               class="me-2"
@@ -113,35 +117,32 @@ const clearFilters = () => {
               mdi-filter-variant
             </VIcon>
             <span class="text-error font-weight-bold text-uppercase store-filters-card__eyebrow">
-              Filtros
+              {{ t('store.filters.title') }}
             </span>
           </div>
-          <div class="text-body-2 text-medium-emphasis">
-            Ajusta la busqueda desde aqui o usa la barra superior.
-          </div>
-        </div>
 
-        <VBtn
-          v-if="hasFiltersActive"
-          variant="text"
-          color="error"
-          density="comfortable"
+          <VBtn
+            v-if="hasFiltersActive"
+            variant="text"
+            color="error"
+            density="comfortable"
           class="px-2"
           @click="clearFilters"
         >
-          Limpiar
+          {{ t('store.filters.clear') }}
         </VBtn>
-      </div>
+        </div>
 
-      <VDivider class="mb-4" color="error" />
+        <VDivider class="mb-4" color="error" />
+      </div>
 
       <VTextField
         v-model="typeModel"
-          :label="t('store.filters.type_model_label')"
-          variant="outlined"
-          density="comfortable"
-          class="mb-5"
-          :disabled="isTypeModelLocked"
+        :label="t('store.filters.type_model_label')"
+        variant="outlined"
+        density="comfortable"
+        class="mb-5"
+        :disabled="isTypeModelLocked"
         hide-details="auto"
       />
 
@@ -157,27 +158,27 @@ const clearFilters = () => {
           :disabled="isAdvancedFiltersLocked"
         >
           <VRadio
-            label="Todos"
+            :label="t('store.filters.type_all')"
             :value="null"
             color="error"
           />
           <VRadio
-            label="Motor AC"
+            :label="t('store.filters.type_motor_ac')"
             value="motor-ac"
             color="error"
           />
           <VRadio
-            label="Motor DC"
+            :label="t('store.filters.type_motor_dc')"
             value="motor-dc"
             color="error"
           />
           <VRadio
-            label="Regulador"
+            :label="t('store.filters.type_regulador')"
             value="regulador"
             color="error"
           />
           <VRadio
-            label="Otros"
+            :label="t('store.filters.type_otros')"
             value="otros"
             color="error"
           />
@@ -188,7 +189,7 @@ const clearFilters = () => {
         <AppSelect
           v-model="selectedBrand"
           :label="t('store.filters.brands_label')"
-          placeholder="Seleccionar marcas"
+          :placeholder="t('store.filters.select_brands')"
           :items="marcas"
           item-title="name"
           item-value="term_id"
@@ -201,7 +202,7 @@ const clearFilters = () => {
         <AppSelect
           v-model="selectedPotencia"
           :label="t('store.filters.power_label')"
-          placeholder="Seleccionar potencia"
+          :placeholder="t('store.filters.select_power')"
           :items="potenciaOptions"
           variant="outlined"
           color="error"
@@ -213,7 +214,7 @@ const clearFilters = () => {
           v-if="!selectedTechnology || selectedTechnology !== 'ac'"
           v-model="selectedPar"
           :label="t('store.filters.torque_label')"
-          placeholder="Seleccionar PAR (Nm)"
+          :placeholder="t('store.filters.select_torque')"
           :items="parOptions"
           variant="outlined"
           color="error"
@@ -224,7 +225,7 @@ const clearFilters = () => {
         <AppSelect
           v-model="selectedVelocidad"
           :label="t('store.filters.speed_label')"
-          placeholder="Seleccionar velocidad"
+          :placeholder="t('store.filters.select_speed')"
           :items="velocidadOptions"
           variant="outlined"
           color="error"
@@ -235,13 +236,13 @@ const clearFilters = () => {
         <AppSelect
           v-model="selectedState"
           :label="t('store.filters.state_label')"
-          placeholder="Seleccionar estado"
+          :placeholder="t('store.filters.select_state')"
           item-title="name"
           item-value="value"
           :items="[
-            { name: 'Nuevo', value: 'new' },
-            { name: 'Usado', value: 'used' },
-            { name: 'Reacondicionado', value: 'restored' },
+            { name: t('store.filters.state_new'), value: 'new' },
+            { name: t('store.filters.state_used'), value: 'used' },
+            { name: t('store.filters.state_restored'), value: 'restored' },
           ]"
           variant="outlined"
           color="error"

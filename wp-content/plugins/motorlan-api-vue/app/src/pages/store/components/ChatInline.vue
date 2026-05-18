@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { Publicacion } from '@/interfaces/publicacion'
 import { useProductChat } from '@/composables/useProductChat'
 import { useUserStore } from '@/@core/stores/user'
@@ -9,6 +10,7 @@ import { getPrePurchaseRoomKey } from '@/utils/roomKey'
 const props = defineProps<{ publicacion: Publicacion }>()
 
 const userStore = useUserStore()
+const { t } = useI18n()
 
 const guestId = ref<string>('')
 const guestName = ref<string>(getStoredGuestName() || '')
@@ -169,12 +171,12 @@ onBeforeUnmount(() => {
 <template>
   <VCard class="chat-inline">
     <VCardTitle class="d-flex align-center justify-space-between">
-      <span>Contacto con el vendedor</span>
+      <span>{{ t('chat.with_seller') }}</span>
       <span class="chat-inline__status" :class="{ 'chat-inline__status--live': chat.isPollingActive.value && !chat.isLocked.value }">
-        {{ chat.isPollingActive.value ? 'Actualizando...' : 'Conectando...' }}
+        {{ t('chat.loading_conversation') }}
       </span>
     </VCardTitle>
-    <VCardSubtitle class="px-6">No compartas datos personales como email o teléfono.</VCardSubtitle>
+    <VCardSubtitle class="px-6">{{ t('chat.security_note') }}</VCardSubtitle>
     <VDivider />
 
     <VCardText class="pa-0">
@@ -186,13 +188,13 @@ onBeforeUnmount(() => {
         <VAlert v-else-if="messagesError" type="error" variant="tonal" class="ma-4">
           <div class="d-flex justify-space-between align-center gap-4">
             <span>{{ messagesError }}</span>
-            <VBtn size="small" variant="text" color="primary" @click="handleRetryMessages">Reintentar</VBtn>
+            <VBtn size="small" variant="text" color="primary" @click="handleRetryMessages">{{ t('chat.retry') }}</VBtn>
           </div>
         </VAlert>
 
         <div v-else-if="!groupedMessages.length" class="empty-chat">
           <VIcon icon="tabler-message-circle" size="36" class="mb-2" color="primary" />
-          <p>Aún no hay mensajes. Inicia la conversación.</p>
+          <p>{{ t('chat.no_messages') }} {{ t('chat.start_with_seller') }}</p>
         </div>
 
         <template v-else>
@@ -223,8 +225,8 @@ onBeforeUnmount(() => {
             v-if="!userStore.isLoggedIn"
             v-model="guestName"
             class="flex-grow-1"
-            label="Tu nombre"
-            placeholder="Ingresa tu nombre"
+            :label="t('chat.name_label')"
+            :placeholder="t('chat.name_placeholder')"
             hide-details
           />
           <VTextarea
@@ -232,7 +234,7 @@ onBeforeUnmount(() => {
             :disabled="isConversationLocked"
             auto-grow
             hide-details
-            label="Escribe un mensaje..."
+            :label="t('chat.write_message')"
             rows="1"
             class="flex-grow-1"
             maxlength="1000"

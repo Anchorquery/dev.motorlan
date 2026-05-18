@@ -100,16 +100,25 @@ if ( ! function_exists( 'motorlan_format_image_for_frontend' ) ) {
             return $image;
         }
 
-        $url = wp_get_attachment_image_url( $image_id, 'thumbnail' );
+        $url = wp_get_attachment_image_url( $image_id, 'medium_large' );
+        if ( ! $url ) {
+            $url = wp_get_attachment_image_url( $image_id, 'large' );
+        }
+        if ( ! $url ) {
+            $url = wp_get_attachment_image_url( $image_id, 'full' );
+        }
         if ( ! $url ) {
             return null;
         }
+
+        $thumbnail_url = wp_get_attachment_image_url( $image_id, 'thumbnail' ) ?: $url;
 
         return array(
             'id'    => (int) $image_id,
             'url'   => $url,
             'sizes' => array(
-                'thumbnail' => $url,
+                'thumbnail'    => $thumbnail_url,
+                'medium_large' => $url,
             ),
         );
     }

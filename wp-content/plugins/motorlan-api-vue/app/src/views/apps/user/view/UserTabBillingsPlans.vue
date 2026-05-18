@@ -435,4 +435,18 @@ const currentBillingAddress = {
     }
   }
 }
+
+@media (max-width: 599px) {
+  .billing-address-table {
+    tr {
+      td:first-child {
+        inline-size: auto;
+      }
+    }
+  }
+
+  .text-no-wrap {
+    white-space: normal !important;
+  }
+}
 </style>

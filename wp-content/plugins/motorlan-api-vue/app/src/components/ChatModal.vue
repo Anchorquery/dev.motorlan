@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { usePurchaseChat } from '@/composables/usePurchaseChat'
 import { formatCurrency } from '@/utils/formatCurrency'
 
@@ -37,6 +38,7 @@ const emit = defineEmits<{
 const chat = usePurchaseChat(props.purchaseUuid)
 const purchase = chat.purchase
 const viewerRole = chat.viewerRole
+const { t, locale } = useI18n()
 
 const isBuyer = computed(() => viewerRole.value === 'buyer')
 const isSeller = computed(() => viewerRole.value === 'seller')
@@ -46,8 +48,21 @@ const messageText = ref('')
 
 const canSendMessage = computed(() => !chat.isLocked.value && messageText.value.trim().length > 0 && !chat.isSending.value)
 
-const timeFormatter = new Intl.DateTimeFormat('es-VE', { hour: '2-digit', minute: '2-digit' })
-const dateFormatter = new Intl.DateTimeFormat('es-VE', { day: 'numeric', month: 'long' })
+const getLocaleCode = () => {
+  const lang = (locale.value || 'es').toLowerCase()
+  const localeMap: Record<string, string> = {
+    es: 'es-ES',
+    en: 'en-US',
+    eu: 'eu-ES',
+    fr: 'fr-FR',
+    ar: 'ar',
+  }
+
+  return localeMap[lang] || 'es-ES'
+}
+
+const timeFormatter = computed(() => new Intl.DateTimeFormat(getLocaleCode(), { hour: '2-digit', minute: '2-digit' }))
+const dateFormatter = computed(() => new Intl.DateTimeFormat(getLocaleCode(), { day: 'numeric', month: 'long' }))
 
 const capitalize = (value: string | undefined): string => {
   if (!value)
@@ -62,7 +77,7 @@ const getInitials = (value: string): string => {
   return parts.slice(0, 2).map((part: string) => part[0].toUpperCase()).join('') || 'U'
 }
 
-const formatMessageTime = (value: string) => timeFormatter.format(new Date(value))
+const formatMessageTime = (value: string) => timeFormatter.value.format(new Date(value))
 
 const groupedMessages = computed<MessageGroup[]>(() => {
   const items = chat.messages.value
@@ -86,7 +101,7 @@ const groupedMessages = computed<MessageGroup[]>(() => {
       bucket.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
 
       const first = bucket[0]
-      const label = capitalize(dateFormatter.format(new Date(first?.created_at ?? Date.now())))
+      const label = capitalize(dateFormatter.value.format(new Date(first?.created_at ?? Date.now())))
 
       return {
         key,
@@ -96,7 +111,7 @@ const groupedMessages = computed<MessageGroup[]>(() => {
     })
 })
 
-const productTitle = computed(() => props.publicationTitle || purchase.value?.motor?.title || purchase.value?.title || 'Producto')
+const productTitle = computed(() => props.publicationTitle || purchase.value?.motor?.title || purchase.value?.title || t('chat.product'))
 const productImage = computed(() => {
   if (props.publicationImage)
     return props.publicationImage
@@ -116,13 +131,13 @@ const productImage = computed(() => {
 })
 
 const formattedPrice = computed(() => formatCurrency(purchase.value?.motor?.acf?.precio_de_venta))
-const priceLabel = computed(() => formattedPrice.value || 'Consultar precio')
+const priceLabel = computed(() => formattedPrice.value || t('chat.consult_price'))
 
 const otherPartyName = computed(() => {
   if (isBuyer.value)
-    return purchase.value?.motor?.author?.name || 'Vendedor'
+    return purchase.value?.motor?.author?.name || t('chat.seller')
 
-  return purchase.value?.comprador?.name || 'Comprador'
+  return purchase.value?.comprador?.name || t('chat.buyer')
 })
 
 const otherPartyAvatar = computed(() => {
@@ -145,14 +160,14 @@ const statusInfo = computed(() => {
   const status = String(purchase.value?.estado || '').toLowerCase()
 
   const map: Record<string, { label: string; color: 'success' | 'warning' | 'info' | 'error' }> = {
-    entregado: { label: 'Entregado', color: 'success' },
-    enviado: { label: 'Enviado', color: 'info' },
-    en_proceso: { label: 'En proceso', color: 'info' },
-    pendiente: { label: 'Pendiente', color: 'warning' },
-    cancelado: { label: 'Cancelado', color: 'error' },
+    entregado: { label: t('chat.status.delivered'), color: 'success' },
+    enviado: { label: t('chat.status.sent'), color: 'info' },
+    en_proceso: { label: t('chat.status.processing'), color: 'info' },
+    pendiente: { label: t('chat.status.pending'), color: 'warning' },
+    cancelado: { label: t('chat.status.cancelled'), color: 'error' },
   }
 
-  return map[status] ?? { label: 'En progreso', color: 'info' }
+  return map[status] ?? { label: t('chat.status.progress'), color: 'info' }
 })
 
 const isRealtimeLive = computed(() => chat.isPollingActive.value && !chat.isLocked.value)
@@ -233,7 +248,7 @@ onBeforeUnmount(() => {
       <!-- Header -->
       <VCardTitle class="d-flex justify-space-between align-center py-3 px-4 bg-surface elevation-0 border-b">
         <span class="text-h6 font-weight-bold text-high-emphasis">
-          {{ isBuyer ? 'Chat con el vendedor' : 'Chat con el comprador' }}
+          {{ isBuyer ? t('chat.with_seller') : t('chat.with_buyer') }}
         </span>
         <VBtn
           icon="tabler-x"
@@ -275,7 +290,7 @@ onBeforeUnmount(() => {
           size="16"
           color="primary"
         />
-        <span>Por tu seguridad, no compartas datos de contacto directo.</span>
+        <span>{{ t('chat.security_note') }}</span>
       </div>
 
       <!-- Chat Body -->
@@ -295,7 +310,7 @@ onBeforeUnmount(() => {
               size="40"
               width="3"
             />
-            <span class="text-caption">Cargando conversación...</span>
+            <span class="text-caption">{{ t('chat.loading_conversation') }}</span>
           </div>
 
           <!-- Error -->
@@ -315,7 +330,7 @@ onBeforeUnmount(() => {
                 class="ms-2"
                 @click="handleRetryMessages"
               >
-                Reintentar
+                {{ t('chat.retry') }}
               </VBtn>
             </div>
           </VAlert>
@@ -334,11 +349,11 @@ onBeforeUnmount(() => {
             </div>
             <div class="text-center">
               <p class="text-body-2 font-weight-medium mb-1 text-high-emphasis">
-                Aún no hay mensajes.
+                {{ t('chat.no_messages') }}
               </p>
               <p class="text-caption">
-                <span v-if="isBuyer">Inicia la conversación con el vendedor.</span>
-                <span v-else>Inicia la conversación con el comprador.</span>
+                <span v-if="isBuyer">{{ t('chat.start_with_seller') }}</span>
+                <span v-else>{{ t('chat.start_with_buyer') }}</span>
               </p>
             </div>
           </div>
@@ -435,7 +450,7 @@ onBeforeUnmount(() => {
             :disabled="chat.isLocked.value"
             auto-grow
             hide-details
-            placeholder="Escribe un mensaje..."
+            :placeholder="t('chat.message_placeholder')"
             rows="1"
             max-rows="4"
             density="comfortable"

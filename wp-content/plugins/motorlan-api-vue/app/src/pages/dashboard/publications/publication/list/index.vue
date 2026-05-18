@@ -771,6 +771,8 @@ const canEdit = (item: any) => {
 <style scoped>
 .publication-table-shell {
   overflow-x: auto;
+  width: 100%;
+  -webkit-overflow-scrolling: touch;
 }
 
 .publication-list-toolbar {
