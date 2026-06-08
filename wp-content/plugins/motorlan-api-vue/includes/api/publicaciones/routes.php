@@ -139,6 +139,8 @@ function motorlan_register_publicaciones_rest_routes() {
     register_rest_route($namespace, '/refresh-slugs', [
         'methods'  => WP_REST_Server::READABLE,
         'callback' => 'motorlan_refresh_slugs_callback',
-        'permission_callback' => '__return_true',
+        'permission_callback' => function () {
+            return current_user_can('edit_posts');
+        },
     ]);
 }

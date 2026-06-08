@@ -21,8 +21,7 @@ if (!defined('WPINC')) {
  * @return WP_REST_Response
  */
 function motorlan_refresh_slugs_callback( $request ) {
-    // TEMPORARY: Public access enabled by user request. 
-    // Usually should be restricted to 'edit_posts'.
+    // Access restricted to users with 'edit_posts' capability (see route permission_callback).
 
     $dry_run = $request->get_param( 'dry_run' );
     $dry_run = is_null( $dry_run ) ? true : filter_var( $dry_run, FILTER_VALIDATE_BOOLEAN );

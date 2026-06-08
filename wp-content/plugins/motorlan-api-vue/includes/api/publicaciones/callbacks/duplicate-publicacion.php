@@ -31,6 +31,11 @@ function motorlan_duplicate_publicacion(WP_REST_Request $request) {
         return new WP_Error('not_found', 'Publicación original no encontrada', ['status' => 404]);
     }
 
+    // Security check: only the author or an admin can duplicate
+    if ((int) $original_post->post_author !== get_current_user_id() && !current_user_can('administrator')) {
+        return new WP_Error('forbidden', 'No tienes permisos para duplicar esta publicación.', ['status' => 403]);
+    }
+
     // Security check: If post is pending, only admin can duplicate
     if ($original_post->post_status === 'pending' && !current_user_can('administrator')) {
         return new WP_Error('forbidden', 'No puedes duplicar una publicación que está en revisión.', ['status' => 403]);

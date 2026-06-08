@@ -31,9 +31,15 @@ function motorlan_get_publicaciones_callback($request) {
     };
 
     $where_filter = function($where) use ($custom_type_search) {
+        global $wpdb;
         if ($custom_type_search) {
-            // Remove ., -, /, and spaces from the DB value for comparison
-            $where .= " AND REPLACE(REPLACE(REPLACE(REPLACE(mt_custom_type.meta_value, '-', ''), '.', ''), '/', ''), ' ', '') LIKE '%" . esc_sql($custom_type_search) . "%' ";
+            // Remove ., -, /, and spaces from the DB value for comparison.
+            // esc_like escapes LIKE wildcards (% and _); prepare handles quoting/escaping.
+            $like = '%' . $wpdb->esc_like($custom_type_search) . '%';
+            $where .= $wpdb->prepare(
+                " AND REPLACE(REPLACE(REPLACE(REPLACE(mt_custom_type.meta_value, '-', ''), '.', ''), '/', ''), ' ', '') LIKE %s ",
+                $like
+            );
         }
         return $where;
     };
