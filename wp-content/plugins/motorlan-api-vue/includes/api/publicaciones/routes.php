@@ -140,7 +140,9 @@ function motorlan_register_publicaciones_rest_routes() {
         'methods'  => WP_REST_Server::READABLE,
         'callback' => 'motorlan_refresh_slugs_callback',
         'permission_callback' => function () {
-            return current_user_can('edit_posts');
+            // Bulk maintenance op: rewrites slugs of ALL publicaciones regardless of
+            // ownership. Restrict to administrators only.
+            return current_user_can('manage_options');
         },
     ]);
 }
