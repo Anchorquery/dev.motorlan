@@ -1,11 +1,12 @@
 <script setup lang="ts">
+import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import authV2MaskDark from '@images/pages/misc-mask-dark.png'
-import authV2MaskLight from '@images/pages/misc-mask-light.png'
-import { useGenerateImageVariant } from '@core/composable/useGenerateImageVariant'
+import { useApi } from '@/composables/useApi'
+import { useToast } from '@/composables/useToast'
+import { emailValidator, requiredValidator } from '@core/utils/validators'
 
 const { t } = useI18n()
-const authThemeMask = useGenerateImageVariant(authV2MaskLight, authV2MaskDark)
+const { showToast } = useToast()
 
 definePage({
   meta: {
@@ -13,6 +14,39 @@ definePage({
     unauthenticatedOnly: true,
   },
 })
+
+const showResend = ref(false)
+const resendEmail = ref('')
+const isResending = ref(false)
+const devVerifyUrl = ref<string | null>(null)
+
+onMounted(() => {
+  try {
+    const stored = sessionStorage.getItem('motorlan_register_email')
+    if (stored) resendEmail.value = stored
+    const dev = sessionStorage.getItem('motorlan_dev_verify_url')
+    if (dev) devVerifyUrl.value = dev
+  }
+  catch {}
+})
+
+const submitResend = async () => {
+  if (!resendEmail.value) return
+  isResending.value = true
+  const { data, error } = await useApi('/wp-json/motorlan/v1/resend-verification', {
+    method: 'POST',
+    body: JSON.stringify({ email: resendEmail.value }),
+  }).json()
+  isResending.value = false
+
+  if (error.value) {
+    const msg = (data.value as any)?.message || 'No se pudo reenviar el enlace.'
+    showToast(msg, 'error')
+    return
+  }
+  showToast((data.value as any)?.message || 'Enlace reenviado.', 'success')
+  showResend.value = false
+}
 </script>
 
 <template>
@@ -38,10 +72,10 @@ definePage({
             class="mb-4"
           />
           <h4 class="text-h4 font-weight-bold mb-2">
-            ¡Felicidades por registrarte!
+            {{ t('register_success.title') }}
           </h4>
           <p class="text-body-1 text-medium-emphasis mb-6">
-            Tu cuenta ha sido creada con éxito, pero aún falta un último paso para activarla.
+            {{ t('register_success.subtitle') }}
           </p>
 
           <VAlert
@@ -50,15 +84,68 @@ definePage({
             class="mb-6 rounded-lg text-start"
             icon="tabler-mail"
           >
-            <div class="font-weight-bold mb-1">Verifica tu correo electrónico</div>
+            <div class="font-weight-bold mb-1">{{ t('register_success.verify_email') }}</div>
             <div>
-              Hemos enviado un enlace de activación a tu bandeja de entrada. Por favor, revísalo y haz clic en el botón para confirmar tu cuenta.
+              {{ t('register_success.verify_email_body') }}
             </div>
           </VAlert>
 
-          <p class="text-body-2 text-medium-emphasis mb-6">
-            Si no recibes el correo en unos minutos, por favor revisa tu carpeta de <strong>spam</strong> o correo no deseado.
+          <p class="text-body-2 text-medium-emphasis mb-4">
+            {{ t('register_success.spam_note') }}
           </p>
+
+          <VAlert
+            v-if="devVerifyUrl"
+            color="warning"
+            variant="tonal"
+            class="mb-4 rounded-lg text-start"
+            icon="tabler-bug"
+          >
+            <div class="font-weight-bold mb-1">DEV: enlace de verificación</div>
+            <a :href="devVerifyUrl" class="text-warning text-decoration-underline" style="word-break: break-all;">
+              {{ devVerifyUrl }}
+            </a>
+          </VAlert>
+
+          <div v-if="showResend" class="text-start mb-6">
+            <VTextField
+              v-model="resendEmail"
+              :rules="[requiredValidator, emailValidator]"
+              label="Correo electrónico"
+              type="email"
+              variant="outlined"
+              density="comfortable"
+              class="mb-3"
+            />
+            <div class="d-flex gap-2">
+              <VBtn
+                variant="tonal"
+                color="secondary"
+                block
+                @click="showResend = false"
+              >
+                Cancelar
+              </VBtn>
+              <VBtn
+                color="primary"
+                block
+                :loading="isResending"
+                :disabled="!resendEmail || isResending"
+                @click="submitResend"
+              >
+                Reenviar enlace
+              </VBtn>
+            </div>
+          </div>
+          <VBtn
+            v-else
+            variant="text"
+            color="primary"
+            class="mb-4"
+            @click="showResend = true"
+          >
+            ¿No recibiste el correo? Reenviar enlace
+          </VBtn>
 
           <VBtn
             block
@@ -68,7 +155,7 @@ definePage({
             :to="{ name: 'login' }"
             class="font-weight-bold"
           >
-            Volver al login
+            {{ t('register_success.back_to_login') }}
           </VBtn>
         </VCardText>
       </VCard>

@@ -1,31 +1,13 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { VForm } from 'vuetify/components/VForm'
 import { useI18n } from 'vue-i18n'
-import { useRouter } from 'vue-router'
 import { useApi } from '@/composables/useApi'
 import { useToast } from '@/composables/useToast'
-import AuthProvider from '@/views/pages/authentication/AuthProvider.vue'
-import { VNodeRenderer } from '@layouts/components/VNodeRenderer'
-import { themeConfig } from '@themeConfig'
 import { emailValidator, requiredValidator } from '@core/utils/validators'
-
-import authV2RegisterIllustrationBorderedDark from '@images/pages/auth-v2-register-illustration-bordered-dark.png'
-import authV2RegisterIllustrationBorderedLight from '@images/pages/auth-v2-register-illustration-bordered-light.png'
-import authV2RegisterIllustrationDark from '@images/pages/auth-v2-register-illustration-dark.png'
-import authV2RegisterIllustrationLight from '@images/pages/auth-v2-register-illustration-light.png'
-import authV2MaskDark from '@images/pages/misc-mask-dark.png'
-import authV2MaskLight from '@images/pages/misc-mask-light.png'
-
-const imageVariant = useGenerateImageVariant(authV2RegisterIllustrationLight,
-  authV2RegisterIllustrationDark,
-  authV2RegisterIllustrationBorderedLight,
-  authV2RegisterIllustrationBorderedDark, true)
-
-const authThemeMask = useGenerateImageVariant(authV2MaskLight, authV2MaskDark)
+import { accountUrl } from '@/utils/urls'
 
 const { t } = useI18n()
-const router = useRouter()
 const { showToast } = useToast()
 
 definePage({
@@ -35,29 +17,105 @@ definePage({
   },
 })
 
-const form = ref({
+type FormState = {
+  first_name: string
+  last_name: string
+  email: string
+  password: string
+  password_confirm: string
+  privacyPolicies: boolean
+}
+
+const form = ref<FormState>({
   first_name: '',
   last_name: '',
-  username: '',
   email: '',
   password: '',
+  password_confirm: '',
   privacyPolicies: false,
 })
 
+const step = ref(1)
 const isPasswordVisible = ref(false)
+const isPasswordConfirmVisible = ref(false)
 const isSubmitting = ref(false)
-const refVForm = ref<VForm>()
+const refStep1 = ref<VForm>()
+const refStep2 = ref<VForm>()
 const errors = ref<Record<string, string | undefined>>({})
 const genericError = ref<string | null>(null)
-const isCheckingUsername = ref(false)
-const usernameError = ref<string | null>(null)
 
+const passwordChecks = computed(() => {
+  const p = form.value.password
+  return {
+    length: p.length >= 8,
+    upper: /[A-Z]/.test(p),
+    lower: /[a-z]/.test(p),
+    digit: /[0-9]/.test(p),
+    special: /[^A-Za-z0-9]/.test(p),
+  }
+})
 
+const passwordScore = computed(() => {
+  const c = passwordChecks.value
+  return [c.length, c.upper, c.lower, c.digit, c.special].filter(Boolean).length
+})
+
+const passwordStrengthColor = computed(() => {
+  const s = passwordScore.value
+  if (s <= 2) return 'error'
+  if (s === 3) return 'warning'
+  if (s === 4) return 'info'
+  return 'success'
+})
+
+const isPasswordValid = computed(() => passwordScore.value === 5)
+
+const passwordsMatch = computed(() =>
+  form.value.password.length > 0 && form.value.password === form.value.password_confirm,
+)
+
+const passwordConfirmRule = (v: string) =>
+  v === form.value.password || t('register.passwords_mismatch')
+
+watch(() => form.value.password, () => {
+  errors.value.password = undefined
+})
+watch(() => form.value.password_confirm, () => {
+  errors.value.password_confirm = undefined
+})
+watch(() => form.value.email, () => {
+  errors.value.email = undefined
+})
+
+const goNext = async () => {
+  genericError.value = null
+  if (step.value === 1) {
+    const { valid } = await (refStep1.value?.validate() ?? Promise.resolve({ valid: false }))
+    if (valid) step.value = 2
+    return
+  }
+  if (step.value === 2) {
+    const { valid } = await (refStep2.value?.validate() ?? Promise.resolve({ valid: false }))
+    if (!valid) return
+    if (!isPasswordValid.value) {
+      genericError.value = t('register.password_requirements_title')
+      return
+    }
+    if (!passwordsMatch.value) {
+      errors.value.password_confirm = t('register.passwords_mismatch')
+      return
+    }
+    step.value = 3
+  }
+}
+
+const goBack = () => {
+  if (step.value > 1) step.value--
+}
 
 const register = async () => {
   if (!form.value.privacyPolicies) {
-    genericError.value = 'Debes aceptar la politica de privacidad y los terminos.'
-    
+    genericError.value = t('register.must_accept_terms')
     return
   }
   isSubmitting.value = true
@@ -75,63 +133,54 @@ const register = async () => {
     }),
   }).json()
 
-  // useApi (createFetch) returns a ref for data and error.
-  // We need to wait for the fetch to finish.
   isSubmitting.value = false
 
   if (error.value) {
-    let errorMessage = 'Ocurrió un error al registrar la cuenta.'
-    
-    // Attempt to get the error message from the response body
-    // useFetch's data ref usually contains the body even on error if the fetch completed.
-    if (data.value && data.value.message) {
-      errorMessage = data.value.message
-    } 
-    // If not in data, try to parse it from the error status if needed, 
-    // but usually Motorlan API returns it in the JSON body.
-    
-    const loweredMessage = errorMessage.toLowerCase()
-    
-    if (loweredMessage.includes('email')) {
-      errors.value.email = errorMessage
-    } else {
-      genericError.value = errorMessage
+    const payload: any = data.value || {}
+    const baseMessage = payload.message || t('register.generic_error')
+    const detailedErrors: string[] = Array.isArray(payload.errors) ? payload.errors : []
+    const field = payload.field as string | undefined
+
+    const finalMessage = detailedErrors.length
+      ? `${baseMessage} ${detailedErrors.join(' ')}`
+      : baseMessage
+
+    if (field && ['email', 'username', 'password', 'first_name', 'last_name'].includes(field)) {
+      const targetField = field === 'username' ? 'email' : field
+      errors.value[targetField] = finalMessage
+      if (targetField === 'email' || targetField === 'first_name' || targetField === 'last_name') step.value = 1
+      else step.value = 2
     }
-    
+    else {
+      const lowered = baseMessage.toLowerCase()
+      if (lowered.includes('email') || lowered.includes('correo')) {
+        errors.value.email = finalMessage
+        step.value = 1
+      }
+      else if (lowered.includes('contraseña') || lowered.includes('password')) {
+        errors.value.password = finalMessage
+        step.value = 2
+      }
+      else {
+        genericError.value = finalMessage
+      }
+    }
     return
   }
 
   if (data.value) {
-    showToast('Usuario registrado con éxito. Por favor, revise su email para activar su cuenta.', 'success')
+    const payload = data.value as any
+    if (payload.dev_verify_url) {
+      try { sessionStorage.setItem('motorlan_dev_verify_url', payload.dev_verify_url) }
+      catch {}
+    }
+    try { sessionStorage.setItem('motorlan_register_email', form.value.email) }
+    catch {}
+    showToast(payload.message || 'Usuario registrado con éxito.', 'success')
     setTimeout(() => {
-      window.location.href = '/mi-cuenta/register-success'
-    }, 1500)
+      window.location.href = accountUrl('register-success')
+    }, 1200)
   }
-}
-
-// Computed property para verificar si el formulario es válido
-const isFormValid = computed(() => {
-  const { first_name, last_name, email, password, privacyPolicies } = form.value
-  
-  // Verificar que todos los campos tengan contenido
-  const hasAllFields = !!(first_name && last_name && email && password)
-  
-  // Verificar que el email tenga formato válido (básico)
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  const isEmailValid = emailRegex.test(email)
-  
-  // Verificar que se aceptaron las políticas
-  const policiesAccepted = privacyPolicies === true
-  
-  return hasAllFields && isEmailValid && policiesAccepted
-})
-
-const onSubmit = () => {
-  refVForm.value?.validate()
-    .then(({ valid: isValid }) => {
-      if (isValid)
-        register()
-    })
 }
 </script>
 
@@ -147,71 +196,67 @@ const onSubmit = () => {
     >
       <VCard
         flat
-        :max-width="500"
-        class="pa-6 pa-sm-8 elevation-10 rounded-xl"
+        :max-width="560"
+        class="pa-6 pa-sm-8 elevation-10 rounded-xl w-100"
       >
-        <VCardText>
+        <VCardText class="pb-2">
           <h4 class="text-h4 font-weight-bold mb-1">
             {{ t('register.title') }}
           </h4>
           <p class="mb-0 text-body-1 text-medium-emphasis">
             {{ t('register.subtitle') }}
           </p>
-          <VAlert
-            color="info"
-            variant="tonal"
-            density="compact"
-            class="mt-4 mb-0"
-            icon="tabler-info-circle"
-          >
-            <span class="text-body-2">Todos los campos son obligatorios para completar tu registro.</span>
-          </VAlert>
         </VCardText>
 
         <VCardText>
+          <VStepper
+            v-model="step"
+            :items="[t('register.step_account'), t('register.step_credentials'), t('register.step_confirm')]"
+            hide-actions
+            flat
+            class="mb-4 bg-transparent"
+          />
+
           <VAlert
             v-if="genericError"
             color="error"
             variant="tonal"
-            class="mb-6 rounded-lg"
+            class="mb-4 rounded-lg"
             icon="tabler-alert-triangle"
           >
             {{ genericError }}
           </VAlert>
+
+          <!-- Step 1: Personal data -->
           <VForm
-            ref="refVForm"
-            @submit.prevent="onSubmit"
+            v-if="step === 1"
+            ref="refStep1"
+            @submit.prevent="goNext"
           >
             <VRow>
-
-              <!-- First Name -->
               <VCol cols="12" md="6">
                 <VTextField
                   v-model="form.first_name"
                   :rules="[requiredValidator]"
                   autofocus
                   :label="t('register.first_name')"
-                  placeholder="John"
+                  :placeholder="t('register.first_name_placeholder')"
                   variant="outlined"
                   density="comfortable"
                   :error-messages="errors.first_name"
                 />
               </VCol>
-
-              <!-- Last Name -->
               <VCol cols="12" md="6">
                 <VTextField
                   v-model="form.last_name"
                   :rules="[requiredValidator]"
                   :label="t('register.last_name')"
-                  placeholder="Doe"
+                  :placeholder="t('register.last_name_placeholder')"
                   variant="outlined"
                   density="comfortable"
                   :error-messages="errors.last_name"
                 />
               </VCol>
-
-              <!-- email -->
               <VCol cols="12">
                 <VTextField
                   v-model="form.email"
@@ -224,72 +269,244 @@ const onSubmit = () => {
                   :error-messages="errors.email"
                 />
               </VCol>
-
-              <!-- password -->
               <VCol cols="12">
-                <VTextField
-                  v-model="form.password"
-                  :rules="[requiredValidator]"
-                  :label="t('register.password')"
-                  placeholder="************"
-                  :type="isPasswordVisible ? 'text' : 'password'"
-                  autocomplete="password"
-                  variant="outlined"
-                  density="comfortable"
-                  :append-inner-icon="isPasswordVisible ? 'tabler-eye-off' : 'tabler-eye'"
-                  :error-messages="errors.password"
-                  @click:append-inner="isPasswordVisible = !isPasswordVisible"
-                />
-
-                <div class="d-flex align-center my-6">
-                  <VCheckbox
-                    id="privacy-policy"
-                    v-model="form.privacyPolicies"
-                    :rules="[requiredValidator]"
-                    inline
-                  />
-                  <VLabel
-                    for="privacy-policy"
-                    style="opacity: 1;"
-                  >
-                    <span class="me-1 text-medium-emphasis">{{ t('register.agree_to') }}</span>
-                    <a
-                      href="javascript:void(0)"
-                      class="text-primary font-weight-medium text-decoration-none"
-                    >{{ t('register.privacy_policy') }}</a>
-                  </VLabel>
-                </div>
-
                 <VBtn
                   block
                   type="submit"
                   size="large"
                   rounded="lg"
+                  class="font-weight-bold"
+                >
+                  {{ t('register.next') }}
+                </VBtn>
+              </VCol>
+            </VRow>
+          </VForm>
+
+          <!-- Step 2: Credentials -->
+          <VForm
+            v-else-if="step === 2"
+            ref="refStep2"
+            @submit.prevent="goNext"
+          >
+            <VRow>
+              <VCol cols="12">
+                <VTextField
+                  v-model="form.password"
+                  :rules="[requiredValidator]"
+                  :label="t('register.password')"
+                  placeholder="············"
+                  :type="isPasswordVisible ? 'text' : 'password'"
+                  autocomplete="new-password"
+                  variant="outlined"
+                  density="comfortable"
+                  :append-inner-icon="isPasswordVisible ? 'tabler-eye-off' : 'tabler-eye'"
+                  :error-messages="errors.password"
+                  autofocus
+                  @click:append-inner="isPasswordVisible = !isPasswordVisible"
+                />
+              </VCol>
+
+              <VCol cols="12" class="pt-0">
+                <VProgressLinear
+                  :model-value="passwordScore * 20"
+                  :color="passwordStrengthColor"
+                  height="6"
+                  rounded
+                  class="mb-3"
+                />
+                <div class="text-caption text-medium-emphasis font-weight-medium mb-2">
+                  {{ t('register.password_requirements_title') }}
+                </div>
+                <div class="d-flex flex-column gap-1">
+                  <div class="d-flex align-center gap-2 text-caption">
+                    <VIcon
+                      :icon="passwordChecks.length ? 'tabler-circle-check-filled' : 'tabler-circle'"
+                      :color="passwordChecks.length ? 'success' : 'medium-emphasis'"
+                      size="16"
+                    />
+                    <span :class="passwordChecks.length ? 'text-success' : 'text-medium-emphasis'">
+                      {{ t('register.password_req_length') }}
+                    </span>
+                  </div>
+                  <div class="d-flex align-center gap-2 text-caption">
+                    <VIcon
+                      :icon="passwordChecks.upper ? 'tabler-circle-check-filled' : 'tabler-circle'"
+                      :color="passwordChecks.upper ? 'success' : 'medium-emphasis'"
+                      size="16"
+                    />
+                    <span :class="passwordChecks.upper ? 'text-success' : 'text-medium-emphasis'">
+                      {{ t('register.password_req_upper') }}
+                    </span>
+                  </div>
+                  <div class="d-flex align-center gap-2 text-caption">
+                    <VIcon
+                      :icon="passwordChecks.lower ? 'tabler-circle-check-filled' : 'tabler-circle'"
+                      :color="passwordChecks.lower ? 'success' : 'medium-emphasis'"
+                      size="16"
+                    />
+                    <span :class="passwordChecks.lower ? 'text-success' : 'text-medium-emphasis'">
+                      {{ t('register.password_req_lower') }}
+                    </span>
+                  </div>
+                  <div class="d-flex align-center gap-2 text-caption">
+                    <VIcon
+                      :icon="passwordChecks.digit ? 'tabler-circle-check-filled' : 'tabler-circle'"
+                      :color="passwordChecks.digit ? 'success' : 'medium-emphasis'"
+                      size="16"
+                    />
+                    <span :class="passwordChecks.digit ? 'text-success' : 'text-medium-emphasis'">
+                      {{ t('register.password_req_digit') }}
+                    </span>
+                  </div>
+                  <div class="d-flex align-center gap-2 text-caption">
+                    <VIcon
+                      :icon="passwordChecks.special ? 'tabler-circle-check-filled' : 'tabler-circle'"
+                      :color="passwordChecks.special ? 'success' : 'medium-emphasis'"
+                      size="16"
+                    />
+                    <span :class="passwordChecks.special ? 'text-success' : 'text-medium-emphasis'">
+                      {{ t('register.password_req_special') }}
+                    </span>
+                  </div>
+                </div>
+              </VCol>
+
+              <VCol cols="12">
+                <VTextField
+                  v-model="form.password_confirm"
+                  :rules="[requiredValidator, passwordConfirmRule]"
+                  :label="t('register.password_confirm')"
+                  placeholder="············"
+                  :type="isPasswordConfirmVisible ? 'text' : 'password'"
+                  autocomplete="new-password"
+                  variant="outlined"
+                  density="comfortable"
+                  :append-inner-icon="isPasswordConfirmVisible ? 'tabler-eye-off' : 'tabler-eye'"
+                  :error-messages="errors.password_confirm"
+                  @click:append-inner="isPasswordConfirmVisible = !isPasswordConfirmVisible"
+                />
+              </VCol>
+
+              <VCol cols="6">
+                <VBtn
+                  block
+                  variant="tonal"
+                  color="secondary"
+                  size="large"
+                  rounded="lg"
+                  @click="goBack"
+                >
+                  {{ t('register.back') }}
+                </VBtn>
+              </VCol>
+              <VCol cols="6">
+                <VBtn
+                  block
+                  type="submit"
+                  size="large"
+                  rounded="lg"
+                  :disabled="!isPasswordValid || !passwordsMatch"
+                  class="font-weight-bold"
+                >
+                  {{ t('register.next') }}
+                </VBtn>
+              </VCol>
+            </VRow>
+          </VForm>
+
+          <!-- Step 3: Confirmation -->
+          <div v-else-if="step === 3">
+            <VAlert
+              color="info"
+              variant="tonal"
+              density="compact"
+              class="mb-4"
+              icon="tabler-info-circle"
+            >
+              <span class="text-body-2">
+                Revisa que los datos sean correctos antes de crear tu cuenta. Recibirás un email para activarla.
+              </span>
+            </VAlert>
+
+            <VList density="comfortable" class="rounded-lg border mb-4 pa-0">
+              <VListItem>
+                <template #prepend>
+                  <VIcon icon="tabler-user" size="20" class="me-3 text-primary" />
+                </template>
+                <VListItemTitle class="text-caption text-medium-emphasis">{{ t('register.first_name') }} / {{ t('register.last_name') }}</VListItemTitle>
+                <VListItemSubtitle class="text-body-2 text-high-emphasis font-weight-medium">
+                  {{ form.first_name }} {{ form.last_name }}
+                </VListItemSubtitle>
+              </VListItem>
+              <VDivider />
+              <VListItem>
+                <template #prepend>
+                  <VIcon icon="tabler-mail" size="20" class="me-3 text-primary" />
+                </template>
+                <VListItemTitle class="text-caption text-medium-emphasis">{{ t('register.email') }}</VListItemTitle>
+                <VListItemSubtitle class="text-body-2 text-high-emphasis font-weight-medium">
+                  {{ form.email }}
+                </VListItemSubtitle>
+              </VListItem>
+            </VList>
+
+            <div class="d-flex align-center mb-4">
+              <VCheckbox
+                id="privacy-policy"
+                v-model="form.privacyPolicies"
+                inline
+                hide-details
+              />
+              <VLabel for="privacy-policy" style="opacity: 1;">
+                <span class="me-1 text-medium-emphasis">{{ t('register.agree_to') }}</span>
+                <a
+                  href="javascript:void(0)"
+                  class="text-primary font-weight-medium text-decoration-none"
+                >{{ t('register.privacy_policy') }}</a>
+              </VLabel>
+            </div>
+
+            <VRow>
+              <VCol cols="6">
+                <VBtn
+                  block
+                  variant="tonal"
+                  color="secondary"
+                  size="large"
+                  rounded="lg"
+                  :disabled="isSubmitting"
+                  @click="goBack"
+                >
+                  {{ t('register.back') }}
+                </VBtn>
+              </VCol>
+              <VCol cols="6">
+                <VBtn
+                  block
+                  size="large"
+                  rounded="lg"
+                  color="primary"
                   :loading="isSubmitting"
-                  :disabled="isSubmitting || !isFormValid"
-                  class="font-weight-bold text-uppercase letter-spacing-1 hover-lift"
+                  :disabled="isSubmitting || !form.privacyPolicies"
+                  class="font-weight-bold"
+                  @click="register"
                 >
                   {{ t('register.sign_up') }}
                 </VBtn>
               </VCol>
-
-              <!-- create account -->
-              <VCol
-                cols="12"
-                class="text-center text-base"
-              >
-                <span class="d-inline-block text-body-2 text-medium-emphasis">{{ t('register.already_account') }}</span>
-                <RouterLink
-                  class="text-primary font-weight-semibold ms-1 d-inline-block text-decoration-none"
-                  :to="{ name: 'login' }"
-                >
-                  {{ t('register.sign_in_instead') }}
-                </RouterLink>
-              </VCol>
-
-
             </VRow>
-          </VForm>
+          </div>
+
+          <div class="text-center text-base pt-4">
+            <span class="d-inline-block text-body-2 text-medium-emphasis">{{ t('register.already_account') }}</span>
+            <RouterLink
+              class="text-primary font-weight-semibold ms-1 d-inline-block text-decoration-none"
+              :to="{ name: 'login' }"
+            >
+              {{ t('register.sign_in_instead') }}
+            </RouterLink>
+          </div>
         </VCardText>
       </VCard>
     </VCol>
@@ -298,13 +515,4 @@ const onSubmit = () => {
 
 <style lang="scss">
 @use "@core/scss/template/pages/page-auth";
-
-.hover-lift {
-  transition: transform 0.2s, box-shadow 0.2s;
-  
-  &:not(:disabled):hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(var(--v-theme-primary), 0.3);
-  }
-}
 </style>

@@ -9,14 +9,14 @@ import type { ImagenDestacada } from '@/interfaces/publicacion'
 
 const { t } = useI18n()
 
-const headers = [
-  { title: 'Publicacion', value: 'publication_title' },
-  { title: 'Ofertante', value: 'user_name' },
-  { title: 'Monto', value: 'offer_amount' },
-  { title: 'Fecha', value: 'offer_date' },
-  { title: 'Estado', value: 'status' },
-  { title: 'Acciones', value: 'actions', sortable: false },
-]
+const headers = computed(() => [
+  { title: t('offers_received.headers.publication'), value: 'publication_title' },
+  { title: t('offers_received.headers.offerer'), value: 'user_name' },
+  { title: t('offers_received.headers.amount'), value: 'offer_amount' },
+  { title: t('offers_received.headers.date'), value: 'offer_date' },
+  { title: t('offers_received.headers.status'), value: 'status' },
+  { title: t('offers_received.headers.actions'), value: 'actions', sortable: false },
+])
 
 const searchQuery = ref('')
 const itemsPerPage = ref(10)
@@ -44,14 +44,14 @@ const showSnackbar = (message: string, type: 'success' | 'error' = 'success') =>
   }
 }
 
-const statusOptions = [
-  { title: 'Todos', value: '' },
-  { title: 'Pendientes', value: 'pending' },
-  { title: 'Esperando confirmación', value: 'accepted_pending_confirmation' },
-  { title: 'Confirmados', value: 'confirmed' },
-  { title: 'Rechazados', value: 'rejected' },
-  { title: 'Expirados', value: 'expired' },
-]
+const statusOptions = computed(() => [
+  { title: t('offers_received.status_options.all'), value: '' },
+  { title: t('offers_received.status_options.pending'), value: 'pending' },
+  { title: t('offers_received.status_options.waiting_confirmation'), value: 'accepted_pending_confirmation' },
+  { title: t('offers_received.status_options.confirmed'), value: 'confirmed' },
+  { title: t('offers_received.status_options.rejected'), value: 'rejected' },
+  { title: t('offers_received.status_options.expired'), value: 'expired' },
+])
 
 const queryOfferId = computed(() => {
   const raw = route.query.offer_id
@@ -223,13 +223,13 @@ const updateOfferStatus = async (offerId: number, status: 'accepted' | 'rejected
       }
     }
 
-    const successMessage = payload?.message || (status === 'accepted' ? 'Oferta aceptada' : 'Oferta rechazada')
+    const successMessage = payload?.message || (status === 'accepted' ? t('offers_received.accepted_success') : t('offers_received.rejected_success'))
     showSnackbar(successMessage, 'success')
   }
   catch (error) {
     console.error(error)
     const err = error as any
-    const errorMessage = err?.data?.message || err?.message || 'No fue posible actualizar la oferta.'
+    const errorMessage = err?.data?.message || err?.message || t('offers_received.update_error')
     showSnackbar(errorMessage, 'error')
   }
   finally {
@@ -247,9 +247,9 @@ const formatCurrency = (value: number | string) => {
   if (Number.isNaN(numericValue))
     return value
 
-  return new Intl.NumberFormat('es-VE', {
+  return new Intl.NumberFormat('es-ES', {
     style: 'currency',
-    currency: 'USD',
+    currency: 'EUR',
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(numericValue)
@@ -260,7 +260,7 @@ const formatTimeRemaining = (seconds?: number | null) => {
     return '—'
 
   if (seconds <= 0)
-    return 'Expirada'
+    return t('offers_received.expired_short')
 
   const totalMinutes = Math.ceil(seconds / 60)
   const hours = Math.floor(totalMinutes / 60)
@@ -323,22 +323,22 @@ const getPublicationSlug = (item: any) =>
 
 const resolveStatus = (status: string) => {
   if (status === 'accepted_pending_confirmation')
-    return { text: 'Esperando confirmación', color: 'info' }
+    return { text: t('offers_received.status_chip.waiting_confirmation'), color: 'info' }
   if (status === 'confirmed')
-    return { text: 'Confirmada', color: 'success' }
+    return { text: t('offers_received.status_chip.confirmed'), color: 'success' }
   if (status === 'expired')
-    return { text: 'Expirada', color: 'warning' }
+    return { text: t('offers_received.status_chip.expired'), color: 'warning' }
   if (status === 'rejected')
-    return { text: 'Rechazada', color: 'error' }
+    return { text: t('offers_received.status_chip.rejected'), color: 'error' }
 
-  return { text: 'Pendiente', color: 'warning' }
+  return { text: t('offers_received.status_chip.pending'), color: 'warning' }
 }
 </script>
 
 <template>
   <VCard class="motor-card-enhanced overflow-visible">
     <VCardTitle class="pa-6 pb-0">
-      <span class="text-h5 text-premium-title">{{ t('Ofertas Recibidas') }}</span>
+      <span class="text-h5 text-premium-title">{{ t('offers_received.title') }}</span>
     </VCardTitle>
     <VCardText>
       <VRow>
@@ -349,7 +349,7 @@ const resolveStatus = (status: string) => {
         >
           <AppTextField
             v-model="searchQuery"
-            placeholder="Buscar oferta..."
+            :placeholder="t('offers_received.search_placeholder')"
             prepend-inner-icon="tabler-search"
             class="elevation-0"
           />
@@ -365,7 +365,7 @@ const resolveStatus = (status: string) => {
             :items="statusOptions"
             item-title="title"
             item-value="value"
-            placeholder="Estado"
+            :placeholder="t('offers_received.status_placeholder')"
             clearable
             clear-icon="tabler-x"
             prepend-inner-icon="tabler-filter"
@@ -379,7 +379,7 @@ const resolveStatus = (status: string) => {
         >
           <AppDateTimePicker
             v-model="dateRange"
-            placeholder="Rango de fechas"
+            :placeholder="t('offers_received.date_range_placeholder')"
             clearable
             prepend-inner-icon="tabler-calendar"
             :config="{ mode: 'range', dateFormat: 'Y-m-d' }"
@@ -394,7 +394,7 @@ const resolveStatus = (status: string) => {
           <AppSelect
             v-model="itemsPerPage"
             :items="[5, 10, 20, 25, 50]"
-            placeholder="Mostrar"
+            :placeholder="t('offers_received.show_placeholder')"
             prepend-inner-icon="tabler-list-numbers"
           />
         </VCol>
@@ -403,10 +403,11 @@ const resolveStatus = (status: string) => {
 
     <VDivider class="mt-4" />
 
-    <div class="px-6 pb-6" style="overflow-x: auto; width: 100%; -webkit-overflow-scrolling: touch;">
+    <div class="table-responsive-shell px-6 pb-6">
       <VDataTableServer
         v-model:items-per-page="itemsPerPage"
         v-model:page="page"
+        :mobile-breakpoint="0"
         :headers="headers"
         :items="offers"
         :items-length="totalOffers"
@@ -447,7 +448,7 @@ const resolveStatus = (status: string) => {
                 v-if="getPublicationEntity(item)?.acf?.tipo_o_referencia"
                 class="text-caption text-medium-emphasis"
               >
-                Ref: {{ getPublicationEntity(item).acf.tipo_o_referencia }}
+                {{ t('offers_received.ref_label') }}: {{ getPublicationEntity(item).acf.tipo_o_referencia }}
               </span>
             </div>
           </div>
@@ -481,17 +482,17 @@ const resolveStatus = (status: string) => {
                     prepend-icon="tabler-eye"
                     @click="openOfferDetails(item)"
                   >
-                    Ver detalle
+                    {{ t('offers_received.view_detail') }}
                   </VListItem>
                   <VListItem
                     value="accept"
                     prepend-icon="tabler-check"
                     class="text-success"
                     :disabled="!item.can_accept || updatingOfferId === item.id"
-                    :title="!item.can_accept ? item.accept_disabled_reason || 'No disponible para aceptar' : undefined"
+                    :title="!item.can_accept ? item.accept_disabled_reason || t('offers_received.not_available_to_accept') : undefined"
                     @click="updateOfferStatus(item.id, 'accepted')"
                   >
-                    Aceptar
+                    {{ t('offers_received.accept') }}
                   </VListItem>
                   <VListItem
                     value="reject"
@@ -500,7 +501,7 @@ const resolveStatus = (status: string) => {
                     :disabled="item.status === 'confirmed' || item.status === 'rejected' || updatingOfferId === item.id"
                     @click="updateOfferStatus(item.id, 'rejected')"
                   >
-                    Rechazar
+                    {{ t('offers_received.reject') }}
                   </VListItem>
                 </VList>
               </VMenu>
@@ -529,7 +530,7 @@ const resolveStatus = (status: string) => {
             <div class="d-flex align-center justify-space-between pa-4 bg-surface border-b">
               <div class="d-flex align-center gap-2">
                 <VIcon icon="tabler-report-money" color="primary" />
-                <span class="text-h6 font-weight-bold text-premium-title">Detalle de la Oferta Recibida</span>
+                <span class="text-h6 font-weight-bold text-premium-title">{{ t('offers_received.detail_title') }}</span>
               </div>
               <IconBtn @click="isDetailDialogOpen = false">
                 <VIcon icon="tabler-x" size="20" />
@@ -546,7 +547,7 @@ const resolveStatus = (status: string) => {
                     <VIcon icon="tabler-engine" size="24" />
                   </VAvatar>
                   <div class="flex-grow-1">
-                    <div class="text-caption text-medium-emphasis text-uppercase font-weight-bold letter-spacing-1">Publicación</div>
+                    <div class="text-caption text-medium-emphasis text-uppercase font-weight-bold letter-spacing-1">{{ t('offers_received.publication_label') }}</div>
                     <div class="text-h6 font-weight-bold text-high-emphasis line-height-1.2">{{ selectedOffer.publication_title }}</div>
                   </div>
                 </div>
@@ -557,7 +558,7 @@ const resolveStatus = (status: string) => {
                 <div class="d-flex flex-column gap-1">
                   <div class="d-flex align-center gap-2">
                     <VIcon icon="tabler-user" size="18" class="text-primary" />
-                    <span class="text-caption text-medium-emphasis text-uppercase font-weight-bold">Ofertante</span>
+                    <span class="text-caption text-medium-emphasis text-uppercase font-weight-bold">{{ t('offers_received.offerer_label') }}</span>
                   </div>
                   <div class="d-flex align-center gap-2 mt-1">
                     <VAvatar size="28" color="primary" variant="tonal" class="text-caption font-weight-bold">
@@ -571,8 +572,8 @@ const resolveStatus = (status: string) => {
               <VCol cols="12" sm="6" class="text-sm-right">
                 <div class="d-flex flex-column gap-1">
                   <div class="d-flex align-center gap-2 justify-sm-end">
-                    <VIcon icon="tabler-currency-dollar" size="18" class="text-primary" />
-                    <span class="text-caption text-medium-emphasis text-uppercase font-weight-bold">Monto Ofertado</span>
+                    <VIcon icon="tabler-currency-euro" size="18" class="text-primary" />
+                    <span class="text-caption text-medium-emphasis text-uppercase font-weight-bold">{{ t('offers_received.amount_offered') }}</span>
                   </div>
                   <div class="text-h5 font-weight-bold text-premium-price mt-1">{{ formatCurrency(selectedOffer.offer_amount) }}</div>
                 </div>
@@ -587,7 +588,7 @@ const resolveStatus = (status: string) => {
                 <div class="d-flex flex-column gap-1">
                   <div class="d-flex align-center gap-2">
                     <VIcon icon="tabler-calendar" size="18" class="text-primary" />
-                    <span class="text-caption text-medium-emphasis text-uppercase font-weight-bold">Fecha Recibida</span>
+                    <span class="text-caption text-medium-emphasis text-uppercase font-weight-bold">{{ t('offers_received.date_received') }}</span>
                   </div>
                   <div class="text-body-1 font-weight-medium text-high-emphasis">
                     {{ new Date(selectedOffer.offer_date).toLocaleString('es-ES', { dateStyle: 'medium', timeStyle: 'short' }) }}
@@ -599,7 +600,7 @@ const resolveStatus = (status: string) => {
                 <div class="d-flex flex-column gap-2">
                   <div class="d-flex align-center gap-2 justify-sm-end">
                     <VIcon icon="tabler-info-circle" size="18" class="text-primary" />
-                    <span class="text-caption text-medium-emphasis text-uppercase font-weight-bold">Estado Actual</span>
+                    <span class="text-caption text-medium-emphasis text-uppercase font-weight-bold">{{ t('offers_received.current_status') }}</span>
                   </div>
                   <div>
                     <VChip
@@ -621,7 +622,7 @@ const resolveStatus = (status: string) => {
                     <VIcon icon="tabler-clock-play" size="18" />
                   </VAvatar>
                   <div>
-                    <span class="text-caption text-warning-darken-2 text-uppercase font-weight-bold d-block">Tiempo para confirmar</span>
+                    <span class="text-caption text-warning-darken-2 text-uppercase font-weight-bold d-block">{{ t('offers_received.time_to_confirm') }}</span>
                     <span class="text-body-2 font-weight-bold text-warning-darken-2">{{ formatTimeRemaining(selectedOffer.time_to_expire) }}</span>
                   </div>
                 </div>
@@ -634,8 +635,8 @@ const resolveStatus = (status: string) => {
                     <VIcon icon="tabler-alert-triangle" size="18" />
                   </VAvatar>
                   <div>
-                    <span class="text-caption text-error text-uppercase font-weight-bold d-block">No se puede aceptar</span>
-                    <span class="text-body-2 font-weight-medium text-error">{{ selectedOffer.accept_disabled_reason || 'Sin disponibilidad de stock o publicación inactiva.' }}</span>
+                    <span class="text-caption text-error text-uppercase font-weight-bold d-block">{{ t('offers_received.cannot_accept') }}</span>
+                    <span class="text-body-2 font-weight-medium text-error">{{ selectedOffer.accept_disabled_reason || t('offers_received.no_stock_message') }}</span>
                   </div>
                 </div>
               </VCol>
@@ -645,13 +646,13 @@ const resolveStatus = (status: string) => {
                 <div class="pa-4 bg-light rounded-lg border mt-2">
                   <div class="d-flex align-center gap-2 mb-2">
                     <VIcon icon="tabler-message-2" size="18" class="text-medium-emphasis" />
-                    <span class="text-caption text-medium-emphasis text-uppercase font-weight-bold">Comentario del Ofertante</span>
+                    <span class="text-caption text-medium-emphasis text-uppercase font-weight-bold">{{ t('offers_received.offerer_comment') }}</span>
                   </div>
                   <div v-if="selectedOffer.justification" class="text-body-1 font-italic text-high-emphasis">
                     "{{ selectedOffer.justification }}"
                   </div>
                   <div v-else class="text-body-2 text-medium-emphasis font-italic">
-                    El ofertante no incluyó comentarios adicionales.
+                    {{ t('offers_received.no_comments') }}
                   </div>
                 </div>
               </VCol>
@@ -668,7 +669,7 @@ const resolveStatus = (status: string) => {
               class="px-6"
               @click="isDetailDialogOpen = false"
             >
-              Cerrar
+              {{ t('offers_received.close') }}
             </VBtn>
             
             <template v-if="(selectedOffer.can_accept || selectedOffer.status === 'pending') && !['confirmed', 'rejected'].includes(selectedOffer.status)">
@@ -680,7 +681,7 @@ const resolveStatus = (status: string) => {
                 :disabled="updatingOfferId === selectedOffer.id"
                 @click="updateOfferStatus(selectedOffer.id, 'rejected')"
               >
-                Rechazar
+                {{ t('offers_received.reject') }}
               </VBtn>
               <VBtn
                 v-if="selectedOffer.can_accept && selectedOffer.status === 'pending'"
@@ -690,7 +691,7 @@ const resolveStatus = (status: string) => {
                 :disabled="updatingOfferId === selectedOffer.id"
                 @click="updateOfferStatus(selectedOffer.id, 'accepted')"
               >
-                Aceptar Oferta
+                {{ t('offers_received.accept_offer') }}
               </VBtn>
             </template>
           </VCardActions>

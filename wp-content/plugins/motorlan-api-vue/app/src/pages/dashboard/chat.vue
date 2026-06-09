@@ -1,6 +1,9 @@
 <script lang="ts" setup>
 import { PerfectScrollbar } from 'vue3-perfect-scrollbar'
 import { useDisplay, useTheme } from 'vuetify'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 import type { ChatContact as TypeChatContact } from '@/plugins/fake-api/handlers/apps/chat/types'
 import { themes } from '@/plugins/vuetify/theme'
 import ChatActiveChatUserProfileSidebarContent from '@/views/apps/chat/ChatActiveChatUserProfileSidebarContent.vue'
@@ -258,14 +261,14 @@ const chatContentContainerBg = computed(() => {
                     icon="tabler-paperclip"
                     size="22"
                   />
-                  <VTooltip activator="parent">Adjuntar archivo</VTooltip>
+                  <VTooltip activator="parent">{{ t('chat_components.attach_file') }}</VTooltip>
                 </IconBtn>
                  <IconBtn variant="text" color="medium-emphasis" size="small">
                     <VIcon
                     icon="tabler-microphone"
                     size="22"
                   />
-                   <VTooltip activator="parent">Mensaje de voz</VTooltip>
+                   <VTooltip activator="parent">{{ t('chat_components.voice_message') }}</VTooltip>
                 </IconBtn>
             </div>
 
@@ -275,7 +278,7 @@ const chatContentContainerBg = computed(() => {
             variant="plain"
             density="comfortable"
             class="chat-message-input flex-grow-1 px-2 px-sm-0"
-            placeholder="Escribe un mensaje..."
+            :placeholder="t('chat_components.write_message_dots')"
             auto-grow
             rows="1"
             max-rows="5"

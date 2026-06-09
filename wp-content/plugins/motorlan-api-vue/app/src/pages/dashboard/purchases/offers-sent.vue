@@ -116,7 +116,7 @@ const formatCurrency = (value: number | string) => {
   if (Number.isNaN(numericValue))
     return value
 
-  return new Intl.NumberFormat('es-VE', {
+  return new Intl.NumberFormat('es-ES', {
     style: 'currency',
     currency: 'EUR',
     minimumFractionDigits: 2,
@@ -224,7 +224,7 @@ const withdrawOffer = async (offerId: number) => {
         >
           <AppTextField
             v-model="searchQuery"
-            placeholder="Buscar oferta..."
+            :placeholder="t('dashboard_lists.search_offer')"
             clearable
             prepend-inner-icon="tabler-search"
           />
@@ -239,7 +239,7 @@ const withdrawOffer = async (offerId: number) => {
             :items="statusOptions"
             item-title="title"
             item-value="value"
-            placeholder="Filtrar por estado"
+            :placeholder="t('dashboard_lists.filter_by_status')"
             clearable
             clear-icon="tabler-x"
           />
@@ -251,7 +251,7 @@ const withdrawOffer = async (offerId: number) => {
         >
           <AppDateTimePicker
             v-model="dateRange"
-            placeholder="Rango de fechas"
+            :placeholder="t('dashboard_lists.date_range')"
             clearable
             :config="{ mode: 'range', dateFormat: 'Y-m-d' }"
             prepend-inner-icon="tabler-calendar"
@@ -369,7 +369,7 @@ const withdrawOffer = async (offerId: number) => {
           <div class="d-flex align-center justify-space-between pa-4 bg-surface border-b">
             <div class="d-flex align-center gap-2">
               <VIcon icon="tabler-file-description" color="primary" />
-              <span class="text-h6 font-weight-bold text-premium-title">Detalle de la Oferta</span>
+              <span class="text-h6 font-weight-bold text-premium-title">{{ t('dashboard_lists.offer_details') }}</span>
             </div>
             <IconBtn @click="isDetailDialogOpen = false">
               <VIcon icon="tabler-x" size="20" />
@@ -386,7 +386,7 @@ const withdrawOffer = async (offerId: number) => {
                   <VIcon icon="tabler-engine" size="24" />
                 </VAvatar>
                 <div>
-                  <div class="text-caption text-medium-emphasis text-uppercase font-weight-bold letter-spacing-1">Publicación</div>
+                  <div class="text-caption text-medium-emphasis text-uppercase font-weight-bold letter-spacing-1">{{ t('dashboard_lists.publication') }}</div>
                   <div class="text-h6 font-weight-bold text-high-emphasis">{{ selectedOffer.publication_title }}</div>
                 </div>
               </div>
@@ -397,7 +397,7 @@ const withdrawOffer = async (offerId: number) => {
               <div class="d-flex flex-column gap-1">
                 <div class="d-flex align-center gap-2">
                   <VIcon icon="tabler-currency-euro" size="18" class="text-primary" />
-                  <span class="text-caption text-medium-emphasis text-uppercase font-weight-bold">Monto Ofertado</span>
+                  <span class="text-caption text-medium-emphasis text-uppercase font-weight-bold">{{ t('dashboard_lists.amount_offered') }}</span>
                 </div>
                 <div class="text-h5 font-weight-bold text-premium-price">{{ formatCurrency(selectedOffer.offer_amount) }}</div>
               </div>
@@ -407,7 +407,7 @@ const withdrawOffer = async (offerId: number) => {
               <div class="d-flex flex-column gap-1">
                 <div class="d-flex align-center gap-2">
                   <VIcon icon="tabler-calendar" size="18" class="text-primary" />
-                  <span class="text-caption text-medium-emphasis text-uppercase font-weight-bold">Fecha Envío</span>
+                  <span class="text-caption text-medium-emphasis text-uppercase font-weight-bold">{{ t('dashboard_lists.send_date') }}</span>
                 </div>
                 <div class="text-body-1 font-weight-medium">{{ new Date(selectedOffer.offer_date).toLocaleString('es-ES', { dateStyle: 'medium', timeStyle: 'short' }) }}</div>
               </div>
@@ -422,7 +422,7 @@ const withdrawOffer = async (offerId: number) => {
               <div class="d-flex flex-column gap-2">
                 <div class="d-flex align-center gap-2">
                   <VIcon icon="tabler-info-circle" size="18" class="text-primary" />
-                  <span class="text-caption text-medium-emphasis text-uppercase font-weight-bold">Estado Actual</span>
+                  <span class="text-caption text-medium-emphasis text-uppercase font-weight-bold">{{ t('dashboard_lists.current_status') }}</span>
                 </div>
                 <div>
                   <VChip
@@ -441,7 +441,7 @@ const withdrawOffer = async (offerId: number) => {
               <div class="d-flex flex-column gap-2 pa-3 bg-light-warning rounded border-warning border-opacity-25">
                 <div class="d-flex align-center gap-2">
                   <VIcon icon="tabler-hourglass-high" size="18" class="text-warning" />
-                  <span class="text-caption text-warning-darken-2 text-uppercase font-weight-bold">Tiempo Límite</span>
+                  <span class="text-caption text-warning-darken-2 text-uppercase font-weight-bold">{{ t('dashboard_lists.time_limit') }}</span>
                 </div>
                 <div class="text-body-2 font-weight-bold text-warning-darken-2">
                   Expira en: {{ formatTimeRemaining(selectedOffer.time_to_expire) }}
@@ -454,7 +454,7 @@ const withdrawOffer = async (offerId: number) => {
               <div class="d-flex align-center gap-2 bg-light-success pa-3 rounded">
                 <VIcon icon="tabler-circle-check" color="success" />
                 <div>
-                  <span class="text-caption text-success-darken-2 text-uppercase font-weight-bold d-block">Oferta aceptada el</span>
+                  <span class="text-caption text-success-darken-2 text-uppercase font-weight-bold d-block">{{ t('dashboard_lists.offer_accepted_on') }}</span>
                   <span class="text-body-2 font-weight-medium">{{ new Date(selectedOffer.accepted_at).toLocaleString() }}</span>
                 </div>
               </div>
@@ -465,7 +465,7 @@ const withdrawOffer = async (offerId: number) => {
               <div class="pa-4 bg-light rounded-lg border">
                 <div class="d-flex align-center gap-2 mb-2">
                   <VIcon icon="tabler-message-2" size="18" class="text-medium-emphasis" />
-                  <span class="text-caption text-medium-emphasis text-uppercase font-weight-bold">Comentario Adicional</span>
+                  <span class="text-caption text-medium-emphasis text-uppercase font-weight-bold">{{ t('dashboard_lists.additional_comment') }}</span>
                 </div>
                 <div v-if="selectedOffer.justification" class="text-body-1 font-italic text-high-emphasis">
                   "{{ selectedOffer.justification }}"

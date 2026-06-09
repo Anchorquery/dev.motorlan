@@ -2,6 +2,7 @@ import { computed, ref } from 'vue'
 import { createUrl } from '@/@core/composable/createUrl'
 import { useApi } from '@/composables/useApi'
 import { usePolling } from '@/composables/usePolling'
+import { getStoredGuestEmail } from '@/utils/guest'
 
 interface ProductMessage {
   id: string

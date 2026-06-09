@@ -142,12 +142,12 @@ const rejectPublication = async () => {
       <template #prepend>
         <VIcon icon="tabler-eye" size="24" class="mr-2" />
       </template>
-      <div class="d-flex align-center justify-space-between flex-wrap gap-4 w-100">
+      <div class="admin-preview-banner d-flex align-center justify-space-between flex-wrap gap-4 w-100">
         <div>
-          <span class="font-weight-bold">Modo Previsualización de Administrador</span>
-          <p class="text-caption mb-0">Esta publicación aún no es pública. Así es como se verá una vez aprobada.</p>
+          <span class="font-weight-bold">{{ t('admin_preview.admin_preview_mode') }}</span>
+          <p class="text-caption mb-0">{{ t('admin_preview.preview_subtitle') }}</p>
         </div>
-        <div class="d-flex align-center gap-2">
+        <div class="admin-preview-banner__actions d-flex align-center gap-2">
            <VBtn
             color="success"
             variant="elevated"
@@ -155,7 +155,7 @@ const rejectPublication = async () => {
             :loading="isActionLoading"
             @click="approvePublication"
           >
-            Aprobar
+            {{ t('admin_preview.approve') }}
           </VBtn>
           <VBtn
             color="error"
@@ -164,7 +164,7 @@ const rejectPublication = async () => {
             :loading="isActionLoading"
             @click="isRejectDialogVisible = true"
           >
-            Rechazar
+            {{ t('admin_preview.reject') }}
           </VBtn>
           <VBtn
             color="primary"
@@ -172,7 +172,7 @@ const rejectPublication = async () => {
             prepend-icon="tabler-pencil"
             :to="`/dashboard/publications/publication/edit/${uuid}`"
           >
-            Editar
+            {{ t('admin_approvals.edit') }}
           </VBtn>
           <VBtn
             color="default"
@@ -180,7 +180,7 @@ const rejectPublication = async () => {
             prepend-icon="tabler-arrow-left"
             @click="router.push('/dashboard/admin/approvals')"
           >
-            Volver
+            {{ t('admin_preview.back') }}
           </VBtn>
         </div>
       </div>
@@ -199,11 +199,11 @@ const rejectPublication = async () => {
           <VIcon icon="tabler-tag-starred" size="28" />
         </template>
         <div class="w-100">
-          <span class="font-weight-bold">Nueva marca pendiente de aprobación</span>
+          <span class="font-weight-bold">{{ t('admin_preview.new_brand_pending') }}</span>
 
-          <div v-if="!isEditingBrand" class="d-flex align-center gap-2 mt-2">
+          <div v-if="!isEditingBrand" class="admin-preview-brand__row d-flex align-center gap-2 mt-2">
             <p class="text-body-1 mb-0">
-              El usuario ha solicitado crear la marca
+              {{ t('admin_preview.user_requested_brand_pre') }}
               <VChip color="warning" variant="elevated" class="mx-1 font-weight-bold">{{ pendingBrand }}</VChip>.
             </p>
             <VBtn
@@ -213,14 +213,14 @@ const rejectPublication = async () => {
               prepend-icon="tabler-pencil"
               @click="startEditingBrand"
             >
-              Editar nombre
+              {{ t('admin_preview.edit_name') }}
             </VBtn>
           </div>
 
-          <div v-else class="d-flex align-center gap-3 mt-3">
+          <div v-else class="admin-preview-brand__editor d-flex align-center gap-3 mt-3">
             <VTextField
               v-model="editedBrandName"
-              label="Nombre de la marca"
+              :label="t('admin_preview.brand_name')"
               variant="outlined"
               density="compact"
               hide-details
@@ -236,7 +236,7 @@ const rejectPublication = async () => {
               :disabled="!editedBrandName.trim()"
               @click="saveBrandName"
             >
-              Guardar
+              {{ t('admin_preview.save') }}
             </VBtn>
             <VBtn
               variant="text"
@@ -244,12 +244,12 @@ const rejectPublication = async () => {
               size="small"
               @click="isEditingBrand = false"
             >
-              Cancelar
+              {{ t('admin_preview.cancel') }}
             </VBtn>
           </div>
 
           <p class="text-caption text-medium-emphasis mt-2 mb-0">
-            Al aprobar esta publicación, la marca se creará y estará disponible para todos los usuarios.
+            {{ t('admin_preview.brand_creation_note') }}
           </p>
         </div>
       </VAlert>
@@ -277,7 +277,7 @@ const rejectPublication = async () => {
             </VAvatar>
             <div>
               <p class="font-weight-bold mb-0">{{ publicacion.author.name }}</p>
-              <p class="text-caption mb-0 text-medium-emphasis">Solicitante de la publicación</p>
+              <p class="text-caption mb-0 text-medium-emphasis">{{ t('admin_preview.publication_requester') }}</p>
             </div>
           </div>
         </VCol>
@@ -299,10 +299,10 @@ const rejectPublication = async () => {
 
     <VCard v-else class="pa-12 text-center rounded-xl elevation-2">
       <VIcon icon="tabler-alert-circle" size="64" color="error" class="mb-4" />
-      <VCardText class="text-h5">Publicación no encontrada</VCardText>
-      <p class="text-body-1 text-medium-emphasis">Es posible que el ID no sea válido o la publicación haya sido eliminada.</p>
+      <VCardText class="text-h5">{{ t('admin_preview.publication_not_found') }}</VCardText>
+      <p class="text-body-1 text-medium-emphasis">{{ t('admin_preview.not_found_hint') }}</p>
       <VBtn color="primary" class="mt-4" @click="router.push('/dashboard/admin/approvals')">
-        Regresar al listado
+        {{ t('admin_preview.back_to_list') }}
       </VBtn>
     </VCard>
   </div>
@@ -314,7 +314,7 @@ const rejectPublication = async () => {
     >
       <VCard class="rounded-xl overflow-hidden elevation-24">
         <VCardTitle class="pa-0">
-          <div class="d-flex align-center gap-2 pa-4 bg-error text-white">
+          <div class="admin-preview-reject__header d-flex align-center gap-2 pa-4 bg-error text-white">
             <VIcon icon="tabler-circle-x" />
             <span class="text-h6 font-weight-bold">{{ t('admin_approvals.reject_dialog.title', 'Rechazar Publicación') }}</span>
           </div>
@@ -332,7 +332,7 @@ const rejectPublication = async () => {
             auto-grow
           />
         </VCardText>
-        <VCardActions class="pa-6 pt-0">
+        <VCardActions class="admin-preview-reject__actions pa-6 pt-0">
           <VSpacer />
           <VBtn
             variant="text"
@@ -359,6 +359,49 @@ const rejectPublication = async () => {
 .admin-preview-wrapper {
   max-width: 1400px;
   margin: 0 auto;
+}
+
+@media (max-width: 959px) {
+  .admin-preview-banner,
+  .admin-preview-brand__row,
+  .admin-preview-brand__editor {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .admin-preview-banner__actions {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .admin-preview-banner__actions :deep(.v-btn),
+  .admin-preview-brand__row :deep(.v-btn),
+  .admin-preview-brand__editor :deep(.v-btn) {
+    width: 100%;
+  }
+
+  .admin-preview-brand__editor :deep(.v-text-field) {
+    max-width: 100% !important;
+    width: 100%;
+  }
+
+  .admin-preview-reject__header {
+    align-items: flex-start;
+  }
+
+  .admin-preview-reject__actions {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .admin-preview-reject__actions :deep(.v-btn) {
+    width: 100%;
+  }
+
+  .admin-preview-wrapper :deep(.v-row) {
+    row-gap: 1rem;
+  }
 }
 </style>
 

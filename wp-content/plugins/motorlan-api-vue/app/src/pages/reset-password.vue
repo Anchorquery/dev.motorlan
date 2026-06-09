@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 import { VForm } from 'vuetify/components/VForm'
 import { useGenerateImageVariant } from '@core/composable/useGenerateImageVariant'
 import { requiredValidator } from '@core/utils/validators'
@@ -176,8 +179,8 @@ const goToLogin = () => {
                 <VTextField
                   v-model="password"
                   autofocus
-                  label="Nueva contraseña"
-                  placeholder="············"
+                  :label="t('reset_password.new_password')"
+                  :placeholder="t('reset_password.password_placeholder')"
                   :type="isPasswordVisible ? 'text' : 'password'"
                   variant="outlined"
                   density="comfortable"
@@ -191,8 +194,8 @@ const goToLogin = () => {
               <VCol cols="12">
                 <VTextField
                   v-model="confirmPassword"
-                  label="Confirmar contraseña"
-                  placeholder="············"
+                  :label="t('reset_password.confirm_password')"
+                  :placeholder="t('reset_password.password_placeholder')"
                   :type="isConfirmPasswordVisible ? 'text' : 'password'"
                   variant="outlined"
                   density="comfortable"
@@ -213,7 +216,7 @@ const goToLogin = () => {
                   :disabled="isSubmitting"
                   class="font-weight-bold text-uppercase letter-spacing-1 hover-lift"
                 >
-                  Restablecer contraseña
+                  {{ t('reset_password.submit_button') }}
                 </VBtn>
               </VCol>
 
@@ -228,7 +231,7 @@ const goToLogin = () => {
                     size="20"
                     class="me-1 flip-in-rtl"
                   />
-                  <span>Volver al login</span>
+                  <span>{{ t('reset_password.back_to_login') }}</span>
                 </RouterLink>
               </VCol>
             </VRow>

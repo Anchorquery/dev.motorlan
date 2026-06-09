@@ -69,7 +69,7 @@ const formatCurrency = (value: number | string | null | undefined) => {
   if (Number.isNaN(numericValue))
     return value ?? '—'
 
-  return new Intl.NumberFormat('es-VE', {
+  return new Intl.NumberFormat('es-ES', {
     style: 'currency',
     currency: 'EUR',
     minimumFractionDigits: 2,
@@ -353,6 +353,7 @@ const formatPublicationTitle = (pub: any, fallbackTitle?: string): string => {
     <VDataTableServer
       v-model:items-per-page="itemsPerPage"
       v-model:page="page"
+      :mobile-breakpoint="0"
       :headers="headers"
       :items="sales"
       :items-length="totalSales"
@@ -461,7 +462,7 @@ const formatPublicationTitle = (pub: any, fallbackTitle?: string): string => {
             @click="goToSale(item)"
           >
             <VIcon icon="tabler-eye" size="18" />
-            <VTooltip activator="parent" location="top">Ver detalle</VTooltip>
+            <VTooltip activator="parent" location="top">{{ t('dashboard_lists.view_detail') }}</VTooltip>
           </IconBtn>
           <IconBtn
             variant="tonal"
@@ -470,7 +471,7 @@ const formatPublicationTitle = (pub: any, fallbackTitle?: string): string => {
             @click="goToPublication(item)"
           >
             <VIcon icon="tabler-external-link" size="18" />
-            <VTooltip activator="parent" location="top">Ver publicación</VTooltip>
+            <VTooltip activator="parent" location="top">{{ t('dashboard_lists.view_publication') }}</VTooltip>
           </IconBtn>
         </div>
       </template>

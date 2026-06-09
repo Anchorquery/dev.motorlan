@@ -12,7 +12,12 @@ if ( ! defined( 'WPINC' ) ) {
 $message_text  = $args['message'] ?? '';
 $recipient     = $args['data']['recipient_name'] ?? 'el destinatario';
 $product_title = $args['data']['product_title'] ?? 'una publicación';
-$thread_url    = ! empty( $args['data']['url'] ) ? home_url( $args['data']['url'] ) : home_url( '/dashboard' );
+$recipient_user_id = isset( $args['user'] ) && is_object( $args['user'] ) ? (int) $args['user']->ID : null;
+$thread_url        = ! empty( $args['data']['url'] )
+    ? ( strpos( $args['data']['url'], 'http' ) === 0 ? $args['data']['url'] : home_url( $args['data']['url'] ) )
+    : ( function_exists( 'motorlan_localized_page_url_absolute' )
+        ? motorlan_localized_page_url_absolute( 'mi-cuenta', 'dashboard', $recipient_user_id )
+        : home_url( '/mi-cuenta/dashboard' ) );
 ?>
 <h2 class="h1" style="margin:0 0 16px;font-size:24px;line-height:30px;font-weight:700;color:#111827;">Mensaje enviado</h2>
 <p style="margin:0 0 16px;">Tu mensaje a <strong><?php echo esc_html( $recipient ); ?></strong> sobre <strong><?php echo esc_html( $product_title ); ?></strong> se ha enviado correctamente.</p>

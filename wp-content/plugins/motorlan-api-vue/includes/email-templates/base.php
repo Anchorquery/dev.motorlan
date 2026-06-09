@@ -104,7 +104,7 @@ $text_muted = '#808390';
                             <!-- Header -->
                             <tr>
                                 <td class="header">
-                                    <a href="https://www.motorlan.es" target="_blank">
+                                    <a href="<?php echo esc_url(home_url('/')); ?>" target="_blank">
                                         <img src="https://www.motorlan.es/wp-content/uploads/2025/11/logo-motorlan-trans-1.png" alt="Motorlan" width="180" style="display: block; border: 0; margin: 0 auto; max-width: 100%;">
                                     </a>
                                 </td>
@@ -122,8 +122,15 @@ $text_muted = '#808390';
                                 <td class="footer">
                                     <p>&copy; <?php echo date('Y'); ?> <strong>Motorlan</strong></p>
                                     <p>
-                                        <a href="https://www.motorlan.es/mi-cuenta/dashboard/notifications">Preferencias</a> • 
-                                        <a href="https://www.motorlan.es/politica-de-privacidad/">Privacidad</a>
+                                        <?php
+                                            $recipient_user_id = isset($args['user']) && is_object($args['user']) ? (int) $args['user']->ID : null;
+                                            $prefs_path = function_exists('motorlan_account_url')
+                                                ? motorlan_account_url('dashboard/notifications', $recipient_user_id)
+                                                : '/mi-cuenta/dashboard/notifications';
+                                            $prefs_url = (strpos($prefs_path, 'http') === 0) ? $prefs_path : home_url($prefs_path);
+                                        ?>
+                                        <a href="<?php echo esc_url($prefs_url); ?>">Preferencias</a> •
+                                        <a href="<?php echo esc_url(home_url('/politica-de-privacidad/')); ?>">Privacidad</a>
                                     </p>
                                     <p style="margin-top:20px; font-size: 11px; opacity: 0.7;">
                                         Este es un mensaje automático, por favor no respondas a este correo.

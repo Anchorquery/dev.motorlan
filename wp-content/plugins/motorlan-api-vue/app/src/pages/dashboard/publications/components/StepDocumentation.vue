@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import AppTextField from '@/@core/components/app-form-elements/AppTextField.vue'
@@ -55,11 +55,11 @@ const handleFileUpload = (event: Event, index: number) => {
 </script>
 
 <template>
-  <VRow>
+  <VRow class="mx-0">
     <VCol cols="12">
-        <h3 class="text-h5 font-weight-bold mb-4">{{ t('add_publication.documentacion.title', 'Documentación Adicional') }}</h3>
+        <h3 class="text-h5 font-weight-bold mb-4">{{ t('add_publication.documentacion.title', 'DocumentaciÃ³n Adicional') }}</h3>
         <p class="text-body-2 text-medium-emphasis mb-6">
-            {{ t('add_publication.documentacion.subtitle', 'Adjunta fichas técnicas, planos o manuales (PDF, JPG, PNG). Máximo 5 archivos.') }}
+            {{ t('add_publication.documentacion.subtitle', 'Adjunta fichas tÃ©cnicas, planos o manuales (PDF, JPG, PNG). MÃ¡ximo 5 archivos.') }}
         </p>
     </VCol>
 
@@ -128,7 +128,7 @@ const handleFileUpload = (event: Event, index: number) => {
             class="w-100 mt-2 dashed-border-btn"
             style="border-style: dashed;"
         >
-            {{ t('add_publication.documentacion.add_btn', 'Añadir Documento') }}
+            {{ t('add_publication.documentacion.add_btn', 'AÃ±adir Documento') }}
         </VBtn>
     </VCol>
   </VRow>

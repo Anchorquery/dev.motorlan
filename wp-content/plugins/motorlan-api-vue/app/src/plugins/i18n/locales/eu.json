@@ -201,7 +201,11 @@
       "text": "Adierazi zergatik ez den argitalpen hau onartzen. Erabiltzaileak informazio hau jasoko du.",
       "reason_label": "Ukapenaren arrazoia",
       "reason_placeholder": "Adibidez: Deskribapeneko zehaztapen teknikoak falta dira."
-    }
+    },
+    "new_brand_proposed": "Erabiltzaileak proposatutako marka berria",
+    "consult_price": "Galdetu prezioa",
+    "edit": "Editatu",
+    "preview": "Aurrebista"
   },
   "store": {
   
@@ -217,7 +221,24 @@
       "loading": "Argitalpenak kargatzen...",
       "view_detail": "Xehetasuna ikusi",
       "empty_title": "Ez da argitalpenik aurkitu",
-      "empty_subtitle": "Saiatu bilaketa-iragazkiak doitzen."
+      "empty_subtitle": "Saiatu bilaketa-iragazkiak doitzen.",
+      "results_heading": "Emaitzak",
+      "no_results": "Emaitzarik ez",
+      "count_summary": "{count} argitalpen aurkituta"
+    },
+    "publication_info": {
+      "title": "Argitalpenaren informazioa",
+      "brand": "Marka",
+      "model": "Eredua",
+      "power": "Potentzia",
+      "speed": "Abiadura",
+      "torque": "Par nominala",
+      "voltage": "Tentsioa",
+      "current": "Intentsitatea"
+    },
+    "product_docs": {
+      "title": "Dokumentazio gehigarria",
+      "empty": "Ez dago dokumentaziorik erantsita."
     },
     "related": {
       "title": "Erlazionatutako produktuak",
@@ -261,13 +282,8 @@
       "select_state": "Egoera hautatu",
       "state_new": "Berria",
       "state_used": "Erabilia",
-      "state_restored": "Berritua"
-    },
-  "contact_modal": {
-      "default_message": "Kaixo, argitalpenaren prezioa jakitea interesatzen zait"
-    },
-    "filters": {
-      "others_tooltip": "Arratoia gainetik pasatutakon, 'Escobillas, encoder...",
+      "state_restored": "Berritua",
+      "others_tooltip": "Eskobilak, encoder...",
       "product_type": "Produktu mota",
       "power_label": "Potentzia",
       "speed_label": "Abiadura",
@@ -276,6 +292,9 @@
       "state_label": "Egoera",
       "type_model_label": "Eredua",
       "responsibility_note": "GARRANTZITSUA: Motorlanek ez du bere gain hartzen saltzailearen eta eroslearen artean zuzenean saltzen diren ekipoen ardura, aurretik bere tailer espezializatuan azterketa egin gabe."
+    },
+    "contact_modal": {
+      "default_message": "Kaixo, argitalpenaren prezioa jakitea interesatzen zait"
     },
     "par_options": {
       "range1": "0-50",
@@ -310,8 +329,40 @@
       "skip": "Saltatu",
       "accept_and_add_warranty": "Onartu eta Bermea Gehitu",
       "go_back": "Atzera",
-      "request_warranty": "Bermea Eskatu"
+      "request_warranty": "Bermea Eskatu",
+      "back": "Atzera",
+      "cancel": "Utzi",
+      "next": "Hurrengoa",
+      "publish": "Argitaratu"
     },
+    "sections": {
+      "basic_info": "Oinarrizko informazioa",
+      "description": "Deskribapena",
+      "location_condition": "Kokapena eta egoera",
+      "tech_specs": "Espezifikazio teknikoak"
+    },
+    "steps": {
+      "type": "Mota",
+      "basic_info": "Oinarrizkoa",
+      "details": "Xehetasunak",
+      "specs": "Espezifikazioak",
+      "media": "Multimedia",
+      "docs": "Dokumentazioa"
+    },
+    "documentacion": {
+      "title": "Dokumentazio gehigarria",
+      "subtitle": "Erantsi eskuliburuak, espezifikazioak edo beste dokumentuak",
+      "doc_name": "Dokumentuaren izena",
+      "add_btn": "Gehitu dokumentua",
+      "no_docs": "Ez da dokumenturik gehitu."
+    },
+    "tech_specs_not_motor": "Espezifikazio teknikoak motorrei bakarrik dagozkie.",
+    "validation": {
+      "main_image_required": "Irudi nagusia derrigorrezkoa da",
+      "stock_positive": "Stocka 0 baino handiagoa izan behar du"
+    },
+    "name_preview_label": "Izen estandarizatuaren aurrebista:",
+    "reference_chip": "erreferentzia",
     "post_details": {
       "section_title": "Argitalpenaren Xehetasunak",
       "type": "Argitalpen Mota",
@@ -320,6 +371,9 @@
       "reference": "Eredua",
       "reference_placeholder": "Erreferentzia",
       "brand": "Marka",
+      "brand_other": "Bestelakoa (marka berria)",
+      "brand_custom_label": "Marka berria",
+      "brand_custom_placeholder": "Marka berriaren izena",
       "category": "Kategoria",
       "power": "Potentzia (kW)",
       "power_placeholder": "100",
@@ -332,6 +386,8 @@
       "intensity": "Intentsitatea (A)",
       "intensity_placeholder": "10",
       "country": "Herrialdea (kokapena)",
+      "country_placeholder": "Hautatu herrialde bat",
+      "no_country_found": "Ez da herrialderik aurkitu",
       "province": "Probintzia",
       "province_placeholder": "Madril",
       "condition": "Artikuluaren Egoera",
@@ -348,6 +404,8 @@
       "negotiable_price": "Prezioa kontsultatu",
       "consult_price": "Prezioa kontsultatu",
       "consult_price_hint": "Markatuta badago, publikoak \"Prezioa kontsultatu\" ikusiko du. Zuk oraindik prezioa erreferentzia gisa ikusiko duzu.",
+      "show_price": "Erakutsi prezioa argitalpenean",
+      "no_price": "Preziorik gabe",
       "publish_acf": "Argitalpenaren egoera",
       "publish_status_publish": "Argitaratu",
       "publish_status_draft": "Zirriborroa"
@@ -376,7 +434,9 @@
       "ac": "Alternoa (C.A.)"
     },
     "media": {
+      "title": "Multimedia",
       "main_image": "Irudi Nagusia",
+      "gallery": "Irudi Galeria",
       "image_gallery": "Irudi Galeria",
       "additional_documentation": "Dokumentazio Gehigarria",
       "document_name": "Dokumentuaren Izena",
@@ -407,6 +467,9 @@
       "comments_placeholder": "Edozein informazio gehigarri"
     },
     "toasts": {
+      "create_success": "Argitalpena ondo sortu da",
+      "create_error": "Errorea argitalpena sortzean",
+      "fetch_error": "Errorea datuak kargatzean",
       "post_created_success": "Argitalpena sortu da. Orain erabaki bermeari buruz.",
       "post_created_error": "Errorea argitalpena sortzean: {message}",
       "warranty_skipped_confirmation": "Argitalpena Motorlan bermerik gabe argitaratuko da. Ziur zaude?",
@@ -481,9 +544,17 @@
   },
   "edit_publication": {
     "title": "Editatu Argitalpena",
+    "no_title": "Izenbururik gabe",
+    "not_found": "Argitalpena ez da aurkitu",
     "fetch_error": "Ezin izan da argitalpena kargatu.",
     "discard": "Baztertu",
     "update_publication": "Eguneratu Argitalpena",
+    "tabs": {
+      "basic": "Oinarrizko informazioa",
+      "specs": "Espezifikazioak",
+      "media": "Multimedia",
+      "docs": "Dokumentazioa"
+    },
     "section_title": "Argitalpenaren Xehetasunak",
     "publication_title": "Argitalpenaren Izenburua",
     "publication_title_placeholder": "Izenburua",
@@ -642,7 +713,150 @@
     "sign_up": "Erregistratu",
     "already_account": "Dagoeneko baduzu kontu bat?",
     "sign_in_instead": "Hasi saioa horren ordez",
-    "or": "edo"
+    "or": "edo",
+    "first_name_placeholder": "Jon",
+    "last_name_placeholder": "Garcia"
+  },
+  "forgot_password": {
+    "title": "Pasahitza ahaztu duzu?",
+    "subtitle": "Sartu zure posta eta argibideak bidaliko dizkizugu berrezartzeko.",
+    "email": "Posta elektronikoa",
+    "send_button": "Bidali argibideak",
+    "back_to_login": "Itzuli saio-hasierara",
+    "success": "Argibideak dituen posta bat bidali dizugu.",
+    "error": "Ezin izan da posta bidali. Saiatu berriro."
+  },
+  "reset_password": {
+    "title": "Pasahitza berrezarri",
+    "subtitle": "Sartu zure pasahitz berria.",
+    "new_password": "Pasahitz berria",
+    "confirm_password": "Berretsi pasahitza",
+    "password_placeholder": "············",
+    "submit_button": "Berrezarri pasahitza",
+    "back_to_login": "Itzuli saio-hasierara",
+    "success": "Pasahitza ondo berrezarri da.",
+    "mismatch": "Pasahitzak ez datoz bat.",
+    "error": "Ezin izan da pasahitza berrezarri."
+  },
+  "register_success": {
+    "title": "Zorionak erregistratzeagatik!",
+    "subtitle": "Zure kontua ondo sortu da, baina azken urrats bat falta da aktibatzeko.",
+    "verify_email": "Egiaztatu zure posta elektronikoa",
+    "verify_email_body": "Aktibazio esteka bat bidali dugu zure sarrera-ontzira. Mesedez, egiaztatu eta egin klik botoian zure kontua berresteko.",
+    "spam_note": "Mezua minutu batzuetan jasotzen ez baduzu, mesedez egiaztatu zure spam edo nahi gabeko karpeta.",
+    "back_to_login": "Itzuli saio-hasierara"
+  },
+  "publication_slug_page": {
+    "not_found_title": "Argitalpena ez da aurkitu",
+    "not_found_action": "Joan dendara"
+  },
+  "footer": {
+    "license": "Lizentzia",
+    "documentation": "Dokumentazioa",
+    "support": "Laguntza",
+    "more_themes": "Gai gehiago"
+  },
+  "not_authorized": {
+    "title": "Ez duzu baimenik! 🔐",
+    "description": "Ez duzu baimenik orri honetara sartzeko. Itzuli hasierara.",
+    "back_to_home": "Itzuli hasierara"
+  },
+  "offer_modal": {
+    "title": "Egin eskaintza",
+    "intro": "Interesatzen zaizu? Bidali zure eskaintzarik onena.",
+    "info": "Saltzaileak onartzen badu, 24 ordu izango dituzu berresteko eta erosketa amaitzeko.",
+    "amount_label": "Zure eskaintza",
+    "remaining_offers": "{count} eskaintza geratzen dira gaurkoz",
+    "submit": "Bidali",
+    "invalid_amount": "Sartu baliozko eskaintza zenbatekoa.",
+    "send_error": "Errore bat gertatu da eskaintza bidaltzean."
+  },
+  "store_filters_panel": {
+    "filters": "Iragazkiak",
+    "active_filters": "{count} iragazki aktibo"
+  },
+  "chat_components": {
+    "subject_label": "Gaia",
+    "message_label": "Mezua",
+    "write_answer": "Idatzi zure erantzuna...",
+    "write_message": "Idatzi zure mezua...",
+    "write_message_dots": "Idatzi mezu bat...",
+    "subject_placeholder": "Mezuaren gaia",
+    "message_placeholder": "Idatzi zure mezua hemen...",
+    "attach_file": "Erantsi fitxategia",
+    "voice_message": "Ahots mezua"
+  },
+  "purchases_opinions": {
+    "publication": "Argitalpena",
+    "rating": "Balorazioa",
+    "comment": "Iruzkina"
+  },
+  "dashboard_lists": {
+    "show": "Erakutsi",
+    "pending": "Zain",
+    "view_publication": "Ikusi argitalpena",
+    "view_detail": "Ikusi xehetasuna",
+    "search_offer": "Eskaintza bilatu...",
+    "filter_by_status": "Iragazi egoeraren arabera",
+    "date_range": "Data tartea",
+    "publication": "Argitalpena",
+    "offer_accepted_on": "Eskaintza onartu da",
+    "search_question": "Galdera Bilatu",
+    "search_favorite": "Gogokoa Bilatu",
+    "search_opinion": "Iritzia Bilatu",
+    "write_answer_here": "Idatzi hemen zure erantzun xehea...",
+    "modality": "Modalitatea",
+    "status": "Egoera",
+    "buyer_message": "Erosketagilearen mezua",
+    "offer_details": "Eskaintzaren Xehetasunak",
+    "amount_offered": "Eskainitako Zenbatekoa",
+    "question_answered": "Kontsulta Erantzunda",
+    "user_question": "Erabiltzailearen Galdera",
+    "your_answer": "Zure Erantzuna",
+    "sale_detail": "Salmenta Xehetasuna",
+    "current_status": "Uneko Egoera",
+    "my_favorites": "Nire Gogokoak",
+    "send_date": "Bidaltze Data",
+    "time_limit": "Denbora Muga",
+    "additional_comment": "Iruzkin Gehigarria",
+    "my_opinions": "Nire Iritziak",
+    "my_questions": "Nire Galderak",
+    "verification_error": "Egiaztatze Errorea"
+  },
+  "admin_publications": {
+    "title": "Kudeatu Argitalpenak",
+    "search_placeholder": "Argitalpena bilatu...",
+    "status_filter_placeholder": "Iragazi egoeraren arabera",
+    "headers": {
+      "image": "Irudia",
+      "title": "Izenburua",
+      "author": "Egilea",
+      "price": "Prezioa",
+      "status": "Egoera",
+      "date": "Data",
+      "actions": "Ekintzak"
+    },
+    "status_options": {
+      "all": "Guztiak",
+      "publish": "Argitaratua",
+      "pending": "Zain",
+      "draft": "Zirriborroa",
+      "paused": "Pausatua",
+      "sold": "Salduta",
+      "trash": "Zakarrontzia"
+    },
+    "actions": {
+      "view": "Ikusi Argitalpena",
+      "contact": "Harremanetan jarri",
+      "edit": "Editatu",
+      "change_status": "Aldatu Egoera",
+      "delete": "Ezabatu"
+    },
+    "delete_dialog_title": "Ziur zaude?",
+    "delete_dialog_body": "Ekintza honek argitalpena betiko ezabatuko du.",
+    "cancel": "Utzi",
+    "save": "Gorde",
+    "new_status_label": "Egoera Berria"
   },
   "inquiries": {
     "title": "Interesatuak",
@@ -724,6 +938,10 @@
   "Mi Cuenta": "Nire Kontua",
   "Ofertas Recibidas": "Jasotako Eskaintzak",
   "Ofertas Enviadas": "Bidalitako Eskaintzak",
+  "Consultas Enviadas": "Bidalitako Kontsultak",
+  "Ofertas de Precio": "Prezio Eskaintzak",
+  "Administración": "Administrazioa",
+  "Aprobaciones": "Onarpenak",
   "chat": {
     "product": "Produktua",
     "consult_price": "Prezioa kontsultatu",
@@ -759,7 +977,7 @@
     "name_label": "Zure izena *",
     "name_placeholder": "Adib. Juan Perez",
     "email_label": "Zure e-posta *",
-    "email_placeholder": "adibidea@posta.com",
+    "email_placeholder": "adibidea{'@'}posta.com",
     "message_label": "Mezua *",
     "terms_prefix": "Onartzen ditut ",
     "terms_connector": " eta ",
@@ -825,5 +1043,173 @@
       "rent": "Alokairua",
       "direct": "Zuzena"
     }
+  },
+  "product_details": {
+    "favorite": "Gogokoa",
+    "share": "Partekatu",
+    "reference": "erreferentzia",
+    "consult_price": "Galdetu prezioa",
+    "warranty_motorlan": "Motorlan Bermea",
+    "seller_default": "Saltzailea",
+    "stock_label": "Stocka",
+    "sales_label": "Salmentak",
+    "not_available": "E/E",
+    "negotiable": "Negoziagarria",
+    "not_negotiable": "Ez negoziagarria",
+    "edit_offer": "Editatu eskaintza",
+    "make_offer": "Egin eskaintza",
+    "offer_description": "Zure eskaintza zain egongo da saltzaileak onartu arte. Onartzen badu, 24 ordu izango dituzu erosketa amaitzeko.",
+    "offer_price": "Eskaintzaren prezioa",
+    "offer_message": "Mezua saltzaileari",
+    "amount_required": "Zenbatekoa beharrezkoa da",
+    "amount_greater_than_zero": "Zenbatekoa 0 baino handiagoa izan behar du",
+    "no_charge_until_accept": "Ez da ezer kobratuko saltzaileak zure eskaintza onartu arte.",
+    "send_offer": "Bidali eskaintza",
+    "share_publication": "Partekatu argitalpena",
+    "open_chat": "Ireki txata",
+    "consult_price_button": "Galdetu prezioa",
+    "share_text": "Begiratu {title} Motorlanen",
+    "share_copy_link": "Kopiatu esteka",
+    "share_whatsapp": "WhatsApp",
+    "share_telegram": "Telegram",
+    "share_email": "Posta",
+    "link_copied": "Esteka kopiatuta"
+  },
+  "offers_received": {
+    "title": "Jasotako Eskaintzak",
+    "search_placeholder": "Eskaintza bilatu...",
+    "status_placeholder": "Egoera",
+    "date_range_placeholder": "Data tartea",
+    "show_placeholder": "Erakutsi",
+    "headers": {
+      "publication": "Argitalpena",
+      "offerer": "Eskaintzailea",
+      "amount": "Zenbatekoa",
+      "date": "Data",
+      "status": "Egoera",
+      "actions": "Ekintzak"
+    },
+    "status_options": {
+      "all": "Guztiak",
+      "pending": "Zain",
+      "waiting_confirmation": "Berrespenaren zain",
+      "confirmed": "Berretsiak",
+      "rejected": "Baztertuak",
+      "expired": "Iraungiak"
+    },
+    "status_chip": {
+      "waiting_confirmation": "Berrespenaren zain",
+      "confirmed": "Berretsia",
+      "expired": "Iraungia",
+      "rejected": "Baztertua",
+      "pending": "Zain"
+    },
+    "accept": "Onartu",
+    "reject": "Baztertu",
+    "accept_offer": "Onartu Eskaintza",
+    "close": "Itxi",
+    "view_detail": "Ikusi xehetasuna",
+    "not_available_to_accept": "Ezin da onartu",
+    "detail_title": "Jasotako Eskaintzaren Xehetasuna",
+    "publication_label": "Argitalpena",
+    "offerer_label": "Eskaintzailea",
+    "amount_offered": "Eskainitako Zenbatekoa",
+    "date_received": "Jasotze Data",
+    "current_status": "Uneko Egoera",
+    "time_to_confirm": "Berresteko denbora",
+    "cannot_accept": "Ezin da onartu",
+    "no_stock_message": "Stockik gabe edo argitalpena inaktiboa.",
+    "offerer_comment": "Eskaintzailearen Iruzkina",
+    "no_comments": "Eskaintzaileak ez du iruzkin gehigarririk gehitu.",
+    "ref_label": "Erref",
+    "expired_short": "Iraungia",
+    "accepted_success": "Eskaintza onartuta",
+    "rejected_success": "Eskaintza baztertuta",
+    "update_error": "Ezin izan da eskaintza eguneratu."
+  },
+  "purchase_detail": {
+    "total_to_pay": "Ordaintzeko guztira",
+    "price_offer": "Prezio eskaintza",
+    "sent": "Bidalia",
+    "accepted": "Onartua",
+    "confirmed": "Berretsia",
+    "expires": "Iraungitzen",
+    "message_sent": "Mezua bidalita",
+    "rate_seller_hint": "Lagundu beste erabiltzaileei saltzailea baloratuz",
+    "purchase_detail_title": "Erosketaren xehetasuna",
+    "status": "Egoera",
+    "purchase_type": "Erosketa mota",
+    "product": "Produktua",
+    "type": "Mota",
+    "quantity": "Kantitatea",
+    "unit_price": "Unitate prezioa",
+    "published_price": "Argitaratutako prezioa",
+    "accepted_offer": "Onartutako eskaintza",
+    "total_paid": "Ordaindutakoa guztira",
+    "payment_delivery_details": "Ordainketa eta entrega xehetasunak"
+  },
+  "user_profile": {
+    "personal_info": "Informazio Pertsonala",
+    "first_name": "Izena",
+    "first_name_placeholder": "Zure izena",
+    "last_name": "Abizenak",
+    "last_name_placeholder": "Zure abizenak",
+    "email": "Posta elektronikoa",
+    "phone": "Telefonoa",
+    "company_info": "Enpresaren Informazioa",
+    "is_company": "Enpresa bat al zara?",
+    "company_name": "Enpresaren izena *",
+    "company_name_placeholder": "Enpresa S.L.",
+    "cif_nif": "IFK / NAN *",
+    "cif_nif_placeholder": "A00000000",
+    "address": "Helbidea *",
+    "address_placeholder": "Kalea, Zenbakia, Solairua, Atea",
+    "postal_code": "P.K. *",
+    "contact_person": "Harremanetarako pertsona *",
+    "contact_person_placeholder": "Arduradunaren izena",
+    "contact_email": "Harremanetarako posta *",
+    "contact_phone": "Harremanetarako telefonoa *"
+  },
+  "admin_preview": {
+    "admin_preview_mode": "Administratzailearen Aurrebista Modua",
+    "new_brand_pending": "Marka berria onartzeko zain",
+    "brand_name": "Markaren izena",
+    "publication_requester": "Argitalpenaren eskatzailea",
+    "publication_not_found": "Argitalpena ez da aurkitu",
+    "preview_subtitle": "Argitalpen hau ez da oraindik publikoa. Onartu ondoren itxura hau izango du.",
+    "not_found_hint": "Litekeena da IDa baliogabea izatea edo argitalpena ezabatu izana.",
+    "approve": "Onartu",
+    "reject": "Baztertu",
+    "back": "Itzuli",
+    "save": "Gorde",
+    "cancel": "Utzi",
+    "edit_name": "Editatu izena",
+    "user_requested_brand_pre": "Erabiltzaileak marka hau sortzeko eskatu du",
+    "brand_creation_note": "Argitalpen hau onartzean, marka sortu eta erabiltzaile guztientzat eskuragarri egongo da.",
+    "back_to_list": "Itzuli zerrendara"
+  },
+  "users_list": {
+    "filters": "Iragazkiak",
+    "select_role": "Hautatu rola",
+    "select_plan": "Hautatu plana",
+    "select_status": "Hautatu egoera",
+    "search_user": "Bilatu erabiltzailea",
+    "view": "Ikusi",
+    "edit": "Editatu",
+    "delete": "Ezabatu"
+  },
+  "inquiries_dashboard": {
+    "view_publication": "Ikusi argitalpena"
+  },
+  "purchases_inquiries": {
+    "title": "Bidalitako Kontsultak",
+    "search_placeholder": "Bilatu saltzaileagatik edo motorragatik...",
+    "show_placeholder": "Erakutsi"
+  },
+  "publication_list_table": {
+    "consult_price": "Galdetu prezioa"
+  },
+  "publication_edit_form": {
+    "required_fields_note": "{asterisk} markatutako eremuak derrigorrezkoak dira"
   }
 }

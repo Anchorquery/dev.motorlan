@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import DropZone from '@/@core/components/DropZone.vue'
@@ -62,7 +62,7 @@ watch(galleryImages, (newVal) => {
 </script>
 
 <template>
-  <VRow>
+  <VRow class="mx-0">
     <VCol cols="12">
         <h3 class="text-h5 font-weight-bold mb-4">{{ t('add_publication.media.title', 'Multimedia') }}</h3>
     </VCol>

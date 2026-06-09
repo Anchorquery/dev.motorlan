@@ -75,6 +75,12 @@ function motorlan_init_notifications() {
 }
 add_action( 'init', 'motorlan_init_notifications' );
 
+add_action( 'wp_mail_failed', function( $wp_error ) {
+    if ( $wp_error instanceof WP_Error ) {
+        error_log( '[Motorlan] wp_mail_failed: ' . $wp_error->get_error_message() . ' | data=' . wp_json_encode( $wp_error->get_error_data() ) );
+    }
+} );
+
 /**
  * Procesa el envío de notificaciones por correo de forma asíncrona.
  */
@@ -88,6 +94,32 @@ function motorlan_execute_async_email( $user_id, $type, $title, $message, $data 
     }
 }
 add_action( 'motorlan_async_email_notification', 'motorlan_execute_async_email', 10, 5 );
+
+/**
+ * Al loguearse, transfiere mensajes guest previos (mismo email) al user_id real.
+ */
+function motorlan_claim_guest_chats_on_login( $user_login, $user ) {
+    if ( ! $user instanceof WP_User || empty( $user->user_email ) || ! $user->ID ) return;
+    global $wpdb;
+    $table = $wpdb->prefix . 'motorlan_product_messages';
+    $like  = str_replace( array( '_', '%' ), array( '\\_', '\\%' ), $table );
+    if ( ! $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $like ) ) ) return;
+    $wpdb->query( $wpdb->prepare(
+        "UPDATE {$table} SET user_id = %d WHERE user_id = 0 AND guest_email = %s",
+        $user->ID,
+        $user->user_email
+    ) );
+}
+add_action( 'wp_login', 'motorlan_claim_guest_chats_on_login', 10, 2 );
+
+/**
+ * Idem al registrarse: si se registra con email que ya tiene chats guest, los reclama.
+ */
+function motorlan_claim_guest_chats_on_register( $user_id ) {
+    $user = get_userdata( $user_id );
+    if ( $user ) motorlan_claim_guest_chats_on_login( $user->user_login, $user );
+}
+add_action( 'user_register', 'motorlan_claim_guest_chats_on_register', 10, 1 );
 
 function motorlan_publicacion_template_include($template) {
     if (is_singular('publicacion')) {
@@ -668,12 +700,69 @@ function motorlan_jwt_payload_fix_nbf($payload, $user) {
 add_filter('jwt_auth_payload', 'motorlan_jwt_payload_fix_nbf', 10, 2);
 
 /**
+ * Base Vue app page slugs (default language).
+ * Translations resolved dynamically via WPML in motorlan_get_vue_pages().
+ */
+function motorlan_get_vue_pages_base() {
+    return ['marketplace-motorlan', 'mi-cuenta', 'store', 'login', 'register', 'forgot-password', 'reset-password', 'verify-email', 'register-success'];
+}
+
+function motorlan_get_vue_pages() {
+    static $cache = null;
+    if ($cache !== null) return $cache;
+
+    $base = motorlan_get_vue_pages_base();
+    $all  = $base;
+
+    $langs = function_exists('apply_filters') ? apply_filters('wpml_active_languages', null, []) : null;
+    if (is_array($langs) && !empty($langs)) {
+        foreach ($base as $slug) {
+            $page = get_page_by_path($slug);
+            if (!$page) continue;
+            foreach ($langs as $lang) {
+                $tx_id = apply_filters('wpml_object_id', $page->ID, 'page', false, $lang['code']);
+                if ($tx_id && $tx_id != $page->ID) {
+                    $tx = get_post($tx_id);
+                    if ($tx && !empty($tx->post_name)) $all[] = $tx->post_name;
+                }
+            }
+        }
+    }
+
+    $cache = array_values(array_unique($all));
+    return $cache;
+}
+
+/**
+ * Mapa slug ES base => URL traducida idioma actual (path relativo).
+ * Permite al frontend construir URLs sin hardcodear traducciones.
+ */
+function motorlan_get_vue_page_urls_current_lang() {
+    $base = motorlan_get_vue_pages_base();
+    $current_lang = function_exists('apply_filters') ? apply_filters('wpml_current_language', null) : null;
+    $urls = [];
+    foreach ($base as $slug) {
+        $page = get_page_by_path($slug);
+        if (!$page) continue;
+        $target_id = $page->ID;
+        if ($current_lang) {
+            $tx_id = apply_filters('wpml_object_id', $page->ID, 'page', true, $current_lang);
+            if ($tx_id) $target_id = $tx_id;
+        }
+        $permalink = get_permalink($target_id);
+        if (!$permalink) continue;
+        $path = wp_parse_url($permalink, PHP_URL_PATH) ?: '/';
+        $urls[$slug] = trailingslashit($path);
+    }
+    return $urls;
+}
+
+/**
  * Vue History Mode: Register rewrite rules for pages with Vue app shortcode.
  * This allows sub-routes like /marketplace-motorlan/product-slug to load the correct page.
  */
 function motorlan_vue_history_rewrite_rules() {
-    // Páginas conocidas con la app Vue (agregar más si es necesario)
-    $vue_pages = ['marketplace-motorlan', 'mi-cuenta', 'store', 'login', 'register', 'forgot-password', 'reset-password', 'verify-email', 'register-success'];
+    $vue_pages = motorlan_get_vue_pages();
 
     foreach ($vue_pages as $page_slug) {
         // Captura cualquier sub-ruta bajo esta página
@@ -701,7 +790,7 @@ register_activation_hook(__FILE__, 'motorlan_vue_activate');
  */
 function motorlan_prevent_wp_login_redirect() {
     // Check if we're on a Vue app page
-    $vue_pages = ['marketplace-motorlan', 'mi-cuenta', 'store', 'login', 'register', 'forgot-password', 'reset-password', 'verify-email', 'register-success'];
+    $vue_pages = motorlan_get_vue_pages();
     $current_page = get_query_var('pagename');
 
     if (empty($current_page)) {
@@ -738,8 +827,8 @@ function motorlan_parse_vue_app_request($wp) {
     // Get the request URI
     $request_uri = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '';
 
-    // List of Vue app base pages
-    $vue_pages = ['marketplace-motorlan', 'mi-cuenta', 'store', 'login', 'register', 'forgot-password', 'reset-password', 'verify-email', 'register-success'];
+    // List of Vue app base pages (incluye traducciones WPML)
+    $vue_pages = motorlan_get_vue_pages();
 
     foreach ($vue_pages as $vue_page) {
         // Check if the URI starts with this Vue page

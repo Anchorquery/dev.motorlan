@@ -382,7 +382,7 @@ onBeforeUnmount(() => {
             :disabled="isConversationLocked"
             auto-grow
             hide-details
-            placeholder="Escribe tu respuesta..."
+            :placeholder="t('chat_components.write_answer')"
             rows="1"
             max-rows="4"
             density="comfortable"
@@ -433,15 +433,15 @@ onBeforeUnmount(() => {
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  min-height: 0;
 }
 
 .messages-container {
   flex: 1 1 auto;
   overflow-y: auto;
   scroll-behavior: smooth;
-  min-height: 350px;
-  padding-bottom: 80px !important;
-  
+  min-height: 0;
+
   // Custom scrollbar
   &::-webkit-scrollbar {
     width: 6px;

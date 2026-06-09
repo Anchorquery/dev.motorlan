@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 // Ajustes correctos de imports según la estructura del proyecto
 // Ajuste final de imports según la estructura real del proyecto
 import type { Publicacion } from '@/interfaces/publicacion'
@@ -18,6 +19,7 @@ const props = defineProps<{
 const emit = defineEmits(['open-chat'])
 const { sanitize } = useSanitize()
 const { getCountryName, fetchCountries } = useCountries()
+const { t } = useI18n()
 
 const brand = computed(() => props.publicacion.marca_name || '-')
 
@@ -56,19 +58,17 @@ onMounted(async () => {
 })
 const sellerName = computed(() => {
   const auth = props.publicacion.author
-  if (!auth) return 'Vendedor'
-  
+  if (!auth) return t('product_details.seller_default')
+
   const firstName = auth.first_name || ''
   const lastName = auth.last_name || ''
   const fullName = `${firstName} ${lastName}`.trim()
 
-  // Only return if we have at least one name part, otherwise default to 'Vendedor'
-  // Avoid showing emails or technical names (nickname/user_login)
-  return fullName || 'Vendedor'
+  return fullName || t('product_details.seller_default')
 })
 
 const getInitials = (value: string): string => {
-  if (!value || value === 'Vendedor') return 'V'
+  if (!value || value === t('product_details.seller_default')) return 'V'
   const parts = value.split(' ').filter(Boolean)
   return parts.slice(0, 2).map(part => part.charAt(0).toUpperCase()).join('')
 }
@@ -107,8 +107,8 @@ const hasPrice = computed(() => {
 const negotiableLabel = computed(() => {
   const val = props.publicacion.acf.precio_negociable
   if (typeof val === 'string')
-    return val.toLowerCase() === 'si' ? 'Negociable' : 'No negociable'
-  return val ? 'Negociable' : 'No negociable'
+    return val.toLowerCase() === 'si' ? t('product_details.negotiable') : t('product_details.not_negotiable')
+  return val ? t('product_details.negotiable') : t('product_details.not_negotiable')
 })
 
 const categories = computed(() => props.publicacion.categories.map((c: { name: string }) => c.name).join(', '))
@@ -182,11 +182,11 @@ const { copy, copied } = useClipboard()
 
 const shareOptions = computed(() => {
   const url = window.location.href
-  const text = `Echa un vistazo a ${props.publicacion.title} en Motorlan`
-  
+  const text = t('product_details.share_text', { title: props.publicacion.title })
+
   return [
     {
-      name: 'WhatsApp',
+      name: t('product_details.share_whatsapp'),
       icon: 'tabler-brand-whatsapp',
       color: '#25D366',
       action: () => {
@@ -194,7 +194,7 @@ const shareOptions = computed(() => {
       }
     },
     {
-      name: 'Telegram',
+      name: t('product_details.share_telegram'),
       icon: 'tabler-brand-telegram',
       color: '#0088cc',
       action: () => {
@@ -202,7 +202,7 @@ const shareOptions = computed(() => {
       }
     },
     {
-      name: 'Email',
+      name: t('product_details.share_email'),
       icon: 'tabler-mail',
       color: 'primary',
       action: () => {
@@ -210,7 +210,7 @@ const shareOptions = computed(() => {
       }
     },
     {
-      name: 'Copiar enlace',
+      name: t('product_details.share_copy_link'),
       icon: 'tabler-copy',
       color: 'secondary',
       action: () => {
@@ -239,12 +239,9 @@ const hasRequestedPrice = computed(() => {
   }
 })
 
-import { useI18n } from 'vue-i18n'
-const { t } = useI18n()
-
 const chatButtonText = computed(() => {
-  if (hasRequestedPrice.value) return 'Abrir chat'
-  return t('motor.consult_price')
+  if (hasRequestedPrice.value) return t('product_details.open_chat')
+  return t('product_details.consult_price_button')
 })
 
 const openChatModal = () => {
@@ -314,7 +311,7 @@ const removeOffer = async () => {
           :icon="isFavorite ? 'tabler-heart-filled' : 'tabler-heart'"
           color="error"
         />
-        <span class="text-body-2 font-weight-medium">Favorito</span>
+        <span class="text-body-2 font-weight-medium">{{ t('product_details.favorite') }}</span>
       </div>
       <div
         class="d-flex align-center gap-2 pointer"
@@ -324,7 +321,7 @@ const removeOffer = async () => {
           icon="tabler-share"
           color="error"
         />
-        <span class="text-body-2 font-weight-medium">Compartir</span>
+        <span class="text-body-2 font-weight-medium">{{ t('product_details.share') }}</span>
       </div>
     </div>
     <VDivider class="mb-6 opacity-20" />
@@ -339,20 +336,20 @@ const removeOffer = async () => {
           <VCol v-if="showPrice" cols="12">
             <div class="detail-item d-flex align-center mb-2">
               <span class="text-h5 font-weight-bold text-primary">{{ Number(props.publicacion.acf.precio_de_venta).toLocaleString('es-ES') }} €</span>
-              <VChip v-if="isConsultPrice && isOwner" size="x-small" color="info" variant="tonal" class="ml-2">referencia</VChip>
+              <VChip v-if="isConsultPrice && isOwner" size="x-small" color="info" variant="tonal" class="ml-2">{{ t('product_details.reference') }}</VChip>
             </div>
           </VCol>
           <!-- Consultar precio marcado (publico) o sin precio -->
           <VCol v-else-if="isConsultPrice" cols="12">
             <div class="detail-item d-flex align-center mb-2">
               <VIcon icon="tabler-currency-euro" class="mr-1" />
-              <span class="text-h6 font-weight-bold text-warning">Consultar precio</span>
+              <span class="text-h6 font-weight-bold text-warning">{{ t('product_details.consult_price') }}</span>
             </div>
           </VCol>
           <VCol v-else cols="12">
             <div class="detail-item d-flex align-center mb-2">
               <VIcon icon="tabler-currency-euro" class="mr-1" />
-              <span class="text-body-1 font-weight-medium">Consultar precio</span>
+              <span class="text-body-1 font-weight-medium">{{ t('product_details.consult_price') }}</span>
             </div>
           </VCol>
         <!--<VCol cols="12" sm="6">
@@ -397,19 +394,19 @@ const removeOffer = async () => {
           <VCol cols="12" sm="6">
             <div class="detail-item d-flex align-center">
               <VIcon icon="tabler-box" class="mr-1" />
-              <span>Stock: {{ props.publicacion.acf.stock ?? 'N/A' }}</span>
+              <span>{{ t('product_details.stock_label') }}: {{ props.publicacion.acf.stock ?? t('product_details.not_available') }}</span>
             </div>
           </VCol>
           <VCol v-if="sellerSales !== null" cols="12" sm="6">
             <div class="detail-item d-flex align-center">
               <VIcon icon="tabler-chart-bar" class="mr-1" />
-              <span>Ventas: {{ sellerSales }}</span>
+              <span>{{ t('product_details.sales_label') }}: {{ sellerSales }}</span>
             </div>
           </VCol>
         <VCol v-if="props.publicacion.acf.garantia_motorlan" cols="12" sm="6">
           <div class="detail-item d-flex align-center">
             <VIcon icon="tabler-shield-check" color="success" class="mr-1" />
-            <span class="text-success">Garantía Motorlan</span>
+            <span class="text-success">{{ t('product_details.warranty_motorlan') }}</span>
           </div>
         </VCol>
       </VRow>
@@ -430,7 +427,7 @@ const removeOffer = async () => {
           class="px-6 flex-grow-1 action-btn"
           @click="openChatModal"
         >
-          Consultar precio
+          {{ t('product_details.consult_price_button') }}
         </VBtn>
         <!-- Botones de oferta eliminados - ya no aplica "Precio negociable" -->
       </template>
@@ -445,28 +442,27 @@ const removeOffer = async () => {
         <VCardTitle class="d-flex align-center justify-space-between">
           <div class="d-flex align-center gap-2">
             <VIcon icon="tabler-gavel" color="error" />
-            <span>{{ offer ? 'Editar oferta' : 'Hacer una oferta' }}</span>
+            <span>{{ offer ? t('product_details.edit_offer') : t('product_details.make_offer') }}</span>
           </div>
           <VBtn icon="tabler-x" variant="text" @click="isOfferDialogOpen = false" />
         </VCardTitle>
         <VCardText>
           <p class="text-body-2 mb-3">
-            Tu oferta quedará pendiente hasta que el vendedor la acepte. Si la acepta,
-            tendrás 24 horas para completar la compra.
+            {{ t('product_details.offer_description') }}
           </p>
           <VTextField
             v-model.number="offerAmount"
-            label="Precio de la oferta"
+            :label="t('product_details.offer_price')"
             type="number"
             class="mt-4"
             :rules="[
-              (v: number | null) => !!v || 'El monto es requerido',
-              (v: number | null) => (v && v > 0) || 'El monto debe ser mayor a 0'
+              (v: number | null) => !!v || t('product_details.amount_required'),
+              (v: number | null) => (v && v > 0) || t('product_details.amount_greater_than_zero')
             ]"
           />
           <VTextarea
             v-model="offerMessage"
-            label="Mensaje al vendedor"
+            :label="t('product_details.offer_message')"
             class="mt-4"
             rows="3"
           />
@@ -475,7 +471,7 @@ const removeOffer = async () => {
             variant="tonal"
             class="mt-4"
           >
-            No se cobrará nada hasta que el vendedor acepte tu oferta.
+            {{ t('product_details.no_charge_until_accept') }}
           </VAlert>
         </VCardText>
         <VCardActions class="px-6 pb-6">
@@ -486,7 +482,7 @@ const removeOffer = async () => {
             class="flex-grow-1"
             @click="submitOffer"
           >
-            Enviar oferta
+            {{ t('product_details.send_offer') }}
           </VBtn>
         </VCardActions>
       </VCard>
@@ -498,7 +494,7 @@ const removeOffer = async () => {
     >
       <VCard class="share-modal">
         <VCardTitle class="d-flex align-center justify-space-between pt-4 pl-4 pr-4">
-          <span class="text-h6">Compartir publicación</span>
+          <span class="text-h6">{{ t('product_details.share_publication') }}</span>
           <VBtn icon="tabler-x" variant="text" size="small" @click="isShareModalOpen = false" />
         </VCardTitle>
         <VCardText class="pb-6">
@@ -560,5 +556,44 @@ const removeOffer = async () => {
 }
 .offer-modal {
   border-radius: 16px;
+}
+
+@media (max-width: 959px) {
+  .detail-card,
+  .contact-card {
+    padding: 0.875rem !important;
+  }
+
+  .detail-item,
+  .contact-card :deep(.v-row) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.35rem;
+  }
+
+  .action-btn {
+    width: 100%;
+  }
+
+  .offer-modal,
+  .share-modal {
+    border-radius: 20px;
+  }
+
+  .offer-modal :deep(.v-card-title),
+  .share-modal :deep(.v-card-title) {
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .offer-modal :deep(.v-card-actions),
+  .share-modal :deep(.v-card-actions) {
+    padding-inline: 1rem;
+    padding-bottom: 1rem;
+  }
+
+  .share-modal :deep(.v-btn) {
+    min-height: 48px;
+  }
 }
 </style>

@@ -76,15 +76,20 @@ class Motorlan_Rate_Limiter {
      */
     private static function get_client_ip() {
         $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
-        
-        // Verificar headers de proxy (solo si confías en tu proxy)
-        if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-            $ips = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
-            $ip = trim($ips[0]);
-        } elseif (!empty($_SERVER['HTTP_CLIENT_IP'])) {
-            $ip = $_SERVER['HTTP_CLIENT_IP'];
+
+        // Only trust proxy headers when explicitly configured. Otherwise an
+        // attacker can spoof X-Forwarded-For to bypass rate limits.
+        $trust_proxy = defined( 'MOTORLAN_TRUST_PROXY_HEADERS' ) && MOTORLAN_TRUST_PROXY_HEADERS;
+
+        if ( $trust_proxy ) {
+            if ( ! empty( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ) {
+                $ips = explode( ',', $_SERVER['HTTP_X_FORWARDED_FOR'] );
+                $ip = trim( $ips[0] );
+            } elseif ( ! empty( $_SERVER['HTTP_CLIENT_IP'] ) ) {
+                $ip = $_SERVER['HTTP_CLIENT_IP'];
+            }
         }
-        
+
         return filter_var($ip, FILTER_VALIDATE_IP) ? $ip : '0.0.0.0';
     }
     

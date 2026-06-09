@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { useDropZone, useFileDialog, useObjectUrl } from '@vueuse/core'
 import { computed, ref } from 'vue'
 
@@ -124,7 +124,7 @@ defineExpose({
       >
         <div
           v-if="fileData.length === 0"
-          class="d-flex flex-column justify-center align-center gap-y-2 pa-12 drop-zone rounded"
+          class="d-flex flex-column justify-center align-center gap-y-2 pa-6 drop-zone rounded"
         >
           <IconBtn
             variant="tonal"
@@ -132,16 +132,16 @@ defineExpose({
           >
             <VIcon icon="tabler-upload" />
           </IconBtn>
-          <h4 class="text-h4">
-            Drag and drop your image here.
-          </h4>
+          <p class="text-body-1 text-medium-emphasis text-center mb-0">
+            Arrastra o toca para subir imagen
+          </p>
         </div>
 
         <div
           v-else
           class="d-flex justify-center align-center gap-3 pa-8 drop-zone flex-wrap"
         >
-          <VRow class="match-height w-100">
+          <VRow class="match-height w-100 mx-0">
             <template
               v-for="(item, index) in fileData as FileData[]"
               :key="index"

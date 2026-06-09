@@ -9,6 +9,7 @@ import NavbarThemeSwitcher from '@/layouts/components/NavbarThemeSwitcher.vue'
 import UserProfile from '@/layouts/components/UserProfile.vue'
 import NavBarI18n from '@core/components/I18n.vue'
 import SidebarNotifications from '@/layouts/components/SidebarNotifications.vue'
+import DashboardMobileNav from '@/layouts/components/DashboardMobileNav.vue'
 
 // @layouts plugin
 import { VerticalNavLayout } from '@layouts'
@@ -39,4 +40,6 @@ const languages = computed(() => {
     <!-- 👉 Pages -->
     <slot />
   </VerticalNavLayout>
+
+  <DashboardMobileNav />
 </template>

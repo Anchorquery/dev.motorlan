@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { computed, ref, onMounted } from "vue";
 import { useRoute } from "vue-router";
+import { useI18n } from "vue-i18n";
+
+const { t } = useI18n();
 import { useUserStore } from "@/@core/stores/user";
 import ProductImage from "@/pages/store/components/ProductImage.vue";
 import { createUrl } from "@/@core/composable/createUrl";
@@ -12,6 +15,8 @@ import ChatModal from "@/pages/store/components/ChatModal.vue";
 import EmptyState from "@/pages/store/components/EmptyState.vue";
 import type { Publicacion } from "@/interfaces/publicacion";
 import { usePublicApi } from "@/composables/usePublicApi";
+import { useApi } from "@/composables/useApi";
+import { setStoredGuestEmail, setStoredGuestName } from "@/utils/guest";
 
 definePage({
   meta: {
@@ -34,9 +39,12 @@ const { data, isFetching, execute } = usePublicApi<any>(
 onMounted(execute);
 
 const isChatModalVisible = ref(false);
+const exchangedRoomKey = ref<string | null>(null);
+const tokenExpired = ref(false);
 const chatRoomKeyFromQuery = computed(() => {
   const raw = (route.query.room_key as string) || ''
-  return raw && raw.trim().length ? raw : null
+  if (raw && raw.trim().length) return raw
+  return exchangedRoomKey.value
 })
 
 const isOwner = computed(() => {
@@ -76,7 +84,31 @@ const getInitials = (value: string): string => {
   return parts.slice(0, 2).map(part => part.charAt(0).toUpperCase()).join('') || 'U'
 }
 
-onMounted(() => {
+onMounted(async () => {
+  const token = (route.query.ct as string) || ''
+  if (token) {
+    const req = useApi<any>(createUrl(`/wp-json/motorlan/v1/chat-tokens/${encodeURIComponent(token)}`), { immediate: false }).get().json()
+    await req.execute()
+    const status = req.statusCode.value
+    const payload = req.data.value
+    if (status === 410 || status === 404 || (payload && payload.code === 'invalid_token')) {
+      tokenExpired.value = true
+      return
+    }
+    if (payload && payload.room_key) {
+      exchangedRoomKey.value = String(payload.room_key)
+      if (payload.guest_email) setStoredGuestEmail(String(payload.guest_email))
+      const m = String(payload.room_key).match(/^pub-\d+-viewer-(.+)$/)
+      if (m && m[1]) {
+        try { localStorage.setItem('ml_guest_id', m[1]) } catch {}
+      }
+      if (payload.guest_email && !localStorage.getItem('ml_guest_name')) {
+        setStoredGuestName(String(payload.guest_email).split('@')[0])
+      }
+      isChatModalVisible.value = true
+      return
+    }
+  }
   if (route.query.open_chat === '1')
     isChatModalVisible.value = true
 })
@@ -84,6 +116,17 @@ onMounted(() => {
 
 <template>
   <VContainer v-if="publicacion" fluid>
+    <VAlert
+      v-if="tokenExpired"
+      type="warning"
+      variant="tonal"
+      class="mb-4"
+      closable
+      @click:close="tokenExpired = false"
+    >
+      <div class="font-weight-bold mb-1">Enlace caducado</div>
+      <div class="text-body-2">El enlace del email ha caducado (válido 7 días). Para retomar la conversación, escribe un nuevo mensaje desde el chat del producto usando el mismo correo.</div>
+    </VAlert>
     <VRow>
       <VCol cols="12">
         <h1 class="text-h4 mb-4">
@@ -148,9 +191,9 @@ onMounted(() => {
 
   <EmptyState
     v-else
-    title="Publicación no encontrada"
+    :title="t('publication_slug_page.not_found_title')"
     message="Lo sentimos, no hemos podido encontrar la publicación que buscas. Es posible que el enlace sea incorrecto o que la publicación haya sido eliminada."
-    action-label="Ir a la tienda"
+    :action-label="t('publication_slug_page.not_found_action')"
     action-link="/store"
   />
 </template>

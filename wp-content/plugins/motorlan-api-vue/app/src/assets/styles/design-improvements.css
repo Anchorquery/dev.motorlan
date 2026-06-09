@@ -10,6 +10,16 @@
 
 	/* Transitions */
 	--transition-base: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+	/* Dashboard mobile nav */
+	--dashboard-mobile-nav-height: 58px;
+}
+
+/* Padding for dashboard mobile bottom nav */
+@media (max-width: 959px) {
+	.layout-page-content {
+		padding-bottom: calc(var(--dashboard-mobile-nav-height) + env(safe-area-inset-bottom, 0px) + 1rem) !important;
+	}
 }
 
 body {
@@ -216,9 +226,19 @@ body {
 
 	#motorlan-app .v-card-text > .d-flex.flex-wrap.gap-4,
 	#motorlan-app .v-card-text > .d-flex.flex-wrap.gap-4.ma-6,
+	#motorlan-app .v-card-text > .d-flex.flex-wrap.gap-3,
+	#motorlan-app .v-card-text > .d-flex.align-center.justify-space-between.flex-wrap.gap-4,
+	#motorlan-app .v-card-text > .d-flex.gap-4.flex-wrap.align-center,
+	#motorlan-app .v-card-text > .v-row,
+	#motorlan-app .v-card-title.d-flex.align-center.justify-space-between.flex-wrap.gap-4,
+	#motorlan-app .v-card-title.d-flex.justify-space-between.align-center,
 	#motorlan-app .purchase-toolbar,
 	#motorlan-app .publication-list-toolbar,
-	#motorlan-app .questions-toolbar {
+	#motorlan-app .questions-toolbar,
+	#motorlan-app .inquiries-toolbar,
+	#motorlan-app .purchases-inquiries-toolbar,
+	#motorlan-app .admin-publications-toolbar,
+	#motorlan-app .invoice-list-toolbar {
 		flex-direction: column;
 		align-items: stretch;
 		gap: 0.75rem !important;
@@ -226,9 +246,19 @@ body {
 
 	#motorlan-app .v-card-text > .d-flex.flex-wrap.gap-4 > *,
 	#motorlan-app .v-card-text > .d-flex.flex-wrap.gap-4.ma-6 > *,
+	#motorlan-app .v-card-text > .d-flex.flex-wrap.gap-3 > *,
+	#motorlan-app .v-card-text > .d-flex.align-center.justify-space-between.flex-wrap.gap-4 > *,
+	#motorlan-app .v-card-text > .d-flex.gap-4.flex-wrap.align-center > *,
+	#motorlan-app .v-card-text > .v-row > *,
+	#motorlan-app .v-card-title.d-flex.align-center.justify-space-between.flex-wrap.gap-4 > *,
+	#motorlan-app .v-card-title.d-flex.justify-space-between.align-center > *,
 	#motorlan-app .purchase-toolbar > *,
 	#motorlan-app .publication-list-toolbar > *,
-	#motorlan-app .questions-toolbar > * {
+	#motorlan-app .questions-toolbar > *,
+	#motorlan-app .inquiries-toolbar > *,
+	#motorlan-app .purchases-inquiries-toolbar > *,
+	#motorlan-app .admin-publications-toolbar > *,
+	#motorlan-app .invoice-list-toolbar > * {
 		width: 100% !important;
 		min-width: 0 !important;
 		inline-size: 100% !important;
@@ -236,17 +266,37 @@ body {
 
 	#motorlan-app .v-card-text > .d-flex.flex-wrap.gap-4 .v-spacer,
 	#motorlan-app .v-card-text > .d-flex.flex-wrap.gap-4.ma-6 .v-spacer,
+	#motorlan-app .v-card-text > .d-flex.flex-wrap.gap-3 .v-spacer,
+	#motorlan-app .v-card-text > .d-flex.align-center.justify-space-between.flex-wrap.gap-4 .v-spacer,
+	#motorlan-app .v-card-text > .d-flex.gap-4.flex-wrap.align-center .v-spacer,
+	#motorlan-app .v-card-text > .v-row .v-spacer,
+	#motorlan-app .v-card-title.d-flex.align-center.justify-space-between.flex-wrap.gap-4 .v-spacer,
+	#motorlan-app .v-card-title.d-flex.justify-space-between.align-center .v-spacer,
 	#motorlan-app .purchase-toolbar .v-spacer,
 	#motorlan-app .publication-list-toolbar .v-spacer,
-	#motorlan-app .questions-toolbar .v-spacer {
+	#motorlan-app .questions-toolbar .v-spacer,
+	#motorlan-app .inquiries-toolbar .v-spacer,
+	#motorlan-app .purchases-inquiries-toolbar .v-spacer,
+	#motorlan-app .admin-publications-toolbar .v-spacer,
+	#motorlan-app .invoice-list-toolbar .v-spacer {
 		display: none;
 	}
 
 	#motorlan-app .v-card-text > .d-flex.flex-wrap.gap-4 :is(.v-field, .v-input, .v-select, .v-text-field, .v-btn),
 	#motorlan-app .v-card-text > .d-flex.flex-wrap.gap-4.ma-6 :is(.v-field, .v-input, .v-select, .v-text-field, .v-btn),
+	#motorlan-app .v-card-text > .d-flex.flex-wrap.gap-3 :is(.v-field, .v-input, .v-select, .v-text-field, .v-btn),
+	#motorlan-app .v-card-text > .d-flex.align-center.justify-space-between.flex-wrap.gap-4 :is(.v-field, .v-input, .v-select, .v-text-field, .v-btn),
+	#motorlan-app .v-card-text > .d-flex.gap-4.flex-wrap.align-center :is(.v-field, .v-input, .v-select, .v-text-field, .v-btn),
+	#motorlan-app .v-card-text > .v-row :is(.v-field, .v-input, .v-select, .v-text-field, .v-btn),
+	#motorlan-app .v-card-title.d-flex.align-center.justify-space-between.flex-wrap.gap-4 :is(.v-field, .v-input, .v-select, .v-text-field, .v-btn),
+	#motorlan-app .v-card-title.d-flex.justify-space-between.align-center :is(.v-field, .v-input, .v-select, .v-text-field, .v-btn),
 	#motorlan-app .purchase-toolbar :is(.v-field, .v-input, .v-select, .v-text-field, .v-btn),
 	#motorlan-app .publication-list-toolbar :is(.v-field, .v-input, .v-select, .v-text-field, .v-btn),
-	#motorlan-app .questions-toolbar :is(.v-field, .v-input, .v-select, .v-text-field, .v-btn) {
+	#motorlan-app .questions-toolbar :is(.v-field, .v-input, .v-select, .v-text-field, .v-btn),
+	#motorlan-app .inquiries-toolbar :is(.v-field, .v-input, .v-select, .v-text-field, .v-btn),
+	#motorlan-app .purchases-inquiries-toolbar :is(.v-field, .v-input, .v-select, .v-text-field, .v-btn),
+	#motorlan-app .admin-publications-toolbar :is(.v-field, .v-input, .v-select, .v-text-field, .v-btn),
+	#motorlan-app .invoice-list-toolbar :is(.v-field, .v-input, .v-select, .v-text-field, .v-btn) {
 		width: 100% !important;
 		max-width: 100% !important;
 		min-width: 0 !important;

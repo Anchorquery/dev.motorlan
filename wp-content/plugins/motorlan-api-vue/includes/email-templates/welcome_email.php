@@ -1,6 +1,9 @@
 <?php
 // Welcome Email
-$url = get_site_url() . '/login';
+$recipient_user_id = isset($args['user']) && is_object($args['user']) ? (int) $args['user']->ID : null;
+$url = function_exists('motorlan_localized_page_url_absolute')
+    ? motorlan_localized_page_url_absolute('login', '', $recipient_user_id)
+    : get_site_url() . '/login';
 ?>
 
 <h1><?php esc_html_e( '¡Bienvenido/a a Motorlan!', 'motorlan-api-vue' ); ?></h1>

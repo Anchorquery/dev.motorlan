@@ -151,6 +151,16 @@
   "Swiper": "Swiper",
   "Administración": "Administración",
   "Aprobaciones": "Aprobaciones",
+  "Gestión de Ventas": "Gestión de Ventas",
+  "Mis Publicaciones": "Mis Publicaciones",
+  "Interesados": "Interesados",
+  "Gestión de Compras": "Gestión de Compras",
+  "Mis Compras": "Mis Compras",
+  "Mi Cuenta": "Mi Cuenta",
+  "Ofertas Recibidas": "Ofertas Recibidas",
+  "Consultas Enviadas": "Consultas Enviadas",
+  "Ofertas de Precio": "Ofertas de Precio",
+  "Publicaciones": "Publicaciones",
   "Ventas Realizadas": "Ventas Realizadas",
   "Product": "Producto",
   "Category": "Categoría",
@@ -204,7 +214,11 @@
       "text": "Indica el motivo por el cual no se aprueba esta publicación. El usuario recibirá esta información.",
       "reason_label": "Motivo del rechazo",
       "reason_placeholder": "Ej: Faltan especificaciones técnicas en la descripción."
-    }
+    },
+    "new_brand_proposed": "Nueva marca propuesta por el usuario",
+    "consult_price": "Consultar precio",
+    "edit": "Editar",
+    "preview": "Previsualizar"
   },
   "store": {
     "par_options": {
@@ -229,20 +243,7 @@
       "price_desc": "Precio desc"
     },
     "login_to_interact": "Inicia sesión como cliente para contactar al vendedor, hacer ofertas o comprar este equipo.",
-    "filters": {
-      "others_tooltip": "Escobillas, encoder...",
-      "product_type": "Tipo de producto",
-      "power_label": "Potencia",
-      "speed_label": "Velocidad",
-      "torque_label": "PAR (Nm)",
-      "brands_label": "Marcas",
-      "state_label": "Estado",
-      "type_model_label": "Modelo",
-      "responsibility_note": "IMPORTANTE: Motorlan no se hace responsable de aquellos equipos que se vendan directamente entre vendedor-comprador sin una revisión previa en su taller especializado."
-    },
-    "default_message": "Hola, me interesa saber el precio de la publicación"
-  },
-
+    "default_message": "Hola, me interesa saber el precio de la publicación",
     "search": {
       "eyebrow": "Tienda Motorlan",
       "title": "Compra y venta de motores industriales",
@@ -255,12 +256,29 @@
       "loading": "Cargando publicaciones...",
       "view_detail": "Ver detalle",
       "empty_title": "No se encontraron publicaciones",
-      "empty_subtitle": "Intenta ajustar los filtros de búsqueda."
+      "empty_subtitle": "Intenta ajustar los filtros de búsqueda.",
+      "results_heading": "Resultados",
+      "no_results": "Sin resultados",
+      "count_summary": "{count} publicaciones encontradas"
     },
     "related": {
       "title": "Productos relacionados",
       "subtitle": "Otras publicaciones que pueden interesarte",
       "more_info": "+ Info"
+    },
+    "publication_info": {
+      "title": "Información de la publicación",
+      "brand": "Marca",
+      "model": "Modelo",
+      "power": "Potencia",
+      "speed": "Velocidad",
+      "torque": "Par nominal",
+      "voltage": "Voltaje",
+      "current": "Intensidad"
+    },
+    "product_docs": {
+      "title": "Documentación adicional",
+      "empty": "No hay documentación adjunta."
     },
     "mobile_nav": {
       "aria_label": "Navegación tienda",
@@ -287,6 +305,15 @@
     "filters": {
       "title": "Filtros",
       "clear": "Limpiar",
+      "others_tooltip": "Escobillas, encoder...",
+      "product_type": "Tipo de producto",
+      "power_label": "Potencia",
+      "speed_label": "Velocidad",
+      "torque_label": "PAR (Nm)",
+      "brands_label": "Marcas",
+      "state_label": "Estado",
+      "type_model_label": "Modelo",
+      "responsibility_note": "IMPORTANTE: Motorlan no se hace responsable de aquellos equipos que se vendan directamente entre vendedor-comprador sin una revisión previa en su taller especializado.",
       "type_all": "Todos",
       "type_motor_ac": "Motor AC",
       "type_motor_dc": "Motor DC",
@@ -300,7 +327,8 @@
       "state_new": "Nuevo",
       "state_used": "Usado",
       "state_restored": "Reacondicionado"
-    },
+    }
+  },
   "add_publication": {
     "title": "Añadir Nueva Publicación",
     "step": "Paso {currentStep} de 3",
@@ -311,7 +339,37 @@
       "skip": "Omitir",
       "accept_and_add_warranty": "Aceptar y Añadir Garantía",
       "go_back": "Volver",
-      "request_warranty": "Solicitar Garantía"
+      "request_warranty": "Solicitar Garantía",
+      "back": "Atrás",
+      "cancel": "Cancelar",
+      "next": "Siguiente",
+      "publish": "Publicar"
+    },
+    "sections": {
+      "basic_info": "Información básica",
+      "description": "Descripción",
+      "location_condition": "Ubicación y estado",
+      "tech_specs": "Especificaciones técnicas"
+    },
+    "steps": {
+      "type": "Tipo",
+      "basic_info": "Información básica",
+      "details": "Detalles",
+      "specs": "Especificaciones",
+      "media": "Multimedia",
+      "docs": "Documentación"
+    },
+    "documentacion": {
+      "title": "Documentación adicional",
+      "subtitle": "Adjunta manuales, especificaciones u otros documentos",
+      "doc_name": "Nombre del documento",
+      "add_btn": "Añadir documento",
+      "no_docs": "No hay documentos añadidos."
+    },
+    "tech_specs_not_motor": "Las especificaciones técnicas solo aplican a motores.",
+    "validation": {
+      "main_image_required": "La imagen principal es obligatoria",
+      "stock_positive": "El stock debe ser mayor que 0"
     },
     "post_details": {
       "motor_section_title": "Detalles del Motor",
@@ -337,6 +395,8 @@
       "intensity": "Intensidad (A)",
       "intensity_placeholder": "10",
       "country": "País (localización)",
+      "country_placeholder": "Selecciona un país",
+      "no_country_found": "No se encontraron países",
       "province": "Provincia",
       "province_placeholder": "Madrid",
       "condition": "Estado del artículo",
@@ -382,8 +442,12 @@
       "dc": "Continua (C.C.)",
       "ac": "Alterna (C.A.)"
     },
+    "name_preview_label": "Vista previa del nombre estandarizado:",
+    "reference_chip": "referencia",
     "media": {
+      "title": "Multimedia",
       "main_image": "Imagen Principal",
+      "gallery": "Galería de Imágenes",
       "image_gallery": "Galería de Imágenes",
       "additional_documentation": "Documentación Adicional",
       "document_name": "Nombre del Documento",
@@ -414,6 +478,9 @@
       "comments_placeholder": "Cualquier información adicional"
     },
     "toasts": {
+      "create_success": "Publicación creada con éxito",
+      "create_error": "Error al crear la publicación",
+      "fetch_error": "Error al cargar datos",
       "post_created_success": "Publicación creada. Ahora decide sobre la garantía.",
       "post_created_error": "Error al crear la publicación: {message}",
       "warranty_skipped_confirmation": "La publicación se publicará sin la garantía Motorlan. ¿Estás seguro?",
@@ -488,9 +555,17 @@
   },
   "edit_publication": {
     "title": "Editar Publicación",
+    "no_title": "Sin título",
+    "not_found": "Publicación no encontrada",
     "fetch_error": "No se pudo cargar la publicación.",
     "discard": "Descartar",
     "update_publication": "Actualizar Publicación",
+    "tabs": {
+      "basic": "Información básica",
+      "specs": "Especificaciones",
+      "media": "Multimedia",
+      "docs": "Documentación"
+    },
     "section_title": "Detalles de la Publicación",
     "publication_title": "Título de la publicación",
     "publication_title_placeholder": "Título",
@@ -646,12 +721,171 @@
     "username": "Usuario",
     "email": "Correo electrónico",
     "password": "Contraseña",
+    "password_confirm": "Confirmar contraseña",
     "agree_to": "Acepto la",
     "privacy_policy": "política de privacidad y términos",
-    "sign_up": "Registrarse",
+    "sign_up": "Crear cuenta",
     "already_account": "¿Ya tienes una cuenta?",
     "sign_in_instead": "Inicia sesión en su lugar",
-    "or": "o"
+    "or": "o",
+    "first_name_placeholder": "Juan",
+    "last_name_placeholder": "García",
+    "step_account": "Datos personales",
+    "step_credentials": "Credenciales",
+    "step_confirm": "Confirmación",
+    "next": "Continuar",
+    "back": "Atrás",
+    "passwords_mismatch": "Las contraseñas no coinciden.",
+    "password_requirements_title": "La contraseña debe tener:",
+    "password_req_length": "Mínimo 8 caracteres",
+    "password_req_upper": "Una letra mayúscula (A-Z)",
+    "password_req_lower": "Una letra minúscula (a-z)",
+    "password_req_digit": "Un número (0-9)",
+    "password_req_special": "Un carácter especial (!@#$%…)",
+    "must_accept_terms": "Debes aceptar la política de privacidad y los términos.",
+    "generic_error": "Ocurrió un error al registrar la cuenta. Inténtalo de nuevo.",
+    "required_fields_alert": "Todos los campos son obligatorios para completar tu registro."
+  },
+  "forgot_password": {
+    "title": "¿Olvidaste tu contraseña?",
+    "subtitle": "Introduce tu correo y te enviaremos instrucciones para restablecerla.",
+    "email": "Correo electrónico",
+    "send_button": "Enviar instrucciones",
+    "back_to_login": "Volver al login",
+    "success": "Te hemos enviado un correo con instrucciones.",
+    "error": "No se pudo enviar el correo. Intenta de nuevo."
+  },
+  "reset_password": {
+    "title": "Restablecer contraseña",
+    "subtitle": "Introduce tu nueva contraseña.",
+    "new_password": "Nueva contraseña",
+    "confirm_password": "Confirmar contraseña",
+    "password_placeholder": "············",
+    "submit_button": "Restablecer contraseña",
+    "back_to_login": "Volver al login",
+    "success": "Contraseña restablecida correctamente.",
+    "mismatch": "Las contraseñas no coinciden.",
+    "error": "No se pudo restablecer la contraseña."
+  },
+  "register_success": {
+    "title": "¡Felicidades por registrarte!",
+    "subtitle": "Tu cuenta ha sido creada con éxito, pero aún falta un último paso para activarla.",
+    "verify_email": "Verifica tu correo electrónico",
+    "verify_email_body": "Hemos enviado un enlace de activación a tu bandeja de entrada. Por favor, revísalo y haz clic en el botón para confirmar tu cuenta.",
+    "spam_note": "Si no recibes el correo en unos minutos, por favor revisa tu carpeta de spam o correo no deseado.",
+    "back_to_login": "Volver al login"
+  },
+  "publication_slug_page": {
+    "not_found_title": "Publicación no encontrada",
+    "not_found_action": "Ir a la tienda"
+  },
+  "footer": {
+    "license": "Licencia",
+    "documentation": "Documentación",
+    "support": "Soporte",
+    "more_themes": "Más temas"
+  },
+  "not_authorized": {
+    "title": "¡No estás autorizado! 🔐",
+    "description": "No tienes permisos para acceder a esta página. Vuelve al inicio.",
+    "back_to_home": "Volver al inicio"
+  },
+  "offer_modal": {
+    "title": "Hacer una oferta",
+    "intro": "¿Te interesa? Envía tu mejor oferta.",
+    "info": "Si el vendedor acepta, tendrás 24 horas para confirmar y completar la compra.",
+    "amount_label": "Tu oferta",
+    "remaining_offers": "{count} ofertas restantes para hoy",
+    "submit": "Enviar",
+    "invalid_amount": "Ingresa un monto de oferta válido.",
+    "send_error": "Ocurrió un error al enviar la oferta."
+  },
+  "store_filters_panel": {
+    "filters": "Filtros",
+    "active_filters": "{count} filtros activos"
+  },
+  "chat_components": {
+    "subject_label": "Asunto",
+    "message_label": "Mensaje",
+    "write_answer": "Escribe tu respuesta...",
+    "write_message": "Escribe tu mensaje...",
+    "write_message_dots": "Escribe un mensaje...",
+    "subject_placeholder": "Asunto del mensaje",
+    "message_placeholder": "Escribe tu mensaje aquí...",
+    "attach_file": "Adjuntar archivo",
+    "voice_message": "Mensaje de voz"
+  },
+  "purchases_opinions": {
+    "publication": "Publicación",
+    "rating": "Valoración",
+    "comment": "Comentario"
+  },
+  "dashboard_lists": {
+    "show": "Mostrar",
+    "pending": "Pendiente",
+    "view_publication": "Ver publicación",
+    "view_detail": "Ver detalle",
+    "search_offer": "Buscar oferta...",
+    "filter_by_status": "Filtrar por estado",
+    "date_range": "Rango de fechas",
+    "publication": "Publicación",
+    "offer_accepted_on": "Oferta aceptada el",
+    "search_question": "Buscar Pregunta",
+    "search_favorite": "Buscar Favorito",
+    "search_opinion": "Buscar Opinión",
+    "write_answer_here": "Escribe tu respuesta detallada aquí...",
+    "modality": "Modalidad",
+    "status": "Estado",
+    "buyer_message": "Mensaje del comprador",
+    "offer_details": "Detalles de la Oferta",
+    "amount_offered": "Monto Ofertado",
+    "question_answered": "Consulta Respondida",
+    "user_question": "Pregunta del Usuario",
+    "your_answer": "Tu Respuesta",
+    "sale_detail": "Detalle de Venta",
+    "current_status": "Estado Actual",
+    "my_favorites": "Mis Favoritos",
+    "send_date": "Fecha Envío",
+    "time_limit": "Tiempo Límite",
+    "additional_comment": "Comentario Adicional",
+    "my_opinions": "Mis Opiniones",
+    "my_questions": "Mis Preguntas",
+    "verification_error": "Error de Verificación"
+  },
+  "admin_publications": {
+    "title": "Administrar Publicaciones",
+    "search_placeholder": "Buscar publicación...",
+    "status_filter_placeholder": "Filtrar por estado",
+    "headers": {
+      "image": "Imagen",
+      "title": "Título",
+      "author": "Autor",
+      "price": "Precio",
+      "status": "Estado",
+      "date": "Fecha",
+      "actions": "Acciones"
+    },
+    "status_options": {
+      "all": "Todos",
+      "publish": "Publicado",
+      "pending": "Pendiente",
+      "draft": "Borrador",
+      "paused": "Pausado",
+      "sold": "Vendido",
+      "trash": "Papelera"
+    },
+    "actions": {
+      "view": "Ver Publicación",
+      "contact": "Contactar",
+      "edit": "Editar",
+      "change_status": "Cambiar Estado",
+      "delete": "Eliminar"
+    },
+    "delete_dialog_title": "¿Estás seguro?",
+    "delete_dialog_body": "Esta acción eliminará la publicación permanentemente.",
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "new_status_label": "Nuevo Estado"
   },
   "inquiries": {
     "title": "Interesados",
@@ -690,7 +924,7 @@
     "name_label": "Tu nombre *",
     "name_placeholder": "Ej. Juan Pérez",
     "email_label": "Tu e-mail *",
-    "email_placeholder": "ejemplo@correo.com",
+    "email_placeholder": "ejemplo{'@'}correo.com",
     "message_label": "Mensaje *",
     "terms_prefix": "Acepto las ",
     "terms_connector": " y las ",
@@ -756,5 +990,173 @@
       "rent": "Alquiler",
       "direct": "Directa"
     }
+  },
+  "product_details": {
+    "favorite": "Favorito",
+    "share": "Compartir",
+    "reference": "referencia",
+    "consult_price": "Consultar precio",
+    "warranty_motorlan": "Garantía Motorlan",
+    "seller_default": "Vendedor",
+    "stock_label": "Stock",
+    "sales_label": "Ventas",
+    "not_available": "N/A",
+    "negotiable": "Negociable",
+    "not_negotiable": "No negociable",
+    "edit_offer": "Editar oferta",
+    "make_offer": "Hacer una oferta",
+    "offer_description": "Tu oferta quedará pendiente hasta que el vendedor la acepte. Si la acepta, tendrás 24 horas para completar la compra.",
+    "offer_price": "Precio de la oferta",
+    "offer_message": "Mensaje al vendedor",
+    "amount_required": "El monto es requerido",
+    "amount_greater_than_zero": "El monto debe ser mayor a 0",
+    "no_charge_until_accept": "No se cobrará nada hasta que el vendedor acepte tu oferta.",
+    "send_offer": "Enviar oferta",
+    "share_publication": "Compartir publicación",
+    "open_chat": "Abrir chat",
+    "consult_price_button": "Consultar precio",
+    "share_text": "Echa un vistazo a {title} en Motorlan",
+    "share_copy_link": "Copiar enlace",
+    "share_whatsapp": "WhatsApp",
+    "share_telegram": "Telegram",
+    "share_email": "Email",
+    "link_copied": "Enlace copiado"
+  },
+  "offers_received": {
+    "title": "Ofertas Recibidas",
+    "search_placeholder": "Buscar oferta...",
+    "status_placeholder": "Estado",
+    "date_range_placeholder": "Rango de fechas",
+    "show_placeholder": "Mostrar",
+    "headers": {
+      "publication": "Publicación",
+      "offerer": "Ofertante",
+      "amount": "Monto",
+      "date": "Fecha",
+      "status": "Estado",
+      "actions": "Acciones"
+    },
+    "status_options": {
+      "all": "Todos",
+      "pending": "Pendientes",
+      "waiting_confirmation": "Esperando confirmación",
+      "confirmed": "Confirmados",
+      "rejected": "Rechazados",
+      "expired": "Expirados"
+    },
+    "status_chip": {
+      "waiting_confirmation": "Esperando confirmación",
+      "confirmed": "Confirmada",
+      "expired": "Expirada",
+      "rejected": "Rechazada",
+      "pending": "Pendiente"
+    },
+    "accept": "Aceptar",
+    "reject": "Rechazar",
+    "accept_offer": "Aceptar Oferta",
+    "close": "Cerrar",
+    "view_detail": "Ver detalle",
+    "not_available_to_accept": "No disponible para aceptar",
+    "detail_title": "Detalle de la Oferta Recibida",
+    "publication_label": "Publicación",
+    "offerer_label": "Ofertante",
+    "amount_offered": "Monto Ofertado",
+    "date_received": "Fecha Recibida",
+    "current_status": "Estado Actual",
+    "time_to_confirm": "Tiempo para confirmar",
+    "cannot_accept": "No se puede aceptar",
+    "no_stock_message": "Sin disponibilidad de stock o publicación inactiva.",
+    "offerer_comment": "Comentario del Ofertante",
+    "no_comments": "El ofertante no incluyó comentarios adicionales.",
+    "ref_label": "Ref",
+    "expired_short": "Expirada",
+    "accepted_success": "Oferta aceptada",
+    "rejected_success": "Oferta rechazada",
+    "update_error": "No fue posible actualizar la oferta."
+  },
+  "purchase_detail": {
+    "total_to_pay": "Total a pagar",
+    "price_offer": "Oferta de precio",
+    "sent": "Enviada",
+    "accepted": "Aceptada",
+    "confirmed": "Confirmada",
+    "expires": "Vence",
+    "message_sent": "Mensaje enviado",
+    "rate_seller_hint": "Ayuda a otros usuarios calificando al vendedor",
+    "purchase_detail_title": "Detalle de la compra",
+    "status": "Estado",
+    "purchase_type": "Tipo de compra",
+    "product": "Producto",
+    "type": "Tipo",
+    "quantity": "Cantidad",
+    "unit_price": "Precio unitario",
+    "published_price": "Precio publicado",
+    "accepted_offer": "Oferta aceptada",
+    "total_paid": "Total pagado",
+    "payment_delivery_details": "Detalles de pago y entrega"
+  },
+  "user_profile": {
+    "personal_info": "Información Personal",
+    "first_name": "Nombre",
+    "first_name_placeholder": "Tu nombre",
+    "last_name": "Apellidos",
+    "last_name_placeholder": "Tus apellidos",
+    "email": "Email",
+    "phone": "Teléfono",
+    "company_info": "Información de Empresa",
+    "is_company": "¿Eres una empresa?",
+    "company_name": "Nombre de la empresa *",
+    "company_name_placeholder": "Empresa S.L.",
+    "cif_nif": "CIF / NIF *",
+    "cif_nif_placeholder": "A00000000",
+    "address": "Dirección *",
+    "address_placeholder": "Calle, Número, Piso, Puerta",
+    "postal_code": "C.P. *",
+    "contact_person": "Persona de contacto *",
+    "contact_person_placeholder": "Nombre del responsable",
+    "contact_email": "Email de contacto *",
+    "contact_phone": "Tel. de contacto *"
+  },
+  "admin_preview": {
+    "admin_preview_mode": "Modo Previsualización de Administrador",
+    "new_brand_pending": "Nueva marca pendiente de aprobación",
+    "brand_name": "Nombre de la marca",
+    "publication_requester": "Solicitante de la publicación",
+    "publication_not_found": "Publicación no encontrada",
+    "preview_subtitle": "Esta publicación aún no es pública. Así es como se verá una vez aprobada.",
+    "not_found_hint": "Es posible que el ID no sea válido o la publicación haya sido eliminada.",
+    "approve": "Aprobar",
+    "reject": "Rechazar",
+    "back": "Volver",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "edit_name": "Editar nombre",
+    "user_requested_brand_pre": "El usuario ha solicitado crear la marca",
+    "brand_creation_note": "Al aprobar esta publicación, la marca se creará y estará disponible para todos los usuarios.",
+    "back_to_list": "Regresar al listado"
+  },
+  "users_list": {
+    "filters": "Filtros",
+    "select_role": "Seleccionar rol",
+    "select_plan": "Seleccionar plan",
+    "select_status": "Seleccionar estado",
+    "search_user": "Buscar usuario",
+    "view": "Ver",
+    "edit": "Editar",
+    "delete": "Eliminar"
+  },
+  "inquiries_dashboard": {
+    "view_publication": "Ver publicación"
+  },
+  "purchases_inquiries": {
+    "title": "Consultas Enviadas",
+    "search_placeholder": "Buscar por vendedor o motor...",
+    "show_placeholder": "Mostrar"
+  },
+  "publication_list_table": {
+    "consult_price": "Consultar precio"
+  },
+  "publication_edit_form": {
+    "required_fields_note": "Los campos marcados con {asterisk} son obligatorios"
   }
 }

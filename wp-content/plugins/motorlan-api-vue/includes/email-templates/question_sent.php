@@ -11,7 +11,12 @@ if ( ! defined( 'WPINC' ) ) {
 
 $publication_title = $args['data']['publication_title'] ?? 'una publicación';
 $question_text     = $args['message'] ?? '';
-$track_url         = ! empty( $args['data']['url'] ) ? home_url( $args['data']['url'] ) : home_url( '/dashboard/purchases/questions' );
+$recipient_user_id = isset( $args['user'] ) && is_object( $args['user'] ) ? (int) $args['user']->ID : null;
+$track_url         = ! empty( $args['data']['url'] )
+    ? ( strpos( $args['data']['url'], 'http' ) === 0 ? $args['data']['url'] : home_url( $args['data']['url'] ) )
+    : ( function_exists( 'motorlan_localized_page_url_absolute' )
+        ? motorlan_localized_page_url_absolute( 'mi-cuenta', 'dashboard/purchases/questions', $recipient_user_id )
+        : home_url( '/mi-cuenta/dashboard/purchases/questions' ) );
 ?>
 <h2 class="h1" style="margin:0 0 16px;font-size:24px;line-height:30px;font-weight:700;color:#111827;">Pregunta enviada</h2>
 <p style="margin:0 0 16px;">Tu pregunta sobre <strong>"<?php echo esc_html( $publication_title ); ?>"</strong> se ha enviado correctamente. Recibirás un aviso cuando el vendedor responda.</p>

@@ -167,7 +167,7 @@ const resolveBrandName = (value: any): string => {
                 Volver
               </VBtn>
               <VDivider vertical class="mx-1" />
-              <span class="text-caption text-uppercase font-weight-bold tracking-wide">Detalle de Venta</span>
+              <span class="text-caption text-uppercase font-weight-bold tracking-wide">{{ t('dashboard_lists.sale_detail') }}</span>
           </div>
           <div class="d-flex gap-2">
             <VBtn
@@ -224,7 +224,7 @@ const resolveBrandName = (value: any): string => {
           
            <div v-if="sale" class="d-flex align-center gap-3">
               <div class="text-end mr-2">
-                <div class="text-caption text-medium-emphasis text-uppercase font-weight-bold">Estado Actual</div>
+                <div class="text-caption text-medium-emphasis text-uppercase font-weight-bold">{{ t('dashboard_lists.current_status') }}</div>
                  <VChip
                     v-bind="resolveStatus(sale.status)"
                     variant="flat"
@@ -283,7 +283,7 @@ const resolveBrandName = (value: any): string => {
                       <VCol cols="12" sm="6" class="border-e border-b">
                         <div class="pa-5">
                           <div class="d-flex align-center gap-2 mb-2">
-                            <VIcon icon="tabler-currency-dollar" size="18" color="medium-emphasis" />
+                            <VIcon icon="tabler-currency-euro" size="18" color="medium-emphasis" />
                             <span class="text-caption text-medium-emphasis text-uppercase font-weight-bold">{{ t('sales.price') }}</span>
                           </div>
                           <div class="text-h4 text-primary font-weight-bold">
@@ -306,7 +306,7 @@ const resolveBrandName = (value: any): string => {
                         <div class="pa-5">
                            <div class="d-flex align-center gap-2 mb-2">
                             <VIcon icon="tabler-tag" size="18" color="medium-emphasis" />
-                            <span class="text-caption text-medium-emphasis text-uppercase font-weight-bold">Modalidad</span>
+                            <span class="text-caption text-medium-emphasis text-uppercase font-weight-bold">{{ t('dashboard_lists.modality') }}</span>
                           </div>
                           <div class="text-body-1 text-high-emphasis text-capitalize font-weight-medium">
                             {{ purchaseModeLabel }}
@@ -341,7 +341,7 @@ const resolveBrandName = (value: any): string => {
                         :icon="offer.status === 'confirmed' ? 'tabler-circle-check' : 'tabler-alert-circle'" 
                         :color="offer.status === 'confirmed' ? 'success' : 'warning'" 
                       />
-                      <h3 class="text-subtitle-1 font-weight-bold text-high-emphasis mb-0">Detalles de la Oferta</h3>
+                      <h3 class="text-subtitle-1 font-weight-bold text-high-emphasis mb-0">{{ t('dashboard_lists.offer_details') }}</h3>
                     </div>
                     
                     <div class="pa-5">
@@ -349,7 +349,7 @@ const resolveBrandName = (value: any): string => {
                         <VCol cols="12" sm="6">
                           <div class="d-flex align-center gap-2 mb-2">
                              <VIcon icon="tabler-coin" size="18" color="medium-emphasis" />
-                             <span class="text-caption text-medium-emphasis text-uppercase font-weight-bold">Monto Ofertado</span>
+                             <span class="text-caption text-medium-emphasis text-uppercase font-weight-bold">{{ t('dashboard_lists.amount_offered') }}</span>
                           </div>
                           <div class="text-h5 font-weight-bold text-high-emphasis">
                             {{ formatCurrency(offer.offer_amount) }}
@@ -359,7 +359,7 @@ const resolveBrandName = (value: any): string => {
                         <VCol cols="12" sm="6">
                            <div class="d-flex align-center gap-2 mb-2">
                              <VIcon icon="tabler-flag" size="18" color="medium-emphasis" />
-                             <span class="text-caption text-medium-emphasis text-uppercase font-weight-bold">Estado</span>
+                             <span class="text-caption text-medium-emphasis text-uppercase font-weight-bold">{{ t('dashboard_lists.status') }}</span>
                           </div>
                           <VChip
                             :color="offer.status === 'confirmed' ? 'success' : 'warning'"
@@ -376,7 +376,7 @@ const resolveBrandName = (value: any): string => {
                           <div class="bg-grey-lighten-4 rounded-lg pa-4 mt-2 position-relative">
                               <VIcon icon="tabler-quote" class="position-absolute top-0 left-0 mt-n2 ml-2 bg-grey-lighten-4" color="medium-emphasis" />
                               <div class="pl-4 border-s-lg border-primary">
-                                <span class="text-caption text-medium-emphasis text-uppercase font-weight-bold d-block mb-1">Mensaje del comprador</span>
+                                <span class="text-caption text-medium-emphasis text-uppercase font-weight-bold d-block mb-1">{{ t('dashboard_lists.buyer_message') }}</span>
                                 <p class="text-body-1 font-italic text-high-emphasis mb-0">"{{ offer.justification }}"</p>
                               </div>
                           </div>

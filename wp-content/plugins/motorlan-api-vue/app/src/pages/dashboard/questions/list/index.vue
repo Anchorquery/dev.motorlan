@@ -95,7 +95,7 @@ const totalQuestions = computed(() => questionsData.value?.pagination?.total || 
              <AppSelect
                v-model="itemsPerPage"
                :items="[5, 10, 20, 25, 50]"
-               placeholder="Mostrar"
+               :placeholder="t('dashboard_lists.show')"
                prepend-inner-icon="tabler-list-numbers"
              />
           </VCol>
@@ -155,7 +155,7 @@ const totalQuestions = computed(() => questionsData.value?.pagination?.total || 
             <span class="text-body-1 text-high-emphasis">{{ item.respuesta }}</span>
           </div>
           <VChip v-else size="small" color="warning" variant="tonal" label>
-            Pendiente
+            {{ t('dashboard_lists.pending') }}
           </VChip>
         </template>
 
@@ -168,7 +168,7 @@ const totalQuestions = computed(() => questionsData.value?.pagination?.total || 
             :to="`/${item.publicacion.slug}`"
           >
             <VIcon icon="tabler-external-link" />
-            <VTooltip activator="parent" location="top">Ver publicación</VTooltip>
+            <VTooltip activator="parent" location="top">{{ t('dashboard_lists.view_publication') }}</VTooltip>
           </IconBtn>
         </template>
 

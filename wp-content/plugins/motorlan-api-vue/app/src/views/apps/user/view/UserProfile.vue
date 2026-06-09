@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
 import type { ComponentPublicInstance } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { UserProfile } from '../types'
 import { useApi } from '@/composables/useApi'
 import { useToast } from '@/composables/useToast'
@@ -14,6 +15,7 @@ const dropZoneRef = ref<ComponentPublicInstance<{ open: () => void }> | null>(nu
 const isChangePasswordDialogVisible = ref(false)
 const isSaving = ref(false)
 const { showToast } = useToast()
+const { t } = useI18n()
 const isUploadingAvatar = ref(false)
 const {
   data: userProfile,
@@ -277,7 +279,7 @@ const saveProfileData = async () => {
                 icon="tabler-user"
                 color="primary"
               />
-              <span class="text-h6 font-weight-bold">Información Personal</span>
+              <span class="text-h6 font-weight-bold">{{ t('user_profile.personal_info') }}</span>
             </div>
 
             <VRow>
@@ -287,8 +289,8 @@ const saveProfileData = async () => {
               >
                 <AppTextField
                   v-model="personalFormData.nombre"
-                  label="Nombre"
-                  placeholder="Tu nombre"
+                  :label="t('user_profile.first_name')"
+                  :placeholder="t('user_profile.first_name_placeholder')"
                   :rules="[requiredValidator]"
                 />
               </VCol>
@@ -298,8 +300,8 @@ const saveProfileData = async () => {
               >
                 <AppTextField
                   v-model="personalFormData.apellidos"
-                  label="Apellidos"
-                  placeholder="Tus apellidos"
+                  :label="t('user_profile.last_name')"
+                  :placeholder="t('user_profile.last_name_placeholder')"
                   :rules="[requiredValidator]"
                 />
               </VCol>
@@ -309,7 +311,7 @@ const saveProfileData = async () => {
               >
                 <AppTextField
                   v-model="personalFormData.email"
-                  label="Email"
+                  :label="t('user_profile.email')"
                   type="email"
                   placeholder="tu@email.com"
                   :rules="[requiredValidator, emailValidator]"
@@ -321,7 +323,7 @@ const saveProfileData = async () => {
               >
                 <AppTextField
                   v-model="personalFormData.telefono"
-                  label="Teléfono"
+                  :label="t('user_profile.phone')"
                   placeholder="+34 000 000 000"
                   :rules="[requiredValidator]"
                 />
@@ -332,17 +334,17 @@ const saveProfileData = async () => {
           <VDivider />
 
           <VCardText class="pa-6">
-            <div class="d-flex align-center justify-space-between mb-4">
+            <div class="user-profile-company-header d-flex align-center justify-space-between mb-4">
               <div class="d-flex align-center gap-2">
                 <VIcon
                   icon="tabler-building"
                   color="primary"
                 />
-                <span class="text-h6 font-weight-bold">Información de Empresa</span>
+                <span class="text-h6 font-weight-bold">{{ t('user_profile.company_info') }}</span>
               </div>
               <VSwitch
                 v-model="isCompany"
-                label="¿Eres una empresa?"
+                :label="t('user_profile.is_company')"
                 density="compact"
                 hide-details
               />
@@ -360,8 +362,8 @@ const saveProfileData = async () => {
                   >
                     <AppTextField
                       v-model="companyFormData.nombre"
-                      label="Nombre de la empresa *"
-                      placeholder="Empresa S.L."
+                      :label="t('user_profile.company_name')"
+                      :placeholder="t('user_profile.company_name_placeholder')"
                       :rules="isCompany ? [requiredValidator] : []"
                     />
                   </VCol>
@@ -371,16 +373,16 @@ const saveProfileData = async () => {
                   >
                     <AppTextField
                       v-model="companyFormData.cif_nif"
-                      label="CIF / NIF *"
-                      placeholder="A00000000"
+                      :label="t('user_profile.cif_nif')"
+                      :placeholder="t('user_profile.cif_nif_placeholder')"
                       :rules="isCompany ? [requiredValidator] : []"
                     />
                   </VCol>
                   <VCol cols="12">
                     <AppTextField
                       v-model="companyFormData.direccion"
-                      label="Dirección *"
-                      placeholder="Calle, Número, Piso, Puerta"
+                      :label="t('user_profile.address')"
+                      :placeholder="t('user_profile.address_placeholder')"
                       :rules="isCompany ? [requiredValidator] : []"
                     />
                   </VCol>
@@ -390,7 +392,7 @@ const saveProfileData = async () => {
                   >
                     <AppTextField
                       v-model="companyFormData.cp"
-                      label="C.P. *"
+                      :label="t('user_profile.postal_code')"
                       placeholder="00000"
                       :rules="isCompany ? [requiredValidator] : []"
                     />
@@ -401,8 +403,8 @@ const saveProfileData = async () => {
                   >
                     <AppTextField
                       v-model="companyFormData.persona_contacto"
-                      label="Persona de contacto *"
-                      placeholder="Nombre del responsable"
+                      :label="t('user_profile.contact_person')"
+                      :placeholder="t('user_profile.contact_person_placeholder')"
                       :rules="isCompany ? [requiredValidator] : []"
                     />
                   </VCol>
@@ -412,7 +414,7 @@ const saveProfileData = async () => {
                   >
                     <AppTextField
                       v-model="companyFormData.email_contacto"
-                      label="Email de contacto *"
+                      :label="t('user_profile.contact_email')"
                       type="email"
                       placeholder="empresa@email.com"
                       :rules="isCompany ? [requiredValidator, emailValidator] : []"
@@ -424,7 +426,7 @@ const saveProfileData = async () => {
                   >
                     <AppTextField
                       v-model="companyFormData.tel_contacto"
-                      label="Tel. de contacto *"
+                      :label="t('user_profile.contact_phone')"
                       placeholder="+34 000 000 000"
                       :rules="isCompany ? [requiredValidator] : []"
                     />
@@ -434,7 +436,7 @@ const saveProfileData = async () => {
             </VExpandTransition>
           </VCardText>
 
-          <VCardActions class="pa-6 pt-0">
+          <VCardActions class="pa-6 pt-0 user-profile-actions">
             <VBtn
               color="primary"
               variant="elevated"
@@ -518,5 +520,51 @@ const saveProfileData = async () => {
   transform: translate(-50%, -50%);
   z-index: 3;
   pointer-events: none; /* The dropzone will handle the click */
+}
+
+.user-profile-company-header {
+  gap: 1rem;
+}
+
+.user-profile-actions {
+  gap: 0.75rem;
+}
+
+@media (max-width: 959px) {
+  .profile-card {
+    padding-top: 48px;
+  }
+
+  .avatar-container,
+  .avatar-dropzone {
+    width: 96px;
+    height: 96px;
+  }
+
+  .avatar-center {
+    top: -42px;
+  }
+
+  .avatar-edit-button {
+    top: 44px;
+    left: calc(50% + 30px);
+  }
+
+  .user-profile-company-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .user-profile-actions {
+    flex-direction: column;
+  }
+
+  .user-profile-actions :deep(.v-btn) {
+    width: 100%;
+  }
+
+  .user-profile-actions :deep(.v-spacer) {
+    display: none;
+  }
 }
 </style>

@@ -6,6 +6,7 @@ import { useRouter } from 'vue-router'
 import SellerChatModal from './components/SellerChatModal.vue'
 import { useI18n } from 'vue-i18n'
 import { useMotorFormatter } from '@/composables/useMotorFormatter'
+import { storeUrl } from '@/utils/urls'
 
 const { t, locale } = useI18n()
 
@@ -85,7 +86,7 @@ onMounted(fetchInquiries)
 
 const goToProduct = (item: InquiryItem) => {
   // URL absoluta para navegación cross-base (desde mi-cuenta a la tienda)
-  window.open(`/marketplace-motorlan/${item.product_slug}/`, '_blank')
+  window.open(storeUrl(item.product_slug), '_blank')
 }
 
 // Table columns
@@ -166,7 +167,7 @@ const refresh = () => {
 <template>
   <div>
     <VCard class="motor-card-enhanced overflow-visible">
-      <VCardTitle class="pa-6 d-flex align-center justify-space-between flex-wrap gap-4">
+      <VCardTitle class="pa-6 d-flex align-center justify-space-between flex-wrap gap-4 inquiries-toolbar">
         <span class="text-h5 text-premium-title">{{ t('inquiries.title') }}</span>
       </VCardTitle>
 
@@ -199,7 +200,7 @@ const refresh = () => {
         </VRow>
       </VCardText>
 
-      <div class="px-6 pb-6" style="overflow-x: auto; width: 100%; -webkit-overflow-scrolling: touch;">
+      <div class="table-responsive-shell px-6 pb-6">
         <VDataTable
           v-model:items-per-page="itemsPerPage"
           v-model:page="page"
@@ -293,7 +294,7 @@ const refresh = () => {
               @click="goToProduct(item)"
             >
               <VIcon icon="tabler-external-link" size="18" />
-              <VTooltip activator="parent" location="top">Ver publicación</VTooltip>
+              <VTooltip activator="parent" location="top">{{ t('inquiries_dashboard.view_publication') }}</VTooltip>
             </IconBtn>
           </div>
         </template>

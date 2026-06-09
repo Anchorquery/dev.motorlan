@@ -1,3 +1,9 @@
+<script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
+</script>
+
 <template>
   <div class="h-100 d-flex align-center justify-md-space-between justify-center">
     <!-- 👉 Footer: left content -->
@@ -23,19 +29,19 @@
       <a
         href="https://themeforest.net/licenses/standard"
         target="noopener noreferrer"
-      >License</a>
+      >{{ t('footer.license') }}</a>
       <a
         href="https://1.envato.market/pixinvent_portfolio"
         target="noopener noreferrer"
-      >More Themes</a>
+      >{{ t('footer.more_themes') }}</a>
       <a
         href="https://demos.pixinvent.com/vuexy-vuejs-admin-template/documentation/"
         target="noopener noreferrer"
-      >Documentation</a>
+      >{{ t('footer.documentation') }}</a>
       <a
         href="https://pixinvent.ticksy.com/"
         target="noopener noreferrer"
-      >Support</a>
+      >{{ t('footer.support') }}</a>
     </span>
   </div>
 </template>

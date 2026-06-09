@@ -1,11 +1,15 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 import { createUrl } from '@/@core/composable/createUrl'
 import { useApi } from '@/composables/useApi'
 import { useUserStore } from '@/@core/stores/user'
 import type { ImagenDestacada, Publicacion } from '@/interfaces/publicacion'
 import { useMotorFormatter } from '@/composables/useMotorFormatter'
+import { storeUrl } from '@/utils/urls'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -94,7 +98,7 @@ const removeFavorite = async (motorId: number) => {
 
 const goToDetail = (item: Publicacion) => {
   // Navegar a la tienda con URL absoluta (no usar router.push porque estamos en otra base)
-  window.open(`/marketplace-motorlan/${item.slug}/`, '_blank')
+  window.open(storeUrl(item.slug), '_blank')
 }
 
 const getImageBySize = (image: any, size = 'thumbnail'): string => {
@@ -121,15 +125,15 @@ const getImageBySize = (image: any, size = 'thumbnail'): string => {
     class="motor-card-enhanced"
   >
     <VCardTitle class="pa-6 pb-0">
-      <span class="text-h5 text-premium-title">Mis Favoritos</span>
+      <span class="text-h5 text-premium-title">{{ t('dashboard_lists.my_favorites') }}</span>
     </VCardTitle>
     <VCardText class="pa-6">
-      <div class="d-flex flex-wrap gap-4">
-        <div class="d-flex align-center">
+      <div class="dash-simple-toolbar d-flex flex-wrap gap-4">
+        <div class="d-flex align-center dash-simple-toolbar__search">
           <!-- 👉 Search  -->
           <AppTextField
             v-model="searchQuery"
-            placeholder="Buscar Favorito"
+            :placeholder="t('dashboard_lists.search_favorite')"
             style="inline-size: 260px;"
             class="me-3"
             prepend-inner-icon="tabler-search"
@@ -137,7 +141,7 @@ const getImageBySize = (image: any, size = 'thumbnail'): string => {
         </div>
 
         <VSpacer />
-        <div class="d-flex gap-4 flex-wrap align-center">
+        <div class="d-flex gap-4 flex-wrap align-center dash-simple-toolbar__per-page">
           <AppSelect
             v-model="itemsPerPage"
             :items="[5, 10, 20, 25, 50]"
@@ -256,5 +260,35 @@ const getImageBySize = (image: any, size = 'thumbnail'): string => {
   overflow-x: auto;
   width: 100%;
   -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 959px) {
+  .dash-simple-toolbar {
+    flex-direction: column;
+    gap: 0.75rem !important;
+  }
+
+  .dash-simple-toolbar :deep(.v-spacer) {
+    display: none !important;
+  }
+
+  .dash-simple-toolbar__search,
+  .dash-simple-toolbar__per-page {
+    width: 100%;
+  }
+
+  .dash-simple-toolbar__search :deep(.v-field),
+  .dash-simple-toolbar__search :deep(.v-input),
+  .dash-simple-toolbar__search :deep(.v-text-field) {
+    inline-size: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .dash-simple-toolbar__per-page :deep(.v-field),
+  .dash-simple-toolbar__per-page :deep(.v-input),
+  .dash-simple-toolbar__per-page :deep(.v-select) {
+    inline-size: 100% !important;
+    max-width: 100% !important;
+  }
 }
 </style>

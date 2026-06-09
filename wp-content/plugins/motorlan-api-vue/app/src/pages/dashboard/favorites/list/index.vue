@@ -5,6 +5,7 @@ import { createUrl } from '@/@core/composable/createUrl'
 import { useApi } from '@/composables/useApi'
 import { useUserStore } from '@/@core/stores/user'
 import { useMotorFormatter } from '@/composables/useMotorFormatter'
+import { storeUrl } from '@/utils/urls'
 import type { Publicacion } from '@/interfaces/publicacion'
 
 const { t } = useI18n()
@@ -84,7 +85,7 @@ const isDeleting = ref(false)
 
 // Obtener URL de la publicación
 const getPublicationUrl = (item: Publicacion): string => {
-  return `/marketplace-motorlan/${(item as any).slug}/`
+  return storeUrl((item as any).slug)
 }
 
 // Función para confirmar eliminación de favorito
@@ -159,7 +160,7 @@ const removeFavorite = async () => {
             <AppSelect
               v-model="itemsPerPage"
               :items="[5, 10, 20, 25, 50]"
-              placeholder="Mostrar"
+              :placeholder="t('dashboard_lists.show')"
               prepend-inner-icon="tabler-list-numbers"
             />
           </VCol>

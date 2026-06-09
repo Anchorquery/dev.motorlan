@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { Publicacion } from '@/interfaces/publicacion'
 
 const props = defineProps<{ publicacion?: Publicacion | null }>()
+const { t } = useI18n()
 const brandName = computed(() => (props.publicacion as any)?.marca_name || '-')
 </script>
 
@@ -10,50 +12,50 @@ const brandName = computed(() => (props.publicacion as any)?.marca_name || '-')
   <VCard v-if="publicacion" class="publicacion-info" flat>
     <VCardTitle class="info-title d-flex align-center">
       <VIcon icon="tabler-info-circle" color="error" class="mr-2" />
-      Información de la publicación
+      {{ t('store.publication_info.title') }}
     </VCardTitle>
     <VCardText class="pt-0 publicacion-info__body">
       <VTable class="info-table publicacion-info__table">
         <tbody>
           <tr>
             <td class="font-weight-medium">
-              Marca
+              {{ t('store.publication_info.brand') }}
             </td>
             <td>{{ brandName }}</td>
           </tr>
           <tr>
             <td class="font-weight-medium">
-              Modelo
+              {{ t('store.publication_info.model') }}
             </td>
             <td>{{ publicacion.acf?.tipo_o_referencia || '-' }}</td>
           </tr>
         <tr>
           <td class="font-weight-medium">
-            Potencia
+            {{ t('store.publication_info.power') }}
           </td>
           <td>{{ publicacion.acf?.potencia ? `${publicacion.acf.potencia} kW` : '-' }}</td>
         </tr>
         <tr>
           <td class="font-weight-medium">
-            Velocidad
+            {{ t('store.publication_info.speed') }}
           </td>
           <td>{{ publicacion.acf?.velocidad ? `${publicacion.acf.velocidad} rpm` : '-' }}</td>
         </tr>
         <tr>
           <td class="font-weight-medium">
-            Par nominal
+            {{ t('store.publication_info.torque') }}
           </td>
           <td>{{ publicacion.acf?.par_nominal ? `${publicacion.acf.par_nominal} Nm` : '-' }}</td>
         </tr>
         <tr>
           <td class="font-weight-medium">
-            Voltaje
+            {{ t('store.publication_info.voltage') }}
           </td>
           <td>{{ publicacion.acf?.voltaje ? `${publicacion.acf.voltaje} V` : '-' }}</td>
         </tr>
         <tr>
           <td class="font-weight-medium">
-            Intensidad
+            {{ t('store.publication_info.current') }}
           </td>
           <td>{{ publicacion.acf?.intensidad ? `${publicacion.acf.intensidad} A` : '-' }}</td>
         </tr>

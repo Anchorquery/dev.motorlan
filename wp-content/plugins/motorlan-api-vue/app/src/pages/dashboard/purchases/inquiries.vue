@@ -4,6 +4,7 @@ import { useApi } from '@/composables/useApi'
 import { createUrl } from '@/@core/composable/createUrl'
 import { useI18n } from 'vue-i18n'
 import { useMotorFormatter } from '@/composables/useMotorFormatter'
+import { storeUrl } from '@/utils/urls'
 import BuyerChatModal from './components/BuyerChatModal.vue'
 
 const { t, locale } = useI18n()
@@ -124,7 +125,7 @@ const getInitials = (value: string): string => {
 }
 
 const goToProduct = (item: InquiryItem) => {
-  window.open(`/marketplace-motorlan/${item.product_slug}/`, '_blank')
+  window.open(storeUrl(item.product_slug), '_blank')
 }
 
 onMounted(fetchInquiries)
@@ -140,8 +141,8 @@ const headers = [
 <template>
   <div>
     <VCard class="motor-card-enhanced overflow-visible">
-      <VCardTitle class="pa-6 d-flex align-center justify-space-between flex-wrap gap-4">
-        <span class="text-h5 text-premium-title">Consultas Enviadas</span>
+      <VCardTitle class="pa-6 d-flex align-center justify-space-between flex-wrap gap-4 purchases-inquiries-toolbar">
+        <span class="text-h5 text-premium-title">{{ t('purchases_inquiries.title') }}</span>
       </VCardTitle>
 
       <VCardText class="pa-6 pb-0">
@@ -149,7 +150,7 @@ const headers = [
           <VCol cols="12" md="4">
             <AppTextField
               v-model="searchQuery"
-              placeholder="Buscar por vendedor o motor..."
+              :placeholder="t('purchases_inquiries.search_placeholder')"
               prepend-inner-icon="tabler-search"
               clearable
               class="elevation-0"
@@ -160,17 +161,18 @@ const headers = [
             <AppSelect
               v-model="itemsPerPage"
               :items="[5, 10, 20, 25, 50]"
-              placeholder="Mostrar"
+              :placeholder="t('purchases_inquiries.show_placeholder')"
               prepend-inner-icon="tabler-list-numbers"
             />
           </VCol>
         </VRow>
       </VCardText>
 
-      <div class="px-6 pb-6" style="overflow-x: auto; width: 100%; -webkit-overflow-scrolling: touch;">
+      <div class="table-responsive-shell px-6 pb-6">
         <VDataTable
           v-model:items-per-page="itemsPerPage"
           v-model:page="page"
+          :mobile-breakpoint="0"
           :headers="headers"
           :items="filteredItems"
           :loading="isLoading"

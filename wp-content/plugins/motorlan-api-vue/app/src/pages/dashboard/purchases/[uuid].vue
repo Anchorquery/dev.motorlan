@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { createUrl } from '@/@core/composable/createUrl'
 import { useApi } from '@/composables/useApi'
 import type { Publicacion } from '@/interfaces/publicacion'
@@ -9,8 +10,10 @@ import ChatModal from '@/components/ChatModal.vue'
 import { useMotorFormatter } from '@/composables/useMotorFormatter'
 import { useCountries } from '@/composables/useCountries'
 import RatingModal from '@/components/RatingModal.vue'
+import { storeUrl } from '@/utils/urls'
 
 const route = useRoute()
+const { t } = useI18n()
 const uuid = route.params.uuid as string
 const { formatMotorName } = useMotorFormatter()
 const { getCountryName, fetchCountries } = useCountries()
@@ -196,7 +199,7 @@ const productLink = computed(() => {
     return null
 
   // URL absoluta para navegación cross-base (desde mi-cuenta a la tienda)
-  return `/marketplace-motorlan/${productSlug.value}/`
+  return storeUrl(productSlug.value)
 })
 
 const locationLabel = computed(() => {
@@ -731,7 +734,7 @@ const sendOpinion = async () => {
 
                      <div class="d-flex align-end justify-space-between flex-wrap gap-4 mt-auto">
                         <div>
-                           <div class="text-caption text-medium-emphasis text-uppercase font-weight-bold mb-1">Total a pagar</div>
+                           <div class="text-caption text-medium-emphasis text-uppercase font-weight-bold mb-1">{{ t('purchase_detail.total_to_pay') }}</div>
                            <div class="text-h4 font-weight-bold text-primary">
                               {{ totalPriceLabel }}
                            </div>
@@ -889,7 +892,7 @@ const sendOpinion = async () => {
             v-if="hasOffer"
             class="purchase-card offer-card"
           >
-            <VCardTitle>Oferta de precio</VCardTitle>
+            <VCardTitle>{{ t('purchase_detail.price_offer') }}</VCardTitle>
             <VCardText>
               <div class="offer-card__header">
                 <div class="offer-card__amount">
@@ -916,28 +919,28 @@ const sendOpinion = async () => {
                   v-if="offerDateLabel"
                   class="offer-card__meta-item"
                 >
-                  <span class="offer-card__meta-label">Enviada</span>
+                  <span class="offer-card__meta-label">{{ t('purchase_detail.sent') }}</span>
                   <span class="offer-card__meta-value">{{ offerDateLabel }}</span>
                 </div>
                 <div
                   v-if="offerAcceptedLabel"
                   class="offer-card__meta-item"
                 >
-                  <span class="offer-card__meta-label">Aceptada</span>
+                  <span class="offer-card__meta-label">{{ t('purchase_detail.accepted') }}</span>
                   <span class="offer-card__meta-value">{{ offerAcceptedLabel }}</span>
                 </div>
                 <div
                   v-if="offerConfirmedLabel"
                   class="offer-card__meta-item"
                 >
-                  <span class="offer-card__meta-label">Confirmada</span>
+                  <span class="offer-card__meta-label">{{ t('purchase_detail.confirmed') }}</span>
                   <span class="offer-card__meta-value">{{ offerConfirmedLabel }}</span>
                 </div>
                 <div
                   v-if="offerExpiresLabel && !offerConfirmedLabel"
                   class="offer-card__meta-item"
                 >
-                  <span class="offer-card__meta-label">Vence</span>
+                  <span class="offer-card__meta-label">{{ t('purchase_detail.expires') }}</span>
                   <span class="offer-card__meta-value">{{ offerExpiresLabel }}</span>
                 </div>
               </div>
@@ -945,7 +948,7 @@ const sendOpinion = async () => {
                 v-if="offerJustification"
                 class="offer-card__justification"
               >
-                <span class="offer-card__justification-label">Mensaje enviado</span>
+                <span class="offer-card__justification-label">{{ t('purchase_detail.message_sent') }}</span>
                 <p class="offer-card__justification-text">
                   {{ offerJustification }}
                 </p>
@@ -963,7 +966,7 @@ const sendOpinion = async () => {
              <VCardText class="d-flex flex-column flex-sm-row align-center justify-space-between gap-4 pa-6">
                  <div>
                     <h3 class="text-h6 font-weight-bold mb-1">¿Qué tal tu experiencia?</h3>
-                    <p class="text-body-2 text-medium-emphasis mb-0">Ayuda a otros usuarios calificando al vendedor</p>
+                    <p class="text-body-2 text-medium-emphasis mb-0">{{ t('purchase_detail.rate_seller_hint') }}</p>
                  </div>
                  <VBtn
                     color="warning"
@@ -984,7 +987,7 @@ const sendOpinion = async () => {
       >
         <VCard class="purchase-card summary-panel motor-card-enhanced">
           <VCardTitle class="pa-6 pb-0">
-            <span class="text-h6 text-premium-title">Detalle de la compra</span>
+            <span class="text-h6 text-premium-title">{{ t('purchase_detail.purchase_detail_title') }}</span>
           </VCardTitle>
           <VCardText>
             <div class="summary-panel__date">
@@ -1000,54 +1003,54 @@ const sendOpinion = async () => {
               v-if="statusSummaryLabel"
               class="summary-panel__row"
             >
-              <span>Estado</span>
+              <span>{{ t('purchase_detail.status') }}</span>
               <span>{{ statusSummaryLabel }}</span>
             </div>
             <div
               v-if="purchaseModeLabel"
               class="summary-panel__row"
             >
-              <span>Tipo de compra</span>
+              <span>{{ t('purchase_detail.purchase_type') }}</span>
               <span>{{ purchaseModeLabel }}</span>
             </div>
             <div class="summary-panel__row summary-panel__row--stack">
-              <span class="summary-panel__label">Producto</span>
+              <span class="summary-panel__label">{{ t('purchase_detail.product') }}</span>
               <span class="summary-panel__value">{{ productTitle }}</span>
             </div>
             <div
               v-if="productTypeLabel"
               class="summary-panel__row summary-panel__row--stack"
             >
-              <span class="summary-panel__label">Tipo</span>
+              <span class="summary-panel__label">{{ t('purchase_detail.type') }}</span>
               <span class="summary-panel__value">{{ productTypeLabel }}</span>
             </div>
             <div class="summary-panel__row">
-              <span>Cantidad</span>
+              <span>{{ t('purchase_detail.quantity') }}</span>
               <span>{{ quantityLabel }}</span>
             </div>
             <div
               v-if="unitPriceValue !== null"
               class="summary-panel__row"
             >
-              <span>Precio unitario</span>
+              <span>{{ t('purchase_detail.unit_price') }}</span>
               <span>{{ unitPriceLabel }}</span>
             </div>
             <div
               v-if="publishedPriceLabel"
               class="summary-panel__row"
             >
-              <span>Precio publicado</span>
+              <span>{{ t('purchase_detail.published_price') }}</span>
               <span>{{ publishedPriceLabel }}</span>
             </div>
             <div
               v-if="hasOffer && offerAmountLabel"
               class="summary-panel__row"
             >
-              <span>Oferta aceptada</span>
+              <span>{{ t('purchase_detail.accepted_offer') }}</span>
               <span>{{ offerAmountLabel }}</span>
             </div>
             <div class="summary-panel__row summary-panel__row--total">
-              <span>Total pagado</span>
+              <span>{{ t('purchase_detail.total_paid') }}</span>
               <span>{{ totalPriceLabel }}</span>
             </div>
 
@@ -1055,7 +1058,7 @@ const sendOpinion = async () => {
               class="summary-panel__details"
               variant="accordion"
             >
-              <VExpansionPanel title="Detalles de pago y entrega">
+              <VExpansionPanel :title="t('purchase_detail.payment_delivery_details')">
                 <VExpansionPanelText>
                   <p class="summary-panel__details-text">
                     Coordina directamente con el vendedor la fecha y el lugar de entrega.
@@ -1631,6 +1634,56 @@ const sendOpinion = async () => {
 
   .summary-panel {
     position: static;
+  }
+
+  .summary-panel :deep(.v-card-text),
+  .rating-card :deep(.v-card-text),
+  .offer-card :deep(.v-card-text) {
+    padding-inline: 1rem;
+  }
+
+  .summary-panel__row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+
+  .summary-panel__row--total {
+    align-items: flex-start;
+  }
+
+  .purchase-card .d-flex.flex-column.flex-sm-row.align-center.justify-space-between {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .purchase-card .d-flex.flex-column.flex-sm-row.align-center.justify-space-between .v-btn {
+    width: 100%;
+  }
+
+  .offer-card__header,
+  .seller-card__header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .offer-card__meta {
+    grid-template-columns: 1fr;
+  }
+
+  .seller-card__actions,
+  .seller-card__metrics,
+  .summary-tags {
+    gap: 8px;
+  }
+
+  .purchase-card :deep(.v-card-title),
+  .purchase-card :deep(.v-card-actions) {
+    padding-inline: 1rem;
+  }
+
+  .purchase-card :deep(.v-btn) {
+    width: 100%;
   }
 }
 </style>

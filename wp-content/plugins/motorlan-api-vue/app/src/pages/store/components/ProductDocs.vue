@@ -1,10 +1,14 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+
 interface Doc {
   title: string
   url: string
 }
 
 defineProps<{ docs?: Doc[] }>()
+
+const { t } = useI18n()
 
 const getFileIcon = (url?: string) => {
   const ext = url?.split('.').pop()?.toLowerCase()
@@ -39,7 +43,7 @@ const getIconColor = (url?: string) => {
         color="error"
         class="mr-2"
       />
-      Documentacion adicional
+      {{ t('store.product_docs.title') }}
     </VCardTitle>
 
     <VCardText class="pt-0">
@@ -108,7 +112,7 @@ const getIconColor = (url?: string) => {
           class="mb-2"
         />
         <p class="text-body-2 mb-0">
-          No hay documentacion adjunta.
+          {{ t('store.product_docs.empty') }}
         </p>
       </div>
     </VCardText>

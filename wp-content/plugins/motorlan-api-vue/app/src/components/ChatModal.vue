@@ -491,14 +491,14 @@ onBeforeUnmount(() => {
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  min-height: 0;
 }
 
 .messages-container {
   flex: 1 1 auto;
   overflow-y: auto;
   scroll-behavior: smooth;
-  min-height: 300px;
-  padding-bottom: 80px !important;
+  min-height: 0;
 
   // Custom scrollbar
   &::-webkit-scrollbar {

@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 import { useApi } from '@/composables/useApi'
 import authV2MaskDark from '@images/pages/misc-mask-dark.png'
 import authV2MaskLight from '@images/pages/misc-mask-light.png'
@@ -180,7 +183,7 @@ const showToast = (message: string, color: string = 'success') => {
               color="error"
               class="mb-4"
             />
-            <h5 class="text-h5 font-weight-medium mb-2">Error de Verificación</h5>
+            <h5 class="text-h5 font-weight-medium mb-2">{{ t('dashboard_lists.verification_error') }}</h5>
             <p class="text-body-1 text-error mb-6">
               {{ errorMessage }}
             </p>
