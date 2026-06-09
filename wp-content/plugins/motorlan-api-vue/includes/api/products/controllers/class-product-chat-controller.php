@@ -111,6 +111,70 @@ if ( ! class_exists( 'Motorlan_Product_Chat_Controller' ) ) {
                     ),
                 )
             );
+
+            // Guest chat token exchange
+            register_rest_route(
+                $this->namespace,
+                '/chat-tokens/(?P<token>[A-Za-z0-9_\-\.]+)',
+                array(
+                    array(
+                        'methods'             => WP_REST_Server::READABLE,
+                        'callback'            => array( $this, 'exchange_chat_token' ),
+                        'permission_callback' => '__return_true',
+                    ),
+                )
+            );
+        }
+
+        public static function generate_chat_token( $room_key, $guest_email, $product_id, $ttl_seconds = 604800 ) {
+            $payload = array(
+                'rk'  => (string) $room_key,
+                'ge'  => (string) $guest_email,
+                'pid' => (int) $product_id,
+                'exp' => time() + (int) $ttl_seconds,
+            );
+            $body = self::base64url_encode( wp_json_encode( $payload ) );
+            $sig  = self::base64url_encode( hash_hmac( 'sha256', $body, wp_salt( 'auth' ), true ) );
+            return $body . '.' . $sig;
+        }
+
+        public static function verify_chat_token( $token ) {
+            if ( empty( $token ) || strpos( $token, '.' ) === false ) {
+                return null;
+            }
+            list( $body, $sig ) = explode( '.', $token, 2 );
+            $expected = self::base64url_encode( hash_hmac( 'sha256', $body, wp_salt( 'auth' ), true ) );
+            if ( ! hash_equals( $expected, $sig ) ) {
+                return null;
+            }
+            $json = self::base64url_decode( $body );
+            $data = json_decode( $json, true );
+            if ( ! is_array( $data ) ) return null;
+            if ( empty( $data['exp'] ) || (int) $data['exp'] < time() ) return null;
+            return $data;
+        }
+
+        protected static function base64url_encode( $data ) {
+            return rtrim( strtr( base64_encode( $data ), '+/', '-_' ), '=' );
+        }
+
+        protected static function base64url_decode( $data ) {
+            $remainder = strlen( $data ) % 4;
+            if ( $remainder ) $data .= str_repeat( '=', 4 - $remainder );
+            return base64_decode( strtr( $data, '-_', '+/' ) );
+        }
+
+        public function exchange_chat_token( WP_REST_Request $request ) {
+            $token = (string) $request['token'];
+            $data  = self::verify_chat_token( $token );
+            if ( ! $data ) {
+                return new WP_Error( 'invalid_token', __( 'El enlace ha caducado o no es válido.', 'motorlan-api-vue' ), array( 'status' => 410 ) );
+            }
+            return new WP_REST_Response( array(
+                'room_key'    => $data['rk'],
+                'guest_email' => $data['ge'],
+                'product_id'  => (int) $data['pid'],
+            ), 200 );
         }
 
         protected function get_table_name() {
@@ -392,18 +456,19 @@ if ( ! class_exists( 'Motorlan_Product_Chat_Controller' ) ) {
         }
 
         list( $current_user_id, $display_name, $avatar ) = $this->current_user_info();
-        $guest_em = sanitize_email( (string) $request->get_param( 'guest_email' ) );
+        $guest_em        = sanitize_email( (string) $request->get_param( 'guest_email' ) );
+        $is_real_guest   = ! is_user_logged_in();
+        $access_user_id  = $current_user_id;
 
         if ( ! $current_user_id && ! empty( $guest_em ) ) {
             $user_by_email = get_user_by( 'email', $guest_em );
             if ( $user_by_email ) {
-                $current_user_id = (int) $user_by_email->ID;
-                $display_name    = $user_by_email->display_name;
-                $avatar          = get_avatar_url( $current_user_id );
+                // Use promoted id only for access check; keep current_user_id at 0 for guests
+                $access_user_id = (int) $user_by_email->ID;
             }
         }
 
-        if ( ! $this->user_can_access_room( $product_id, $room_key, $current_user_id ) ) {
+        if ( ! $this->user_can_access_room( $product_id, $room_key, $access_user_id ) ) {
             return new WP_Error( 'forbidden', __( 'No tienes permisos para ver estos mensajes.', 'motorlan-api-vue' ), array( 'status' => 403 ) );
         }
 
@@ -496,23 +561,27 @@ if ( ! class_exists( 'Motorlan_Product_Chat_Controller' ) ) {
 
         error_log( 'Motorlan Chat: Creating message. Product: ' . $product_id . ' | Room: ' . $room_key . ' | Guest Email: ' . $guest_em );
 
+            $was_guest_request = ! is_user_logged_in();
             list( $current_user_id, $display_name, $avatar ) = $this->current_user_info();
-            
+            $access_user_id = $current_user_id;
+
             if ( ! $current_user_id && ! empty( $guest_em ) ) {
                 $user_by_email = get_user_by( 'email', $guest_em );
                 if ( $user_by_email ) {
-                    $current_user_id = (int) $user_by_email->ID;
-                    $display_name    = $user_by_email->display_name;
-                    $avatar          = get_avatar_url( $current_user_id );
+                    $access_user_id = (int) $user_by_email->ID;
+                    if ( ! $display_name ) $display_name = $user_by_email->display_name;
+                    if ( ! $avatar )       $avatar      = get_avatar_url( $access_user_id );
+                    // Keep $current_user_id = 0 for guest storage — preserves guest identity in chat
                 }
             }
 
             if ( ! $display_name && $viewer_nm ) $display_name = $viewer_nm;
 
-            if ( ! $this->user_can_access_room( $product_id, $room_key, $current_user_id ) ) {
+            if ( ! $this->user_can_access_room( $product_id, $room_key, $access_user_id ) ) {
                 return new WP_Error( 'forbidden', __( 'No tienes permisos para enviar mensajes.', 'motorlan-api-vue' ), array( 'status' => 403 ) );
             }
 
+            // Use $current_user_id (0 for guest) so unauthenticated requests never become 'seller' even if email matches author
             $sender_role = $this->compute_sender_role( $product_id, $current_user_id, $room_key );
 
             $table_ready = $this->ensure_table_exists();
@@ -526,11 +595,28 @@ if ( ! class_exists( 'Motorlan_Product_Chat_Controller' ) ) {
             // Mark as read immediately for the sender so it doesn't count as unread for themselves
             $this->set_last_read_now( $current_user_id, $product_id, $room_key );
 
+            // Send copy to guest sender (if request came in unauthenticated with email)
+            if ( $was_guest_request && ! empty( $guest_em ) && $sender_role !== 'seller' ) {
+                $product_title = function_exists( 'motorlan_format_motor_name' ) ? motorlan_format_motor_name( $product_id ) : get_the_title( $product_id );
+                $post_for_copy = get_post( $product_id );
+                $seller_name   = '';
+                if ( $post_for_copy ) {
+                    $seller = get_userdata( $post_for_copy->post_author );
+                    if ( $seller ) {
+                        $fn   = trim( (string) get_user_meta( $seller->ID, 'first_name', true ) );
+                        $ln   = trim( (string) get_user_meta( $seller->ID, 'last_name', true ) );
+                        $full = trim( $fn . ' ' . $ln );
+                        $seller_name = $full !== '' ? $full : $seller->display_name;
+                    }
+                }
+                do_action( 'motorlan_send_guest_message_copy', $guest_em, $message, $product_title, $seller_name, $product_id );
+            }
+
             // Notification Logic
             if ( $sender_role !== 'seller' ) {
                 $post = get_post( $product_id );
                 $author_id = (int) $post->post_author;
-                
+
                 if ( $author_id ) {
                     do_action( 'motorlan_new_chat_message', $author_id, $row, $display_name, $product_id );
                 }

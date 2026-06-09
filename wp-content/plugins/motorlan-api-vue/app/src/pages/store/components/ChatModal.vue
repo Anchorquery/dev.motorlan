@@ -51,18 +51,23 @@ watch(() => t('store.default_message'), (newVal) => {
 })
 
 const formAgreed = ref(false)
+const hasRequestedForThisProduct = computed(() => {
+  try {
+    const list = JSON.parse(localStorage.getItem('motorlan_requested_prices') || '[]')
+    return Array.isArray(list) && list.includes(props.publicacion.id)
+  } catch {
+    return false
+  }
+})
+
 const showGuestForm = computed(() => {
-  // Show form if:
-  // 1. User is not logged in
-  // 2. No messages loaded yet (or empty history)
-  // 3. We are not currently sending the first message
   if (userStore.isLoggedIn) return false
+  if (isSuccess.value) return false
+  // Returning guest came via email/url token → real roomKey provided
+  if (props.roomKey && props.roomKey.trim().length) return false
+  // Already submitted for this specific product in this browser
+  if (hasRequestedForThisProduct.value) return false
   if (chat.hasLoadedMessages.value && chat.messages.value.length > 0) return false
-  if (chat.isSending.value) return false 
-  
-  // Optimization: If local storage has name/email, maybe pre-fill but still show form?
-  // Or if we have roomKey which implies history... 
-  // Let's rely on message history as the source of truth.
   return true
 })
 
@@ -359,7 +364,7 @@ onBeforeUnmount(() => {
       </div>
 
       <!-- Success View -->
-      <VCardText v-if="isSuccess" class="pa-8 bg-background flex-grow-1 d-flex flex-column align-center justify-center text-center overflow-y-auto">
+      <VCardText v-if="isSuccess" class="pa-8 bg-background flex-grow-1 d-flex flex-column align-center justify-start text-center overflow-y-auto guest-scrollable">
         <div class="mb-6 rounded-circle bg-primary-lighten-5 pa-6 elevation-1 d-inline-flex">
           <VIcon icon="tabler-mail-check" size="64" color="primary" />
         </div>
@@ -410,7 +415,7 @@ onBeforeUnmount(() => {
       </VCardText>
 
       <!-- Guest Form (replaces Chat Body) -->
-      <VCardText v-else-if="showGuestForm" class="pa-6 bg-background flex-grow-1 overflow-y-auto">
+      <VCardText v-else-if="showGuestForm" class="pa-6 bg-background flex-grow-1 overflow-y-auto guest-scrollable">
         <div class="text-center mb-6">
           <VIcon icon="tabler-mail-fast" size="48" color="primary" class="mb-3" />
           <h3 class="text-h6 font-weight-bold mb-1">{{ t('chat.contact_product_title') }}</h3>
@@ -419,23 +424,29 @@ onBeforeUnmount(() => {
           </p>
         </div>
         <VForm @submit.prevent="handleGuestSubmit">
-          <AppTextField
+          <VTextField
             v-model="formName"
             :label="t('chat.name_label')"
             :placeholder="t('chat.name_placeholder')"
+            variant="outlined"
+            density="comfortable"
             class="mb-4"
           />
-          <AppTextField
+          <VTextField
             v-model="formEmail"
             :label="t('chat.email_label')"
             :placeholder="t('chat.email_placeholder')"
             type="email"
+            variant="outlined"
+            density="comfortable"
             class="mb-4"
           />
-          <AppTextarea
+          <VTextarea
             v-model="formMessage"
             :label="t('chat.message_label')"
             rows="3"
+            variant="outlined"
+            density="comfortable"
             class="mb-4"
           />
 
@@ -664,13 +675,18 @@ onBeforeUnmount(() => {
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  min-height: 0;
+}
+
+.guest-scrollable {
+  min-height: 0;
 }
 
 .messages-container {
   flex: 1 1 auto;
   overflow-y: auto;
   scroll-behavior: smooth;
-  min-height: 400px;
+  min-height: 0;
   // Custom scrollbar
   &::-webkit-scrollbar {
     width: 6px;
@@ -693,5 +709,51 @@ onBeforeUnmount(() => {
 // Ensure smooth animations for dynamic content
 .message-bubble {
   transition: all 0.2s ease;
+}
+
+@media (max-width: 959px) {
+  .chat-modal {
+    max-height: calc(100vh - 1rem);
+    border-radius: 20px;
+  }
+
+  .chat-modal :deep(.v-card-title),
+  .product-info,
+  .composer {
+    padding-inline: 1rem !important;
+  }
+
+  .chat-modal :deep(.v-card-title) {
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .product-info {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .product-details {
+    width: 100%;
+  }
+
+  .messages-container {
+    min-height: 0;
+    padding-inline: 0.875rem;
+  }
+
+  .composer {
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .composer :deep(.v-text-field),
+  .composer :deep(.v-btn) {
+    width: 100%;
+  }
+
+  .composer :deep(.v-spacer) {
+    display: none;
+  }
 }
 </style>

@@ -129,7 +129,7 @@ const onSubmit = () => {
                 <VTextField
                   v-model="email"
                   autofocus
-                  label="Email"
+                  :label="t('forgot_password.email')"
                   type="email"
                   placeholder="tucorreo@email.com"
                   variant="outlined"
@@ -149,7 +149,7 @@ const onSubmit = () => {
                   :disabled="isSubmitting"
                   class="font-weight-bold text-uppercase letter-spacing-1 hover-lift"
                 >
-                  Enviar enlace
+                  {{ t('forgot_password.send_button') }}
                 </VBtn>
               </VCol>
 
@@ -164,7 +164,7 @@ const onSubmit = () => {
                     size="20"
                     class="me-1 flip-in-rtl"
                   />
-                  <span>Volver al login</span>
+                  <span>{{ t('forgot_password.back_to_login') }}</span>
                 </RouterLink>
               </VCol>
             </VRow>
@@ -184,7 +184,7 @@ const onSubmit = () => {
                 size="20"
                 class="me-1 flip-in-rtl"
               />
-              <span>Volver al login</span>
+              <span>{{ t('forgot_password.back_to_login') }}</span>
             </RouterLink>
           </div>
         </VCardText>

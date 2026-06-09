@@ -109,6 +109,7 @@ onMounted(() => {
         :headers="headers"
         :items="publications"
         :loading="isTableLoading"
+        :mobile-breakpoint="0"
         class="text-no-wrap px-6 pb-6"
         item-value="id"
       >
@@ -134,7 +135,7 @@ onMounted(() => {
                 <template v-if="(item as any).pending_brand">
                   <VChip color="warning" size="small" variant="elevated" prepend-icon="tabler-tag-starred">
                     {{ (item as any).pending_brand }}
-                    <VTooltip activator="parent" location="top">Nueva marca propuesta por el usuario</VTooltip>
+                    <VTooltip activator="parent" location="top">{{ t('admin_approvals.new_brand_proposed') }}</VTooltip>
                   </VChip>
                 </template>
                 <template v-else>
@@ -160,7 +161,7 @@ onMounted(() => {
 
         <!-- precio -->
         <template #item.precio="{ item }">
-          <span v-if="(item as any).acf?.precio_negociable === 'yes' || (item as any).acf?.precio_negociable === true" class="text-body-1 text-warning font-weight-bold">Consultar precio</span>
+          <span v-if="(item as any).acf?.precio_negociable === 'yes' || (item as any).acf?.precio_negociable === true" class="text-body-1 text-warning font-weight-bold">{{ t('admin_approvals.consult_price') }}</span>
           <span v-else-if="(item as any).acf?.precio_de_venta" class="text-body-1 text-primary font-weight-bold">{{ (item as any).acf?.precio_de_venta }}€</span>
           <span v-else class="text-body-2 text-medium-emphasis">-</span>
         </template>
@@ -196,7 +197,7 @@ onMounted(() => {
               @click="router.push(`/dashboard/publications/publication/edit/${(item as any).uuid}`)"
             >
               <VIcon icon="tabler-pencil" size="18" />
-              <VTooltip activator="parent" location="top">Editar</VTooltip>
+              <VTooltip activator="parent" location="top">{{ t('admin_approvals.edit') }}</VTooltip>
             </IconBtn>
             
             <IconBtn 
@@ -206,7 +207,7 @@ onMounted(() => {
               @click="router.push(`/dashboard/admin/approvals/preview/${(item as any).uuid}`)"
             >
               <VIcon icon="tabler-eye" size="18" />
-              <VTooltip activator="parent" location="top">Previsualizar</VTooltip>
+              <VTooltip activator="parent" location="top">{{ t('admin_approvals.preview') }}</VTooltip>
             </IconBtn>
           </div>
         </template>

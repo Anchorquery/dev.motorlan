@@ -31,8 +31,8 @@ function motorlan_migrate_publicaciones_callback( $request ) {
     }
 
     $params = $request->get_json_params();
-    // Basic capability check - only users able to edit posts can run this.
-    if ( ! function_exists( 'current_user_can' ) || ! current_user_can( 'edit_posts' ) ) {
+    // Defense in depth: global migration is admin-only (also enforced in route permission_callback).
+    if ( ! function_exists( 'current_user_can' ) || ! current_user_can( 'manage_options' ) ) {
         return new WP_REST_Response( [ 'message' => 'Acceso denegado' ], 403 );
     }
 

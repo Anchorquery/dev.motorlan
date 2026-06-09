@@ -54,7 +54,7 @@ const selectType = (slug: string) => {
       </p>
     </div>
 
-    <VRow class="justify-center">
+    <VRow class="justify-center mx-0">
       <VCol
         v-for="type in postTypes"
         :key="type.slug"

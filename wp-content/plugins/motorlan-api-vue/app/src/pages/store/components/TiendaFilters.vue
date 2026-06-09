@@ -110,12 +110,11 @@ const clearFilters = () => {
         <div class="d-flex align-center justify-space-between gap-3 mb-4">
           <div class="d-flex align-center">
             <VIcon
+              icon="tabler-filter"
               size="18"
               class="me-2"
               color="error"
-            >
-              mdi-filter-variant
-            </VIcon>
+            />
             <span class="text-error font-weight-bold text-uppercase store-filters-card__eyebrow">
               {{ t('store.filters.title') }}
             </span>

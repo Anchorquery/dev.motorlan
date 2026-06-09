@@ -32,11 +32,22 @@ function motorlan_bulk_delete_publicaciones(WP_REST_Request $request) {
     }
 
     $deleted_count = 0;
-    $deleted_count = 0;
     foreach ($ids as $id) {
-        // Security check per item
-        $post_status = get_post_status(intval($id));
-        if ($post_status === 'pending' && !current_user_can('administrator')) {
+        $post = get_post(intval($id));
+        if (!$post) {
+            continue; // Skip non-existent posts
+        }
+
+        // Security check: only the author or an admin can delete, and only publicaciones
+        if ($post->post_type !== 'publicacion') {
+            continue;
+        }
+        if ((int) $post->post_author !== get_current_user_id() && !current_user_can('administrator')) {
+            continue; // Not owner and not admin
+        }
+
+        // Security check: If post is pending, only admin can delete
+        if ($post->post_status === 'pending' && !current_user_can('administrator')) {
             continue; // Skip pending items if not admin
         }
 

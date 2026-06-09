@@ -251,10 +251,28 @@ watch(() => [formState.value.tipo, formState.value.acf.marca, formState.value.ac
 
 <template>
   <div class="add-publication-wrapper">
-    <!-- Stepper Header -->
-    <VCard class="mb-6">
-        <VCardText>
-            <div class="d-flex justify-space-between align-center overflow-x-auto pb-2">
+    <!-- Mobile-only compact progress -->
+    <div class="d-md-none mb-4 mobile-progress">
+        <div class="d-flex align-center justify-space-between mb-2">
+            <span class="text-caption font-weight-bold text-primary">
+                Paso {{ currentStep + 1 }} de {{ steps.length }}
+            </span>
+            <span class="text-caption text-medium-emphasis">
+                {{ steps[currentStep]?.title }}
+            </span>
+        </div>
+        <VProgressLinear
+            :model-value="((currentStep + 1) / steps.length) * 100"
+            color="primary"
+            height="6"
+            rounded
+        />
+    </div>
+
+    <!-- Stepper Header (desktop only) -->
+    <VCard class="mb-6 d-none d-md-block">
+        <VCardText class="pa-4">
+            <div class="publication-stepper d-flex justify-space-between align-center overflow-x-auto pb-1">
                 <div 
                     v-for="(step, index) in steps" 
                     :key="index"
@@ -273,7 +291,7 @@ watch(() => [formState.value.tipo, formState.value.acf.marca, formState.value.ac
                     >
                         <VIcon :icon="step.icon" size="20" />
                     </div>
-                    <span class="text-caption font-weight-bold text-no-wrap">{{ step.title }}</span>
+                    <span class="publication-stepper__title text-caption font-weight-bold text-no-wrap">{{ step.title }}</span>
                 </div>
             </div>
         </VCardText>
@@ -281,7 +299,7 @@ watch(() => [formState.value.tipo, formState.value.acf.marca, formState.value.ac
 
     <!-- Form Content -->
     <VCard elevation="2" class="mb-6">
-        <VCardText class="pa-6">
+        <VCardText class="pa-0 pa-md-6 add-pub-card-body">
             
             <VWindow v-model="currentStep">
                 
@@ -353,7 +371,7 @@ watch(() => [formState.value.tipo, formState.value.acf.marca, formState.value.ac
 
         </VCardText>
         
-        <VCardActions class="pa-6 border-t d-flex justify-space-between">
+        <VCardActions class="pa-6 border-t d-flex justify-space-between publication-form-actions">
              <VBtn 
                 v-if="currentStep > 0"
                 variant="tonal" 
@@ -400,10 +418,25 @@ watch(() => [formState.value.tipo, formState.value.acf.marca, formState.value.ac
 </template>
 
 <style lang="scss" scoped>
+.add-publication-wrapper {
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+/* Clip VRow negative-margin overflow from step components */
+.add-pub-card-body {
+    overflow-x: hidden;
+}
+
+.publication-stepper {
+    scrollbar-width: thin;
+}
+
 .step-item {
     min-width: 100px;
     opacity: 0.7;
     transition: all 0.3s ease;
+    flex: 0 0 auto;
     
     &.active-step {
         opacity: 1;
@@ -414,5 +447,84 @@ watch(() => [formState.value.tipo, formState.value.acf.marca, formState.value.ac
 
 .step-icon {
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.publication-stepper__title {
+    text-align: center;
+    line-height: 1.15;
+}
+
+.publication-form-actions :deep(.v-btn) {
+    min-width: 160px;
+}
+
+@media (max-width: 959px) {
+    .add-publication-wrapper {
+        /* Space for fixed mobile nav (58px) + safe area */
+        padding-bottom: calc(58px + env(safe-area-inset-bottom, 12px) + 1rem);
+    }
+
+    .publication-stepper {
+        gap: 0;
+    }
+
+    .step-item {
+        min-width: 52px;
+        padding-inline: 2px;
+    }
+
+    .step-icon {
+        width: 28px !important;
+        height: 28px !important;
+    }
+
+    .publication-stepper__title {
+        font-size: 0.58rem;
+        white-space: normal;
+        max-width: 52px;
+        text-align: center;
+        line-height: 1.1;
+    }
+
+    .publication-form-actions {
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        padding: 0.75rem !important;
+    }
+
+    .publication-form-actions :deep(.v-btn) {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    /* Kill VRow negative margins completely — VCol 12px padding provides spacing */
+    .add-pub-card-body :deep(.v-row) {
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+    }
+
+    /* StepTypeSelection cards: reduce hover transform on mobile */
+    .add-pub-card-body :deep(.type-card:hover) {
+        transform: none;
+    }
+
+    /* StepTypeSelection icon wrapper: smaller on mobile */
+    .add-pub-card-body :deep(.icon-wrapper) {
+        width: 60px !important;
+        height: 60px !important;
+    }
+
+    /* StepTypeSelection: reduce top padding for title */
+    .add-pub-card-body :deep(.step-type-selection .text-center.mb-8) {
+        margin-bottom: 1rem !important;
+    }
+
+    /* StepDocumentation doc row: stack on mobile */
+    .add-pub-card-body :deep(.d-flex.gap-4.mb-4.align-center.pa-4) {
+        flex-wrap: wrap;
+        gap: 0.5rem !important;
+        padding: 0.75rem !important;
+    }
 }
 </style>

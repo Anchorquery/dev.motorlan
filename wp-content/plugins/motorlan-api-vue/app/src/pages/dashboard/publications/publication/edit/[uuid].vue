@@ -11,6 +11,7 @@ import StepMedia from '@/pages/dashboard/publications/components/StepMedia.vue'
 import StepLocationCondition from '@/pages/dashboard/publications/components/StepLocationCondition.vue'
 import StepDocumentation from '@/pages/dashboard/publications/components/StepDocumentation.vue'
 import { useMotorFormatter } from '@/composables/useMotorFormatter'
+import { storeUrl } from '@/utils/urls'
 
 // Composables
 import { usePublicationForm } from '@/composables/usePublicationForm'
@@ -358,44 +359,60 @@ const statusColor = computed(() => {
     <VForm ref="formRef" v-model="isFormValid" @submit.prevent :disabled="isReadOnly">
         
         <!-- Header -->
-        <div class="edit-publication-header d-flex flex-wrap justify-space-between gap-4 mb-6 align-center">
-            <VCardTitle class="pa-6 pb-0">
-          <div class="d-flex justify-space-between align-center flex-wrap gap-4">
-            <span class="text-h5 font-weight-bold text-premium-title">{{ pageTitle }}</span>
-            <span class="text-caption text-medium-emphasis">Los campos marcados con <span class="text-error">*</span> son obligatorios</span>
+        <div class="edit-publication-header mb-6">
+          <!-- Title row -->
+          <div class="edit-publication-header__title-row">
+            <span class="text-h5 font-weight-bold text-premium-title edit-publication-header__title-text">{{ pageTitle }}</span>
+            <span class="text-caption text-medium-emphasis edit-publication-header__note">
+              <i18n-t keypath="publication_edit_form.required_fields_note"><template #asterisk><span class="text-error">*</span></template></i18n-t>
+            </span>
           </div>
-        </VCardTitle>
-            <div class="edit-publication-header__actions d-flex gap-4 flex-wrap">
-                 <VBtn 
-                    variant="tonal" 
-                    color="secondary"
-                    @click="router.push('/dashboard/publications/publication/list')"
-                 >
-                    {{ t('edit_publication.discard', 'Descartar') }}
-                 </VBtn>
-                 <VBtn
-                    variant="tonal"
-                    color="secondary"
-                    :disabled="isReadOnly"
-                    @click="updatePublication('draft')"
-                 >
-                    {{ t('edit_publication.save_draft', 'Guardar Borrador') }}
-                 </VBtn>
-                 <VBtn
-                    color="primary"
-                    :loading="isLoading"
-                    :disabled="isReadOnly"
-                    @click="updatePublication('publish')"
-                 >
-                    {{ t('edit_publication.update_publication', 'Actualizar') }}
-                 </VBtn>
-            </div>
+          <!-- Actions row -->
+          <div class="edit-publication-header__actions">
+            <VBtn
+              variant="tonal"
+              color="secondary"
+              size="small"
+              @click="router.push('/dashboard/publications/publication/list')"
+            >
+              {{ t('edit_publication.discard', 'Descartar') }}
+            </VBtn>
+            <VBtn
+              variant="tonal"
+              color="secondary"
+              size="small"
+              :disabled="isReadOnly"
+              @click="updatePublication('draft')"
+            >
+              {{ t('edit_publication.save_draft', 'Guardar Borrador') }}
+            </VBtn>
+            <VBtn
+              color="primary"
+              size="small"
+              :loading="isLoading"
+              :disabled="isReadOnly"
+              @click="updatePublication('publish')"
+            >
+              {{ t('edit_publication.update_publication', 'Actualizar') }}
+            </VBtn>
+          </div>
         </div>
         
-        <VRow>
+        <VRow class="mx-0 mx-md-n3">
             <!-- Left Column: Main Content -->
-             <VCol cols="12" md="8">
+             <VCol cols="12" md="8" class="px-0 px-md-3">
                  <!-- Tabs for better organization in Edit mode -->
+                <!-- Mobile-only compact status strip -->
+                <div class="edit-pub-mobile-strip d-flex d-md-none align-center gap-3 mb-4 flex-wrap">
+                  <VChip size="small" :color="statusColor" label>{{ statusLabel }}</VChip>
+                  <span v-if="formState.acf.precio_de_venta" class="text-body-2 font-weight-bold text-primary">
+                    {{ formState.acf.precio_de_venta }}€
+                  </span>
+                  <VChip v-if="formState.acf.stock !== undefined" size="small" :color="formState.acf.stock > 0 ? 'success' : 'error'" variant="tonal">
+                    {{ formState.acf.stock }} u.
+                  </VChip>
+                </div>
+
                 <VCard class="mb-6">
                     <VTabs
                       v-model="activeTab"
@@ -403,13 +420,13 @@ const statusColor = computed(() => {
                       color="primary"
                       class="edit-publication-tabs"
                     >
-                        <VTab :value="0"><VIcon start icon="tabler-info-circle"/> {{ t('edit_publication.tabs.basic', 'Básico') }}</VTab>
-                        <VTab :value="1"><VIcon start icon="tabler-list-details"/> {{ t('edit_publication.tabs.specs', 'Especificaciones') }}</VTab>
-                        <VTab :value="2"><VIcon start icon="tabler-photo"/> {{ t('edit_publication.tabs.media', 'Multimedia') }}</VTab>
-                        <VTab :value="3"><VIcon start icon="tabler-file"/> {{ t('edit_publication.tabs.docs', 'Docs') }}</VTab>
+                        <VTab :value="0"><VIcon start icon="tabler-info-circle"/><span class="tab-lbl"> {{ t('edit_publication.tabs.basic', 'Básico') }}</span></VTab>
+                        <VTab :value="1"><VIcon start icon="tabler-list-details"/><span class="tab-lbl"> {{ t('edit_publication.tabs.specs', 'Espec.') }}</span></VTab>
+                        <VTab :value="2"><VIcon start icon="tabler-photo"/><span class="tab-lbl"> {{ t('edit_publication.tabs.media', 'Fotos') }}</span></VTab>
+                        <VTab :value="3"><VIcon start icon="tabler-file"/><span class="tab-lbl"> {{ t('edit_publication.tabs.docs', 'Docs') }}</span></VTab>
                     </VTabs>
-                    
-                    <VCardText class="pa-6">
+
+                    <VCardText class="pa-0 pa-md-6 edit-pub-card-body">
                          <VWindow v-model="activeTab">
                              <!-- Basic Info -->
                             <VWindowItem eager :value="0">
@@ -463,11 +480,11 @@ const statusColor = computed(() => {
                   -->
              </VCol>
              
-             <!-- Right Column: Status/Quick Actions -->
-             <VCol cols="12" md="4">
+             <!-- Right Column: Status/Quick Actions — hidden on mobile (compact strip shown instead) -->
+             <VCol cols="12" md="4" class="px-0 px-md-3 d-none d-md-flex flex-column">
                   <!-- Maybe some analytics or quick status info here -->
                   <!-- Publication Summary Sidebar -->
-                  <VCard class="mb-6 edit-publication-sidebar">
+      <VCard class="mb-6 edit-publication-sidebar">
                        <VCardItem class="pb-4">
                            <template #prepend>
                                <div class="d-flex align-center justify-center rounded bg-light-primary" style="width: 80px; height: 80px; overflow: hidden;">
@@ -490,11 +507,11 @@ const statusColor = computed(() => {
                        <VDivider />
 
                        <VCardText class="py-4">
-                           <div class="d-flex justify-space-between align-center mb-3">
+                           <div class="edit-publication-sidebar__row d-flex justify-space-between align-center mb-3">
                                <span class="text-body-2 text-medium-emphasis">{{ t('add_publication.post_details.price') }}:</span>
                                <span v-if="formState.acf.precio_negociable === 'yes' && formState.acf.precio_de_venta" class="text-h6 font-weight-bold text-primary">
                                    {{ formState.acf.precio_de_venta }}€
-                                   <VChip size="x-small" color="info" variant="tonal" class="ml-1">referencia</VChip>
+                                   <VChip size="x-small" color="info" variant="tonal" class="ml-1">{{ t('add_publication.reference_chip') }}</VChip>
                                </span>
                                <span v-else-if="formState.acf.precio_negociable === 'yes'" class="text-h6 font-weight-bold text-warning">
                                    Consultar precio
@@ -506,13 +523,13 @@ const statusColor = computed(() => {
                                    {{ t('add_publication.post_details.no_price', 'Consultar') }}
                                </span>
                            </div>
-                           <div class="d-flex justify-space-between align-center mb-3">
+                           <div class="edit-publication-sidebar__row d-flex justify-space-between align-center mb-3">
                                <span class="text-body-2 text-medium-emphasis">{{ t('add_publication.post_details.stock') }}:</span>
                                <VChip size="small" :color="formState.acf.stock > 0 ? 'success' : 'error'" variant="tonal">
                                    {{ formState.acf.stock }} u.
                                </VChip>
                            </div>
-                           <div class="d-flex justify-space-between align-center">
+                           <div class="edit-publication-sidebar__row d-flex justify-space-between align-center">
                                <span class="text-body-2 text-medium-emphasis">{{ t('edit_publication.status_title') }}:</span>
                                <VChip 
                                 :color="statusColor" 
@@ -539,7 +556,7 @@ const statusColor = computed(() => {
                             <VBtn
                                 block
                                 variant="outlined"
-                                :href="`/marketplace-motorlan/${formState.slug || ''}/`"
+                                :href="storeUrl(formState.slug || '')"
                                 target="_blank"
                                 prepend-icon="tabler-external-link"
                                 :disabled="!formState.slug || formState.status !== 'publish'"
@@ -553,47 +570,130 @@ const statusColor = computed(() => {
 
     </VForm>
   </div>
+
 </template>
 
 <style scoped>
+/* ─── Wrapper ─────────────────────────────────────────────────── */
 .edit-publication-wrapper {
   max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* ─── Header ──────────────────────────────────────────────────── */
+.edit-publication-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.edit-publication-header__title-row {
+  flex: 1 1 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.edit-publication-header__title-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .edit-publication-header__actions {
-  width: 100%;
+  flex: 1 1 100%;
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .edit-publication-header__actions :deep(.v-btn) {
-  min-width: 160px;
-  flex: 1 1 160px;
+  flex: 1 1 auto;
 }
 
+/* ─── Card body: clip inner VRow negative-margin overflow ─────── */
+.edit-pub-card-body {
+  overflow-x: hidden;
+}
+
+/* ─── Tabs ────────────────────────────────────────────────────── */
 .edit-publication-tabs {
   overflow-x: auto;
 }
 
+/* ─── Sidebar (desktop only) ──────────────────────────────────── */
 .edit-publication-sidebar {
   position: sticky;
   top: 1.5rem;
 }
 
-@media (max-width: 959px) {
+.edit-publication-sidebar__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* ─── Desktop overrides ───────────────────────────────────────── */
+@media (min-width: 960px) {
   .edit-publication-header {
-    align-items: stretch;
+    flex-wrap: nowrap;
+    align-items: flex-start;
   }
 
-  .edit-publication-header :deep(.v-card-title) {
-    width: 100%;
-    padding: 0;
+  .edit-publication-header__title-row {
+    flex: 1 1 auto;
+  }
+
+  .edit-publication-header__actions {
+    flex: 0 0 auto;
+    flex-wrap: nowrap;
   }
 
   .edit-publication-header__actions :deep(.v-btn) {
-    width: 100%;
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+}
+
+/* ─── Mobile ──────────────────────────────────────────────────── */
+@media (max-width: 959px) {
+  /* Space for fixed mobile nav */
+  .edit-publication-wrapper {
+    padding-bottom: calc(58px + env(safe-area-inset-bottom, 12px) + 1rem);
   }
 
-  .edit-publication-sidebar {
-    position: static;
+  /* Hide less critical header note */
+  .edit-publication-header__note {
+    display: none;
+  }
+
+  /* Tab labels: hide on mobile so tabs are icon-only */
+  .tab-lbl {
+    display: none;
+  }
+
+  /* Kill VRow negative margins — VCol 12px padding provides field spacing */
+  .edit-pub-card-body :deep(.v-row) {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+
+  /* Make action buttons equal width on mobile */
+  .edit-publication-header__actions :deep(.v-btn) {
+    min-width: 0;
+    font-size: 0.8rem;
+    padding-inline: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .edit-publication-header__actions :deep(.v-btn) {
+    font-size: 0.75rem;
+    padding-inline: 8px;
   }
 }
 </style>

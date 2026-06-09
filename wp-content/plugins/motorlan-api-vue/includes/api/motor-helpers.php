@@ -9,24 +9,98 @@ if ( ! defined( 'WPINC' ) ) {
     die;
 }
 
+if ( ! function_exists( 'motorlan_resolve_lang_for_user' ) ) {
+    /**
+     * Resolve WPML language code for given user (fallback default lang).
+     */
+    function motorlan_resolve_lang_for_user( $user_id = null ) {
+        if ( $user_id ) {
+            $locale = get_user_locale( (int) $user_id );
+            $map    = [
+                'es_ES' => 'es',
+                'es'    => 'es',
+                'en_US' => 'en',
+                'en_GB' => 'en',
+                'en'    => 'en',
+                'eu'    => 'eu',
+                'eu_ES' => 'eu',
+            ];
+            if ( isset( $map[ $locale ] ) ) {
+                return $map[ $locale ];
+            }
+        }
+        if ( function_exists( 'apply_filters' ) ) {
+            $default = apply_filters( 'wpml_default_language', null );
+            if ( $default ) return $default;
+        }
+        return 'es';
+    }
+}
+
+if ( ! function_exists( 'motorlan_localized_page_url' ) ) {
+    /**
+     * Build path (relative URL) for base page + sub-path in given language.
+     * Returns relative path so existing email templates can prepend site_url
+     * sin romperse con doble dominio.
+     */
+    function motorlan_localized_page_url( $base_slug, $sub = '', $user_id = null ) {
+        $lang = motorlan_resolve_lang_for_user( $user_id );
+        $page = get_page_by_path( $base_slug );
+
+        $fallback = '/' . $base_slug . '/' . ltrim( $sub, '/' );
+
+        if ( ! $page ) {
+            return $fallback;
+        }
+
+        $target_id = $page->ID;
+        if ( function_exists( 'apply_filters' ) ) {
+            $tx_id = apply_filters( 'wpml_object_id', $page->ID, 'page', true, $lang );
+            if ( $tx_id ) $target_id = $tx_id;
+        }
+
+        $permalink = get_permalink( $target_id );
+        if ( ! $permalink ) return $fallback;
+
+        $path = wp_parse_url( $permalink, PHP_URL_PATH );
+        if ( ! $path ) return $fallback;
+
+        return trailingslashit( $path ) . ltrim( $sub, '/' );
+    }
+}
+
+if ( ! function_exists( 'motorlan_localized_page_url_absolute' ) ) {
+    /**
+     * Versión absoluta (con esquema + host) para usar directamente en emails sin templates.
+     */
+    function motorlan_localized_page_url_absolute( $base_slug, $sub = '', $user_id = null ) {
+        return home_url( motorlan_localized_page_url( $base_slug, $sub, $user_id ) );
+    }
+}
+
+if ( ! function_exists( 'motorlan_account_url' ) ) {
+    function motorlan_account_url( $sub = '', $user_id = null ) {
+        return motorlan_localized_page_url( 'mi-cuenta', $sub, $user_id );
+    }
+}
+
 if ( ! function_exists( 'motorlan_get_store_url' ) ) {
     /**
-     * Get the public store URL for a publication.
-     *
-     * Builds the URL using the marketplace page slug instead of
-     * WordPress get_permalink(), which points to the raw CPT URL.
+     * Get the public store URL for a publication (WPML-aware, ABSOLUTE).
+     * Retrocompatible: callers previos esperan URL absoluta.
      *
      * @param int|string $post_id_or_slug Post ID or post slug.
-     * @return string Full URL to the publication in the store.
+     * @param int|null   $user_id Recipient user id for language resolution.
+     * @return string Full absolute URL to the publication in the store.
      */
-    function motorlan_get_store_url( $post_id_or_slug ) {
+    function motorlan_get_store_url( $post_id_or_slug, $user_id = null ) {
         if ( is_numeric( $post_id_or_slug ) ) {
             $slug = get_post_field( 'post_name', (int) $post_id_or_slug );
         } else {
             $slug = $post_id_or_slug;
         }
 
-        return trailingslashit( get_site_url() ) . 'marketplace-motorlan/' . $slug . '/';
+        return motorlan_localized_page_url_absolute( 'marketplace-motorlan', $slug ? trailingslashit( $slug ) : '', $user_id );
     }
 }
 
@@ -481,45 +555,4 @@ if ( ! function_exists( 'motorlan_validate_password_strength' ) ) {
         return true;
     }
 }
-
-
-// Include Password Validation function if not already present here (it was added in previous turn but I'm overwriting file)
-// Wait, I am using write_to_file with overwriting. I must include previous changes!
-// I need to make sure I don't lose `motorlan_validate_password_strength`.
-// I will view the file first to copy it?
-// Ah, I already viewed the file in Step 222.
-// Wait, Step 222 output DOES NOT SHOW `motorlan_validate_password_strength`.
-// It shows `motorlan_get_motor_data` (lines 12-141), `motorlan_create_purchase` (143-216), `motorlan_format_motor_name` (218-286).
-// Where is `motorlan_validate_password_strength`?
-// The summary said: "Added the `motorlan_validate_password_strength` function to `includes/api/motor-helpers.php`".
-// Maybe it was added at the END? Or maybe I missed it?
-// Step 222 showed lines 1 to 287.
-// Total Bytes: 10905.
-// If it was added, it should be there.
-// Maybe it was added to another file? `session-routes.php`?
-// NO, summary says `includes/api/motor-helpers.php`.
-// Let me check if there are more lines.
-// Step 222 output says "Showing lines 1 to 287".
-// Is that the whole file?
-// The output ended with `}` (line 286).
-// Maybe `motorlan_validate_password_strength` is MISSING from my view because the previous turn failed to write it properly?
-// Or maybe I am blind.
-// Let's scroll up in Step 222.
-// It starts with `<?php` and defines `motorlan_get_motor_data`, `motorlan_create_purchase`, `motorlan_format_motor_name`.
-// IT IS MISSING `motorlan_validate_password_strength`.
-// This is critical. If I overwrite, I don't lose it because it wasn't there (or maybe it was below line 287?).
-// But `view_file` says "Total Lines: 287".
-// So it is NOT in the file.
-// The previous session summary might have claimed it was done, but maybe the tool call failed or I am misinterpreting.
-// OR maybe it was in a previous version of the file?
-// Wait, `session-routes.php` calls it: `if ( function_exists( 'motorlan_validate_password_strength' ) )`.
-// If it's missing, `register_user` will fail validation (or skip it?).
-// `session-routes.php` line 327 checks `function_exists`. If not exists, it skips it.
-// So currently password validation is NOT active?
-// I MUST ADD it too.
-
-// So I will add:
-// 1. `motorlan_handle_db_error`
-// 2. `motorlan_validate_json_content_type`
-// 3. `motorlan_validate_password_strength` (RE-ADD or ADD)
 

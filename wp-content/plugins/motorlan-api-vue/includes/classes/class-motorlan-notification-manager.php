@@ -217,7 +217,14 @@ class Motorlan_Notification_Manager {
 
         $headers = ['Content-Type: text/html; charset=UTF-8'];
 
-        wp_mail( $to, $subject, $body, $headers );
+        $sent = wp_mail( $to, $subject, $body, $headers );
+
+        if ( ! $sent ) {
+            error_log( sprintf( '[Motorlan] wp_mail FAILED type=%s to=%s subject=%s', $type, $to, $subject ) );
+            if ( $type === 'verify_email' && ! empty( $data['url'] ) ) {
+                error_log( sprintf( '[Motorlan] Verify URL fallback for %s: %s', $to, $data['url'] ) );
+            }
+        }
     }
 
     /**
@@ -244,7 +251,9 @@ class Motorlan_Notification_Manager {
             return $content; // Fallback to content only if base is missing
         }
 
-        $base_html = file_get_contents( $base_template_path );
+        ob_start();
+        include $base_template_path;
+        $base_html = ob_get_clean();
 
         // Replace placeholders
         $subject = $args['title'] ?? 'Notificación de Motorlan';

@@ -112,15 +112,15 @@ const submitContact = async () => {
           <VCol cols="12">
             <AppTextField
               v-model="subject"
-              :label="t('Asunto')"
-              placeholder="Asunto del mensaje"
+              :label="t('chat_components.subject_label')"
+              :placeholder="t('chat_components.subject_placeholder')"
             />
           </VCol>
           <VCol cols="12">
             <AppTextarea
               v-model="message"
-              :label="t('Mensaje')"
-              placeholder="Escribe tu mensaje aquí..."
+              :label="t('chat_components.message_label')"
+              :placeholder="t('chat_components.message_placeholder')"
               auto-grow
               rows="4"
             />

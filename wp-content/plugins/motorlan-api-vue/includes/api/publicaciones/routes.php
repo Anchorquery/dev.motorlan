@@ -133,12 +133,20 @@ function motorlan_register_publicaciones_rest_routes() {
     register_rest_route($namespace, '/migrate-publicaciones', [
         'methods'  => WP_REST_Server::CREATABLE,
         'callback' => 'motorlan_migrate_publicaciones_callback',
-        'permission_callback' => 'motorlan_is_user_authenticated',
+        'permission_callback' => function () {
+            // Global post-type migration across ALL legacy posts regardless of
+            // ownership. Restrict to administrators only.
+            return current_user_can('manage_options');
+        },
     ]);
 
     register_rest_route($namespace, '/refresh-slugs', [
         'methods'  => WP_REST_Server::READABLE,
         'callback' => 'motorlan_refresh_slugs_callback',
-        'permission_callback' => '__return_true',
+        'permission_callback' => function () {
+            // Bulk maintenance op: rewrites slugs of ALL publicaciones regardless of
+            // ownership. Restrict to administrators only.
+            return current_user_can('manage_options');
+        },
     ]);
 }

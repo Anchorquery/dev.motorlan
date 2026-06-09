@@ -185,6 +185,7 @@ const getImageBySize = (image: any, size = 'thumbnail'): string => {
     <VDataTableServer
       v-model:items-per-page="itemsPerPage"
       v-model:page="page"
+      :mobile-breakpoint="0"
       :headers="headers"
       :items="questions"
       :items-length="totalQuestions"
@@ -287,7 +288,7 @@ const getImageBySize = (image: any, size = 'thumbnail'): string => {
                       rows="4"
                       variant="outlined"
                       class="mb-4"
-                      placeholder="Escribe tu respuesta detallada aquí..."
+                      :placeholder="t('dashboard_lists.write_answer_here')"
                       auto-grow
                     />
                     <div class="d-flex justify-end gap-3 mt-2">
@@ -337,7 +338,7 @@ const getImageBySize = (image: any, size = 'thumbnail'): string => {
                   <div class="d-flex align-center justify-space-between pa-4 bg-surface border-b">
                     <div class="d-flex align-center gap-2">
                       <VIcon icon="tabler-message-dots" color="primary" />
-                      <span class="text-h6 font-weight-bold text-premium-title">Consulta Respondida</span>
+                      <span class="text-h6 font-weight-bold text-premium-title">{{ t('dashboard_lists.question_answered') }}</span>
                     </div>
                     <IconBtn @click="isActive.value = false">
                       <VIcon icon="tabler-x" size="20" />
@@ -347,7 +348,7 @@ const getImageBySize = (image: any, size = 'thumbnail'): string => {
 
                 <VCardText class="pa-6">
                   <!-- Pregunta -->
-                  <div class="text-caption text-medium-emphasis text-uppercase font-weight-bold mb-2 ml-1">Pregunta del Usuario</div>
+                  <div class="text-caption text-medium-emphasis text-uppercase font-weight-bold mb-2 ml-1">{{ t('dashboard_lists.user_question') }}</div>
                   <div class="bg-light-primary pa-4 rounded-lg mb-6 border-primary border-opacity-10">
                     <div class="d-flex align-center gap-2 mb-2">
                       <VAvatar size="24" color="primary" variant="tonal" class="font-weight-bold text-caption">
@@ -361,7 +362,7 @@ const getImageBySize = (image: any, size = 'thumbnail'): string => {
                   </div>
                   
                   <!-- Respuesta -->
-                  <div class="text-caption text-success text-uppercase font-weight-bold mb-2 ml-1">Tu Respuesta</div>
+                  <div class="text-caption text-success text-uppercase font-weight-bold mb-2 ml-1">{{ t('dashboard_lists.your_answer') }}</div>
                   <div class="bg-surface pa-4 rounded-lg border-success border-opacity-25 border">
                     <div class="d-flex align-center gap-2 mb-2">
                       <VAvatar size="24" color="success" variant="tonal">

@@ -122,23 +122,21 @@ if ( ! class_exists( 'Motorlan_Rate_Limiter' ) ) {
 		 * @return string IP del cliente.
 		 */
 		private static function get_client_ip() {
-			// Headers de proxy comunes.
-			$headers = array(
-				'HTTP_CF_CONNECTING_IP', // Cloudflare.
-				'HTTP_X_FORWARDED_FOR',
-				'HTTP_X_REAL_IP',
-				'REMOTE_ADDR',
-			);
+			$trust_proxy = defined( 'MOTORLAN_TRUST_PROXY_HEADERS' ) && MOTORLAN_TRUST_PROXY_HEADERS;
+
+			// Only honor proxy-supplied headers when explicitly trusted. Otherwise
+			// they are attacker-controlled and bypass IP-based rate limiting.
+			$headers = $trust_proxy
+				? array( 'HTTP_CF_CONNECTING_IP', 'HTTP_X_FORWARDED_FOR', 'HTTP_X_REAL_IP', 'REMOTE_ADDR' )
+				: array( 'REMOTE_ADDR' );
 
 			foreach ( $headers as $header ) {
 				if ( ! empty( $_SERVER[ $header ] ) ) {
 					$ip = sanitize_text_field( wp_unslash( $_SERVER[ $header ] ) );
-					// Si es una lista separada por comas (proxies múltiples), tomar la primera.
 					if ( strpos( $ip, ',' ) !== false ) {
 						$ip_list = explode( ',', $ip );
 						$ip      = trim( $ip_list[0] );
 					}
-					// Validar que sea una IP válida.
 					if ( filter_var( $ip, FILTER_VALIDATE_IP ) ) {
 						return $ip;
 					}

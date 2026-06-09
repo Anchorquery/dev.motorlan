@@ -8,6 +8,7 @@ import { useApi } from '@/composables/useApi'
 import { debounce } from '@/utils/debounce'
 import { useUserStore } from '@/@core/stores/user'
 import { useMotorFormatter } from '@/composables/useMotorFormatter'
+import { storeUrl } from '@/utils/urls'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -415,10 +416,75 @@ const canEdit = (item: any) => {
          </div>
       </div>
 
-       <VDivider />
+      <VDivider />
+
+      <div class="publication-list-mobile-controls">
+        <AppTextField
+          v-model="searchQuery"
+          :placeholder="t('publication_list.search_publication')"
+          prepend-inner-icon="tabler-search"
+          clearable
+        />
+
+        <AppSelect
+          v-model="selectedStatus"
+          :placeholder="t('publication_list.status')"
+          :items="status"
+          prepend-inner-icon="tabler-filter"
+          clearable
+          clear-icon="tabler-x"
+        />
+
+        <AppSelect
+          v-model="selectedCategory"
+          :placeholder="t('Category')"
+          :items="categories"
+          prepend-inner-icon="tabler-category"
+          clearable
+          clear-icon="tabler-x"
+        />
+
+        <AppSelect
+          v-model="selectedTipo"
+          :placeholder="t('Tipo')"
+          :items="tipos"
+          clearable
+          clear-icon="tabler-x"
+        />
+
+        <AppSelect
+          v-model="itemsPerPage"
+          :items="[
+            { value: 10, title: '10' },
+            { value: 25, title: '25' },
+            { value: 50, title: '50' },
+            { value: 100, title: '100' },
+          ]"
+          class="publication-list-mobile-per-page"
+        />
+
+        <VBtn
+          color="secondary"
+          variant="tonal"
+          prepend-icon="tabler-upload"
+          block
+        >
+          {{ t('publication_list.export', 'Exportar') }}
+        </VBtn>
+
+        <VBtn
+          color="primary"
+          variant="flat"
+          prepend-icon="tabler-plus"
+          block
+          @click="router.push('/dashboard/publications/publication/add')"
+        >
+          {{ t('publication_list.add_publication', 'Añadir Publicación') }}
+        </VBtn>
+      </div>
 
       <!-- 👉 Datatable  -->
-      <div class="publication-table-shell">
+      <div class="publication-table-shell publication-table-shell--desktop">
       <VDataTableServer
         v-model:items-per-page="itemsPerPage"
         v-model:model-value="selectedRows"
@@ -464,7 +530,7 @@ const canEdit = (item: any) => {
 
         <!-- precio -->
         <template #item.precio="{ item }">
-          <span v-if="(item as any).acf.precio_negociable === 'yes' || (item as any).acf.precio_negociable === true" class="text-body-1 text-warning font-weight-bold">Consultar precio</span>
+          <span v-if="(item as any).acf.precio_negociable === 'yes' || (item as any).acf.precio_negociable === true" class="text-body-1 text-warning font-weight-bold">{{ t('publication_list_table.consult_price') }}</span>
           <span v-else-if="(item as any).acf.precio_de_venta" class="text-body-1 text-primary font-weight-bold">{{ (item as any).acf.precio_de_venta }}€</span>
           <span v-else class="text-body-2 text-medium-emphasis">-</span>
         </template>
@@ -490,7 +556,7 @@ const canEdit = (item: any) => {
               color="success"
               variant="tonal"
               size="small"
-              :href="`/marketplace-motorlan/${(item as any).slug}/`"
+              :href="storeUrl((item as any).slug)"
               target="_blank"
             >
               <VIcon icon="tabler-eye" size="18" />
@@ -607,6 +673,104 @@ const canEdit = (item: any) => {
           />
         </template>
       </VDataTableServer>
+      </div>
+
+      <div class="publication-mobile-list">
+        <div
+          v-for="item in publicaciones"
+          :key="(item as any).id"
+          class="publication-mobile-card"
+        >
+          <div class="publication-mobile-card__top">
+            <VCheckbox
+              v-model="selectedRows"
+              :value="(item as any).id"
+              density="compact"
+              hide-details
+              class="ma-0"
+            />
+
+            <VChip
+              v-bind="resolveStatus((item as any).status)"
+              density="comfortable"
+              size="small"
+              label
+            >
+              {{ resolveStatus((item as any).status).text }}
+            </VChip>
+          </div>
+
+          <div class="publication-mobile-card__body">
+            <VAvatar
+              v-if="(item as any).imagen_destacada"
+              :image="getImageBySize((item as any).imagen_destacada)"
+              size="56"
+              rounded
+              class="publication-mobile-card__thumb"
+            />
+
+            <div class="publication-mobile-card__content">
+              <div class="publication-mobile-card__title">
+                {{ formatMotorName(item as any) }}
+              </div>
+              <div class="publication-mobile-card__ref">
+                {{ (item as any).acf?.tipo_o_referencia || '-' }}
+              </div>
+              <div class="publication-mobile-card__price">
+                <span v-if="(item as any).acf?.precio_negociable === 'yes' || (item as any).acf?.precio_negociable === true">
+                  {{ t('publication_list.consult_price', 'Consultar precio') }}
+                </span>
+                <span v-else-if="(item as any).acf?.precio_de_venta">
+                  {{ (item as any).acf?.precio_de_venta }}€
+                </span>
+                <span v-else>-</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="publication-mobile-card__actions">
+            <IconBtn
+              v-if="(item as any).status === 'publish'"
+              color="success"
+              variant="tonal"
+              :href="storeUrl((item as any).slug)"
+              target="_blank"
+            >
+              <VIcon icon="tabler-eye" />
+            </IconBtn>
+
+            <IconBtn
+              color="primary"
+              variant="tonal"
+              @click="router.push(`/dashboard/publications/publication/edit/${(item as any).uuid}`)"
+            >
+              <VIcon icon="tabler-pencil" />
+            </IconBtn>
+
+            <IconBtn
+              color="secondary"
+              variant="tonal"
+              @click="openDuplicateDialog((item as any).id)"
+            >
+              <VIcon icon="tabler-copy" />
+            </IconBtn>
+
+            <IconBtn
+              color="error"
+              variant="tonal"
+              @click="openDeleteDialog((item as any).id)"
+            >
+              <VIcon icon="tabler-trash" />
+            </IconBtn>
+          </div>
+        </div>
+
+        <TablePagination
+          v-model:page="page"
+          :items-per-page="itemsPerPage"
+          :total-items="totalPublicaciones"
+          class="publication-mobile-list__pagination"
+        />
       </div>
     </VCard>
 
@@ -775,7 +939,12 @@ const canEdit = (item: any) => {
   -webkit-overflow-scrolling: touch;
 }
 
-.publication-list-toolbar {
+.publication-list-mobile-controls,
+.publication-mobile-list {
+  display: none;
+}
+
+  .publication-list-toolbar {
   row-gap: 1rem;
 }
 
@@ -784,7 +953,14 @@ const canEdit = (item: any) => {
 }
 
 @media (max-width: 959px) {
-  .publication-list-toolbar :deep(.v-col),
+  .publication-list-toolbar {
+    display: none;
+  }
+
+  .publication-table-shell--desktop {
+    display: none;
+  }
+
   .publication-list-actions > * {
     width: 100%;
   }
@@ -795,6 +971,111 @@ const canEdit = (item: any) => {
 
   .publication-list-actions .v-btn {
     width: 100%;
+  }
+
+  .publication-list-mobile-controls,
+  .publication-mobile-list {
+    display: block;
+  }
+
+  .publication-list-mobile-controls {
+    padding: 0 1.5rem 1rem;
+    display: grid;
+    gap: 0.75rem;
+  }
+
+  .publication-list-mobile-controls :deep(.v-field),
+  .publication-list-mobile-controls :deep(.v-input),
+  .publication-list-mobile-controls :deep(.v-select),
+  .publication-list-mobile-controls :deep(.v-text-field),
+  .publication-list-mobile-controls :deep(.v-btn) {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    inline-size: 100%;
+  }
+
+  .publication-list-mobile-per-page {
+    width: 100%;
+  }
+
+  .publication-mobile-list {
+    padding: 0 1.5rem 1.5rem;
+  }
+
+  .publication-mobile-card {
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    border-radius: 16px;
+    background: #fff;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+    padding: 0.9rem;
+    margin-top: 0.75rem;
+  }
+
+  .publication-mobile-card__top,
+  .publication-mobile-card__body,
+  .publication-mobile-card__actions {
+    display: flex;
+    align-items: center;
+  }
+
+  .publication-mobile-card__top {
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+  }
+
+  .publication-mobile-card__body {
+    display: grid;
+    grid-template-columns: 56px minmax(0, 1fr);
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .publication-mobile-card__thumb {
+    flex: 0 0 auto;
+  }
+
+  .publication-mobile-card__content {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .publication-mobile-card__title {
+    font-size: 1rem;
+    font-weight: 700;
+    line-height: 1.25;
+    color: rgba(15, 23, 42, 0.96);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    overflow-wrap: anywhere;
+  }
+
+  .publication-mobile-card__ref {
+    margin-top: 0.2rem;
+    color: rgba(15, 23, 42, 0.7);
+    font-size: 0.875rem;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+  }
+
+  .publication-mobile-card__price {
+    margin-top: 0.55rem;
+    color: rgb(var(--v-theme-primary));
+    font-weight: 700;
+  }
+
+  .publication-mobile-card__actions {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+  }
+
+  .publication-mobile-card__actions :deep(.v-btn) {
+    width: 100%;
+    min-width: 0;
   }
 }
 </style>

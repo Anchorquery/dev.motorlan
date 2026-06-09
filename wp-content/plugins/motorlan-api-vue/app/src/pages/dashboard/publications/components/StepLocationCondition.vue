@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { requiredValidator } from '@/@core/utils/validators'
@@ -45,9 +45,9 @@ const resolvedCountryOptions = computed(() => props.countryOptions && props.coun
 </script>
 
 <template>
-  <VRow>
+  <VRow class="mx-0">
      <VCol cols="12">
-        <h3 class="text-h5 font-weight-bold mb-4">{{ t('add_publication.sections.description', 'Descripción y Estado') }}</h3>
+        <h3 class="text-h5 font-weight-bold mb-4">{{ t('add_publication.sections.description', 'DescripciÃ³n y Estado') }}</h3>
     </VCol>
     
     <VCol cols="12">
@@ -65,7 +65,7 @@ const resolvedCountryOptions = computed(() => props.countryOptions && props.coun
 
     <VCol cols="12">
       <VDivider class="my-4" />
-      <h3 class="text-h6 font-weight-bold mb-4">{{ t('add_publication.sections.location_condition', 'Estado y Ubicación') }}</h3>
+      <h3 class="text-h6 font-weight-bold mb-4">{{ t('add_publication.sections.location_condition', 'Estado y UbicaciÃ³n') }}</h3>
     </VCol>
 
     <VCol cols="12" md="4">
@@ -89,10 +89,10 @@ const resolvedCountryOptions = computed(() => props.countryOptions && props.coun
         :items="resolvedCountryOptions"
         item-title="title"
         item-value="value"
-        :placeholder="t('add_publication.post_details.country_placeholder', 'Buscar país...')"
+        :placeholder="t('add_publication.post_details.country_placeholder', 'Buscar paÃ­s...')"
         :rules="[requiredValidator]"
         variant="outlined"
-        :no-data-text="t('add_publication.post_details.no_country_found', 'No se encontró el país')"
+        :no-data-text="t('add_publication.post_details.no_country_found', 'No se encontrÃ³ el paÃ­s')"
         auto-select-first
       />
     </VCol>
@@ -114,7 +114,7 @@ const resolvedCountryOptions = computed(() => props.countryOptions && props.coun
             @update:model-value="updateAcf('precio_de_venta', $event)"
             :label="t('add_publication.post_details.price')"
             type="number"
-            prefix="€"
+            prefix="â‚¬"
             variant="outlined"
         />
     </VCol>
@@ -127,7 +127,7 @@ const resolvedCountryOptions = computed(() => props.countryOptions && props.coun
           hide-details
         />
         <p class="text-caption text-medium-emphasis mt-1 ml-10">
-          {{ t('add_publication.post_details.consult_price_hint', 'Si se marca, el público verá "Consultar precio". Tú seguirás viendo el precio como referencia.') }}
+          {{ t('add_publication.post_details.consult_price_hint', 'Si se marca, el pÃºblico verÃ¡ "Consultar precio". TÃº seguirÃ¡s viendo el precio como referencia.') }}
         </p>
     </VCol>
     

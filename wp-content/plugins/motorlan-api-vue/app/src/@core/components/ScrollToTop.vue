@@ -37,4 +37,10 @@ const scrollToTop = () => {
   inset-block-end: 5%;
   inset-inline-end: 25px;
 }
+
+@media (max-width: 959px) {
+  .scroll-to-top {
+    display: none !important;
+  }
+}
 </style>

@@ -184,6 +184,9 @@ class Motorlan_Offers_List_Table extends WP_List_Table {
             $orderby = 'offer_date';
         }
 
+        // Whitelist sort direction to prevent SQL injection via ORDER BY
+        $order = ( strtoupper( $order ) === 'ASC' ) ? 'ASC' : 'DESC';
+
         // Fetch Total
         $total_items = $wpdb->get_var( "SELECT COUNT(id) FROM $table_name" );
         

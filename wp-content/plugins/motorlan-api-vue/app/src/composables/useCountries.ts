@@ -27,9 +27,10 @@ export const useCountries = () => {
     if (fetched && countriesCache.value.length > 0) return countriesCache.value
 
     const lang = locale.value || 'es'
-    const { data } = await useApi<{ title: string; value: string }[]>(`/wp-json/motorlan/v1/countries?lang=${lang}`, { immediate: false }).get().json().execute()
-    if (data.value) {
-      countriesCache.value = data.value
+    const req = useApi<{ title: string; value: string }[]>(`/wp-json/motorlan/v1/countries?lang=${lang}`, { immediate: false }).get().json()
+    await req.execute()
+    if (req.data.value) {
+      countriesCache.value = req.data.value as any
       fetched = true
     }
 

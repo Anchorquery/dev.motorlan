@@ -173,12 +173,14 @@ function motorlan_login_callback(WP_REST_Request $request)
         // Auto-resend on login attempt - limited to 3 per hour to prevent spam
         if (class_exists('Motorlan_Rate_Limiter') && Motorlan_Rate_Limiter::check_limit('resend_verification', 3, 3600)) {
             $token = get_user_meta($user->ID, '_motorlan_verification_token', true);
-            if (empty($token)) {
+            $expires = (int) get_user_meta($user->ID, '_motorlan_verification_token_expires', true);
+            if (empty($token) || ($expires && time() > $expires)) {
                 $token = wp_generate_password(32, false);
                 update_user_meta($user->ID, '_motorlan_verification_token', $token);
+                update_user_meta($user->ID, '_motorlan_verification_token_expires', time() + DAY_IN_SECONDS);
             }
             do_action('motorlan_user_verify_email', $user->ID, $token);
-            
+
             $resend_message = ' Hemos reenviado un nuevo enlace de activación a su email.';
         } else {
             $resend_message = ' Por favor, revise su email para encontrar el enlace de activación enviado anteriormente.';
@@ -391,24 +393,35 @@ function motorlan_register_user_callback(WP_REST_Request $request)
     if (username_exists($username)) {
         return new WP_REST_Response([
             'success' => false,
-            'message' => 'Username already exists.'
+            'message' => 'El nombre de usuario ya está registrado.',
+            'field' => 'username',
         ], 400);
     }
 
     if (email_exists($email)) {
         return new WP_REST_Response([
             'success' => false,
-            'message' => 'Email already exists.'
+            'message' => 'Este correo ya está registrado.',
+            'field' => 'email',
         ], 400);
     }
 
     // Validate password strength
     if ( function_exists( 'motorlan_validate_password_strength' ) ) {
-        $valid_pass = motorlan_validate_password_strength( $password );
+        $valid_pass = motorlan_validate_password_strength( $password, [
+            'username'   => $username,
+            'email'      => $email,
+            'first_name' => $first_name,
+            'name'       => $name,
+        ] );
         if ( is_wp_error( $valid_pass ) ) {
+            $error_data = $valid_pass->get_error_data();
+            $errors_list = isset( $error_data['errors'] ) && is_array( $error_data['errors'] ) ? $error_data['errors'] : [];
             return new WP_REST_Response([
                 'success' => false,
-                'message' => $valid_pass->get_error_message()
+                'message' => $valid_pass->get_error_message(),
+                'field' => 'password',
+                'errors' => $errors_list,
             ], 400);
         }
     }
@@ -459,6 +472,7 @@ function motorlan_register_user_callback(WP_REST_Request $request)
     $verification_token = wp_generate_password(32, false);
     update_user_meta($user_id, '_motorlan_email_verified', '0');
     update_user_meta($user_id, '_motorlan_verification_token', $verification_token);
+    update_user_meta($user_id, '_motorlan_verification_token_expires', time() + DAY_IN_SECONDS);
 
     // Send verification notification instead of welcome
     do_action('motorlan_user_verify_email', $user_id, $verification_token);
@@ -471,18 +485,29 @@ function motorlan_register_user_callback(WP_REST_Request $request)
         ]);
     }
 
-    // Send WordPress notifications (maybe disable or keep)
-    // Comentado para evitar el envío del correo de accesos por defecto de WP
-    /*
-    if (function_exists('wp_send_new_user_notifications')) {
-        wp_send_new_user_notifications($user_id, 'user');
+    // Log recovery info without leaking the full token. Only emit the URL when
+    // explicitly enabled for local debugging.
+    if ( function_exists( 'motorlan_account_url' ) ) {
+        $verify_relative = motorlan_account_url( 'verify-email?token=' . $verification_token, $user_id );
+        $verify_absolute = ( strpos( $verify_relative, 'http' ) === 0 ) ? $verify_relative : home_url( $verify_relative );
+        $token_hint      = substr( $verification_token, 0, 6 ) . '…';
+        error_log( sprintf( '[Motorlan] Registered user_id=%d email=%s token_prefix=%s', $user_id, $email, $token_hint ) );
+        if ( defined( 'MOTORLAN_EXPOSE_DEV_TOKENS' ) && MOTORLAN_EXPOSE_DEV_TOKENS ) {
+            error_log( sprintf( '[Motorlan][DEV] Verify URL for user_id=%d: %s', $user_id, $verify_absolute ) );
+        }
     }
-    */
 
-    return new WP_REST_Response([
+    $response_payload = [
         'success' => true,
-        'message' => 'Usuario registrado con éxito. Por favor, revise su email para activar su cuenta.'
-    ], 200);
+        'message' => 'Usuario registrado con éxito. Por favor, revise su email para activar su cuenta.',
+    ];
+
+    // Dev URL only when an explicit constant is set, never solely WP_DEBUG.
+    if ( defined( 'MOTORLAN_EXPOSE_DEV_TOKENS' ) && MOTORLAN_EXPOSE_DEV_TOKENS && isset( $verify_absolute ) ) {
+        $response_payload['dev_verify_url'] = $verify_absolute;
+    }
+
+    return new WP_REST_Response( $response_payload, 200 );
 }
 
 /**
@@ -514,9 +539,9 @@ function motorlan_verify_email_callback(WP_REST_Request $request)
     ) );
 
     if (!$user_id) {
-        // Log error for debugging if needed
-        error_log("Motorlan Verification Error: Token $token not found in database.");
-        
+        // Don't log raw token to avoid credential leakage in shared log files.
+        error_log( '[Motorlan] Verification token not found (prefix=' . substr( $token, 0, 6 ) . '…)' );
+
         return new WP_REST_Response([
             'success' => false,
             'message' => 'Token de verificación inválido o expirado.'
@@ -531,9 +556,23 @@ function motorlan_verify_email_callback(WP_REST_Request $request)
         ], 404);
     }
 
+    // Enforce token expiration (24h after issuance). Tokens without an expiry
+    // are treated as legacy and accepted, but a new one is required on resend.
+    $expires_at = (int) get_user_meta( $user->ID, '_motorlan_verification_token_expires', true );
+    if ( $expires_at && time() > $expires_at ) {
+        delete_user_meta( $user->ID, '_motorlan_verification_token' );
+        delete_user_meta( $user->ID, '_motorlan_verification_token_expires' );
+        return new WP_REST_Response([
+            'success' => false,
+            'message' => 'El enlace de verificación ha expirado. Solicite uno nuevo.',
+            'code' => 'token_expired',
+        ], 400);
+    }
+
     // Mark as verified
     update_user_meta($user->ID, '_motorlan_email_verified', '1');
     delete_user_meta($user->ID, '_motorlan_verification_token');
+    delete_user_meta($user->ID, '_motorlan_verification_token_expires');
 
     // Trigger welcome now that they are verified
     do_action('motorlan_user_welcome', $user->ID);
@@ -611,20 +650,13 @@ function motorlan_resend_verification_callback(WP_REST_Request $request)
         ], 429);
     }
 
-    // Generate new token
+    // Generate new token with 24h expiration
     $token = wp_generate_password(32, false);
     update_user_meta($user->ID, '_motorlan_verification_token', $token);
+    update_user_meta($user->ID, '_motorlan_verification_token_expires', time() + DAY_IN_SECONDS);
 
     // Trigger email send
     do_action('motorlan_user_verify_email', $user->ID, $token);
-    
-    // Also send via manager direct (sync/backup) if action fails? No, action handles it.
-    // However, the action uses wp_schedule_single_event which might be delayed.
-    // If we want instant email, we should call manager direct.
-    // But `Motorlan_Notification_Listener::on_user_verify_email` creates a DB notification AND schedules email.
-    // Let's trust the action. The previous implementation was:
-    // do_action('motorlan_user_verify_email', $user->ID, $token);
-    // So this part is fine, as long as listener uses correct template.
 
     return new WP_REST_Response([
         'success' => true,
@@ -686,8 +718,13 @@ function motorlan_forgot_password_callback(WP_REST_Request $request)
         ], 500);
     }
 
-    // Build reset URL
-    $reset_url = home_url("/mi-cuenta/reset-password?key={$reset_key}&login=" . rawurlencode($user->user_login));
+    // Build reset URL (WPML-aware, usa idioma del usuario)
+    // Template prepend home_url si relativo, fallback wp_mail necesita absoluto.
+    $reset_path = motorlan_account_url(
+        "reset-password?key={$reset_key}&login=" . rawurlencode($user->user_login),
+        $user->ID
+    );
+    $reset_url = (strpos($reset_path, 'http') === 0) ? $reset_path : home_url($reset_path);
 
     // Send email via Notification Manager to ensure HTML template usage
     if (class_exists('Motorlan_Notification_Manager')) {
@@ -759,9 +796,13 @@ function motorlan_reset_password_callback(WP_REST_Request $request)
     if ( function_exists( 'motorlan_validate_password_strength' ) ) {
         $valid_pass = motorlan_validate_password_strength( $password );
         if ( is_wp_error( $valid_pass ) ) {
+            $error_data = $valid_pass->get_error_data();
+            $errors_list = isset( $error_data['errors'] ) && is_array( $error_data['errors'] ) ? $error_data['errors'] : [];
             return new WP_REST_Response([
                 'success' => false,
-                'message' => $valid_pass->get_error_message()
+                'message' => $valid_pass->get_error_message(),
+                'field' => 'password',
+                'errors' => $errors_list,
             ], 400);
         }
     } elseif (strlen($password) < 8) {

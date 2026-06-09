@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import type { UserProperties } from '@db/apps/users/types'
 import { avatarText, prefixWithPlus } from '@core/utils/formatters'
+import { useI18n } from 'vue-i18n'
 import AddNewUserDrawer from '@/views/apps/user/list/AddNewUserDrawer.vue'
+
+const { t } = useI18n()
 
 // 👉 Store
 const searchQuery = ref('')
@@ -194,7 +197,7 @@ const widgetData = ref([
 
     <VCard class="mb-6">
       <VCardItem class="pb-4">
-        <VCardTitle>Filters</VCardTitle>
+        <VCardTitle>{{ t('users_list.filters') }}</VCardTitle>
       </VCardItem>
 
       <VCardText>
@@ -206,7 +209,7 @@ const widgetData = ref([
           >
             <AppSelect
               v-model="selectedRole"
-              placeholder="Select Role"
+              :placeholder="t('users_list.select_role')"
               :items="roles"
               clearable
               clear-icon="tabler-x"
@@ -219,7 +222,7 @@ const widgetData = ref([
           >
             <AppSelect
               v-model="selectedPlan"
-              placeholder="Select Plan"
+              :placeholder="t('users_list.select_plan')"
               :items="plans"
               clearable
               clear-icon="tabler-x"
@@ -232,7 +235,7 @@ const widgetData = ref([
           >
             <AppSelect
               v-model="selectedStatus"
-              placeholder="Select Status"
+              :placeholder="t('users_list.select_status')"
               :items="status"
               clearable
               clear-icon="tabler-x"
@@ -243,8 +246,8 @@ const widgetData = ref([
 
       <VDivider />
 
-      <VCardText class="d-flex flex-wrap gap-4">
-        <div class="me-3 d-flex gap-3">
+      <VCardText class="d-flex flex-wrap gap-4 user-list-toolbar">
+        <div class="me-3 d-flex gap-3 user-list-toolbar__per-page">
           <AppSelect
             :model-value="itemsPerPage"
             :items="[
@@ -254,18 +257,18 @@ const widgetData = ref([
               { value: 100, title: '100' },
               { value: -1, title: 'All' },
             ]"
-            style="inline-size: 6.25rem;"
+            class="user-list-toolbar__per-page-select"
             @update:model-value="itemsPerPage = parseInt($event, 10)"
           />
         </div>
         <VSpacer />
 
-        <div class="app-user-search-filter d-flex align-center flex-wrap gap-4">
+        <div class="app-user-search-filter d-flex align-center flex-wrap gap-4 user-list-toolbar__actions">
           <!-- 👉 Search  -->
-          <div style="inline-size: 15.625rem;">
+          <div class="user-list-toolbar__search">
             <AppTextField
               v-model="searchQuery"
-              placeholder="Search User"
+              :placeholder="t('users_list.search_user')"
             />
           </div>
 
@@ -391,21 +394,21 @@ const widgetData = ref([
                     <VIcon icon="tabler-eye" />
                   </template>
 
-                  <VListItemTitle>View</VListItemTitle>
+                  <VListItemTitle>{{ t('users_list.view') }}</VListItemTitle>
                 </VListItem>
 
                 <VListItem link>
                   <template #prepend>
                     <VIcon icon="tabler-pencil" />
                   </template>
-                  <VListItemTitle>Edit</VListItemTitle>
+                  <VListItemTitle>{{ t('users_list.edit') }}</VListItemTitle>
                 </VListItem>
 
                 <VListItem @click="deleteUser(item.id)">
                   <template #prepend>
                     <VIcon icon="tabler-trash" />
                   </template>
-                  <VListItemTitle>Delete</VListItemTitle>
+                  <VListItemTitle>{{ t('users_list.delete') }}</VListItemTitle>
                 </VListItem>
               </VList>
             </VMenu>
@@ -437,5 +440,54 @@ const widgetData = ref([
   overflow-x: auto;
   width: 100%;
   -webkit-overflow-scrolling: touch;
+}
+
+.user-list-toolbar {
+  row-gap: 0.75rem;
+}
+
+.user-list-toolbar__per-page-select {
+  min-width: 6.25rem;
+}
+
+.user-list-toolbar__search {
+  width: 15.625rem;
+}
+
+@media (max-width: 959px) {
+  .user-list-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .user-list-toolbar :deep(.v-spacer) {
+    display: none;
+  }
+
+  .user-list-toolbar__per-page,
+  .user-list-toolbar__actions,
+  .user-list-toolbar__per-page-select,
+  .user-list-toolbar__search {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .user-list-toolbar__search {
+    width: 100%;
+  }
+
+  .user-list-toolbar__actions {
+    flex-direction: column;
+  }
+
+  .user-list-toolbar__actions :deep(.v-btn),
+  .user-list-toolbar__actions :deep(.v-field),
+  .user-list-toolbar__actions :deep(.v-input),
+  .user-list-toolbar__actions :deep(.v-select),
+  .user-list-toolbar__actions :deep(.v-text-field) {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
 }
 </style>

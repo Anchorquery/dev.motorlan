@@ -78,6 +78,23 @@ class Motorlan_Notification_Listener {
         add_action( 'motorlan_new_review', [ $this, 'on_new_review' ], 10, 3 );
         add_action( 'motorlan_user_verify_email', [ $this, 'on_user_verify_email' ], 10, 2 );
         add_action( 'motorlan_seller_reply', [ $this, 'on_seller_reply' ], 10, 5 );
+        add_action( 'motorlan_send_guest_message_copy', [ $this, 'on_send_guest_message_copy' ], 10, 5 );
+    }
+
+    public function on_send_guest_message_copy( $guest_email, $message, $product_title, $seller_name, $product_id ) {
+        if ( empty( $guest_email ) ) return;
+        $this->notification_manager->send_email_notification_direct(
+            0,
+            'message_sent',
+            __( 'Mensaje enviado', 'motorlan-api-vue' ),
+            $message,
+            [
+                'direct_email'   => $guest_email,
+                'recipient_name' => $seller_name,
+                'product_title'  => $product_title,
+                'url'            => '/?p=' . (int) $product_id,
+            ]
+        );
     }
 
     // --- Callbacks ---
@@ -94,11 +111,11 @@ class Motorlan_Notification_Listener {
 
             $this->notification_manager->create_notification(
                 $user_id,
-                'welcome_message',
+                'welcome_email',
                 $subject,
                 $message,
                 [],
-                ['email'] 
+                ['email']
             );
         } finally {
             if ( $switched ) restore_previous_locale();
@@ -108,23 +125,38 @@ class Motorlan_Notification_Listener {
     public function on_user_verify_email( $user_id, $token ) {
         $user = get_userdata( $user_id );
         if ( ! $user ) return;
-        
+
         $switched = switch_to_locale( get_user_locale( $user_id ) );
-        
+
         try {
             $subject = __( 'Verifica tu cuenta en Motorlan', 'motorlan-api-vue' );
             $message = sprintf( __( 'Hola %s, por favor verifica tu cuenta haciendo clic en el siguiente enlace.', 'motorlan-api-vue' ), $user->display_name );
+            $data = [
+                'token' => $token,
+                'url' => motorlan_account_url( 'verify-email?token=' . $token, $user_id ),
+                'vue_path' => '/verify-email?token=' . $token,
+            ];
 
-            $this->notification_manager->create_notification(
+            // Try to create DB notification but always send email regardless of DB result
+            $created = $this->notification_manager->create_notification(
                 $user_id,
                 'verify_email',
                 $subject,
                 $message,
-                [
-                    'token' => $token,
-                    'url' => '/mi-cuenta/verify-email?token=' . $token
-                ],
-                ['email'] 
+                $data,
+                ['web']
+            );
+
+            if ( ! $created ) {
+                error_log( sprintf( '[Motorlan] create_notification(verify_email) failed for user_id=%d; sending email directly', $user_id ) );
+            }
+
+            $this->notification_manager->send_email_notification_direct(
+                $user_id,
+                'verify_email',
+                $subject,
+                $message,
+                $data
             );
         } finally {
             if ( $switched ) restore_previous_locale();
@@ -147,7 +179,8 @@ class Motorlan_Notification_Listener {
                 [
                     'post_id' => $post_id,
                     'product_title' => motorlan_format_motor_name( $post_id ),
-                    'url' => '/publicacion/' . $post->post_name
+                    'url' => motorlan_localized_page_url( 'marketplace-motorlan', trailingslashit( $post->post_name ), $author_id ),
+                    'vue_path' => '/dashboard/publications/publication/list',
                 ],
                 ['web', 'email']
             );
@@ -179,7 +212,8 @@ class Motorlan_Notification_Listener {
                     'post_id' => $post_id,
                     'reason' => $reason,
                     'product_title' => $formatted_title,
-                    'url' => '/dashboard/publications'
+                    'url' => motorlan_account_url( 'dashboard/publications/publication/list', $author_id ),
+                    'vue_path' => '/dashboard/publications/publication/list',
                 ],
                 ['web', 'email']
             );
@@ -230,7 +264,8 @@ class Motorlan_Notification_Listener {
                 array(
                     'offer_id'       => $offer_id,
                     'publication_id' => $offer->publication_id,
-                    'url'            => '/dashboard/publications/offers-received',
+                    'url'            => motorlan_account_url( 'dashboard/publications/offers-received', $seller_id ),
+                    'vue_path'       => '/dashboard/publications/offers-received',
                     'product_image'  => $image,
                     'product_price'  => $price,
                     'product_title'  => $publication_title,
@@ -269,7 +304,8 @@ class Motorlan_Notification_Listener {
                 array(
                     'offer_id'       => $offer_id,
                     'publication_id' => $offer->publication_id,
-                    'url'            => '/dashboard/purchases/offers-sent',
+                    'url'            => motorlan_account_url( 'dashboard/purchases/offers-sent', $buyer_id ),
+                    'vue_path'       => '/dashboard/purchases/offers-sent',
                     'product_title'  => $publication_title,
                     'product_image'  => $image,
                     'product_price'  => $price,
@@ -308,7 +344,8 @@ class Motorlan_Notification_Listener {
                 array(
                     'purchase_uuid' => $uuid,
                     'publication_id' => $pid,
-                    'url'            => '/dashboard/purchases/purchases',
+                    'url'            => motorlan_account_url( 'dashboard/purchases/purchases', $buyer_id ),
+                    'vue_path'       => '/dashboard/purchases/purchases',
                     'product_title'  => $title,
                     'product_image'  => $image,
                     'product_price'  => $price,
@@ -357,7 +394,8 @@ class Motorlan_Notification_Listener {
                 array(
                     'purchase_uuid' => $uuid,
                     'purchase_id'   => $purchase_id,
-                    'url'           => '/purchases/' . $uuid,
+                    'url'           => motorlan_account_url( 'dashboard/purchases/' . $uuid, $seller_id ),
+                    'vue_path'      => '/dashboard/purchases/' . $uuid,
                     'product_title' => $publicacion_title,
                     'product_image' => $image,
                     'product_price' => $price,
@@ -398,7 +436,8 @@ class Motorlan_Notification_Listener {
                 [
                     'publication_id' => $publication_id,
                     'question_id'    => $question_id,
-                    'url'            => '/dashboard/publications/questions',
+                    'url'            => motorlan_account_url( 'dashboard/publications/questions', $publication_author_id ),
+                    'vue_path'       => '/dashboard/publications/questions',
                     'product_title'  => $publication_title,
                     'product_image'  => $image,
                     'asker_name'     => $asker_name,
@@ -440,7 +479,8 @@ class Motorlan_Notification_Listener {
                 sprintf( __( 'Nuevo mensaje en "%s"', 'motorlan-api-vue' ), $title ),
                 "{$sender_name}: " . wp_trim_words( $message_text, 10, '...' ),
                 [
-                    'url' => '/dashboard/inquiries?room_key=' . $room_key,
+                    'url' => motorlan_account_url( 'dashboard/inquiries?room_key=' . $room_key, $recipient_id ),
+                    'vue_path' => '/dashboard/inquiries?room_key=' . $room_key,
                     'room_key' => $room_key,
                     'product_id' => $product_id,
                     'sender_name' => $sender_name,
@@ -474,7 +514,8 @@ class Motorlan_Notification_Listener {
                 array(
                     'purchase_uuid' => $uuid,
                     'purchase_id'   => $purchase_id,
-                    'url'           => '/purchases/' . $uuid,
+                    'url'           => motorlan_account_url( 'dashboard/purchases/' . $uuid, $recipient_id ),
+                    'vue_path'      => '/dashboard/purchases/' . $uuid,
                     'product_title' => $title,
                     'product_image' => $image,
                     'sender_name'   => $sender_name,
@@ -510,7 +551,8 @@ class Motorlan_Notification_Listener {
                 [
                      'post_id' => $post_id,
                      'interested_user_id' => $user_id,
-                     'url' => '/dashboard/publications/list', // Analyze engagement
+                     'url' => motorlan_account_url( 'dashboard/publications/publication/list', $author_id ),
+                     'vue_path' => '/dashboard/publications/publication/list',
                      'product_title' => $title,
                      'product_image' => $image
                 ],
@@ -548,9 +590,10 @@ class Motorlan_Notification_Listener {
             "Has marcado \"{$title}\" como vendida.",
             [
                 'post_id' => $post_id,
-                'url' => '/dashboard/publications/list'
+                'url' => motorlan_account_url( 'dashboard/publications/publication/list', $author_id ),
+                'vue_path' => '/dashboard/publications/publication/list',
             ],
-            ['web'] 
+            ['web']
         );
     }
 
@@ -566,7 +609,8 @@ class Motorlan_Notification_Listener {
             [
                 'purchase_id' => $purchase_id,
                 'reviewer_id' => $reviewer_id,
-                'url'         => '/dashboard/profile' // Or reviews list
+                'url'         => motorlan_account_url( 'dashboard/user/profile', $reviewed_id ),
+                'vue_path'    => '/dashboard/user/profile',
             ],
             ['web', 'email']
         );
@@ -589,7 +633,8 @@ class Motorlan_Notification_Listener {
                 [
                     'post_id' => $post_id,
                     'product_title' => $title,
-                    'url' => '/dashboard/admin/approvals',
+                    'url' => motorlan_account_url( 'dashboard/admin/approvals', $admin->ID ),
+                    'vue_path' => '/dashboard/admin/approvals',
                 ],
                 ['web', 'email']
             );
@@ -612,7 +657,8 @@ class Motorlan_Notification_Listener {
                     sprintf( __( 'Respuesta de vendedor en "%s"', 'motorlan-api-vue' ), $title ),
                     "{$sender_name}: " . wp_trim_words( $message_text, 10, '...' ),
                     [
-                        'url' => '/dashboard/purchases/inquiries?room_key=' . $room_key,
+                        'url' => motorlan_account_url( 'dashboard/purchases/inquiries?room_key=' . $room_key, $buyer_id ),
+                        'vue_path' => '/dashboard/purchases/inquiries?room_key=' . $room_key,
                         'room_key' => $room_key,
                         'product_id' => $product_id,
                         'sender_name' => $sender_name,
@@ -627,18 +673,33 @@ class Motorlan_Notification_Listener {
             }
         } elseif ( ! empty( $buyer_email ) ) {
             // Guest notification (Email only)
+            $room_key_for_token = is_object( $message_data ) ? $message_data->room_key : ( $message_data['room_key'] ?? '' );
+            $chat_token         = '';
+            $token_ttl          = 604800; // 7 días
+            $token_expires_at   = time() + $token_ttl;
+            if ( class_exists( 'Motorlan_Product_Chat_Controller' ) && ! empty( $room_key_for_token ) ) {
+                $chat_token = Motorlan_Product_Chat_Controller::generate_chat_token( $room_key_for_token, $buyer_email, $product_id, $token_ttl );
+            }
+            $slug      = get_post_field( 'post_name', $product_id );
+            // Guest sin user_id: site default lang (relative path para template)
+            $base_path = motorlan_localized_page_url( 'marketplace-motorlan', trailingslashit( $slug ) );
+            $query     = array( 'open_chat' => '1' );
+            if ( $chat_token ) $query['ct'] = $chat_token;
+            $product_path = add_query_arg( $query, $base_path );
+
             $this->notification_manager->send_email_notification_direct(
-                0, // No user ID
+                0,
                 'new_message',
                 sprintf( __( 'Respuesta de vendedor en "%s"', 'motorlan-api-vue' ), $title ),
                 "{$sender_name}: " . wp_trim_words( $message_text, 10, '...' ),
                 [
-                    'url' => trailingslashit(get_site_url()) . 'marketplace-motorlan/product/' . get_post_field('post_name', $product_id), // Better link for guests?
-                    'direct_email' => $buyer_email, // We'll need to modify manager to use this
-                    'product_title' => $title,
-                    'product_image' => $image,
-                    'message_full'  => $message_text,
-                    'sender_name' => $sender_name
+                    'url'                    => $product_path,
+                    'direct_email'           => $buyer_email,
+                    'product_title'          => $title,
+                    'product_image'          => $image,
+                    'message_full'           => $message_text,
+                    'sender_name'            => $sender_name,
+                    'chat_link_expires_at'   => $chat_token ? $token_expires_at : 0,
                 ]
             );
         }

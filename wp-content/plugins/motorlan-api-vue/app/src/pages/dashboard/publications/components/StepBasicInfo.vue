@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { requiredValidator } from '@/@core/utils/validators'
@@ -20,7 +20,7 @@ const emit = defineEmits(['update:formState'])
 const { t } = useI18n()
 const { getFormattedPreview } = useMotorFormatter()
 
-// Añadir opción "Otros" al inicio de la lista de marcas
+// AÃ±adir opciÃ³n "Otros" al inicio de la lista de marcas
 const marcasWithOther = computed(() => [
   { title: t('add_publication.post_details.brand_other', 'Otros'), value: OTHER_BRAND_VALUE },
   ...props.marcas,
@@ -57,7 +57,7 @@ const customBrandValidator = (v: any) => {
   return true
 }
 
-// Validador específico para el select de marca
+// Validador especÃ­fico para el select de marca
 const brandValidator = (v: any) => {
   if (v === null || v === undefined || v === '') return 'Selecciona una marca'
   return true
@@ -68,7 +68,7 @@ const formattedPreview = computed(() => {
     return getFormattedPreview(props.formState, props.marcas, props.tipos || [])
 })
 
-// Auto-rellenar el título con el nombre formateado (oculto al usuario)
+// Auto-rellenar el tÃ­tulo con el nombre formateado (oculto al usuario)
 watch(formattedPreview, (newVal) => {
     if (newVal) {
         emit('update:formState', { ...props.formState, title: newVal })
@@ -78,9 +78,9 @@ watch(formattedPreview, (newVal) => {
 </script>
 
 <template>
-  <VRow>
+  <VRow class="mx-0">
     <VCol cols="12">
-        <h3 class="text-h5 font-weight-bold mb-4">{{ t('add_publication.sections.basic_info', 'Información Básica') }}</h3>
+        <h3 class="text-h5 font-weight-bold mb-4">{{ t('add_publication.sections.basic_info', 'InformaciÃ³n BÃ¡sica') }}</h3>
     </VCol>
     <VCol cols="12" md="6">
       <AppSelect
@@ -123,7 +123,7 @@ watch(formattedPreview, (newVal) => {
         <div class="d-flex align-center">
           <VIcon icon="tabler-eye" class="me-2" size="20" />
           <div>
-            <div class="text-caption text-medium-emphasis">Vista previa del nombre estandarizado:</div>
+            <div class="text-caption text-medium-emphasis">{{ t('add_publication.name_preview_label') }}</div>
             <div class="font-weight-bold">{{ formattedPreview }}</div>
           </div>
         </div>

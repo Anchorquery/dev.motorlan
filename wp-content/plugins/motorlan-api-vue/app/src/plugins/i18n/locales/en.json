@@ -203,7 +203,11 @@
       "text": "Indicate the reason why this publication is not approved. The user will receive this information.",
       "reason_label": "Reason for rejection",
       "reason_placeholder": "E.g.: Missing technical specifications in the description."
-    }
+    },
+    "new_brand_proposed": "New brand proposed by the user",
+    "consult_price": "Ask for price",
+    "edit": "Edit",
+    "preview": "Preview"
   },
   "store": {
     "par_options": {
@@ -239,7 +243,24 @@
       "loading": "Loading publications...",
       "view_detail": "View detail",
       "empty_title": "No publications found",
-      "empty_subtitle": "Try adjusting the search filters."
+      "empty_subtitle": "Try adjusting the search filters.",
+      "results_heading": "Results",
+      "no_results": "No results",
+      "count_summary": "{count} publications found"
+    },
+    "publication_info": {
+      "title": "Publication information",
+      "brand": "Brand",
+      "model": "Model",
+      "power": "Power",
+      "speed": "Speed",
+      "torque": "Nominal torque",
+      "voltage": "Voltage",
+      "current": "Current"
+    },
+    "product_docs": {
+      "title": "Additional documentation",
+      "empty": "No documentation attached."
     },
     "related": {
       "title": "Related products",
@@ -307,8 +328,40 @@
       "skip": "Skip",
       "accept_and_add_warranty": "Accept and Add Warranty",
       "go_back": "Go Back",
-      "request_warranty": "Request Warranty"
+      "request_warranty": "Request Warranty",
+      "back": "Back",
+      "cancel": "Cancel",
+      "next": "Next",
+      "publish": "Publish"
     },
+    "sections": {
+      "basic_info": "Basic information",
+      "description": "Description",
+      "location_condition": "Location and condition",
+      "tech_specs": "Technical specifications"
+    },
+    "steps": {
+      "type": "Type",
+      "basic_info": "Basic info",
+      "details": "Details",
+      "specs": "Specifications",
+      "media": "Media",
+      "docs": "Documents"
+    },
+    "documentacion": {
+      "title": "Additional documentation",
+      "subtitle": "Attach manuals, specifications or other documents",
+      "doc_name": "Document name",
+      "add_btn": "Add document",
+      "no_docs": "No documents added."
+    },
+    "tech_specs_not_motor": "Technical specifications only apply to motors.",
+    "validation": {
+      "main_image_required": "The main image is required",
+      "stock_positive": "Stock must be greater than 0"
+    },
+    "name_preview_label": "Standardized name preview:",
+    "reference_chip": "reference",
     "post_details": {
       "motor_section_title": "Motor Details",
       "section_title": "Publication Details",
@@ -318,6 +371,9 @@
       "reference": "Model",
       "reference_placeholder": "Reference",
       "brand": "Brand",
+      "brand_other": "Other (new brand)",
+      "brand_custom_label": "New brand",
+      "brand_custom_placeholder": "Name of the new brand",
       "category": "Category",
       "power": "Power (kW)",
       "power_placeholder": "100",
@@ -330,6 +386,8 @@
       "intensity": "Intensity (A)",
       "intensity_placeholder": "10",
       "country": "Country (location)",
+      "country_placeholder": "Select a country",
+      "no_country_found": "No countries found",
       "province": "Province",
       "province_placeholder": "Madrid",
       "condition": "Item Condition",
@@ -346,6 +404,8 @@
       "negotiable_price": "Consult price",
       "consult_price": "Consult price",
       "consult_price_hint": "If checked, the public will see \"Consult price\". You will still see the price as a reference.",
+      "show_price": "Show price in the publication",
+      "no_price": "No price",
       "publish_acf": "Publication Status",
       "publish_status_publish": "Publish",
       "publish_status_draft": "Draft"
@@ -374,7 +434,9 @@
       "ac": "Alternating Current (A.C.)"
     },
     "media": {
+      "title": "Media",
       "main_image": "Main Image",
+      "gallery": "Image Gallery",
       "image_gallery": "Image Gallery",
       "additional_documentation": "Additional Documentation",
       "document_name": "Document Name",
@@ -405,6 +467,9 @@
       "comments_placeholder": "Any additional information"
     },
     "toasts": {
+      "create_success": "Publication created successfully",
+      "create_error": "Error creating the publication",
+      "fetch_error": "Error loading data",
       "post_created_success": "Publication created. Now decide on the warranty.",
       "post_created_error": "Error creating publication: {message}",
       "warranty_skipped_confirmation": "The publication will be published without the Motorlan warranty. Are you sure?",
@@ -479,9 +544,17 @@
   },
   "edit_publication": {
     "title": "Edit Publication",
+    "no_title": "Untitled",
+    "not_found": "Publication not found",
     "fetch_error": "Unable to load the publication.",
     "discard": "Discard",
     "update_publication": "Update Publication",
+    "tabs": {
+      "basic": "Basic information",
+      "specs": "Specifications",
+      "media": "Media",
+      "docs": "Documents"
+    },
     "section_title": "Publication Details",
     "publication_title": "Publication Title",
     "publication_title_placeholder": "Title",
@@ -684,7 +757,7 @@
     "name_label": "Your name *",
     "name_placeholder": "e.g. Juan Perez",
     "email_label": "Your email *",
-    "email_placeholder": "example@email.com",
+    "email_placeholder": "example{'@'}email.com",
     "message_label": "Message *",
     "terms_prefix": "I accept the ",
     "terms_connector": " and the ",
@@ -722,7 +795,150 @@
     "sign_up": "Sign up",
     "already_account": "Already have an account?",
     "sign_in_instead": "Log in instead",
-    "or": "or"
+    "or": "or",
+    "first_name_placeholder": "John",
+    "last_name_placeholder": "Doe"
+  },
+  "forgot_password": {
+    "title": "Forgot your password?",
+    "subtitle": "Enter your email and we will send you reset instructions.",
+    "email": "Email",
+    "send_button": "Send instructions",
+    "back_to_login": "Back to login",
+    "success": "We sent you an email with instructions.",
+    "error": "Could not send the email. Please try again."
+  },
+  "reset_password": {
+    "title": "Reset password",
+    "subtitle": "Enter your new password.",
+    "new_password": "New password",
+    "confirm_password": "Confirm password",
+    "password_placeholder": "············",
+    "submit_button": "Reset password",
+    "back_to_login": "Back to login",
+    "success": "Password reset successfully.",
+    "mismatch": "Passwords do not match.",
+    "error": "Could not reset the password."
+  },
+  "register_success": {
+    "title": "Congratulations on registering!",
+    "subtitle": "Your account has been created successfully, but one last step is needed to activate it.",
+    "verify_email": "Verify your email address",
+    "verify_email_body": "We have sent an activation link to your inbox. Please check it and click the button to confirm your account.",
+    "spam_note": "If you don't receive the email within a few minutes, please check your spam or junk folder.",
+    "back_to_login": "Back to login"
+  },
+  "publication_slug_page": {
+    "not_found_title": "Publication not found",
+    "not_found_action": "Go to store"
+  },
+  "footer": {
+    "license": "License",
+    "documentation": "Documentation",
+    "support": "Support",
+    "more_themes": "More Themes"
+  },
+  "not_authorized": {
+    "title": "You are not authorized! 🔐",
+    "description": "You don't have permission to access this page. Go home.",
+    "back_to_home": "Back to home"
+  },
+  "offer_modal": {
+    "title": "Make an offer",
+    "intro": "Interested? Send your best offer.",
+    "info": "If the seller accepts, you'll have 24 hours to confirm and complete the purchase.",
+    "amount_label": "Your offer",
+    "remaining_offers": "{count} offers remaining today",
+    "submit": "Send",
+    "invalid_amount": "Enter a valid offer amount.",
+    "send_error": "There was an error sending the offer."
+  },
+  "store_filters_panel": {
+    "filters": "Filters",
+    "active_filters": "{count} active filters"
+  },
+  "chat_components": {
+    "subject_label": "Subject",
+    "message_label": "Message",
+    "write_answer": "Write your answer...",
+    "write_message": "Write your message...",
+    "write_message_dots": "Type a message...",
+    "subject_placeholder": "Message subject",
+    "message_placeholder": "Write your message here...",
+    "attach_file": "Attach file",
+    "voice_message": "Voice message"
+  },
+  "purchases_opinions": {
+    "publication": "Publication",
+    "rating": "Rating",
+    "comment": "Comment"
+  },
+  "dashboard_lists": {
+    "show": "Show",
+    "pending": "Pending",
+    "view_publication": "View publication",
+    "view_detail": "View detail",
+    "search_offer": "Search offer...",
+    "filter_by_status": "Filter by status",
+    "date_range": "Date range",
+    "publication": "Publication",
+    "offer_accepted_on": "Offer accepted on",
+    "search_question": "Search Question",
+    "search_favorite": "Search Favorite",
+    "search_opinion": "Search Opinion",
+    "write_answer_here": "Write your detailed answer here...",
+    "modality": "Type",
+    "status": "Status",
+    "buyer_message": "Buyer message",
+    "offer_details": "Offer Details",
+    "amount_offered": "Amount Offered",
+    "question_answered": "Question Answered",
+    "user_question": "User Question",
+    "your_answer": "Your Answer",
+    "sale_detail": "Sale Detail",
+    "current_status": "Current Status",
+    "my_favorites": "My Favorites",
+    "send_date": "Send Date",
+    "time_limit": "Time Limit",
+    "additional_comment": "Additional Comment",
+    "my_opinions": "My Opinions",
+    "my_questions": "My Questions",
+    "verification_error": "Verification Error"
+  },
+  "admin_publications": {
+    "title": "Manage Publications",
+    "search_placeholder": "Search publication...",
+    "status_filter_placeholder": "Filter by status",
+    "headers": {
+      "image": "Image",
+      "title": "Title",
+      "author": "Author",
+      "price": "Price",
+      "status": "Status",
+      "date": "Date",
+      "actions": "Actions"
+    },
+    "status_options": {
+      "all": "All",
+      "publish": "Published",
+      "pending": "Pending",
+      "draft": "Draft",
+      "paused": "Paused",
+      "sold": "Sold",
+      "trash": "Trash"
+    },
+    "actions": {
+      "view": "View Publication",
+      "contact": "Contact",
+      "edit": "Edit",
+      "change_status": "Change Status",
+      "delete": "Delete"
+    },
+    "delete_dialog_title": "Are you sure?",
+    "delete_dialog_body": "This will permanently delete the publication.",
+    "cancel": "Cancel",
+    "save": "Save",
+    "new_status_label": "New Status"
   },
   "motor": {
     "consult_price": "Consult price"
@@ -792,6 +1008,8 @@
   "Mis Compras": "My Purchases",
   "Mi Cuenta": "My Account",
   "Ofertas Recibidas": "Offers Received",
+  "Consultas Enviadas": "Sent Inquiries",
+  "Ofertas de Precio": "Price Offers",
   "offers": {
     "sent": "Offers Sent"
   },
@@ -834,6 +1052,174 @@
       "rent": "Rental",
       "direct": "Direct"
     }
+  },
+  "product_details": {
+    "favorite": "Favorite",
+    "share": "Share",
+    "reference": "reference",
+    "consult_price": "Ask for price",
+    "warranty_motorlan": "Motorlan Warranty",
+    "seller_default": "Seller",
+    "stock_label": "Stock",
+    "sales_label": "Sales",
+    "not_available": "N/A",
+    "negotiable": "Negotiable",
+    "not_negotiable": "Not negotiable",
+    "edit_offer": "Edit offer",
+    "make_offer": "Make an offer",
+    "offer_description": "Your offer will remain pending until the seller accepts it. If accepted, you will have 24 hours to complete the purchase.",
+    "offer_price": "Offer price",
+    "offer_message": "Message to seller",
+    "amount_required": "Amount is required",
+    "amount_greater_than_zero": "Amount must be greater than 0",
+    "no_charge_until_accept": "Nothing will be charged until the seller accepts your offer.",
+    "send_offer": "Send offer",
+    "share_publication": "Share publication",
+    "open_chat": "Open chat",
+    "consult_price_button": "Ask for price",
+    "share_text": "Check out {title} on Motorlan",
+    "share_copy_link": "Copy link",
+    "share_whatsapp": "WhatsApp",
+    "share_telegram": "Telegram",
+    "share_email": "Email",
+    "link_copied": "Link copied"
+  },
+  "offers_received": {
+    "title": "Offers Received",
+    "search_placeholder": "Search offer...",
+    "status_placeholder": "Status",
+    "date_range_placeholder": "Date range",
+    "show_placeholder": "Show",
+    "headers": {
+      "publication": "Publication",
+      "offerer": "Offerer",
+      "amount": "Amount",
+      "date": "Date",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "status_options": {
+      "all": "All",
+      "pending": "Pending",
+      "waiting_confirmation": "Awaiting confirmation",
+      "confirmed": "Confirmed",
+      "rejected": "Rejected",
+      "expired": "Expired"
+    },
+    "status_chip": {
+      "waiting_confirmation": "Awaiting confirmation",
+      "confirmed": "Confirmed",
+      "expired": "Expired",
+      "rejected": "Rejected",
+      "pending": "Pending"
+    },
+    "accept": "Accept",
+    "reject": "Reject",
+    "accept_offer": "Accept Offer",
+    "close": "Close",
+    "view_detail": "View detail",
+    "not_available_to_accept": "Not available to accept",
+    "detail_title": "Received Offer Detail",
+    "publication_label": "Publication",
+    "offerer_label": "Offerer",
+    "amount_offered": "Amount Offered",
+    "date_received": "Date Received",
+    "current_status": "Current Status",
+    "time_to_confirm": "Time to confirm",
+    "cannot_accept": "Cannot accept",
+    "no_stock_message": "No stock available or inactive publication.",
+    "offerer_comment": "Offerer Comment",
+    "no_comments": "The offerer did not include additional comments.",
+    "ref_label": "Ref",
+    "expired_short": "Expired",
+    "accepted_success": "Offer accepted",
+    "rejected_success": "Offer rejected",
+    "update_error": "Unable to update the offer."
+  },
+  "purchase_detail": {
+    "total_to_pay": "Total to pay",
+    "price_offer": "Price offer",
+    "sent": "Sent",
+    "accepted": "Accepted",
+    "confirmed": "Confirmed",
+    "expires": "Expires",
+    "message_sent": "Message sent",
+    "rate_seller_hint": "Help other users by rating the seller",
+    "purchase_detail_title": "Purchase detail",
+    "status": "Status",
+    "purchase_type": "Purchase type",
+    "product": "Product",
+    "type": "Type",
+    "quantity": "Quantity",
+    "unit_price": "Unit price",
+    "published_price": "Published price",
+    "accepted_offer": "Accepted offer",
+    "total_paid": "Total paid",
+    "payment_delivery_details": "Payment and delivery details"
+  },
+  "user_profile": {
+    "personal_info": "Personal Information",
+    "first_name": "First name",
+    "first_name_placeholder": "Your first name",
+    "last_name": "Last name",
+    "last_name_placeholder": "Your last name",
+    "email": "Email",
+    "phone": "Phone",
+    "company_info": "Company Information",
+    "is_company": "Are you a company?",
+    "company_name": "Company name *",
+    "company_name_placeholder": "Company Ltd.",
+    "cif_nif": "Tax ID *",
+    "cif_nif_placeholder": "A00000000",
+    "address": "Address *",
+    "address_placeholder": "Street, Number, Floor, Door",
+    "postal_code": "Postal code *",
+    "contact_person": "Contact person *",
+    "contact_person_placeholder": "Person in charge",
+    "contact_email": "Contact email *",
+    "contact_phone": "Contact phone *"
+  },
+  "admin_preview": {
+    "admin_preview_mode": "Administrator Preview Mode",
+    "new_brand_pending": "New brand pending approval",
+    "brand_name": "Brand name",
+    "publication_requester": "Publication requester",
+    "publication_not_found": "Publication not found",
+    "preview_subtitle": "This publication is not public yet. This is how it will look once approved.",
+    "not_found_hint": "The ID may be invalid or the publication may have been deleted.",
+    "approve": "Approve",
+    "reject": "Reject",
+    "back": "Back",
+    "save": "Save",
+    "cancel": "Cancel",
+    "edit_name": "Edit name",
+    "user_requested_brand_pre": "The user has requested to create the brand",
+    "brand_creation_note": "When approving this publication, the brand will be created and available to all users.",
+    "back_to_list": "Back to list"
+  },
+  "users_list": {
+    "filters": "Filters",
+    "select_role": "Select Role",
+    "select_plan": "Select Plan",
+    "select_status": "Select Status",
+    "search_user": "Search User",
+    "view": "View",
+    "edit": "Edit",
+    "delete": "Delete"
+  },
+  "inquiries_dashboard": {
+    "view_publication": "View publication"
+  },
+  "purchases_inquiries": {
+    "title": "Inquiries Sent",
+    "search_placeholder": "Search by seller or motor...",
+    "show_placeholder": "Show"
+  },
+  "publication_list_table": {
+    "consult_price": "Ask for price"
+  },
+  "publication_edit_form": {
+    "required_fields_note": "Fields marked with {asterisk} are required"
   },
   "date": "Date"
 }

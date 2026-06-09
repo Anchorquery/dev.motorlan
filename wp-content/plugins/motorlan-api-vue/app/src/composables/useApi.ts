@@ -1,5 +1,6 @@
 import { createFetch } from '@vueuse/core'
 import { useUserStore } from '@/@core/stores/user'
+import { pageUrl } from '@/utils/urls'
 
 /**
  * API composable using WordPress session cookies for authentication.
@@ -67,8 +68,8 @@ export const useApi = createFetch({
         const userStore = useUserStore()
         userStore.logout()
 
-        // Redirect to login
-        window.location.href = '/login'
+        // Redirect to login (WPML-aware)
+        window.location.href = pageUrl('login')
       }
       return {}
     },

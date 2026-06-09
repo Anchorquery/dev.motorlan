@@ -1,16 +1,18 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { ImagenDestacada } from '@/interfaces/publicacion'
 import { useApi } from '@/composables/useApi'
 import { createUrl } from '@/@core/composable/createUrl'
 import { useMotorFormatter } from '@/composables/useMotorFormatter'
 
+const { t } = useI18n()
 const { formatMotorName } = useMotorFormatter()
-const headers = [
-  { title: 'Publicacion', key: 'publicacion' },
-  { title: 'Valoración', key: 'valoracion' },
-  { title: 'Comentario', key: 'comentario' },
-]
+const headers = computed(() => [
+  { title: t('purchases_opinions.publication'), key: 'publicacion' },
+  { title: t('purchases_opinions.rating'), key: 'valoracion' },
+  { title: t('purchases_opinions.comment'), key: 'comentario' },
+])
 
 const searchQuery = ref('')
 const selectedRows = ref([])
@@ -66,15 +68,15 @@ const getImageBySize = (image: any, size = 'thumbnail'): string => {
       class="motor-card-enhanced"
     >
       <VCardTitle class="pa-6 pb-0">
-        <span class="text-h5 text-premium-title">Mis Opiniones</span>
+        <span class="text-h5 text-premium-title">{{ t('dashboard_lists.my_opinions') }}</span>
       </VCardTitle>
       <VCardText class="pa-6">
-        <div class="d-flex flex-wrap gap-4">
-          <div class="d-flex align-center">
+        <div class="dash-simple-toolbar d-flex flex-wrap gap-4">
+          <div class="d-flex align-center dash-simple-toolbar__search">
             <!-- 👉 Search  -->
             <AppTextField
               v-model="searchQuery"
-              placeholder="Buscar Opinión"
+              :placeholder="t('dashboard_lists.search_opinion')"
               style="inline-size: 260px;"
               class="me-3"
               prepend-inner-icon="tabler-search"
@@ -82,7 +84,7 @@ const getImageBySize = (image: any, size = 'thumbnail'): string => {
           </div>
 
           <VSpacer />
-          <div class="d-flex gap-4 flex-wrap align-center">
+          <div class="d-flex gap-4 flex-wrap align-center dash-simple-toolbar__per-page">
             <AppSelect
               v-model="itemsPerPage"
               :items="[5, 10, 20, 25, 50]"
@@ -167,5 +169,35 @@ const getImageBySize = (image: any, size = 'thumbnail'): string => {
   overflow-x: auto;
   width: 100%;
   -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 959px) {
+  .dash-simple-toolbar {
+    flex-direction: column;
+    gap: 0.75rem !important;
+  }
+
+  .dash-simple-toolbar :deep(.v-spacer) {
+    display: none !important;
+  }
+
+  .dash-simple-toolbar__search,
+  .dash-simple-toolbar__per-page {
+    width: 100%;
+  }
+
+  .dash-simple-toolbar__search :deep(.v-field),
+  .dash-simple-toolbar__search :deep(.v-input),
+  .dash-simple-toolbar__search :deep(.v-text-field) {
+    inline-size: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .dash-simple-toolbar__per-page :deep(.v-field),
+  .dash-simple-toolbar__per-page :deep(.v-input),
+  .dash-simple-toolbar__per-page :deep(.v-select) {
+    inline-size: 100% !important;
+    max-width: 100% !important;
+  }
 }
 </style>

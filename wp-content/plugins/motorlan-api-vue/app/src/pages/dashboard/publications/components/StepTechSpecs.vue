@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { requiredValidator } from '@/@core/utils/validators'
@@ -87,9 +87,9 @@ const isCurrentMotor = computed(() => {
 </script>
 
 <template>
-  <VRow>
+  <VRow class="mx-0">
     <VCol cols="12">
-        <h3 class="text-h5 font-weight-bold mb-4">{{ t('add_publication.sections.tech_specs', 'Especificaciones Técnicas') }}</h3>
+        <h3 class="text-h5 font-weight-bold mb-4">{{ t('add_publication.sections.tech_specs', 'Especificaciones TÃ©cnicas') }}</h3>
     </VCol>
 
     <VCol v-if="showTypeSelector" cols="12">
@@ -192,7 +192,7 @@ const isCurrentMotor = computed(() => {
     <!-- Not a Motor Alert -->
     <VCol v-else cols="12">
         <VAlert type="info" variant="tonal">
-            {{ t('add_publication.tech_specs_not_motor', 'No hay especificaciones técnicas especiales para este tipo de producto.') }}
+            {{ t('add_publication.tech_specs_not_motor', 'No hay especificaciones tÃ©cnicas especiales para este tipo de producto.') }}
         </VAlert>
     </VCol>
   </VRow>

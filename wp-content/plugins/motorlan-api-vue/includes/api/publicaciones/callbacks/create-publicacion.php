@@ -133,7 +133,8 @@ function motorlan_create_publicacion_callback(WP_REST_Request $request) {
                     [
                         'post_id'       => $post_id,
                         'author_id'     => get_current_user_id(),
-                        'url'           => '/dashboard/admin/approvals',
+                        'url'           => motorlan_account_url( 'dashboard/admin/approvals', $admin->ID ),
+                        'vue_path'      => '/dashboard/admin/approvals',
                         'product_title' => motorlan_format_motor_name( $post_id ),
                         'reference'     => $acf_data['tipo_o_referencia'] ?? '',
                         'brand'         => is_numeric($acf_data['marca']) ? get_term($acf_data['marca'], 'marca')->name : ($acf_data['marca'] ?? ''),

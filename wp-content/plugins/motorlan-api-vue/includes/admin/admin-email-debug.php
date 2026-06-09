@@ -152,7 +152,7 @@ function motorlan_render_email_debug_page() {
 function motorlan_get_mock_data_for_template( $template ) {
     $base_data = [
         'purchase_id' => 999,
-        'url' => home_url( '/mi-cuenta/pedidos/999' ),
+        'url' => motorlan_account_url( 'pedidos/999' ),
         'product_name' => 'Motor Siemens 45kW (Demo)',
         'amount' => 1250.00,
         'buyer_name' => 'Comprador Demo',
@@ -162,13 +162,13 @@ function motorlan_get_mock_data_for_template( $template ) {
     switch ( $template ) {
         case 'password_reset':
             return [
-                'url' => home_url( '/mi-cuenta/reset-password?key=demo&login=usuario' ),
+                'url' => motorlan_account_url( 'reset-password?key=demo&login=usuario' ),
                 'key' => 'demo_key_12345',
                 'login' => 'usuario_demo'
             ];
         case 'verify_email':
             return [
-                'url' => home_url( '/verify-email?token=demo_token_123' ),
+                'url' => motorlan_account_url( 'verify-email?token=demo_token_123' ),
                 'token' => 'demo_token_123'
             ];
         case 'new_message':
@@ -185,12 +185,12 @@ function motorlan_get_mock_data_for_template( $template ) {
         case 'new_purchase':
             return array_merge( $base_data, [
                 'order_id' => 'ORD-2024-001',
-                'dashboard_url' => home_url( '/mi-cuenta/pedidos' )
+                'dashboard_url' => motorlan_account_url( 'pedidos' )
             ] );
         case 'new_question':
             return array_merge( $base_data, [
                 'question_text' => '¿Tiene garantía este motor?',
-                'question_url' => home_url( '/mi-cuenta/preguntas' )
+                'question_url' => motorlan_account_url( 'preguntas' )
             ] );
         case 'offer_accepted':
             return array_merge( $base_data, [
@@ -199,7 +199,7 @@ function motorlan_get_mock_data_for_template( $template ) {
             ] );
         case 'pending_approval':
             return array_merge( $base_data, [
-                'edit_url' => home_url( '/mi-cuenta/publicaciones/edit/999' )
+                'edit_url' => motorlan_account_url( 'publicaciones/edit/999' )
             ] );
         case 'publication_approved':
             return array_merge( $base_data, [
@@ -208,11 +208,11 @@ function motorlan_get_mock_data_for_template( $template ) {
         case 'publication_rejected':
             return array_merge( $base_data, [
                 'rejection_reason' => 'Las fotos no son claras. Por favor sube nuevas fotos.',
-                'edit_url' => home_url( '/mi-cuenta/publicaciones/edit/999' )
+                'edit_url' => motorlan_account_url( 'publicaciones/edit/999' )
             ] );
         case 'welcome_email':
             return [
-                'login_url' => home_url( '/login' ),
+                'login_url' => motorlan_localized_page_url_absolute( 'login' ),
                 'user_login' => 'usuario_demo'
             ];
         default:

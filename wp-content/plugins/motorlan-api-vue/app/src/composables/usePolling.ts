@@ -29,6 +29,7 @@ export function usePolling(
   const lastTimestamp = ref<string | null>(null)
   const currentInterval = ref(options.minInterval)
   const consecutiveEmptyPolls = ref(0)
+  const consecutive429 = ref(0)
   let timer: any | null = null
 
   const fetchUpdates = async () => {
@@ -43,12 +44,15 @@ export function usePolling(
 
       // Manejar rate limiting (429)
       if (statusCode.value === 429) {
-        // Si nos limitan, esperar 60 segundos o el maxInterval
-        const retryAfter = 60000
-        if (timer) clearTimeout(timer)
-        timer = setTimeout(poll, retryAfter)
+        consecutive429.value++
+        if (consecutive429.value >= 3) {
+          isRunning.value = false
+          return
+        }
+        currentInterval.value = 60000 * consecutive429.value
         return
       }
+      consecutive429.value = 0
 
       if (!error.value && data.value) {
         const payload = Array.isArray(data.value?.data) ? data.value.data : []

@@ -65,6 +65,7 @@ function motorlan_enqueue_vue_app($args = []) {
         'rest_nonce' => wp_create_nonce('wp_rest'),
         'user_data' => $user_data,
         'vue_base' => trailingslashit(wp_parse_url(get_permalink(), PHP_URL_PATH) ?: '/'),
+        'vue_page_urls' => function_exists('motorlan_get_vue_page_urls_current_lang') ? motorlan_get_vue_page_urls_current_lang() : [],
         'language' => $language_info['current'],
         'language_locale' => $language_info['locale'],
         'languages' => $language_info['available'],
@@ -146,7 +147,35 @@ function motorlan_vue_app_shortcode($atts = []) {
     // Detección del contexto para el Skeleton
     $current_url = $_SERVER['REQUEST_URI'];
     $is_login_page = (strpos($current_url, '/login') !== false);
-    $is_product_page = (strpos($current_url, '/marketplace-motorlan/') !== false && strlen(trim($current_url, '/')) > strlen('marketplace-motorlan'));
+
+    // Detecta página producto comprobando contra todos los slugs traducidos de marketplace-motorlan
+    $is_product_page = false;
+    if ( function_exists('motorlan_get_vue_pages') ) {
+        $all_vue = motorlan_get_vue_pages();
+        // Filtra slugs que correspondan a marketplace (base ES + traducciones)
+        $marketplace_slugs = ['marketplace-motorlan'];
+        if ( function_exists('apply_filters') ) {
+            $page = get_page_by_path('marketplace-motorlan');
+            if ( $page ) {
+                $langs = apply_filters('wpml_active_languages', null, []);
+                if ( is_array($langs) ) {
+                    foreach ($langs as $lang) {
+                        $tx = apply_filters('wpml_object_id', $page->ID, 'page', false, $lang['code']);
+                        if ( $tx && $tx != $page->ID ) {
+                            $tx_post = get_post($tx);
+                            if ( $tx_post ) $marketplace_slugs[] = $tx_post->post_name;
+                        }
+                    }
+                }
+            }
+        }
+        foreach ( $marketplace_slugs as $mslug ) {
+            if ( strpos($current_url, '/' . $mslug . '/') !== false && strlen(trim($current_url, '/')) > strlen($mslug) ) {
+                $is_product_page = true;
+                break;
+            }
+        }
+    }
     $is_logged_in = is_user_logged_in();
     
     // Output Buffer para el HTML del Skeleton

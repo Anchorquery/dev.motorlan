@@ -9,6 +9,7 @@ import AppSelect from '@/@core/components/app-form-elements/AppSelect.vue'
 import AppTextField from '@/@core/components/app-form-elements/AppTextField.vue'
 import ContactPublisherModal from './components/ContactPublisherModal.vue'
 import { useMotorFormatter } from '@/composables/useMotorFormatter'
+import { storeUrl } from '@/utils/urls'
 
 // Basic types
 interface Author {
@@ -43,27 +44,27 @@ const userStore = useUserStore()
 const { formatMotorName } = useMotorFormatter()
 
 // Data table headers
-const headers = [
-  { title: t('Imagen'), value: 'image', sortable: false },
-  { title: t('Título'), value: 'title' },
-  { title: t('Autor'), value: 'author' },
-  { title: t('Precio'), value: 'price' },
-  { title: t('Estado'), value: 'status' },
-  { title: t('Fecha'), value: 'date' },
-  { title: t('Acciones'), value: 'actions', sortable: false },
-]
+const headers = computed(() => [
+  { title: t('admin_publications.headers.image'), value: 'image', sortable: false },
+  { title: t('admin_publications.headers.title'), value: 'title' },
+  { title: t('admin_publications.headers.author'), value: 'author' },
+  { title: t('admin_publications.headers.price'), value: 'price' },
+  { title: t('admin_publications.headers.status'), value: 'status' },
+  { title: t('admin_publications.headers.date'), value: 'date' },
+  { title: t('admin_publications.headers.actions'), value: 'actions', sortable: false },
+])
 
 // Filters & State
 const searchQuery = ref('')
 const selectedStatus = ref()
 const statusOptions = computed(() => [
-  { title: t('Todos'), value: 'all' },
-  { title: t('Publicado'), value: 'publish' },
-  { title: t('Pendiente'), value: 'pending' },
-  { title: t('Borrador'), value: 'draft' },
-  { title: t('Pausado'), value: 'paused' },
-  { title: t('Vendido'), value: 'sold' },
-  { title: t('Papelera'), value: 'trash' },
+  { title: t('admin_publications.status_options.all'), value: 'all' },
+  { title: t('admin_publications.status_options.publish'), value: 'publish' },
+  { title: t('admin_publications.status_options.pending'), value: 'pending' },
+  { title: t('admin_publications.status_options.draft'), value: 'draft' },
+  { title: t('admin_publications.status_options.paused'), value: 'paused' },
+  { title: t('admin_publications.status_options.sold'), value: 'sold' },
+  { title: t('admin_publications.status_options.trash'), value: 'trash' },
 ])
 
 // Pagination
@@ -139,12 +140,12 @@ const contactTarget = ref<{ id: number, title: string } | null>(null)
 // Helpers
 const resolveStatus = (status: string) => {
   const map: Record<string, { color: string, text: string }> = {
-    publish: { color: 'success', text: t('Publicado') },
-    pending: { color: 'warning', text: t('Pendiente') },
-    draft: { color: 'secondary', text: t('Borrador') },
-    trash: { color: 'error', text: t('Papelera') },
-    paused: { color: 'info', text: t('Pausado') },
-    sold: { color: 'success', text: t('Vendido') },
+    publish: { color: 'success', text: t('admin_publications.status_options.publish') },
+    pending: { color: 'warning', text: t('admin_publications.status_options.pending') },
+    draft: { color: 'secondary', text: t('admin_publications.status_options.draft') },
+    trash: { color: 'error', text: t('admin_publications.status_options.trash') },
+    paused: { color: 'info', text: t('admin_publications.status_options.paused') },
+    sold: { color: 'success', text: t('admin_publications.status_options.sold') },
   }
   return map[status] || { color: 'primary', text: status }
 }
@@ -217,8 +218,8 @@ const openEdit = (uuid: string) => {
 
 <template>
   <VCard class="motor-card-enhanced">
-    <VCardTitle class="pa-6 pb-4 d-flex justify-space-between align-center">
-      <span class="text-h5 text-premium-title">{{ t('Administrar Publicaciones') }}</span>
+    <VCardTitle class="pa-6 pb-4 d-flex justify-space-between align-center admin-publications-toolbar">
+      <span class="text-h5 text-premium-title">{{ t('admin_publications.title') }}</span>
       <div class="d-flex gap-4">
         <!-- Add export or other global actions here -->
       </div>
@@ -231,7 +232,7 @@ const openEdit = (uuid: string) => {
         <VCol cols="12" md="4">
           <AppTextField
             v-model="searchQuery"
-            :placeholder="t('Buscar publicación...')"
+            :placeholder="t('admin_publications.search_placeholder')"
             prepend-inner-icon="tabler-search"
             clearable
           />
@@ -240,7 +241,7 @@ const openEdit = (uuid: string) => {
           <AppSelect
             v-model="selectedStatus"
             :items="statusOptions"
-            :placeholder="t('Filtrar por estado')"
+            :placeholder="t('admin_publications.status_filter_placeholder')"
             item-title="title"
             item-value="value"
             prepend-inner-icon="tabler-filter"
@@ -250,7 +251,7 @@ const openEdit = (uuid: string) => {
       </VRow>
     </VCardText>
 
-    <div class="table-responsive-shell">
+    <div class="table-responsive-shell admin-publications-table-shell admin-pub-table--desktop">
     <VDataTableServer
       v-model:items-per-page="itemsPerPage"
       v-model:page="page"
@@ -258,6 +259,7 @@ const openEdit = (uuid: string) => {
       :items="publications"
       :items-length="totalPublications"
       :loading="isTableLoading"
+      :mobile-breakpoint="0"
       @update:options="updateOptions"
 
     >
@@ -318,31 +320,31 @@ const openEdit = (uuid: string) => {
       <!-- Actions Column -->
       <template #item.actions="{ item }">
         <div class="d-flex gap-2 justify-end">
-          
+
           <!-- View (only if published) -->
-          <IconBtn 
+          <IconBtn
             v-if="item.status === 'publish'"
-            size="small" 
-            variant="tonal" 
-            color="success" 
-            :href="`/marketplace-motorlan/${item.slug}/`"
+            size="small"
+            variant="tonal"
+            color="success"
+            :href="storeUrl(item.slug)"
             target="_blank"
             rel="noopener noreferrer"
           >
             <VIcon icon="tabler-eye" />
-            <VTooltip activator="parent" location="top">{{ t('Ver Publicación') }}</VTooltip>
+            <VTooltip activator="parent" location="top">{{ t('admin_publications.actions.view') }}</VTooltip>
           </IconBtn>
-          
+
           <!-- Contact -->
           <IconBtn size="small" variant="tonal" color="info" @click="openContactDialog(item)">
             <VIcon icon="tabler-mail" />
-            <VTooltip activator="parent" location="top">{{ t('Contactar') }}</VTooltip>
+            <VTooltip activator="parent" location="top">{{ t('admin_publications.actions.contact') }}</VTooltip>
           </IconBtn>
 
           <!-- Edit -->
           <IconBtn size="small" variant="tonal" color="primary" @click="openEdit(item.uuid)">
             <VIcon icon="tabler-pencil" />
-             <VTooltip activator="parent" location="top">{{ t('Editar') }}</VTooltip>
+             <VTooltip activator="parent" location="top">{{ t('admin_publications.actions.edit') }}</VTooltip>
           </IconBtn>
 
           <VMenu>
@@ -354,18 +356,119 @@ const openEdit = (uuid: string) => {
             <VList density="compact">
                <VListItem @click="openStatusDialog(item)">
                 <template #prepend><VIcon icon="tabler-refresh" size="16" class="me-2" /></template>
-                <VListItemTitle>{{ t('Cambiar Estado') }}</VListItemTitle>
+                <VListItemTitle>{{ t('admin_publications.actions.change_status') }}</VListItemTitle>
               </VListItem>
               <VDivider />
               <VListItem @click="openDeleteDialog(item.id)" class="text-error">
                 <template #prepend><VIcon icon="tabler-trash" size="16" class="me-2" /></template>
-                <VListItemTitle>{{ t('Eliminar') }}</VListItemTitle>
+                <VListItemTitle>{{ t('admin_publications.actions.delete') }}</VListItemTitle>
               </VListItem>
             </VList>
           </VMenu>
         </div>
       </template>
+
+      <!-- pagination -->
+      <template #bottom>
+        <VDivider />
+        <TablePagination
+          v-model:page="page"
+          :items-per-page="itemsPerPage"
+          :total-items="totalPublications"
+          class="pa-4"
+        />
+      </template>
     </VDataTableServer>
+    </div>
+
+    <!-- Mobile card list -->
+    <div class="admin-pub-mobile-list">
+      <div
+        v-for="item in publications"
+        :key="item.id"
+        class="admin-pub-mobile-card"
+      >
+        <div class="admin-pub-mobile-card__top">
+          <VChip
+            :color="resolveStatus(item.status).color"
+            density="comfortable"
+            size="small"
+            label
+          >
+            {{ resolveStatus(item.status).text }}
+          </VChip>
+          <span class="admin-pub-mobile-card__date">{{ formatDate(item.date) }}</span>
+        </div>
+
+        <div class="admin-pub-mobile-card__body">
+          <VAvatar
+            size="52"
+            rounded
+            variant="tonal"
+            class="admin-pub-mobile-card__thumb flex-shrink-0"
+          >
+            <VImg v-if="item.image" :src="typeof item.image === 'string' ? item.image : (item.image as any)?.url" cover />
+            <VIcon v-else icon="tabler-photo" />
+          </VAvatar>
+
+          <div class="admin-pub-mobile-card__content">
+            <div class="admin-pub-mobile-card__title">
+              {{ formatMotorName(item) || item.title }}
+            </div>
+            <div class="admin-pub-mobile-card__author">
+              {{ item.author?.name }}
+              <span v-if="item.author?.email" class="admin-pub-mobile-card__email">{{ item.author.email }}</span>
+            </div>
+            <div v-if="item.price" class="admin-pub-mobile-card__price">{{ item.price }}€</div>
+          </div>
+        </div>
+
+        <div class="admin-pub-mobile-card__actions">
+          <IconBtn
+            v-if="item.status === 'publish'"
+            color="success"
+            variant="tonal"
+            :href="storeUrl(item.slug)"
+            target="_blank"
+          >
+            <VIcon icon="tabler-eye" />
+          </IconBtn>
+
+          <IconBtn color="info" variant="tonal" @click="openContactDialog(item)">
+            <VIcon icon="tabler-mail" />
+          </IconBtn>
+
+          <IconBtn color="primary" variant="tonal" @click="openEdit(item.uuid)">
+            <VIcon icon="tabler-pencil" />
+          </IconBtn>
+
+          <VMenu>
+            <template #activator="{ props }">
+              <IconBtn color="secondary" variant="tonal" v-bind="props">
+                <VIcon icon="tabler-dots-vertical" />
+              </IconBtn>
+            </template>
+            <VList density="compact">
+              <VListItem @click="openStatusDialog(item)">
+                <template #prepend><VIcon icon="tabler-refresh" size="16" class="me-2" /></template>
+                <VListItemTitle>{{ t('admin_publications.actions.change_status') }}</VListItemTitle>
+              </VListItem>
+              <VDivider />
+              <VListItem @click="openDeleteDialog(item.id)" class="text-error">
+                <template #prepend><VIcon icon="tabler-trash" size="16" class="me-2" /></template>
+                <VListItemTitle>{{ t('admin_publications.actions.delete') }}</VListItemTitle>
+              </VListItem>
+            </VList>
+          </VMenu>
+        </div>
+      </div>
+
+      <TablePagination
+        v-model:page="page"
+        :items-per-page="itemsPerPage"
+        :total-items="totalPublications"
+        class="admin-pub-mobile-list__pagination"
+      />
     </div>
   </VCard>
 
@@ -379,11 +482,11 @@ const openEdit = (uuid: string) => {
   <!-- Delete Dialog -->
   <VDialog v-model="isDeleteDialogVisible" max-width="400">
     <VCard>
-      <VCardTitle class="text-h6 pa-4">{{ t('¿Estás seguro?') }}</VCardTitle>
-      <VCardText>{{ t('Esta acción eliminará la publicación permanentemente.') }}</VCardText>
+      <VCardTitle class="text-h6 pa-4">{{ t('admin_publications.delete_dialog_title') }}</VCardTitle>
+      <VCardText>{{ t('admin_publications.delete_dialog_body') }}</VCardText>
       <VCardActions class="justify-end">
-        <VBtn variant="text" @click="isDeleteDialogVisible = false">{{ t('Cancelar') }}</VBtn>
-        <VBtn color="error" :loading="isLoadingAction" @click="confirmDelete">{{ t('Eliminar') }}</VBtn>
+        <VBtn variant="text" @click="isDeleteDialogVisible = false">{{ t('admin_publications.cancel') }}</VBtn>
+        <VBtn color="error" :loading="isLoadingAction" @click="confirmDelete">{{ t('admin_publications.actions.delete') }}</VBtn>
       </VCardActions>
     </VCard>
   </VDialog>
@@ -391,20 +494,20 @@ const openEdit = (uuid: string) => {
   <!-- Status Dialog -->
   <VDialog v-model="isStatusDialogVisible" max-width="400">
     <VCard>
-      <VCardTitle>{{ t('Cambiar Estado') }}</VCardTitle>
+      <VCardTitle>{{ t('admin_publications.actions.change_status') }}</VCardTitle>
       <VCardText>
         <AppSelect
           v-model="selectedNewStatus"
           :items="statusOptions.filter(o => o.value !== 'all')"
           item-title="title"
           item-value="value"
-          label="Nuevo Estado"
+          :label="t('admin_publications.new_status_label')"
           class="mt-2"
         />
       </VCardText>
       <VCardActions class="justify-end">
-         <VBtn variant="text" @click="isStatusDialogVisible = false">{{ t('Cancelar') }}</VBtn>
-        <VBtn color="primary" :loading="isLoadingAction" @click="confirmStatusChange">{{ t('Guardar') }}</VBtn>
+         <VBtn variant="text" @click="isStatusDialogVisible = false">{{ t('admin_publications.cancel') }}</VBtn>
+        <VBtn color="primary" :loading="isLoadingAction" @click="confirmStatusChange">{{ t('admin_publications.save') }}</VBtn>
       </VCardActions>
     </VCard>
   </VDialog>
@@ -415,5 +518,111 @@ const openEdit = (uuid: string) => {
   overflow-x: auto;
   width: 100%;
   -webkit-overflow-scrolling: touch;
+}
+
+/* Mobile cards — hidden on desktop */
+.admin-pub-mobile-list {
+  display: none;
+}
+
+@media (max-width: 959px) {
+  /* Hide desktop table, show mobile cards */
+  .admin-pub-table--desktop {
+    display: none;
+  }
+
+  .admin-pub-mobile-list {
+    display: block;
+    padding: 0 1rem 1.5rem;
+  }
+
+  .admin-pub-mobile-list__pagination {
+    margin-top: 0.5rem;
+  }
+
+  /* Card */
+  .admin-pub-mobile-card {
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    border-radius: 16px;
+    background: #fff;
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
+    padding: 0.9rem;
+    margin-top: 0.75rem;
+  }
+
+  /* Top row: status + date */
+  .admin-pub-mobile-card__top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.65rem;
+  }
+
+  .admin-pub-mobile-card__date {
+    font-size: 0.75rem;
+    color: rgba(15, 23, 42, 0.5);
+  }
+
+  /* Body: avatar + content */
+  .admin-pub-mobile-card__body {
+    display: grid;
+    grid-template-columns: 52px minmax(0, 1fr);
+    gap: 0.75rem;
+    align-items: flex-start;
+  }
+
+  .admin-pub-mobile-card__content {
+    min-width: 0;
+  }
+
+  .admin-pub-mobile-card__title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    line-height: 1.3;
+    color: rgba(15, 23, 42, 0.95);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    overflow-wrap: anywhere;
+  }
+
+  .admin-pub-mobile-card__author {
+    margin-top: 0.2rem;
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: rgba(15, 23, 42, 0.75);
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .admin-pub-mobile-card__email {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 400;
+    color: rgba(15, 23, 42, 0.5);
+  }
+
+  .admin-pub-mobile-card__price {
+    margin-top: 0.4rem;
+    font-size: 1rem;
+    font-weight: 700;
+    color: rgb(var(--v-theme-primary));
+  }
+
+  /* Actions row */
+  .admin-pub-mobile-card__actions {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.5rem;
+    margin-top: 0.8rem;
+  }
+
+  .admin-pub-mobile-card__actions :deep(.v-btn) {
+    width: 100%;
+    min-width: 0;
+  }
 }
 </style>

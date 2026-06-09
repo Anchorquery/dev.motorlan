@@ -52,18 +52,29 @@ const getServerLanguage = () => {
     return null
 
   const wpData = (window as any)?.wpData
-  return normalizeLocale(wpData?.language ?? wpData?.language_locale ?? null)
+  const raw = wpData?.language ?? wpData?.language_locale ?? null
+  if (!raw)
+    return null
+
+  return normalizeLocale(raw)
 }
 
 export const getI18n = () => {
   if (_i18n === null) {
     const serverLanguage = getServerLanguage()
-    const defaultLocale = serverLanguage ?? themeConfig.app.i18n.defaultLocale
-    const persistedLocale = normalizeLocale(cookieRef('language', defaultLocale).value)
+    const cookie = cookieRef<string | null>('language', null)
+    const cookieLocale = cookie.value ? normalizeLocale(cookie.value) : null
+
+    // Server (WPML/Polylang) is authoritative. Cookie only used when server has no language.
+    const initialLocale = serverLanguage ?? cookieLocale ?? themeConfig.app.i18n.defaultLocale
+
+    // Keep cookie in sync so subsequent SPA navigations remember the choice.
+    if (cookie.value !== initialLocale)
+      cookie.value = initialLocale
 
     _i18n = createI18n({
       legacy: false,
-      locale: persistedLocale,
+      locale: initialLocale,
       fallbackLocale: 'en',
       messages: mergeMessages(),
     })

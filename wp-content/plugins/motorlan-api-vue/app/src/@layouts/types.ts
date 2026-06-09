@@ -107,6 +107,7 @@ export interface I18nLanguage {
 
 export type NotificationData = {
   url?: string
+  vue_path?: string
   offer_id?: number
   product_image?: string
   product_price?: string | number

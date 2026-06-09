@@ -1,5 +1,6 @@
 import type { RouteNamedMap, _RouterTyped } from 'unplugin-vue-router'
 import { useUserStore } from '@/@core/stores/user'
+import { isAccountBase } from '@/utils/urls'
 import { watch } from 'vue'
 
 export const setupGuards = (router: _RouterTyped<RouteNamedMap & { [key: string]: any }>) => {
@@ -17,7 +18,7 @@ export const setupGuards = (router: _RouterTyped<RouteNamedMap & { [key: string]
         return { path: target, replace: true }
       }
 
-      if (vueBase.includes('mi-cuenta')) {
+      if (isAccountBase(vueBase)) {
         return { path: '/dashboard', replace: true }
       }
     }

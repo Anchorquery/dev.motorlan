@@ -77,8 +77,8 @@ const totalPurchases = computed(() => purchasesData.value?.pagination.total || 0
 
       <VDivider />
 
-      <div class="d-flex flex-wrap gap-4 ma-6">
-        <div class="d-flex align-center">
+      <div class="dash-simple-toolbar d-flex flex-wrap gap-4 ma-6">
+        <div class="d-flex align-center dash-simple-toolbar__search">
           <!-- 👉 Search  -->
           <AppTextField
             v-model="searchQuery"
@@ -89,7 +89,7 @@ const totalPurchases = computed(() => purchasesData.value?.pagination.total || 0
         </div>
 
         <VSpacer />
-        <div class="d-flex gap-4 flex-wrap align-center">
+        <div class="d-flex gap-4 flex-wrap align-center dash-simple-toolbar__per-page">
           <AppSelect
             v-model="itemsPerPage"
             :items="[5, 10, 20, 25, 50]"
@@ -182,5 +182,36 @@ const totalPurchases = computed(() => purchasesData.value?.pagination.total || 0
   overflow-x: auto;
   width: 100%;
   -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 959px) {
+  .dash-simple-toolbar {
+    flex-direction: column;
+    gap: 0.75rem !important;
+    margin-inline: 1rem !important;
+  }
+
+  .dash-simple-toolbar :deep(.v-spacer) {
+    display: none !important;
+  }
+
+  .dash-simple-toolbar__search,
+  .dash-simple-toolbar__per-page {
+    width: 100%;
+  }
+
+  .dash-simple-toolbar__search :deep(.v-field),
+  .dash-simple-toolbar__search :deep(.v-input),
+  .dash-simple-toolbar__search :deep(.v-text-field) {
+    inline-size: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .dash-simple-toolbar__per-page :deep(.v-field),
+  .dash-simple-toolbar__per-page :deep(.v-input),
+  .dash-simple-toolbar__per-page :deep(.v-select) {
+    inline-size: 100% !important;
+    max-width: 100% !important;
+  }
 }
 </style>

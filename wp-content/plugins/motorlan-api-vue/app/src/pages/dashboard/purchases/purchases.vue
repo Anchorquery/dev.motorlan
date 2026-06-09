@@ -6,6 +6,7 @@ import { createUrl } from '@/@core/composable/createUrl'
 import { useApi } from '@/composables/useApi'
 import type { ImagenDestacada } from '@/interfaces/publicacion'
 import RatingModal from '@/components/RatingModal.vue'
+import { storeUrl } from '@/utils/urls'
 
 const router = useRouter()
 const { t } = useI18n()
@@ -187,7 +188,7 @@ const resolvePurchaseType = (item: any): { text: string; color: string } => {
 // Navegación a la tienda (URL absoluta para cross-base)
 const goToProduct = (pub: any) => {
   if (pub?.slug) {
-    window.open(`/marketplace-motorlan/${pub.slug}/`, '_blank')
+    window.open(storeUrl(pub.slug), '_blank')
   }
 }
 </script>
@@ -225,6 +226,7 @@ const goToProduct = (pub: any) => {
     <VDataTableServer
       v-model:items-per-page="itemsPerPage"
       v-model:page="page"
+      :mobile-breakpoint="0"
       :headers="headers"
       :items="purchases"
       :items-length="totalPurchases"

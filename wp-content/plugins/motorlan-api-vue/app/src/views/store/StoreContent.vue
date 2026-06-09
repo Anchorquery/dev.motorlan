@@ -107,7 +107,7 @@ const velocidadOptions = computed(() => [
 
 const technologyOptions = computed(() => [t('store.technology_options.dc'), t('store.technology_options.ac')])
 
-const itemsPerPage = ref(9)
+const itemsPerPage = ref(12)
 const marcas = ref<Term[]>([])
 const tipos = ref<Term[]>([])
 
@@ -269,9 +269,9 @@ const totalPages = computed(() => {
 
 const resultSummary = computed(() => {
   if (!totalPublicaciones.value)
-    return 'Sin resultados'
+    return t('store.publications.no_results')
 
-  return `${totalPublicaciones.value} publicaciones encontradas`
+  return t('store.publications.count_summary', { count: totalPublicaciones.value })
 })
 
 const publicaciones = computed((): Publicacion[] => {
@@ -307,7 +307,7 @@ const search = () => {
     >
       <div class="d-flex flex-column h-100 pa-4">
         <div class="d-flex align-center justify-space-between mb-3">
-          <span class="text-subtitle-1 font-weight-bold">Filtros</span>
+          <span class="text-subtitle-1 font-weight-bold">{{ t('store_filters_panel.filters') }}</span>
           <IconBtn variant="text" color="default" @click="isFiltersDrawerOpen = false">
             <VIcon icon="tabler-x" />
           </IconBtn>
@@ -349,8 +349,8 @@ const search = () => {
 
         <div class="store-filters-sheet__header px-4 pt-1 pb-3 d-flex align-center justify-space-between">
           <div class="d-flex align-center gap-2">
-            <VIcon icon="mdi-filter-variant" color="error" size="20" />
-            <span class="text-subtitle-1 font-weight-bold">Filtros</span>
+            <VIcon icon="tabler-filter" color="error" size="20" />
+            <span class="text-subtitle-1 font-weight-bold">{{ t('store_filters_panel.filters') }}</span>
             <VChip v-if="activeFiltersCount" color="error" size="x-small" label>
               {{ activeFiltersCount }}
             </VChip>
@@ -461,7 +461,7 @@ const search = () => {
           <div class="d-flex flex-wrap align-center justify-space-between gap-2 mb-4">
             <div>
               <div class="text-subtitle-1 font-weight-bold text-primary">
-                Resultados
+                {{ t('store.publications.results_heading') }}
               </div>
               <div class="text-body-2 text-medium-emphasis">
                 {{ resultSummary }}
@@ -474,7 +474,7 @@ const search = () => {
               variant="tonal"
               size="small"
             >
-              {{ activeFiltersCount }} filtros activos
+              {{ t('store_filters_panel.active_filters', { count: activeFiltersCount }) }}
             </VChip>
           </div>
 

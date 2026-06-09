@@ -45,6 +45,16 @@ $display_name = !empty($args['user']) ? $args['user']->display_name : __('Invita
     <a href="<?php echo esc_url($url); ?>" class="button"><?php esc_html_e( 'Ver y Responder', 'motorlan-api-vue' ); ?></a>
 </div>
 
+<?php
+$expires_at = isset($data['chat_link_expires_at']) ? (int) $data['chat_link_expires_at'] : 0;
+if ( $is_guest && $expires_at > 0 ) :
+    $expires_display = wp_date( get_option('date_format') . ' ' . get_option('time_format'), $expires_at );
+?>
+<p style="text-align:center; font-size:12px; color:#888; margin: 0 0 25px;">
+    <?php printf( esc_html__( 'Este enlace caduca el %s.', 'motorlan-api-vue' ), esc_html( $expires_display ) ); ?>
+</p>
+<?php endif; ?>
+
 <?php if ( $is_guest ) : ?>
 <div style="background-color: #F9FAFB; border: 1px solid #EAECF0; padding: 30px; border-radius: 12px; margin-top: 40px; text-align: center;">
     <h2 style="margin-top: 0; margin-bottom: 12px; color: #101828; font-size: 20px; font-weight: 700; letter-spacing: -0.02em;">
@@ -53,7 +63,13 @@ $display_name = !empty($args['user']) ? $args['user']->display_name : __('Invita
     <p style="font-size: 15px; color: #475467; line-height: 1.6; margin-bottom: 24px; max-width: 480px; margin-left: auto; margin-right: auto;">
         <?php esc_html_e( 'Crea una cuenta gratuita para guardar tus conversaciones, marcar favoritos y recibir avisos cuando alguien te responda.', 'motorlan-api-vue' ); ?>
     </p>
-    <a href="<?php echo esc_url(trailingslashit(get_site_url()) . 'register'); ?>" 
+    <?php
+        $recipient_user_id = isset($args['user']) && is_object($args['user']) ? (int) $args['user']->ID : null;
+        $register_url = function_exists('motorlan_localized_page_url_absolute')
+            ? motorlan_localized_page_url_absolute('register', '', $recipient_user_id)
+            : trailingslashit(get_site_url()) . 'register';
+    ?>
+    <a href="<?php echo esc_url($register_url); ?>"
        style="background-color: #DA291C; color: #ffffff !important; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block; font-size: 15px; box-shadow: 0px 1px 2px rgba(16, 24, 40, 0.05);">
         <?php esc_html_e( 'Crear mi cuenta gratis', 'motorlan-api-vue' ); ?>
     </a>
