@@ -77,7 +77,8 @@
       "Bash(awk '{print $2}')",
       "Bash(git -C \"C:/laragon/www/dev.motorlan\" status --porcelain)",
       "Bash(git reset *)",
-      "Bash(git rev-list *)"
+      "Bash(git rev-list *)",
+      "Bash(git push *)"
     ]
   }
 }
