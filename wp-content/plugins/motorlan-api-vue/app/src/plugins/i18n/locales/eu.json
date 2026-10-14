@@ -205,10 +205,11 @@
     "new_brand_proposed": "Erabiltzaileak proposatutako marka berria",
     "consult_price": "Galdetu prezioa",
     "edit": "Editatu",
-    "preview": "Aurrebista"
+    "preview": "Aurrebista",
+    "brand_updated": "Markaren izena eguneratu da",
+    "brand_update_error": "Errorea marka eguneratzean"
   },
   "store": {
-  
     "search": {
       "eyebrow": "Motorlan denda",
       "title": "Industria motorrak erosi eta saldu",
@@ -291,7 +292,8 @@
       "brands_label": "Markak",
       "state_label": "Egoera",
       "type_model_label": "Eredua",
-      "responsibility_note": "GARRANTZITSUA: Motorlanek ez du bere gain hartzen saltzailearen eta eroslearen artean zuzenean saltzen diren ekipoen ardura, aurretik bere tailer espezializatuan azterketa egin gabe."
+      "responsibility_note": "GARRANTZITSUA: Motorlanek ez du bere gain hartzen saltzailearen eta eroslearen artean zuzenean saltzen diren ekipoen ardura, aurretik bere tailer espezializatuan azterketa egin gabe.",
+      "see_results": "Ikusi emaitzak"
     },
     "contact_modal": {
       "default_message": "Kaixo, argitalpenaren prezioa jakitea interesatzen zait"
@@ -354,12 +356,24 @@
       "subtitle": "Erantsi eskuliburuak, espezifikazioak edo beste dokumentuak",
       "doc_name": "Dokumentuaren izena",
       "add_btn": "Gehitu dokumentua",
-      "no_docs": "Ez da dokumenturik gehitu."
+      "no_docs": "Ez da dokumenturik gehitu.",
+      "invalid_type": "PDF, JPG edo PNG fitxategiak bakarrik onartzen dira.",
+      "file_selected": "Fitxategia hautatuta",
+      "ready": "Prest"
     },
     "tech_specs_not_motor": "Espezifikazio teknikoak motorrei bakarrik dagozkie.",
     "validation": {
       "main_image_required": "Irudi nagusia derrigorrezkoa da",
-      "stock_positive": "Stocka 0 baino handiagoa izan behar du"
+      "stock_positive": "Stocka 0 baino handiagoa izan behar du",
+      "brand_custom_required": "Markaren izena derrigorrezkoa da",
+      "brand_required": "Hautatu marka bat",
+      "power_or_torque": "Adierazi potentzia edo momentu nominala",
+      "power_or_torque_hint": "DC motorretan, adierazi gutxienez potentzia edo momentu nominala.",
+      "positive_number": "0 baino zenbaki handiagoa izan behar du",
+      "price_non_negative": "Prezioa ezin da negatiboa izan",
+      "stock_integer": "Stockak zenbaki osoa izan behar du",
+      "file_too_big": "\"{name}\" fitxategiak gehienezko tamaina gainditzen du ({max}).",
+      "total_too_big": "Fitxategiek guztira onartutako gehienezkoa gainditzen dute ({max}). Kendu irudi edo dokumenturen bat."
     },
     "name_preview_label": "Izen estandarizatuaren aurrebista:",
     "reference_chip": "erreferentzia",
@@ -441,7 +455,8 @@
       "additional_documentation": "Dokumentazio Gehigarria",
       "document_name": "Dokumentuaren Izena",
       "document_name_placeholder": "Erabiltzailearen eskuliburua",
-      "upload_file": "Fitxategia Igo"
+      "upload_file": "Fitxategia Igo",
+      "gallery_limit": "Gehienez {max} irudi"
     },
     "warranty": {
       "add_warranty_title": "Gehitu Motorlan Bermea",
@@ -480,8 +495,15 @@
       "login_required": "Saioa hasi behar duzu jarraitzeko.",
       "fetch_brands_error": "Ezin izan dira markak kargatu.",
       "fetch_categories_error": "Ezin izan dira kategoriak kargatu.",
-      "fetch_types_error": "Ezin izan dira motak kargatu."
-    }
+      "fetch_types_error": "Ezin izan dira motak kargatu.",
+      "type_required": "Hautatu argitalpen mota",
+      "draft_restored": "Betetzen ari zinen datuak berreskuratu ditugu. Gehitu berriro irudiak eta dokumentuak.",
+      "partial_upload": "Argitalpena sortu da, baina fitxategi batzuk ezin izan dira igo. Editatuz gehi ditzakezu.",
+      "created_pending": "Argitalpena bidali da. Administratzaile batek onartzen duenean ikusgai egongo da.",
+      "saved_as_draft": "Ezin izan da irudi nagusia igo: zirriborro gisa gorde da. Editatu irudia gehitzeko eta berrikustera bidaltzeko."
+    },
+    "step_x_of_y": "{current}/{total} urratsa",
+    "leave_confirm": "Argitalpen bat erdi eginda duzu. Irteten bazara, datuak galduko dira. Irten nahi duzu?"
   },
   "publication_list": {
     "publication": "Argitalpena",
@@ -521,12 +543,20 @@
       "paused": "Pausatua",
       "sold": "Salduta",
       "pending": "Berrikusten",
-      "unknown": "Ezezaguna"
+      "unknown": "Ezezaguna",
+      "trash": "Zakarrontzia"
     },
     "delete_selected": "Ezabatu Hautatutakoak",
     "deleting_selected_publications": "Hautatutako argitalpenak ezabatzen...",
     "delete_selected_dialog_title": "Berretsi Ezabatzea",
-    "delete_selected_dialog_text": "Ziur zaude hautatutako {count} argitalpenak ezabatu nahi dituzula? Ekintza hau ezin da desegin."
+    "delete_selected_dialog_text": "Ziur zaude hautatutako {count} argitalpenak ezabatu nahi dituzula? Ekintza hau ezin da desegin.",
+    "action_error": "Ezin izan da ekintza osatu",
+    "duplicate_success": "Kopia zirriborro gisa sortu da. Berrikusi argitaratu aurretik.",
+    "sent_to_review": "Berrikustera bidali da. Administratzaile batek onartzen duenean ikusgai egongo da.",
+    "export_error": "Ezin izan da esportatu",
+    "view_publication": "Ikusi argitalpena",
+    "edit": "Editatu",
+    "delete_irreversible": "Ekintza hau ezin da desegin."
   },
   "select_publication_type": {
     "title": "Hautatu Argitalpen Mota",
@@ -601,7 +631,11 @@
     "required_fields_error": "Mesedez, bete derrigorrezko eremu guztiak.",
     "save_draft": "Gorde Zirriborroa",
     "status_title": "Egoera",
-    "pending_review_warning": "Zure argitalpena berrikusten ari da eta ezin da editatu administratzaile batek onartu edo ukatu arte."
+    "pending_review_warning": "Zure argitalpena berrikusten ari da eta ezin da editatu administratzaile batek onartu edo ukatu arte.",
+    "partial_upload": "Argitalpena eguneratu da, baina fitxategi batzuk ezin izan dira igo: {files}",
+    "sent_to_review": "Aldaketak gorde dira. Argitalpena berrikusten egongo da administratzaile batek onartu arte.",
+    "url_will_change": "URLa eguneratu egingo da gordetzean",
+    "view_on_web": "Ikusi webgunean"
   },
   "questions": {
     "page_title": "Argitalpenaren Galderak",
@@ -683,7 +717,9 @@
     "motor_power": "Potentzia",
     "fetch_error": "Errorea salmentak kargatzean.",
     "my_sales": "Nire Salmentak",
-    "no_sales_yet": "Oraindik ez duzu salmentarik egin."
+    "no_sales_yet": "Oraindik ez duzu salmentarik egin.",
+    "rate_buyer": "Baloratu eroslea",
+    "view_buyer_chat": "Ikusi eroslearekiko txata"
   },
   "login": {
     "welcome": "Sarrera Motorlan-era",
@@ -715,7 +751,26 @@
     "sign_in_instead": "Hasi saioa horren ordez",
     "or": "edo",
     "first_name_placeholder": "Jon",
-    "last_name_placeholder": "Garcia"
+    "last_name_placeholder": "Garcia",
+    "review_notice": "Egiaztatu datuak kontua sortu aurretik. Email bat jasoko duzu aktibatzeko.",
+    "success_toast": "Kontua ondo sortu da.",
+    "passwords_mismatch": "Pasahitzak ez datoz bat.",
+    "password_requirements_title": "Pasahitzak hau izan behar du:",
+    "must_accept_terms": "Pribatutasun-politika eta baldintzak onartu behar dituzu.",
+    "generic_error": "Errore bat gertatu da kontua sortzean. Saiatu berriro.",
+    "step_account": "Datu pertsonalak",
+    "step_credentials": "Kredentzialak",
+    "step_confirm": "Berrespena",
+    "next": "Jarraitu",
+    "back": "Atzera",
+    "password_req_length": "Gutxienez 8 karaktere",
+    "password_req_upper": "Maiuskula bat (A-Z)",
+    "password_req_lower": "Minuskula bat (a-z)",
+    "password_req_digit": "Zenbaki bat (0-9)",
+    "password_req_special": "Karaktere berezi bat (!#$%…)",
+    "password_confirm": "Berretsi pasahitza",
+    "first_name": "Izena",
+    "last_name": "Abizena"
   },
   "forgot_password": {
     "title": "Pasahitza ahaztu duzu?",
@@ -724,7 +779,9 @@
     "send_button": "Bidali argibideak",
     "back_to_login": "Itzuli saio-hasierara",
     "success": "Argibideak dituen posta bat bidali dizugu.",
-    "error": "Ezin izan da posta bidali. Saiatu berriro."
+    "error": "Ezin izan da posta bidali. Saiatu berriro.",
+    "sent_title": "Esteka bidali da!",
+    "sent_body": "Emaila gure sisteman badago, pasahitza berrezartzeko esteka bat jasoko duzu."
   },
   "reset_password": {
     "title": "Pasahitza berrezarri",
@@ -736,7 +793,12 @@
     "back_to_login": "Itzuli saio-hasierara",
     "success": "Pasahitza ondo berrezarri da.",
     "mismatch": "Pasahitzak ez datoz bat.",
-    "error": "Ezin izan da pasahitza berrezarri."
+    "error": "Ezin izan da pasahitza berrezarri.",
+    "invalid_link": "Berrezartzeko esteka baliogabea. Eskatu berri bat.",
+    "success_title": "Pasahitza eguneratuta!",
+    "success_body": "Zure pasahitza berrezarri da. Orain saioa has dezakezu.",
+    "request_new_link": "Eskatu esteka berria",
+    "go_to_login": "Joan saioa hastera"
   },
   "register_success": {
     "title": "Zorionak erregistratzeagatik!",
@@ -744,11 +806,17 @@
     "verify_email": "Egiaztatu zure posta elektronikoa",
     "verify_email_body": "Aktibazio esteka bat bidali dugu zure sarrera-ontzira. Mesedez, egiaztatu eta egin klik botoian zure kontua berresteko.",
     "spam_note": "Mezua minutu batzuetan jasotzen ez baduzu, mesedez egiaztatu zure spam edo nahi gabeko karpeta.",
-    "back_to_login": "Itzuli saio-hasierara"
+    "back_to_login": "Itzuli saio-hasierara",
+    "cancel": "Utzi",
+    "resend_button": "Bidali esteka berriro",
+    "resend_prompt": "Ez duzu emailik jaso? Bidali esteka berriro"
   },
   "publication_slug_page": {
     "not_found_title": "Argitalpena ez da aurkitu",
-    "not_found_action": "Joan dendara"
+    "not_found_action": "Joan dendara",
+    "link_expired_title": "Esteka iraungita",
+    "link_expired_text": "Posta elektronikoko esteka iraungi da (7 egunez balio du). Elkarrizketari berriro ekiteko, idatzi mezu berri bat produktuaren txatetik helbide elektroniko bera erabiliz.",
+    "unavailable": "Artikulu hau ez dago eskuragarri: saldu egin da edo saltzaileak behin-behinean kendu du."
   },
   "footer": {
     "license": "Lizentzia",
@@ -789,7 +857,9 @@
   "purchases_opinions": {
     "publication": "Argitalpena",
     "rating": "Balorazioa",
-    "comment": "Iruzkina"
+    "comment": "Iruzkina",
+    "to_seller": "Saltzaileari balorazioa",
+    "to_buyer": "Erosleari balorazioa"
   },
   "dashboard_lists": {
     "show": "Erakutsi",
@@ -856,7 +926,9 @@
     "delete_dialog_body": "Ekintza honek argitalpena betiko ezabatuko du.",
     "cancel": "Utzi",
     "save": "Gorde",
-    "new_status_label": "Egoera Berria"
+    "new_status_label": "Egoera Berria",
+    "delete_error": "Errorea argitalpena ezabatzean",
+    "status_error": "Errorea egoera aldatzean"
   },
   "inquiries": {
     "title": "Interesatuak",
@@ -870,7 +942,8 @@
     "no_data_text": "Oraindik ez duzu interes kontsultarik jaso.",
     "show": "Erakutsi",
     "buyer_interested": "Erosle interesatua",
-    "user_unknown": "Erabiltzaile ezezaguna"
+    "user_unknown": "Erabiltzaile ezezaguna",
+    "reply": "Erantzun"
   },
   "motor": {
     "consult_price": "Prezioa kontsultatu"
@@ -1017,7 +1090,18 @@
       "pending": "Zain",
       "cancelled": "Bertan behera utzita",
       "progress": "Prozesatzen"
-    }
+    },
+    "errors": {
+      "forbidden_view": "Ez duzu mezu hauek ikusteko baimenik.",
+      "not_found": "Ezin izan dugu txat hau aurkitu.",
+      "load": "Ezin izan dira mezuak kargatu.",
+      "forbidden_send": "Ez duzu txat honetan mezuak bidaltzeko baimenik.",
+      "forbidden_send_purchase": "Ez duzu erosketa honetan mezuak bidaltzeko baimenik.",
+      "send": "Ezin izan da mezua bidali.",
+      "purchase_not_found": "Ezin izan dugu erosketa hau aurkitu."
+    },
+    "agreed_amount_prompt": "Adostutako zenbatekoa €-tan (aukerakoa; hutsik = argitaratutako prezioa)",
+    "agreed_amount_invalid": "Zenbateko baliogabea"
   },
   "purchases": {
     "title": "Nire erosketak",
@@ -1073,7 +1157,10 @@
     "share_whatsapp": "WhatsApp",
     "share_telegram": "Telegram",
     "share_email": "Posta",
-    "link_copied": "Esteka kopiatuta"
+    "link_copied": "Esteka kopiatuta",
+    "seller_sales_count": "Salmentak: {n}",
+    "seller_reviews_count": "Balorazioak: {n}",
+    "favorite_error": "Ezin izan da gogokoa eguneratu. Saiatu berriro."
   },
   "offers_received": {
     "title": "Jasotako Eskaintzak",
@@ -1146,7 +1233,59 @@
     "published_price": "Argitaratutako prezioa",
     "accepted_offer": "Onartutako eskaintza",
     "total_paid": "Ordaindutakoa guztira",
-    "payment_delivery_details": "Ordainketa eta entrega xehetasunak"
+    "payment_delivery_details": "Ordainketa eta entrega xehetasunak",
+    "load_error": "Errore bat gertatu da erosketa kontsultatzean.",
+    "seller_data": "Saltzailearen datuak",
+    "buyer_data": "Eroslearen datuak",
+    "buyer": "Eroslea",
+    "product_fallback": "Produktua",
+    "sales_count": "Salmentak: {n}",
+    "units": "{n} unitate",
+    "each": "bakoitza",
+    "mode_offer": "Eskaintza bidezko erosketa",
+    "mode_direct": "Erosketa zuzena",
+    "breadcrumb": "Erosketak",
+    "view_product": "Ikusi produktua",
+    "technical_status": "Egoera teknikoa",
+    "rate_title": "Zer moduzko esperientzia izan duzu?",
+    "rate_seller_button": "Baloratu saltzailea",
+    "delivery_text": "Adostu entrega-data eta -lekua zuzenean saltzailearekin.",
+    "not_found": "Ez dugu erosketa aurkitu",
+    "not_found_hint": "Egiaztatu esteka edo itzuli dendara nabigatzen jarraitzeko.",
+    "offer_status": {
+      "pending": "Zain",
+      "pending_desc": "Saltzaileak oraindik ez dio eskaintzari erantzun.",
+      "accepted_pending": "Onartua, berresteko zain",
+      "accepted_pending_desc": "Eskaintza onartu da. Zure erosketa-berrespena falta da.",
+      "confirmed": "Berretsia",
+      "confirmed_desc": "Eskaintza berretsi eta erosketa erregistratu da.",
+      "rejected": "Baztertua",
+      "rejected_desc": "Saltzaileak eskaintza hau baztertu du.",
+      "expired": "Iraungia",
+      "expired_desc": "Eskaintza berretsi gabe iraungi da."
+    },
+    "state": {
+      "with_date": "{date}: {text}",
+      "registered_label": "Salmenta erregistratuta",
+      "registered_title": "Erosketa erregistratuta",
+      "registered_desc": "Adostu ordainketa eta entrega zuzenean saltzailearekin.",
+      "pending_label": "Zain",
+      "pending_title": "Akordioa zain",
+      "cancelled_label": "Bertan behera",
+      "cancelled_title": "Erosketa bertan behera geratu da",
+      "cancelled_desc": "Erosketa baliogabetu da.",
+      "delivered_label": "Entregatuta",
+      "delivered_title": "Erosketa jaso duzu",
+      "delivered_desc": "baieztatzen dugu jaso duzula.",
+      "shipped_label": "Bidalita",
+      "shipped_title": "Zure erosketa bidean dago",
+      "shipped_desc": "banaketara irten da.",
+      "processing_label": "Prozesatzen",
+      "processing_title": "Zure erosketa prestatzen ari gara",
+      "processing_desc": "bidalketa kudeatzen ari gara.",
+      "in_progress": "Abian",
+      "in_progress_desc": "zure eskaera kudeatzen jarraitzen dugu."
+    }
   },
   "user_profile": {
     "personal_info": "Informazio Pertsonala",
@@ -1168,7 +1307,26 @@
     "contact_person": "Harremanetarako pertsona *",
     "contact_person_placeholder": "Arduradunaren izena",
     "contact_email": "Harremanetarako posta *",
-    "contact_phone": "Harremanetarako telefonoa *"
+    "contact_phone": "Harremanetarako telefonoa *",
+    "save_changes": "Gorde aldaketak",
+    "saved": "Datuak gorde dira",
+    "save_error": "Errorea datuak gordetzean",
+    "load_error": "Errorea profila kargatzean",
+    "avatar_updated": "Abatarra eguneratu da",
+    "avatar_error": "Errorea abatarra eguneratzean",
+    "avatar_process_error": "Errore bat gertatu da irudia prozesatzean.",
+    "company_intro": "Bete zure enpresaren datuak fakturaziorako eta harreman komertzialerako. * duten eremuak derrigorrezkoak dira.",
+    "email_change_hint": "Aldatzen baduzu, pasahitza eskatuko dizugu eta email berritik berretsi beharko duzu.",
+    "email_change_title": "Aldatu emaila",
+    "email_change_explain": "{email} erabiltzeko, idatzi zure egungo pasahitza. Esteka bat bidaliko dugu helbide horretara, eta aldaketa ez da aplikatuko berretsi arte.",
+    "current_password": "Egungo pasahitza",
+    "email_change_confirm": "Bidali esteka",
+    "email_change_sent": "Esteka bat bidali dugu {email} helbidera. Zure emaila ez da aldatuko berretsi arte.",
+    "email_change_pending": "Email aldaketa zain: berretsi {email} helbidera bidali dugun esteka.",
+    "email_change_cancel": "Utzi aldaketa",
+    "email_change_cancelled": "Email aldaketa bertan behera utzi da.",
+    "email_change_password_required": "Idatzi zure egungo pasahitza emaila aldatzeko.",
+    "email_change_password_error": "Egungo pasahitza ez da zuzena."
   },
   "admin_preview": {
     "admin_preview_mode": "Administratzailearen Aurrebista Modua",
@@ -1211,5 +1369,124 @@
   },
   "publication_edit_form": {
     "required_fields_note": "{asterisk} markatutako eremuak derrigorrezkoak dira"
+  },
+  "dropzone": {
+    "only_images": "Irudiak bakarrik onartzen dira (JPG, PNG, GIF edo WebP).",
+    "max_files": "Gehienez {max} irudi.",
+    "drag_or_tap": "Arrastatu edo sakatu irudia igotzeko",
+    "view": "Ikusi",
+    "remove": "Ezabatu",
+    "image": "Irudia"
+  },
+  "validators": {
+    "required": "Eremu hau derrigorrezkoa da",
+    "email": "Idatzi baliozko email bat",
+    "password": "Pasahitzak gutxienez 8 karaktere izan behar ditu, maiuskula bat, minuskula bat, zenbaki bat eta karaktere berezi bat",
+    "confirmed": "Pasahitzak ez datoz bat"
+  },
+  "password_rules": {
+    "personal_data": "Pasahitzak ez du zure izena edo emaila izan behar.",
+    "no_personal_data": "Ez erabili zure izena edo emaila pasahitzean."
+  },
+  "auth_errors": {
+    "invalid_credentials": "Email edo pasahitz okerra.",
+    "missing_credentials": "Idatzi zure emaila eta pasahitza.",
+    "too_many_attempts": "Saiakera gehiegi. Saiatu berriro {minutes} minututan.",
+    "email_not_verified": "Zure kontua ez dago oraindik aktibatuta. Begiratu zure emaila: aktibazio-esteka bidali dizugu.",
+    "too_many_registrations": "Konexio honetatik erregistro gehiegi. Saiatu geroago.",
+    "missing_fields": "Derrigorrezko datuak falta dira.",
+    "invalid_email": "Emaila ez da baliozkoa.",
+    "first_name_required": "Izena derrigorrezkoa da.",
+    "last_name_required": "Abizena derrigorrezkoa da.",
+    "email_exists": "Email hau erregistratuta dago jada. Hasi saioa edo, pasahitza gogoratzen ez baduzu, berrezarri. Kontua aktibatu gabe bazegoen, aktibazio-esteka berriro jasoko duzu.",
+    "weak_password": "Pasahitzak ez ditu segurtasun-baldintzak betetzen.",
+    "registration_failed": "Ezin izan da kontua sortu. Saiatu berriro.",
+    "registered": "Kontua sortu da. Begiratu zure emaila aktibatzeko.",
+    "token_required": "Tokena falta da.",
+    "invalid_token": "Esteka ez da baliozkoa edo erabilita dago.",
+    "token_expired": "Esteka iraungi da. Eskatu berri bat.",
+    "already_verified": "Zure kontua aktibo dago jada. Hasi saioa.",
+    "verified": "Emaila egiaztatu da. Orain saioa has dezakezu.",
+    "resend_neutral": "Kontua badago eta aktibatu gabe badago, esteka berri bat bidali da.",
+    "resent": "Aktibazio-esteka berri bat bidali dizugu.",
+    "too_many_requests": "Eskaera gehiegi. Saiatu geroago.",
+    "email_required": "Idatzi zure emaila.",
+    "reset_sent": "Emaila badago, pasahitza berrezartzeko esteka bat bidali da.",
+    "reset_key_failed": "Ezin izan da esteka sortu. Saiatu berriro.",
+    "expired_key": "Pasahitza berrezartzeko esteka iraungi da. Eskatu berri bat.",
+    "invalid_key": "Pasahitza berrezartzeko esteka ez da baliozkoa edo erabilita dago. Eskatu berri bat.",
+    "password_reset": "Pasahitza berrezarri da. Orain saioa has dezakezu.",
+    "rest_cookie_invalid_nonce": "Ezin izan da zure saioa balioztatu. Kargatu berriro orria eta saiatu berriro.",
+    "password_required": "Idatzi zure egungo pasahitza emaila aldatzeko.",
+    "incorrect_password": "Egungo pasahitza ez da zuzena.",
+    "invalid_code": "Egiaztapen-kodea okerra da edo iraungi da.",
+    "update_failed": "Ezin izan da emaila eguneratu. Saiatu berriro."
+  },
+  "verify_email": {
+    "title": "Emailaren egiaztapena",
+    "email_change_title": "Emailaren berrespena",
+    "verifying": "Esteka egiaztatzen, itxaron mesedez...",
+    "success_title": "Emaila egiaztatuta!",
+    "success_body": "Zure kontua aktibatu da. Orain Motorlanen funtzio guztiak erabil ditzakezu.",
+    "already_verified": "Zure kontua egiaztatuta zegoen jada. Orain saioa has dezakezu.",
+    "redirect_countdown": "{seconds} segundotan saioa hasteko orrira eramango zaitugu. Erabili zure kredentzialak.",
+    "continue": "Jarraitu",
+    "go_to_login": "Joan saioa hastera",
+    "go_to_profile": "Joan nire profilera",
+    "back_to_login": "Itzuli saioa hastera",
+    "email_changed_title": "Emaila eguneratuta!",
+    "email_changed_body": "Hemendik aurrera, erabili zure email berria saioa hasteko eta Motorlanen jakinarazpenak jasotzeko.",
+    "resent_title": "Esteka berri bat bidali dizugu",
+    "resent_body": "Begiratu zure postontzia (baita spam karpeta ere) eta sakatu esteka kontua aktibatzeko. Esteka 24 orduan iraungiko da.",
+    "help_resend": "Egiaztapen-esteka berri bat eska dezakezu. Arazoak jarraitzen badu, jarri harremanetan laguntza-zerbitzuarekin.",
+    "help_login": "Hasi saioa zure email eta pasahitzarekin: kontua aktibatu gabe badago, esteka berri bat bidaliko dizugu automatikoki.",
+    "request_new_link": "Eskatu esteka berria",
+    "resend_error": "Ezin izan da esteka berriro bidali.",
+    "invalid_token": "Egiaztapen-token baliogabea edo iraungia.",
+    "token_missing": "Ez da egiaztapen-tokena aurkitu.",
+    "email_change_invalid": "Emaila berresteko esteka ez da baliozkoa edo erabilita dago.",
+    "email_change_help": "Emaila berriro alda dezakezu zure profiletik esteka berri bat jasotzeko."
+  },
+  "change_password": {
+    "title": "Aldatu pasahitza",
+    "submit": "Aldatu pasahitza",
+    "intro": "Aukeratu beste inon erabiltzen ez duzun pasahitz sendo bat.",
+    "new_password": "Pasahitz berria",
+    "confirm_password": "Berretsi pasahitz berria",
+    "check_email_title": "Egiaztatu zure emaila",
+    "check_email_body": "Kode bat bidali dugu zure emailera.",
+    "code": "Egiaztapen-kodea",
+    "done_title": "Dena prest!",
+    "success": "Pasahitza ondo aldatu da.",
+    "send_code": "Bidali kodea",
+    "send_code_error": "Errorea egiaztapen-kodea bidaltzean.",
+    "invalid_code": "Egiaztapen-kodea okerra da edo iraungi da.",
+    "close": "Itxi",
+    "cancel": "Utzi"
+  },
+  "user_menu": {
+    "profile": "Profila",
+    "role_admin": "Administratzailea",
+    "role_user": "Erabiltzailea",
+    "logout": "Itxi saioa"
+  },
+  "favorites": {
+    "remove": "Kendu gogokoetatik",
+    "remove_confirm": "Ziur argitalpen hau gogokoetatik kendu nahi duzula?"
+  },
+  "rating_modal": {
+    "title_seller": "Baloratu saltzailea",
+    "title_buyer": "Baloratu eroslea",
+    "experience_with": "Nolakoa izan da zure esperientzia {name}rekin?",
+    "experience_default": "Nolakoa izan da zure esperientzia?",
+    "stars": "{rating} izar",
+    "comment_label": "Iruzkina",
+    "comment_placeholder": "Kontatu zure esperientzia",
+    "comment_required": "Iruzkina derrigorrezkoa da",
+    "max_chars": "Gehienez 1000 karaktere",
+    "cancel": "Utzi",
+    "submit": "Bidali",
+    "connection_error": "Konexio errorea balorazioa bidaltzean",
+    "submit_error": "Errorea balorazioa bidaltzean"
   }
 }

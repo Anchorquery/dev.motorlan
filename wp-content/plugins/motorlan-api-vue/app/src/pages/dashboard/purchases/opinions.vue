@@ -1,21 +1,24 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { ImagenDestacada } from '@/interfaces/publicacion'
 import { useApi } from '@/composables/useApi'
 import { createUrl } from '@/@core/composable/createUrl'
 import { useMotorFormatter } from '@/composables/useMotorFormatter'
+import { storeUrl } from '@/utils/urls'
 
+// Valoraciones hechas por el usuario (POST /reviews). El backend ya no lee solo el CPT
+// 'opinion' antiguo: antes esta lista salía siempre vacía. Además usaba item.raw (no
+// existe en Vuetify 3.8), NuxtLink y enlazaba al editor de una publicación ajena.
 const { t } = useI18n()
 const { formatMotorName } = useMotorFormatter()
 const headers = computed(() => [
-  { title: t('purchases_opinions.publication'), key: 'publicacion' },
+  { title: t('purchases_opinions.publication'), key: 'publicacion', sortable: false },
   { title: t('purchases_opinions.rating'), key: 'valoracion' },
-  { title: t('purchases_opinions.comment'), key: 'comentario' },
+  { title: t('purchases_opinions.comment'), key: 'comentario', sortable: false },
 ])
 
 const searchQuery = ref('')
-const selectedRows = ref([])
 
 // Data table options
 const itemsPerPage = ref(10)
@@ -30,7 +33,7 @@ const updateOptions = (options: any) => {
   orderBy.value = options.sortBy[0]?.order
 }
 
-const { data: opinionsData, execute: fetchOpinions } = await useApi<any>(createUrl('/wp-json/motorlan/v1/purchases/opinions', {
+const { data: opinionsData, execute: fetchOpinions, isFetching } = useApi<any>(createUrl('/wp-json/motorlan/v1/purchases/opinions', {
   query: {
     page,
     per_page: itemsPerPage,
@@ -38,10 +41,19 @@ const { data: opinionsData, execute: fetchOpinions } = await useApi<any>(createU
     order: orderBy,
     search: searchQuery,
   },
-}))
+}), { immediate: false }).get().json()
+
+watch([page, itemsPerPage, sortBy, orderBy, searchQuery], () => {
+  void fetchOpinions()
+}, { immediate: true })
+
+watch(searchQuery, () => {
+  if (page.value !== 1)
+    page.value = 1
+})
 
 const opinions = computed(() => opinionsData.value?.data || [])
-const totalOpinions = computed(() => opinionsData.value?.pagination.total || 0)
+const totalOpinions = computed(() => opinionsData.value?.pagination?.total || 0)
 
 const getImageBySize = (image: any, size = 'thumbnail'): string => {
   if (!image)
@@ -62,48 +74,48 @@ const getImageBySize = (image: any, size = 'thumbnail'): string => {
 </script>
 
 <template>
-  <Suspense>
-    <VCard
-      id="opinion-list"
-      class="motor-card-enhanced"
-    >
-      <VCardTitle class="pa-6 pb-0">
-        <span class="text-h5 text-premium-title">{{ t('dashboard_lists.my_opinions') }}</span>
-      </VCardTitle>
-      <VCardText class="pa-6">
-        <div class="dash-simple-toolbar d-flex flex-wrap gap-4">
-          <div class="d-flex align-center dash-simple-toolbar__search">
-            <!-- 👉 Search  -->
-            <AppTextField
-              v-model="searchQuery"
-              :placeholder="t('dashboard_lists.search_opinion')"
-              style="inline-size: 260px;"
-              class="me-3"
-              prepend-inner-icon="tabler-search"
-            />
-          </div>
-
-          <VSpacer />
-          <div class="d-flex gap-4 flex-wrap align-center dash-simple-toolbar__per-page">
-            <AppSelect
-              v-model="itemsPerPage"
-              :items="[5, 10, 20, 25, 50]"
-              style="inline-size: 80px;"
-            />
-          </div>
+  <VCard
+    id="opinion-list"
+    class="motor-card-enhanced"
+  >
+    <VCardTitle class="pa-6 pb-0">
+      <span class="text-h5 text-premium-title">{{ t('dashboard_lists.my_opinions') }}</span>
+    </VCardTitle>
+    <VCardText class="pa-6">
+      <div class="dash-simple-toolbar d-flex flex-wrap gap-4">
+        <div class="d-flex align-center dash-simple-toolbar__search">
+          <!-- 👉 Search  -->
+          <AppTextField
+            v-model="searchQuery"
+            :placeholder="t('dashboard_lists.search_opinion')"
+            style="inline-size: 260px;"
+            class="me-3"
+            prepend-inner-icon="tabler-search"
+          />
         </div>
-      </VCardText>
 
-      <VDivider />
+        <VSpacer />
+        <div class="d-flex gap-4 flex-wrap align-center dash-simple-toolbar__per-page">
+          <AppSelect
+            v-model="itemsPerPage"
+            :items="[5, 10, 20, 25, 50]"
+            style="inline-size: 80px;"
+          />
+        </div>
+      </div>
+    </VCardText>
 
-      <!-- 👉 Datatable  -->
-      <div class="table-responsive-shell">
+    <VDivider />
+
+    <!-- 👉 Datatable  -->
+    <div class="table-responsive-shell">
       <VDataTableServer
         v-model:items-per-page="itemsPerPage"
         v-model:page="page"
         :headers="headers"
         :items="opinions"
         :items-length="totalOpinions"
+        :loading="isFetching"
         class="text-no-wrap pb-4"
         @update:options="updateOptions"
       >
@@ -111,18 +123,27 @@ const getImageBySize = (image: any, size = 'thumbnail'): string => {
         <template #item.publicacion="{ item }: { item: any }">
           <div class="d-flex align-center gap-x-4 py-3">
             <VAvatar
-              v-if="item.raw.publicacion?.imagen_destacada"
+              v-if="item.publicacion?.imagen_destacada"
               size="44"
               variant="tonal"
               rounded
               class="border"
-              :image="getImageBySize(item.raw.publicacion.imagen_destacada, 'thumbnail')"
+              :image="getImageBySize(item.publicacion.imagen_destacada, 'thumbnail')"
             />
             <div class="d-flex flex-column">
-              <NuxtLink :to="`/dashboard/publications/publication/edit/${item.raw.publicacion.uuid}`">
-                <span class="text-body-1 font-weight-medium text-premium-title cursor-pointer">{{ formatMotorName(item.raw.publicacion) }}</span>
-              </NuxtLink>
-              <span class="text-body-2 text-muted">{{ item.raw.publicacion.acf.marca.name }}</span>
+              <a
+                v-if="item.publicacion?.slug"
+                :href="storeUrl(item.publicacion.slug)"
+                target="_blank"
+                class="text-body-1 font-weight-medium text-premium-title"
+              >{{ formatMotorName(item.publicacion) || item.publicacion.title }}</a>
+              <span
+                v-else
+                class="text-body-1 font-weight-medium text-premium-title"
+              >{{ item.title }}</span>
+              <span class="text-body-2 text-muted">
+                {{ item.target_role === 'buyer' ? t('purchases_opinions.to_buyer', 'Valoración al comprador') : t('purchases_opinions.to_seller', 'Valoración al vendedor') }}
+              </span>
             </div>
           </div>
         </template>
@@ -130,7 +151,7 @@ const getImageBySize = (image: any, size = 'thumbnail'): string => {
         <!-- valoracion -->
         <template #item.valoracion="{ item }: { item: any }">
           <VRating
-            :model-value="item.raw.valoracion"
+            :model-value="Number(item.valoracion) || 0"
             readonly
             color="warning"
             density="compact"
@@ -140,7 +161,7 @@ const getImageBySize = (image: any, size = 'thumbnail'): string => {
 
         <!-- comentario -->
         <template #item.comentario="{ item }: { item: any }">
-          <span class="text-body-2 text-high-emphasis">{{ item.raw.comentario }}</span>
+          <span class="text-body-2 text-high-emphasis text-wrap">{{ item.comentario }}</span>
         </template>
 
         <!-- pagination -->
@@ -154,14 +175,8 @@ const getImageBySize = (image: any, size = 'thumbnail'): string => {
           />
         </template>
       </VDataTableServer>
-      </div>
-    </VCard>
-    <template #fallback>
-      <div>
-        Cargando...
-      </div>
-    </template>
-  </Suspense>
+    </div>
+  </VCard>
 </template>
 
 <style scoped>

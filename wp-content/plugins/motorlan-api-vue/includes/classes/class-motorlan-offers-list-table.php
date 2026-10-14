@@ -91,8 +91,8 @@ class Motorlan_Offers_List_Table extends WP_List_Table {
         if ( ! $user ) {
             return 'Usuario Eliminado (' . $user_id . ')';
         }
-        $edit_link = extract( get_edit_user_link( $user_id ) );
-        
+        $edit_link = get_edit_user_link( $user_id );
+
         // Avatar
         $avatar = get_avatar( $user_id, 32 );
         return sprintf( 

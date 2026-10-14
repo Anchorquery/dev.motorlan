@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { VForm } from 'vuetify/components'
@@ -14,8 +14,16 @@ import { useMotorFormatter } from '@/composables/useMotorFormatter'
 import { storeUrl } from '@/utils/urls'
 
 // Composables
-import { usePublicationForm } from '@/composables/usePublicationForm'
-import { useApi } from '@/composables/useApi'
+import {
+  compressImageFile,
+  exceedsTotalUploadSize,
+  findOversizedFile,
+  formatBytes,
+  getUploadLimits,
+  revokePublicationBlobUrls,
+  usePublicationForm,
+} from '@/composables/usePublicationForm'
+import { assertApiOk, useApi } from '@/composables/useApi'
 import { useToast } from '@/composables/useToast'
 import { requiredValidator } from '@/@core/utils/validators'
 import { useUserStore } from '@/@core/stores/user'
@@ -35,19 +43,23 @@ const isLoading = ref(false)
 const activeTab = ref(0)
 const postId = ref<number | null>(null)
 
-// Snapshot de campos que afectan slug/URL para detectar cambios
-const originalSlugFields = ref({ title: '', tipo_o_referencia: '', potencia: '' })
+// Snapshot de los campos que forman el slug/URL (mismo criterio que el backend:
+// marca, referencia, potencia, par nominal y tipo).
+const slugSnapshot = () => JSON.stringify([
+    formState.value.acf.marca ?? null,
+    formState.value.acf.marca_custom || '',
+    String(formState.value.acf.tipo_o_referencia ?? '').trim(),
+    String(formState.value.acf.potencia ?? ''),
+    String(formState.value.acf.par_nominal ?? ''),
+    [...(formState.value.tipo || [])],
+])
+const originalSlugFields = ref('')
 
-const slugFieldsChanged = computed(() => {
-    return formState.value.title !== originalSlugFields.value.title
-        || formState.value.acf.tipo_o_referencia !== originalSlugFields.value.tipo_o_referencia
-        || String(formState.value.acf.potencia ?? '') !== originalSlugFields.value.potencia
-})
+const slugFieldsChanged = computed(() => !!originalSlugFields.value && slugSnapshot() !== originalSlugFields.value)
 
 // Data for selects
 // Data for selects
 const marcas = ref<{ title: string; value: number }[]>([])
-const categories = ref<{ title: string; value: number }[]>([])
 const tipos = ref<{ title: string; value: number; slug: string }[]>([])
 const countries = ref<{ title: string; value: string }[]>([])
 
@@ -55,21 +67,19 @@ const countries = ref<{ title: string; value: string }[]>([])
 onMounted(async () => {
   try {
     const marcasFetch = useApi('/wp-json/motorlan/v1/marcas', { immediate: false }).get().json()
-    const categoriesFetch = useApi('/wp-json/motorlan/v1/publicacion-categories', { immediate: false }).get().json()
     const tiposFetch = useApi('/wp-json/motorlan/v1/tipos', { immediate: false }).get().json()
     const countriesFetch = useApi('/wp-json/motorlan/v1/countries', { immediate: false }).get().json()
 
     await Promise.all([
        marcasFetch.execute(),
-       categoriesFetch.execute(),
        tiposFetch.execute(),
        countriesFetch.execute(),
     ])
 
-    if (marcasFetch.data.value) marcas.value = marcasFetch.data.value.map((m: any) => ({ title: m.name, value: m.term_id }))
-    if (categoriesFetch.data.value) categories.value = categoriesFetch.data.value.map((c: any) => ({ title: c.name, value: c.term_id }))
-    if (tiposFetch.data.value) tipos.value = tiposFetch.data.value.map((t: any) => ({ title: t.name, value: t.term_id, slug: t.slug }))
-    if (countriesFetch.data.value) countries.value = countriesFetch.data.value
+    // Con updateDataOnError, data puede ser el objeto de error: comprobar que sea un array.
+    if (Array.isArray(marcasFetch.data.value)) marcas.value = marcasFetch.data.value.map((m: any) => ({ title: m.name, value: m.term_id }))
+    if (Array.isArray(tiposFetch.data.value)) tipos.value = tiposFetch.data.value.map((t: any) => ({ title: t.name, value: t.term_id, slug: t.slug }))
+    if (Array.isArray(countriesFetch.data.value)) countries.value = countriesFetch.data.value
     
     if (motorUuid) {
         await fetchPublication(motorUuid)
@@ -83,11 +93,14 @@ onMounted(async () => {
 
 const fetchPublication = async (uuid: string) => {
     try {
-        const { data } = await useApi(`/wp-json/motorlan/v1/publicaciones/uuid/${uuid}`).get().json()
+        // assertApiOk: con 403/404 antes se construía el formulario sobre el objeto de error
+        // y quedaba editable con valores por defecto.
+        const { data } = assertApiOk(await useApi(`/wp-json/motorlan/v1/publicaciones/uuid/${uuid}`).get().json())
         const post = data.value
-        
-        if (!post) {
+
+        if (!post || !post.id) {
              showToast(t('edit_publication.not_found', 'Publicación no encontrada'), 'error')
+             router.push('/dashboard/publications/publication/list')
              return
         }
         
@@ -99,7 +112,6 @@ const fetchPublication = async (uuid: string) => {
             title: post.title,
             slug: post.slug,
             status: post.status,
-            categories: post.categories ? post.categories.map((c: any) => c.id) : [],
             tipo: post.tipo ? post.tipo.map((t: any) => t.id) : [],
             author: post.author,
             acf: {
@@ -122,14 +134,14 @@ const fetchPublication = async (uuid: string) => {
         }
 
         // Mapping Images properly for DropZone
-        if (post.acf.motor_image) {
+        if (post.acf?.motor_image) {
              mappedState.acf.motor_image = {
                  url: post.acf.motor_image.url,
                  id: post.acf.motor_image.id
              }
         }
         
-        if (post.acf.motor_gallery) {
+        if (Array.isArray(post.acf?.motor_gallery)) {
             mappedState.acf.motor_gallery = post.acf.motor_gallery.map((img: any) => ({
                 url: img.url,
                 id: img.id
@@ -150,19 +162,23 @@ const fetchPublication = async (uuid: string) => {
         setFormState(mappedState)
 
         // Guardar snapshot de campos que afectan slug
-        originalSlugFields.value = {
-            title: mappedState.title || '',
-            tipo_o_referencia: mappedState.acf.tipo_o_referencia || '',
-            potencia: String(mappedState.acf.potencia ?? ''),
-        }
+        originalSlugFields.value = slugSnapshot()
 
-    } catch (e) {
+    } catch (e: any) {
         console.error(e)
-        showToast(t('edit_publication.fetch_error', 'Error al cargar publicación'), 'error')
+        showToast(e?.message || t('edit_publication.fetch_error', 'Error al cargar publicación'), 'error')
+        router.push('/dashboard/publications/publication/list')
     }
 }
 
+// "Actualizar" conserva pausada/vendida (antes siempre enviaba 'publish': reactivaba lo
+// vendido o lo mandaba a revisión al corregir una errata).
+const updateTargetStatus = computed(() => ['paused', 'sold'].includes(formState.value.status) ? formState.value.status : 'publish')
+
 const updatePublication = async (status: string) => {
+    // Guarda de reentrada (doble clic / Enter)
+    if (isLoading.value) return
+
     const { valid } = await formRef.value?.validate() ?? { valid: false }
     if (!valid) {
         showToast(t('edit_publication.required_fields_error', 'Por favor, rellena los campos obligatorios'), 'error')
@@ -173,17 +189,13 @@ const updatePublication = async (status: string) => {
     
     try {
         const formData = new FormData()
-        
-         // Build slug
-        const slug = buildPublicationSlug()
-        
-        // Append basic fields
+
+        // Append basic fields. El slug lo genera el backend (mismo formato que en el alta)
+        // y solo cambia si cambian marca/referencia/potencia/par/tipo.
         formData.append('title', formState.value.title)
         formData.append('status', status)
-        if (slug) formData.append('slug', slug)
         
         // Taxonomies
-        formData.append('categories', JSON.stringify(formState.value.categories))
         formData.append('tipo', JSON.stringify(formState.value.tipo))
         
         // ACF - separate files
@@ -195,10 +207,31 @@ const updatePublication = async (status: string) => {
         }
         formData.append('acf', JSON.stringify(acfRest))
         
+        // Archivos nuevos: optimizar fotos y comprobar límites del servidor antes de enviar
+        const newMainFile = motor_image?.file ? await compressImageFile(motor_image.file) : null
+        const newGalleryFiles = await Promise.all(
+            (motor_gallery || []).filter(img => img.file).map(img => compressImageFile(img.file as File)),
+        )
+        const newDocFiles: File[] = []
+        ;(documentacion_adicional || []).forEach(doc => {
+            if (doc.archivo instanceof File) newDocFiles.push(doc.archivo)
+            else if (Array.isArray(doc.archivo) && doc.archivo[0] instanceof File) newDocFiles.push(doc.archivo[0])
+        })
+        const allNewFiles = [newMainFile, ...newGalleryFiles, ...newDocFiles].filter(Boolean) as File[]
+        const tooBig = findOversizedFile(allNewFiles)
+        if (tooBig) {
+            showToast(t('add_publication.validation.file_too_big', { name: tooBig.name, max: formatBytes(getUploadLimits().maxFile) }, `"${tooBig.name}" supera el tamaño máximo permitido (${formatBytes(getUploadLimits().maxFile)}).`), 'error')
+            return
+        }
+        if (exceedsTotalUploadSize(allNewFiles)) {
+            showToast(t('add_publication.validation.total_too_big', { max: formatBytes(getUploadLimits().maxPost) }, `Los archivos superan en total el máximo permitido (${formatBytes(getUploadLimits().maxPost)}). Quita alguna imagen o documento.`), 'error')
+            return
+        }
+
         // Main Image logic
         if (motor_image) {
-            if (motor_image.file) {
-                 formData.append('motor_image', motor_image.file)
+            if (newMainFile) {
+                 formData.append('motor_image', newMainFile)
             } else if (motor_image.id) {
                  formData.append('motor_image_id', motor_image.id.toString())
             }
@@ -210,13 +243,11 @@ const updatePublication = async (status: string) => {
         const existingGalleryIds: number[] = []
         if (motor_gallery && motor_gallery.length) {
             motor_gallery.forEach(img => {
-                if (img.file) {
-                    formData.append('motor_gallery[]', img.file)
-                } else if (img.id) {
+                if (!img.file && img.id)
                     existingGalleryIds.push(img.id)
-                }
             })
         }
+        newGalleryFiles.forEach(file => formData.append('motor_gallery[]', file))
         formData.append('motor_gallery_ids', existingGalleryIds.join(','))
         
         // Docs logic
@@ -249,10 +280,14 @@ const updatePublication = async (status: string) => {
         formData.append('documentacion_adicional_nombres', JSON.stringify(newDocNames))
         
         // API Call
-        const { data: responseData } = await useApi(`/wp-json/motorlan/v1/publicaciones/uuid/${motorUuid}`, {
+        const { data: responseData } = assertApiOk(await useApi(`/wp-json/motorlan/v1/publicaciones/uuid/${motorUuid}`, {
             method: 'POST',
             body: formData
-        }).json()
+        }).json())
+
+        // Reflejar el estado guardado (p. ej. publish -> pending para no-admin)
+        if (responseData.value?.status)
+            formState.value.status = responseData.value.status
 
         // Actualizar slug con el valor real del backend
         if (responseData.value?.slug) {
@@ -260,34 +295,28 @@ const updatePublication = async (status: string) => {
         }
 
         // Actualizar snapshot para que el aviso de URL desaparezca
-        originalSlugFields.value = {
-            title: formState.value.title || '',
-            tipo_o_referencia: formState.value.acf.tipo_o_referencia || '',
-            potencia: String(formState.value.acf.potencia ?? ''),
-        }
+        originalSlugFields.value = slugSnapshot()
 
-        showToast(t('edit_publication.update_success', 'Publicación actualizada'), 'success')
+        const uploadErrors = responseData.value?.upload_errors
+        if (Array.isArray(uploadErrors) && uploadErrors.length)
+            showToast(t('edit_publication.partial_upload', { files: uploadErrors.join(' · ') }, 'Publicación actualizada, pero algunos archivos no se subieron: {files}'), 'warning')
+        else if (responseData.value?.status === 'pending' && status !== 'pending')
+            showToast(t('edit_publication.sent_to_review', 'Cambios guardados. La publicación queda en revisión hasta que un administrador la apruebe.'), 'info')
+        else
+            showToast(t('edit_publication.update_success', 'Publicación actualizada'), 'success')
         
     } catch (e: any) {
         console.error(e)
-        showToast(t('edit_publication.update_error', e.message), 'error')
+        showToast(t('edit_publication.update_error', { message: e?.message || '' }), 'error')
     } finally {
         isLoading.value = false
     }
 }
 
-const buildPublicationSlug = () => {
-    // Same slug logic as Add
-      const slugify = (val: string) => val.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
-      
-      const parts = [
-        formState.value.title,
-        formState.value.acf.tipo_o_referencia,
-        formState.value.acf.potencia ? `${formState.value.acf.potencia} kW` : null,
-      ].filter(Boolean) as string[]
-
-      return parts.length ? slugify(parts.join(' ')) : ''
-}
+onBeforeUnmount(() => {
+    // Liberar las previsualizaciones blob: de las imágenes nuevas
+    revokePublicationBlobUrls(formState.value.acf)
+})
 
 
 // Page Title
@@ -309,9 +338,8 @@ const pageTitle = computed(() => {
 
 const getMainImageUrl = () => {
     const img = formState.value.acf.motor_image
-    if (img?.url) return img.url
-    if (img?.file) return URL.createObjectURL(img.file)
-    return ''
+    // DropZone ya crea la URL blob: crear otra en cada render filtraba memoria
+    return img?.url || ''
 }
 
 const isReadOnly = computed(() => {
@@ -329,7 +357,9 @@ const statusLabel = computed(() => {
         'publish': t('publication_list.status_options.published', 'Publicado'),
         'draft': t('publication_list.status_options.draft', 'Borrador'),
         'pending': t('publication_list.status_options.pending', 'En revisión'),
-        'trash': 'Papelera' // Fallback simple
+        'paused': t('publication_list.status_options.paused', 'Pausado'),
+        'sold': t('publication_list.status_options.sold', 'Vendido'),
+        'trash': t('publication_list.status_options.trash', 'Papelera'),
     };
     
     return options[statusKey] || t('publication_list.status_options.unknown', 'Desconocido');
@@ -340,6 +370,9 @@ const statusColor = computed(() => {
         case 'publish': return 'success';
         case 'pending': return 'warning'; // En revisión - Naranja
         case 'draft': return 'secondary'; // Borrador - Gris
+        case 'paused': return 'info';
+        case 'sold': return 'error';
+        case 'trash': return 'error';
         default: return 'default';
     }
 })
@@ -381,7 +414,7 @@ const statusColor = computed(() => {
               variant="tonal"
               color="secondary"
               size="small"
-              :disabled="isReadOnly"
+              :disabled="isReadOnly || isLoading"
               @click="updatePublication('draft')"
             >
               {{ t('edit_publication.save_draft', 'Guardar Borrador') }}
@@ -390,8 +423,8 @@ const statusColor = computed(() => {
               color="primary"
               size="small"
               :loading="isLoading"
-              :disabled="isReadOnly"
-              @click="updatePublication('publish')"
+              :disabled="isReadOnly || isLoading"
+              @click="updatePublication(updateTargetStatus)"
             >
               {{ t('edit_publication.update_publication', 'Actualizar') }}
             </VBtn>
@@ -430,11 +463,11 @@ const statusColor = computed(() => {
                          <VWindow v-model="activeTab">
                              <!-- Basic Info -->
                             <VWindowItem eager :value="0">
-                                <StepBasicInfo 
-                                    :form-state="formState" 
-                                    :marcas="marcas" 
-                                    :categories="categories"
-                                    @update:form-state="setFormState" 
+                                <StepBasicInfo
+                                    :form-state="formState"
+                                    :marcas="marcas"
+                                    :tipos="tipos"
+                                    @update:form-state="setFormState"
                                 />
                                 <div class="mt-6">
                                      <StepLocationCondition
@@ -514,7 +547,7 @@ const statusColor = computed(() => {
                                    <VChip size="x-small" color="info" variant="tonal" class="ml-1">{{ t('add_publication.reference_chip') }}</VChip>
                                </span>
                                <span v-else-if="formState.acf.precio_negociable === 'yes'" class="text-h6 font-weight-bold text-warning">
-                                   Consultar precio
+                                   {{ t('publication_list_table.consult_price', 'Consultar precio') }}
                                </span>
                                <span v-else-if="formState.acf.precio_de_venta" class="text-h6 font-weight-bold text-primary">
                                    {{ formState.acf.precio_de_venta }}€
@@ -551,7 +584,7 @@ const statusColor = computed(() => {
                                 variant="tonal"
                                 class="w-100 mb-1"
                             >
-                                La URL se actualizara al guardar
+                                {{ t('edit_publication.url_will_change', 'La URL se actualizará al guardar') }}
                             </VAlert>
                             <VBtn
                                 block
@@ -561,7 +594,7 @@ const statusColor = computed(() => {
                                 prepend-icon="tabler-external-link"
                                 :disabled="!formState.slug || formState.status !== 'publish'"
                             >
-                                Ver en Web
+                                {{ t('edit_publication.view_on_web', 'Ver en la web') }}
                             </VBtn>
                        </VCardActions>
                   </VCard>

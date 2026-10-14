@@ -12,7 +12,7 @@
  */
 import { promises as fs } from 'node:fs'
 import { createRequire } from 'node:module'
-import { dirname, join } from 'node:path'
+import { basename, dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const require = createRequire(import.meta.url)
@@ -123,6 +123,14 @@ const sources: BundleScriptConfig = {
 
 // File to save bundle to
 const target = join(__dirname, 'icons.css')
+
+// Production bundle: only the tabler icons referenced in these directories
+const usedTarget = join(__dirname, 'icons.used.css')
+const usedIconsScanDirs = [
+  join(__dirname, '../..'), // app/src
+  join(__dirname, '../../../themeConfig.ts'),
+  join(__dirname, '../../../../includes'), // PHP (iconos enviados por la API)
+]
 
 /**
  * Do stuff!
@@ -275,9 +283,72 @@ const target = join(__dirname, 'icons.css')
   await fs.writeFile(target, cssContent, 'utf8')
 
   console.log(`Saved CSS to ${target}!`)
+
+  // RENDIMIENTO: el set completo de tabler (~6000 iconos, 2,8 MB) era el 84 % de
+  // style.css. La build de producción usa icons.used.css (alias en vite.config.ts)
+  // con solo los iconos tabler que aparecen en el código; dev sigue con el set completo.
+  const usedTabler = await collectUsedIconNames('tabler', usedIconsScanDirs)
+
+  const usedCssContent = allIcons
+    .map(iconSet => getIconsCSS(
+      iconSet,
+      Object.keys(iconSet.icons).filter(name => iconSet.prefix !== 'tabler' || usedTabler.has(name)),
+      {
+        iconSelector: '.{prefix}-{name}',
+        mode: 'mask',
+      },
+    ))
+    .join('\n')
+
+  await fs.writeFile(usedTarget, usedCssContent, 'utf8')
+
+  console.log(`Saved CSS with ${usedTabler.size} used tabler icons to ${usedTarget}!`)
 })().catch(err => {
   console.error(err)
+  process.exitCode = 1
 })
+
+/**
+ * Collect `<prefix>-<name>` icon names referenced anywhere in the given directories.
+ * Icons built dynamically (e.g. `tabler-${name}`) are not detected: write them literally.
+ */
+async function collectUsedIconNames(prefix: string, dirs: string[]): Promise<Set<string>> {
+  const used = new Set<string>()
+  const pattern = new RegExp(`\\b${prefix}-([a-z0-9]+(?:-[a-z0-9]+)*)`, 'g')
+
+  const scanFile = async (path: string, name: string) => {
+    if (!/\.(vue|ts|tsx|js|jsx|scss|css|json|php)$/.test(name) || /^icons(\.used)?\.css$/.test(name))
+      return
+
+    const content = await fs.readFile(path, 'utf8')
+    for (const match of content.matchAll(pattern))
+      used.add(match[1])
+  }
+
+  const walk = async (dir: string): Promise<void> => {
+    for (const entry of await fs.readdir(dir, { withFileTypes: true })) {
+      const path = join(dir, entry.name)
+
+      if (entry.isDirectory()) {
+        if (entry.name !== 'node_modules' && entry.name !== 'dist')
+          await walk(path)
+      }
+      else {
+        await scanFile(path, entry.name)
+      }
+    }
+  }
+
+  for (const path of dirs) {
+    const stat = await fs.stat(path)
+    if (stat.isDirectory())
+      await walk(path)
+    else
+      await scanFile(path, basename(path))
+  }
+
+  return used
+}
 
 /**
  * Sort icon names by prefix

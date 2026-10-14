@@ -35,18 +35,37 @@ function motorlan_update_publicacion_status(WP_REST_Request $request) {
 
     // Security check: Only author or admin can change status
     $post = get_post($post_id);
+    if (!$post || $post->post_type !== 'publicacion') {
+        return new WP_Error('not_found', 'Publicación no encontrada', ['status' => 404]);
+    }
+    if (!in_array($new_status, ['publish', 'pending', 'draft', 'paused', 'sold'], true)) {
+        return new WP_Error('invalid_status', 'Estado de publicación no válido.', ['status' => 400]);
+    }
     if ($post->post_author != get_current_user_id() && !current_user_can('administrator')) {
         return new WP_Error('forbidden', 'No tienes permisos para editar esta publicación.', ['status' => 403]);
     }
 
     // Security check: If current post is pending, only admin can change status
     $current_status = get_post_status($post_id);
+    // Papelera: solo el admin (antes el dueño podía sacarla de la papelera cambiando el estado).
+    if ($current_status === 'trash' && !$is_admin) {
+        return new WP_Error('not_found', 'Publicación no encontrada', ['status' => 404]);
+    }
     if ($current_status === 'pending' && !current_user_can('administrator')) {
         return new WP_Error('forbidden', 'No puedes cambiar el estado de una publicación que está en revisión.', ['status' => 403]);
     }
 
-    // Si el usuario no es admin y quiere publicar, forzar 'pending'
-    if (!$is_admin && $new_status === 'publish') {
+    // Si estaba publicada (aprobada), recordarlo antes de pausarla/venderla para poder
+    // reactivarla después sin volver a la cola de revisión.
+    if ($current_status === 'publish') {
+        motorlan_publicacion_mark_approved($post_id);
+    }
+
+    // Si el usuario no es admin y quiere publicar, forzar 'pending' salvo que la publicación
+    // ya hubiera sido aprobada (p. ej. pausada o agotada que se reactiva tras reponer stock).
+    // Una marca nueva pendiente siempre requiere revisión.
+    if (!$is_admin && $new_status === 'publish'
+        && (!motorlan_publicacion_was_approved($post_id) || get_post_meta($post_id, '_pending_brand_name', true))) {
         $new_status = 'pending';
     }
 
@@ -63,6 +82,11 @@ function motorlan_update_publicacion_status(WP_REST_Request $request) {
         }
     }
 
+    // Desde la papelera: restaurar con wp_untrash_post (si no, queda el slug "__trashed")
+    if (get_post_status($post_id) === 'trash') {
+        wp_untrash_post($post_id);
+    }
+
     // Actualizar el estado del post en WordPress directamente
     wp_update_post([
         'ID'          => $post_id,
@@ -74,6 +98,10 @@ function motorlan_update_publicacion_status(WP_REST_Request $request) {
         update_field('publicar_acf', $new_status, $post_id);
     }
     update_post_meta($post_id, 'publicar_acf', $new_status);
+
+    if ($new_status === 'publish') {
+        motorlan_publicacion_mark_approved($post_id);
+    }
 
     // Notificar a los admins si el estado es pending
     if ($new_status === 'pending' && !$is_admin) {

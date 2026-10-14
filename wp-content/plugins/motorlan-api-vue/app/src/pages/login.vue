@@ -16,6 +16,7 @@ import { themeConfig } from '@themeConfig'
 import { useToast } from '@/composables/useToast'
 import { requiredValidator } from '@core/utils/validators'
 import { useUserStore } from '@/@core/stores/user'
+import { apiErrorMessage } from '@/composables/useApi'
 
 const authThemeImg = useGenerateImageVariant(authV2LoginIllustrationLight, authV2LoginIllustrationDark, authV2LoginIllustrationBorderedLight, authV2LoginIllustrationBorderedDark, true)
 
@@ -82,7 +83,7 @@ const login = async () => {
     const responseData = await response.json().catch(() => ({}))
 
     if (!response.ok || !responseData.success) {
-      genericError.value = responseData.message || t('login.unknown_error')
+      genericError.value = apiErrorMessage(responseData, t('login.unknown_error'))
       return
     }
 
@@ -125,12 +126,28 @@ const login = async () => {
     else {
       if (route.query.to) {
         const target = String(route.query.to)
-        // Si el target ya empieza con la base o es path absoluto, usarlo. Si no, añadir base.
-        const redirectUrl = target.startsWith(cleanBase) || target.startsWith('http') 
-          ? target 
+        // `to` puede ser una ruta del router (/dashboard/…, la pone el guard) o una ruta
+        // completa de la web (/mi-cuenta/…, /marketplace-motorlan/…, la pone useApi al
+        // caducar la sesión). Las completas se usan tal cual; las del router, con la base.
+        const knownBases = [cleanBase, ...Object.values(((window as any).wpData?.vue_page_urls || {}) as Record<string, string>)]
+          .map(b => (b.endsWith('/') ? b : `${b}/`))
+          .filter(b => b !== '/')
+        const isFullPath = knownBases.some(b => target.startsWith(b)) || target.startsWith('http')
+        const redirectUrl = isFullPath
+          ? target
           : `${cleanBase}${target.startsWith('/') ? target.slice(1) : target}`
-        
-        window.location.href = redirectUrl
+
+        // Evitar redirección abierta (?to=https://otro-dominio): solo mismo origen
+        let safeUrl = redirectUrl
+        try {
+          if (new URL(redirectUrl, window.location.origin).origin !== window.location.origin)
+            safeUrl = `${cleanBase}dashboard/purchases/purchases`
+        }
+        catch {
+          safeUrl = `${cleanBase}dashboard/purchases/purchases`
+        }
+
+        window.location.href = safeUrl
       }
       else {
         window.location.href = `${cleanBase}dashboard/purchases/purchases`
@@ -187,7 +204,8 @@ const onSubmit = () => {
             class="mb-6 rounded-lg"
             icon="tabler-alert-triangle"
           >
-            <div v-html="genericError" />
+            <!-- Texto plano: el mensaje viene del backend (antes v-html, riesgo de XSS) -->
+            <div>{{ genericError }}</div>
           </VAlert>
 
           <VForm

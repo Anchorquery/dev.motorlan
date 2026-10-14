@@ -6,6 +6,7 @@ import AppTextField from '@/@core/components/app-form-elements/AppTextField.vue'
 import AppSelect from '@/@core/components/app-form-elements/AppSelect.vue'
 import AppAutocomplete from '@/@core/components/app-form-elements/AppAutocomplete.vue'
 import AppTextarea from '@/@core/components/app-form-elements/AppTextarea.vue'
+import { nonNegativeNumberRule } from '@/composables/usePublicationForm'
 
 const props = defineProps<{
   formState: any
@@ -28,6 +29,14 @@ const updateAcf = (key: string, value: any) => {
 
 const acf = computed(() => props.formState.acf)
 
+// Precio opcional (vacío = "Consultar"), pero nunca negativo (el backend también lo valida)
+const priceRule = nonNegativeNumberRule(t('add_publication.validation.price_non_negative', 'El precio no puede ser negativo'))
+// Pausadas/vendidas pueden tener stock 0 (al agotarse se pausan solas). Un borrador NO: al
+// "Actualizar" se envía publish y el backend exige stock > 0 al publicar o pedir revisión.
+const stockRule = (v: any) => (['paused', 'sold'].includes(props.formState.status) ? Number(v) >= 0 : Number(v) > 0)
+  || t('add_publication.validation.stock_positive', 'El stock debe ser mayor a 0')
+const stockIntegerRule = (v: any) => Number.isInteger(Number(v)) || t('add_publication.validation.stock_integer', 'El stock debe ser un número entero')
+
 const conditionOptions = computed(() => [
   { title: t('add_publication.condition_options.new'), value: 'new' },
   { title: t('add_publication.condition_options.used'), value: 'used' },
@@ -47,7 +56,7 @@ const resolvedCountryOptions = computed(() => props.countryOptions && props.coun
 <template>
   <VRow class="mx-0">
      <VCol cols="12">
-        <h3 class="text-h5 font-weight-bold mb-4">{{ t('add_publication.sections.description', 'DescripciÃ³n y Estado') }}</h3>
+        <h3 class="text-h5 font-weight-bold mb-4">{{ t('add_publication.sections.description', 'Descripción y Estado') }}</h3>
     </VCol>
     
     <VCol cols="12">
@@ -65,7 +74,7 @@ const resolvedCountryOptions = computed(() => props.countryOptions && props.coun
 
     <VCol cols="12">
       <VDivider class="my-4" />
-      <h3 class="text-h6 font-weight-bold mb-4">{{ t('add_publication.sections.location_condition', 'Estado y UbicaciÃ³n') }}</h3>
+      <h3 class="text-h6 font-weight-bold mb-4">{{ t('add_publication.sections.location_condition', 'Estado y Ubicación') }}</h3>
     </VCol>
 
     <VCol cols="12" md="4">
@@ -89,10 +98,10 @@ const resolvedCountryOptions = computed(() => props.countryOptions && props.coun
         :items="resolvedCountryOptions"
         item-title="title"
         item-value="value"
-        :placeholder="t('add_publication.post_details.country_placeholder', 'Buscar paÃ­s...')"
+        :placeholder="t('add_publication.post_details.country_placeholder', 'Buscar país...')"
         :rules="[requiredValidator]"
         variant="outlined"
-        :no-data-text="t('add_publication.post_details.no_country_found', 'No se encontrÃ³ el paÃ­s')"
+        :no-data-text="t('add_publication.post_details.no_country_found', 'No se encontró el país')"
         auto-select-first
       />
     </VCol>
@@ -114,7 +123,9 @@ const resolvedCountryOptions = computed(() => props.countryOptions && props.coun
             @update:model-value="updateAcf('precio_de_venta', $event)"
             :label="t('add_publication.post_details.price')"
             type="number"
-            prefix="â‚¬"
+            min="0"
+            prefix="€"
+            :rules="[priceRule]"
             variant="outlined"
         />
     </VCol>
@@ -127,7 +138,7 @@ const resolvedCountryOptions = computed(() => props.countryOptions && props.coun
           hide-details
         />
         <p class="text-caption text-medium-emphasis mt-1 ml-10">
-          {{ t('add_publication.post_details.consult_price_hint', 'Si se marca, el pÃºblico verÃ¡ "Consultar precio". TÃº seguirÃ¡s viendo el precio como referencia.') }}
+          {{ t('add_publication.post_details.consult_price_hint', 'Si se marca, el público verá "Consultar precio". Tú seguirás viendo el precio como referencia.') }}
         </p>
     </VCol>
     
@@ -137,7 +148,9 @@ const resolvedCountryOptions = computed(() => props.countryOptions && props.coun
             @update:model-value="updateAcf('stock', $event)"
             :label="t('add_publication.post_details.stock') + ' *'"
             type="number"
-            :rules="[requiredValidator, (v: any) => v > 0 || t('add_publication.validation.stock_positive', 'El stock debe ser mayor a 0')]"
+            min="0"
+            step="1"
+            :rules="[requiredValidator, stockRule, stockIntegerRule]"
              variant="outlined"
         />
     </VCol>

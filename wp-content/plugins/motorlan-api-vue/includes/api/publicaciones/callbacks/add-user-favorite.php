@@ -31,6 +31,11 @@ function motorlan_add_user_favorite(WP_REST_Request $request) {
     if (!$post_id || get_post_type($post_id) !=='publicacion') {
         return new WP_Error('invalid_post', 'Publicación inválida', ['status' => 400]);
     }
+    // Solo publicaciones publicadas (o propias): antes se podía añadir un borrador o
+    // pendiente ajeno y luego leer sus datos completos desde GET /favorites.
+    if (get_post_status($post_id) !== 'publish' && (int) get_post_field('post_author', $post_id) !== (int) $user_id) {
+        return new WP_Error('invalid_post', 'Publicación inválida', ['status' => 400]);
+    }
 
     $favorites = get_user_meta($user_id, 'motorlan_favorites', true);
     if (!is_array($favorites)) $favorites = [];

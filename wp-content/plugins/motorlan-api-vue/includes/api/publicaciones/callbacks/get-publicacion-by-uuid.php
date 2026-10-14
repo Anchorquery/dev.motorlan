@@ -30,6 +30,11 @@ function motorlan_get_publicacion_by_uuid(WP_REST_Request $request) {
         return new WP_Error('forbidden', 'No tienes permiso para ver esta publicación', ['status' => 403]);
     }
 
+    // En la papelera solo la ve el admin (el dueño ya no puede editarla).
+    if (!$is_admin && get_post_status($post_id) === 'trash') {
+        return new WP_Error('not_found', 'Publicación no encontrada', ['status' => 404]);
+    }
+
     $publicacion_data = motorlan_get_publicacion_data($post_id, true);
     return new WP_REST_Response($publicacion_data, 200);
 }

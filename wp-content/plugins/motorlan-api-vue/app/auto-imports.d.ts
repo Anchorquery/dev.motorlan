@@ -10,14 +10,20 @@ declare global {
   const COOKIE_MAX_AGE_1_YEAR: typeof import('./src/utils/constants')['COOKIE_MAX_AGE_1_YEAR']
   const CreateUrl: typeof import('./src/@core/composable/CreateUrl')['CreateUrl']
   const EffectScope: typeof import('vue')['EffectScope']
+  const MAX_GALLERY_IMAGES: typeof import('./src/composables/usePublicationForm')['MAX_GALLERY_IMAGES']
+  const MOTOR_SPEC_FIELDS: typeof import('./src/composables/usePublicationForm')['MOTOR_SPEC_FIELDS']
   const acceptHMRUpdate: typeof import('pinia')['acceptHMRUpdate']
   const accountUrl: typeof import('./src/utils/urls')['accountUrl']
   const alphaDashValidator: typeof import('./src/@core/utils/validators')['alphaDashValidator']
   const alphaValidator: typeof import('./src/@core/utils/validators')['alphaValidator']
+  const apiErrorMessage: typeof import('./src/composables/useApi')['apiErrorMessage']
+  const apiFetch: typeof import('./src/composables/useApi')['apiFetch']
+  const assertApiOk: typeof import('./src/composables/useApi')['assertApiOk']
   const asyncComputed: typeof import('@vueuse/core')['asyncComputed']
   const autoResetRef: typeof import('@vueuse/core')['autoResetRef']
   const avatarText: typeof import('./src/@core/utils/formatters')['avatarText']
   const betweenValidator: typeof import('./src/@core/utils/validators')['betweenValidator']
+  const compressImageFile: typeof import('./src/composables/usePublicationForm')['compressImageFile']
   const computed: typeof import('vue')['computed']
   const computedAsync: typeof import('@vueuse/core')['computedAsync']
   const computedEager: typeof import('@vueuse/core')['computedEager']
@@ -51,17 +57,25 @@ declare global {
   const eagerComputed: typeof import('@vueuse/core')['eagerComputed']
   const effectScope: typeof import('vue')['effectScope']
   const emailValidator: typeof import('./src/@core/utils/validators')['emailValidator']
+  const exceedsTotalUploadSize: typeof import('./src/composables/usePublicationForm')['exceedsTotalUploadSize']
   const extendRef: typeof import('@vueuse/core')['extendRef']
+  const fetchWithNonceRetry: typeof import('./src/composables/useApi')['fetchWithNonceRetry']
+  const findOversizedFile: typeof import('./src/composables/usePublicationForm')['findOversizedFile']
+  const findTipoForUiSlug: typeof import('./src/utils/tipoMapping')['findTipoForUiSlug']
+  const formatBytes: typeof import('./src/composables/usePublicationForm')['formatBytes']
   const formatCurrency: typeof import('./src/utils/formatCurrency')['formatCurrency']
   const formatDate: typeof import('./src/@core/utils/formatters')['formatDate']
   const formatDateToMonthShort: typeof import('./src/@core/utils/formatters')['formatDateToMonthShort']
   const getActivePinia: typeof import('pinia')['getActivePinia']
   const getCurrentInstance: typeof import('vue')['getCurrentInstance']
   const getCurrentScope: typeof import('vue')['getCurrentScope']
+  const getGuestRoomToken: typeof import('./src/utils/guest')['getGuestRoomToken']
   const getOrCreateGuestId: typeof import('./src/utils/guest')['getOrCreateGuestId']
+  const getOrCreateGuestRoomId: typeof import('./src/utils/guest')['getOrCreateGuestRoomId']
   const getPrePurchaseRoomKey: typeof import('./src/utils/roomKey')['getPrePurchaseRoomKey']
   const getStoredGuestEmail: typeof import('./src/utils/guest')['getStoredGuestEmail']
   const getStoredGuestName: typeof import('./src/utils/guest')['getStoredGuestName']
+  const getUploadLimits: typeof import('./src/composables/usePublicationForm')['getUploadLimits']
   const h: typeof import('vue')['h']
   const hexToRgb: typeof import('./src/@core/utils/colorConverter')['hexToRgb']
   const ignorableWatch: typeof import('@vueuse/core')['ignorableWatch']
@@ -85,6 +99,7 @@ declare global {
   const logicAnd: typeof import('@vueuse/math')['logicAnd']
   const logicNot: typeof import('@vueuse/math')['logicNot']
   const logicOr: typeof import('@vueuse/math')['logicOr']
+  const loginUrlWithReturn: typeof import('./src/composables/useApi')['loginUrlWithReturn']
   const makeDestructurable: typeof import('@vueuse/core')['makeDestructurable']
   const mapActions: typeof import('pinia')['mapActions']
   const mapGetters: typeof import('pinia')['mapGetters']
@@ -93,6 +108,7 @@ declare global {
   const mapWritableState: typeof import('pinia')['mapWritableState']
   const markRaw: typeof import('vue')['markRaw']
   const nextTick: typeof import('vue')['nextTick']
+  const nonNegativeNumberRule: typeof import('./src/composables/usePublicationForm')['nonNegativeNumberRule']
   const onActivated: typeof import('vue')['onActivated']
   const onBeforeMount: typeof import('vue')['onBeforeMount']
   const onBeforeRouteLeave: typeof import('vue-router/auto')['onBeforeRouteLeave']
@@ -117,6 +133,7 @@ declare global {
   const paginationMeta: typeof import('./src/utils/paginationMeta')['paginationMeta']
   const passwordValidator: typeof import('./src/@core/utils/validators')['passwordValidator']
   const pausableWatch: typeof import('@vueuse/core')['pausableWatch']
+  const positiveNumberRule: typeof import('./src/composables/usePublicationForm')['positiveNumberRule']
   const prefixWithPlus: typeof import('./src/@core/utils/formatters')['prefixWithPlus']
   const provide: typeof import('vue')['provide']
   const provideLocal: typeof import('@vueuse/core')['provideLocal']
@@ -127,22 +144,28 @@ declare global {
   const reactiveOmit: typeof import('@vueuse/core')['reactiveOmit']
   const reactivePick: typeof import('@vueuse/core')['reactivePick']
   const readonly: typeof import('vue')['readonly']
+  const redirectToLoginExpired: typeof import('./src/composables/useApi')['redirectToLoginExpired']
   const ref: typeof import('vue')['ref']
   const refAutoReset: typeof import('@vueuse/core')['refAutoReset']
   const refDebounced: typeof import('@vueuse/core')['refDebounced']
   const refDefault: typeof import('@vueuse/core')['refDefault']
   const refThrottled: typeof import('@vueuse/core')['refThrottled']
   const refWithControl: typeof import('@vueuse/core')['refWithControl']
+  const refreshRestNonce: typeof import('./src/composables/useApi')['refreshRestNonce']
   const regexValidator: typeof import('./src/@core/utils/validators')['regexValidator']
   const registerPlugins: typeof import('./src/@core/utils/plugins')['registerPlugins']
   const registerPlugins_: typeof import('./src/@core/utils/plugins')['registerPlugins_']
+  const rememberGuestRoom: typeof import('./src/utils/guest')['rememberGuestRoom']
   const requiredValidator: typeof import('./src/@core/utils/validators')['requiredValidator']
+  const resetGuestRoomId: typeof import('./src/utils/guest')['resetGuestRoomId']
   const resolveComponent: typeof import('vue')['resolveComponent']
   const resolveRef: typeof import('@vueuse/core')['resolveRef']
   const resolveUnref: typeof import('@vueuse/core')['resolveUnref']
   const resolveVuetifyTheme: typeof import('./src/@core/utils/vuetify')['resolveVuetifyTheme']
+  const revokePublicationBlobUrls: typeof import('./src/composables/usePublicationForm')['revokePublicationBlobUrls']
   const rgbaToHex: typeof import('./src/@core/utils/colorConverter')['rgbaToHex']
   const setActivePinia: typeof import('pinia')['setActivePinia']
+  const setGuestRoomToken: typeof import('./src/utils/guest')['setGuestRoomToken']
   const setMapStoreSuffix: typeof import('pinia')['setMapStoreSuffix']
   const setStoredGuestEmail: typeof import('./src/utils/guest')['setStoredGuestEmail']
   const setStoredGuestName: typeof import('./src/utils/guest')['setStoredGuestName']
@@ -167,6 +190,7 @@ declare global {
   const tryOnMounted: typeof import('@vueuse/core')['tryOnMounted']
   const tryOnScopeDispose: typeof import('@vueuse/core')['tryOnScopeDispose']
   const tryOnUnmounted: typeof import('@vueuse/core')['tryOnUnmounted']
+  const uiSlugForTipo: typeof import('./src/utils/tipoMapping')['uiSlugForTipo']
   const unref: typeof import('vue')['unref']
   const unrefElement: typeof import('@vueuse/core')['unrefElement']
   const until: typeof import('@vueuse/core')['until']
@@ -401,14 +425,20 @@ declare module 'vue' {
   interface ComponentCustomProperties {
     readonly COOKIE_MAX_AGE_1_YEAR: UnwrapRef<typeof import('./src/utils/constants')['COOKIE_MAX_AGE_1_YEAR']>
     readonly EffectScope: UnwrapRef<typeof import('vue')['EffectScope']>
+    readonly MAX_GALLERY_IMAGES: UnwrapRef<typeof import('./src/composables/usePublicationForm')['MAX_GALLERY_IMAGES']>
+    readonly MOTOR_SPEC_FIELDS: UnwrapRef<typeof import('./src/composables/usePublicationForm')['MOTOR_SPEC_FIELDS']>
     readonly acceptHMRUpdate: UnwrapRef<typeof import('pinia')['acceptHMRUpdate']>
     readonly accountUrl: UnwrapRef<typeof import('./src/utils/urls')['accountUrl']>
     readonly alphaDashValidator: UnwrapRef<typeof import('./src/@core/utils/validators')['alphaDashValidator']>
     readonly alphaValidator: UnwrapRef<typeof import('./src/@core/utils/validators')['alphaValidator']>
+    readonly apiErrorMessage: UnwrapRef<typeof import('./src/composables/useApi')['apiErrorMessage']>
+    readonly apiFetch: UnwrapRef<typeof import('./src/composables/useApi')['apiFetch']>
+    readonly assertApiOk: UnwrapRef<typeof import('./src/composables/useApi')['assertApiOk']>
     readonly asyncComputed: UnwrapRef<typeof import('@vueuse/core')['asyncComputed']>
     readonly autoResetRef: UnwrapRef<typeof import('@vueuse/core')['autoResetRef']>
     readonly avatarText: UnwrapRef<typeof import('./src/@core/utils/formatters')['avatarText']>
     readonly betweenValidator: UnwrapRef<typeof import('./src/@core/utils/validators')['betweenValidator']>
+    readonly compressImageFile: UnwrapRef<typeof import('./src/composables/usePublicationForm')['compressImageFile']>
     readonly computed: UnwrapRef<typeof import('vue')['computed']>
     readonly computedAsync: UnwrapRef<typeof import('@vueuse/core')['computedAsync']>
     readonly computedEager: UnwrapRef<typeof import('@vueuse/core')['computedEager']>
@@ -441,17 +471,25 @@ declare module 'vue' {
     readonly eagerComputed: UnwrapRef<typeof import('@vueuse/core')['eagerComputed']>
     readonly effectScope: UnwrapRef<typeof import('vue')['effectScope']>
     readonly emailValidator: UnwrapRef<typeof import('./src/@core/utils/validators')['emailValidator']>
+    readonly exceedsTotalUploadSize: UnwrapRef<typeof import('./src/composables/usePublicationForm')['exceedsTotalUploadSize']>
     readonly extendRef: UnwrapRef<typeof import('@vueuse/core')['extendRef']>
+    readonly fetchWithNonceRetry: UnwrapRef<typeof import('./src/composables/useApi')['fetchWithNonceRetry']>
+    readonly findOversizedFile: UnwrapRef<typeof import('./src/composables/usePublicationForm')['findOversizedFile']>
+    readonly findTipoForUiSlug: UnwrapRef<typeof import('./src/utils/tipoMapping')['findTipoForUiSlug']>
+    readonly formatBytes: UnwrapRef<typeof import('./src/composables/usePublicationForm')['formatBytes']>
     readonly formatCurrency: UnwrapRef<typeof import('./src/utils/formatCurrency')['formatCurrency']>
     readonly formatDate: UnwrapRef<typeof import('./src/@core/utils/formatters')['formatDate']>
     readonly formatDateToMonthShort: UnwrapRef<typeof import('./src/@core/utils/formatters')['formatDateToMonthShort']>
     readonly getActivePinia: UnwrapRef<typeof import('pinia')['getActivePinia']>
     readonly getCurrentInstance: UnwrapRef<typeof import('vue')['getCurrentInstance']>
     readonly getCurrentScope: UnwrapRef<typeof import('vue')['getCurrentScope']>
+    readonly getGuestRoomToken: UnwrapRef<typeof import('./src/utils/guest')['getGuestRoomToken']>
     readonly getOrCreateGuestId: UnwrapRef<typeof import('./src/utils/guest')['getOrCreateGuestId']>
+    readonly getOrCreateGuestRoomId: UnwrapRef<typeof import('./src/utils/guest')['getOrCreateGuestRoomId']>
     readonly getPrePurchaseRoomKey: UnwrapRef<typeof import('./src/utils/roomKey')['getPrePurchaseRoomKey']>
     readonly getStoredGuestEmail: UnwrapRef<typeof import('./src/utils/guest')['getStoredGuestEmail']>
     readonly getStoredGuestName: UnwrapRef<typeof import('./src/utils/guest')['getStoredGuestName']>
+    readonly getUploadLimits: UnwrapRef<typeof import('./src/composables/usePublicationForm')['getUploadLimits']>
     readonly h: UnwrapRef<typeof import('vue')['h']>
     readonly hexToRgb: UnwrapRef<typeof import('./src/@core/utils/colorConverter')['hexToRgb']>
     readonly ignorableWatch: UnwrapRef<typeof import('@vueuse/core')['ignorableWatch']>
@@ -474,6 +512,7 @@ declare module 'vue' {
     readonly logicAnd: UnwrapRef<typeof import('@vueuse/math')['logicAnd']>
     readonly logicNot: UnwrapRef<typeof import('@vueuse/math')['logicNot']>
     readonly logicOr: UnwrapRef<typeof import('@vueuse/math')['logicOr']>
+    readonly loginUrlWithReturn: UnwrapRef<typeof import('./src/composables/useApi')['loginUrlWithReturn']>
     readonly makeDestructurable: UnwrapRef<typeof import('@vueuse/core')['makeDestructurable']>
     readonly mapActions: UnwrapRef<typeof import('pinia')['mapActions']>
     readonly mapGetters: UnwrapRef<typeof import('pinia')['mapGetters']>
@@ -482,6 +521,7 @@ declare module 'vue' {
     readonly mapWritableState: UnwrapRef<typeof import('pinia')['mapWritableState']>
     readonly markRaw: UnwrapRef<typeof import('vue')['markRaw']>
     readonly nextTick: UnwrapRef<typeof import('vue')['nextTick']>
+    readonly nonNegativeNumberRule: UnwrapRef<typeof import('./src/composables/usePublicationForm')['nonNegativeNumberRule']>
     readonly onActivated: UnwrapRef<typeof import('vue')['onActivated']>
     readonly onBeforeMount: UnwrapRef<typeof import('vue')['onBeforeMount']>
     readonly onBeforeRouteLeave: UnwrapRef<typeof import('vue-router/auto')['onBeforeRouteLeave']>
@@ -506,6 +546,7 @@ declare module 'vue' {
     readonly paginationMeta: UnwrapRef<typeof import('./src/utils/paginationMeta')['paginationMeta']>
     readonly passwordValidator: UnwrapRef<typeof import('./src/@core/utils/validators')['passwordValidator']>
     readonly pausableWatch: UnwrapRef<typeof import('@vueuse/core')['pausableWatch']>
+    readonly positiveNumberRule: UnwrapRef<typeof import('./src/composables/usePublicationForm')['positiveNumberRule']>
     readonly prefixWithPlus: UnwrapRef<typeof import('./src/@core/utils/formatters')['prefixWithPlus']>
     readonly provide: UnwrapRef<typeof import('vue')['provide']>
     readonly provideLocal: UnwrapRef<typeof import('@vueuse/core')['provideLocal']>
@@ -516,21 +557,27 @@ declare module 'vue' {
     readonly reactiveOmit: UnwrapRef<typeof import('@vueuse/core')['reactiveOmit']>
     readonly reactivePick: UnwrapRef<typeof import('@vueuse/core')['reactivePick']>
     readonly readonly: UnwrapRef<typeof import('vue')['readonly']>
+    readonly redirectToLoginExpired: UnwrapRef<typeof import('./src/composables/useApi')['redirectToLoginExpired']>
     readonly ref: UnwrapRef<typeof import('vue')['ref']>
     readonly refAutoReset: UnwrapRef<typeof import('@vueuse/core')['refAutoReset']>
     readonly refDebounced: UnwrapRef<typeof import('@vueuse/core')['refDebounced']>
     readonly refDefault: UnwrapRef<typeof import('@vueuse/core')['refDefault']>
     readonly refThrottled: UnwrapRef<typeof import('@vueuse/core')['refThrottled']>
     readonly refWithControl: UnwrapRef<typeof import('@vueuse/core')['refWithControl']>
+    readonly refreshRestNonce: UnwrapRef<typeof import('./src/composables/useApi')['refreshRestNonce']>
     readonly regexValidator: UnwrapRef<typeof import('./src/@core/utils/validators')['regexValidator']>
     readonly registerPlugins: UnwrapRef<typeof import('./src/@core/utils/plugins')['registerPlugins']>
+    readonly rememberGuestRoom: UnwrapRef<typeof import('./src/utils/guest')['rememberGuestRoom']>
     readonly requiredValidator: UnwrapRef<typeof import('./src/@core/utils/validators')['requiredValidator']>
+    readonly resetGuestRoomId: UnwrapRef<typeof import('./src/utils/guest')['resetGuestRoomId']>
     readonly resolveComponent: UnwrapRef<typeof import('vue')['resolveComponent']>
     readonly resolveRef: UnwrapRef<typeof import('@vueuse/core')['resolveRef']>
     readonly resolveUnref: UnwrapRef<typeof import('@vueuse/core')['resolveUnref']>
     readonly resolveVuetifyTheme: UnwrapRef<typeof import('./src/@core/utils/vuetify')['resolveVuetifyTheme']>
+    readonly revokePublicationBlobUrls: UnwrapRef<typeof import('./src/composables/usePublicationForm')['revokePublicationBlobUrls']>
     readonly rgbaToHex: UnwrapRef<typeof import('./src/@core/utils/colorConverter')['rgbaToHex']>
     readonly setActivePinia: UnwrapRef<typeof import('pinia')['setActivePinia']>
+    readonly setGuestRoomToken: UnwrapRef<typeof import('./src/utils/guest')['setGuestRoomToken']>
     readonly setMapStoreSuffix: UnwrapRef<typeof import('pinia')['setMapStoreSuffix']>
     readonly setStoredGuestEmail: UnwrapRef<typeof import('./src/utils/guest')['setStoredGuestEmail']>
     readonly setStoredGuestName: UnwrapRef<typeof import('./src/utils/guest')['setStoredGuestName']>
@@ -555,6 +602,7 @@ declare module 'vue' {
     readonly tryOnMounted: UnwrapRef<typeof import('@vueuse/core')['tryOnMounted']>
     readonly tryOnScopeDispose: UnwrapRef<typeof import('@vueuse/core')['tryOnScopeDispose']>
     readonly tryOnUnmounted: UnwrapRef<typeof import('@vueuse/core')['tryOnUnmounted']>
+    readonly uiSlugForTipo: UnwrapRef<typeof import('./src/utils/tipoMapping')['uiSlugForTipo']>
     readonly unref: UnwrapRef<typeof import('vue')['unref']>
     readonly unrefElement: UnwrapRef<typeof import('@vueuse/core')['unrefElement']>
     readonly until: UnwrapRef<typeof import('@vueuse/core')['until']>

@@ -8,8 +8,6 @@
  * Author URI:  https://motorlan.com
  */
 
-use Tmeister\Firebase\JWT\JWT;
-
 // If this file is called directly, abort.
 if ( ! defined( 'WPINC' ) ) {
     die;
@@ -46,6 +44,7 @@ require_once MOTORLAN_API_VUE_PATH . 'includes/api/admin-approval-routes.php';
 require_once MOTORLAN_API_VUE_PATH . 'includes/api/admin-publications-routes.php';
 require_once MOTORLAN_API_VUE_PATH . 'includes/api/product-messages-routes.php';
 require_once MOTORLAN_API_VUE_PATH . 'includes/api/reviews-routes.php';
+require_once MOTORLAN_API_VUE_PATH . 'includes/api/ai-routes.php';
 
 require_once MOTORLAN_API_VUE_PATH . 'includes/classes/class-motorlan-rate-limiter.php'; // Security Rate Limiter
 require_once MOTORLAN_API_VUE_PATH . 'includes/classes/class-motorlan-security-logger.php'; // Security Logger
@@ -55,7 +54,10 @@ require_once MOTORLAN_API_VUE_PATH . 'includes/classes/class-motorlan-notificati
 require_once MOTORLAN_API_VUE_PATH . 'includes/i18n/motorlan-i18n.php';
 require_once MOTORLAN_API_VUE_PATH . 'includes/admin/admin-mods.php';
 require_once MOTORLAN_API_VUE_PATH . 'includes/admin/admin-migration.php';
+require_once MOTORLAN_API_VUE_PATH . 'includes/admin/admin-tipo-migration.php';
+require_once MOTORLAN_API_VUE_PATH . 'includes/admin/admin-tipo-publicacion-metabox.php'; // Selector combinado Tipo de Publicación
 require_once MOTORLAN_API_VUE_PATH . 'includes/admin/admin-offers-setup.php'; // New Offers Admin Page
+require_once MOTORLAN_API_VUE_PATH . 'includes/admin/admin-store-cache.php';
 require_once MOTORLAN_API_VUE_PATH . 'includes/admin/admin-email-debug.php'; // Email Debug Tool
 require_once MOTORLAN_API_VUE_PATH . 'includes/admin/admin-translations.php';
 require_once MOTORLAN_API_VUE_PATH . 'includes/admin/acf-purchases-sync.php';
@@ -101,26 +103,41 @@ add_action( 'motorlan_async_email_notification', 'motorlan_execute_async_email',
  */
 function motorlan_claim_guest_chats_on_login( $user_login, $user ) {
     if ( ! $user instanceof WP_User || empty( $user->user_email ) || ! $user->ID ) return;
-    global $wpdb;
-    $table = $wpdb->prefix . 'motorlan_product_messages';
-    $like  = str_replace( array( '_', '%' ), array( '\\_', '\\%' ), $table );
-    if ( ! $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $like ) ) ) return;
-    $wpdb->query( $wpdb->prepare(
-        "UPDATE {$table} SET user_id = %d WHERE user_id = 0 AND guest_email = %s",
-        $user->ID,
-        $user->user_email
-    ) );
+    // Lógica única en el controlador del chat: solo con email verificado (o cuenta antigua
+    // sin marca) y reclamando la sala entera (los mensajes posteriores del invitado se
+    // guardaban sin email y quedaban huérfanos).
+    if ( class_exists( 'Motorlan_Product_Chat_Controller' ) && method_exists( 'Motorlan_Product_Chat_Controller', 'claim_for_user' ) ) {
+        Motorlan_Product_Chat_Controller::claim_for_user( $user );
+    }
 }
 add_action( 'wp_login', 'motorlan_claim_guest_chats_on_login', 10, 2 );
 
 /**
- * Idem al registrarse: si se registra con email que ya tiene chats guest, los reclama.
+ * Reclama los chats guest cuando el usuario verifica su email (antes se hacía en
+ * user_register, sin verificar la propiedad del email).
  */
 function motorlan_claim_guest_chats_on_register( $user_id ) {
     $user = get_userdata( $user_id );
     if ( $user ) motorlan_claim_guest_chats_on_login( $user->user_login, $user );
 }
-add_action( 'user_register', 'motorlan_claim_guest_chats_on_register', 10, 1 );
+add_action( 'motorlan_user_welcome', 'motorlan_claim_guest_chats_on_register', 5, 1 );
+
+/**
+ * Bloquea el login (wp-login.php, REST, JWT...) de cuentas registradas pendientes de
+ * verificar. Antes solo lo comprobaba POST /motorlan/v1/login, y además después de
+ * wp_signon(), con la cookie ya emitida. Solo afecta a cuentas marcadas '0' por el
+ * registro (no a usuarios antiguos/creados en admin) y solo con contraseña correcta,
+ * para no revelar qué cuentas existen.
+ */
+function motorlan_block_unverified_login( $user, $password ) {
+    if ( is_wp_error( $user ) || ! $user instanceof WP_User ) return $user;
+    if ( in_array( 'administrator', (array) $user->roles, true ) ) return $user;
+    if ( '0' !== get_user_meta( $user->ID, '_motorlan_email_verified', true ) ) return $user;
+    if ( ! wp_check_password( $password, $user->user_pass, $user->ID ) ) return $user;
+
+    return new WP_Error( 'email_not_verified', __( 'Su cuenta aún no ha sido verificada. Revise su email.', 'motorlan-api-vue' ) );
+}
+add_filter( 'wp_authenticate_user', 'motorlan_block_unverified_login', 20, 2 );
 
 function motorlan_publicacion_template_include($template) {
     if (is_singular('publicacion')) {
@@ -201,12 +218,12 @@ function motorlan_add_security_headers($headers) {
     // Content-Security-Policy (CSP)
     // Permite scripts propios, fonts de Google, y estilos inline
     $csp = "default-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com data: blob:; ";
-    $csp .= "script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:; ";
+    $csp .= "script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://www.googletagmanager.com https://www.google-analytics.com https://ssl.google-analytics.com; ";
     $csp .= "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; ";
     $csp .= "worker-src 'self' blob:; ";
     $csp .= "img-src 'self' data: https: blob:; ";
     $csp .= "font-src 'self' https://fonts.gstatic.com data:; ";
-    $csp .= "connect-src 'self' https://motorlan.com https://www.motorlan.es https://dev.motorlan.es http://localhost:* ws://localhost:* http://127.0.0.1:* ws://127.0.0.1:*; ";
+    $csp .= "connect-src 'self' https://motorlan.com https://www.motorlan.es https://dev.motorlan.es https://www.googletagmanager.com https://www.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com https://stats.g.doubleclick.net http://localhost:* ws://localhost:* http://127.0.0.1:* ws://127.0.0.1:*; ";
     $csp .= "frame-src 'self' blob:; ";
     $csp .= "object-src 'none'; ";
     
@@ -270,10 +287,10 @@ function motorlan_is_public_rest_route( $request ) {
             '#^/motorlan/v1/garantias/publicacion/[A-Za-z0-9-]+$#',
             '#^/motorlan/v1/session$#',
         ],
-        'POST' => [
-            '#^/motorlan/v1/register$#',
-            '#^/motorlan/v1/check-username$#',
-        ],
+        // Flujos anónimos (alta, acceso, recuperación, verificación). Se atienden aunque
+        // el nonce de la página haya caducado, pero SIEMPRE como anónimos (ver
+        // motorlan_allow_public_rest_routes). /check-username se eliminó.
+        'POST' => motorlan_anonymous_post_routes(),
     ];
 
     if ( empty( $public_routes[ $method ] ) ) {
@@ -290,10 +307,38 @@ function motorlan_is_public_rest_route( $request ) {
 }
 
 /**
- * Allow public Motorlan endpoints or expired JWTs to bypass REST authentication errors.
+ * Rutas POST que no dependen de la sesión del usuario.
+ */
+function motorlan_anonymous_post_routes() {
+    return [
+        '#^/motorlan/v1/register$#',
+        '#^/motorlan/v1/login$#',
+        '#^/motorlan/v1/forgot-password$#',
+        '#^/motorlan/v1/reset-password$#',
+        '#^/motorlan/v1/verify-email$#',
+        '#^/motorlan/v1/resend-verification$#',
+        '#^/motorlan/v1/profile/confirm-email-change$#',
+    ];
+}
+
+/**
+ * Deja pasar los endpoints públicos aunque falle la comprobación de cookie/nonce.
  *
- * @param WP_Error|null $result Current authentication result.
- * @return WP_Error|null
+ * Caso típico: pestaña de "registro completado" abierta desde ayer → el nonce anónimo
+ * caducó → "Reenviar enlace" daba 403 rest_cookie_invalid_nonce para siempre.
+ *
+ * SEGURIDAD: en las rutas POST, si la comprobación falló, la petición se atiende como
+ * ANÓNIMA (wp_set_current_user(0)); así un nonce inválido nunca autentica a nadie (sin
+ * nonce válido no hay protección CSRF y no debe usarse la cookie). En las GET públicas
+ * se mantiene el comportamiento anterior.
+ *
+ * Eliminado el código heredado que "refrescaba" JWT caducados (aceptaba cualquier
+ * token con firma válida aunque hubiera expirado y emitía otro nuevo, es decir, un
+ * token filtrado valía para siempre). La SPA no usa JWT: autentica con la cookie de
+ * WordPress + X-WP-Nonce (sin Authorization/Bearer en app/src).
+ *
+ * @param WP_Error|null|true $result Current authentication result.
+ * @return WP_Error|null|true
  */
 function motorlan_allow_public_rest_routes( $result ) {
     if ( ! function_exists( 'rest_is_request' ) || ! function_exists( 'rest_get_server' ) || ! rest_is_request() ) {
@@ -301,364 +346,71 @@ function motorlan_allow_public_rest_routes( $result ) {
     }
 
     $request = rest_get_server()->get_current_request();
-    if ( ! $request instanceof WP_REST_Request ) {
+    if ( ! $request instanceof WP_REST_Request || ! motorlan_is_public_rest_route( $request ) ) {
         return $result;
     }
 
-    if ( is_wp_error( $result ) ) {
-        $error_code    = $result->get_error_code();
-        $error_message = $result->get_error_message();
-
-        if ( $error_code === 'jwt_auth_invalid_token' && false !== stripos( $error_message, 'Expired token' ) ) {
-            if ( motorlan_refresh_jwt_for_request( $request ) ) {
-                return null;
-            }
-        }
+    if ( ! is_wp_error( $result ) ) {
+        return $result;
     }
 
-    if ( motorlan_is_public_rest_route( $request ) ) {
-        return null;
+    if ( 'POST' === strtoupper( $request->get_method() ) ) {
+        wp_set_current_user( 0 );
     }
 
-    return $result;
+    return null;
 }
 
 add_filter( 'rest_authentication_errors', 'motorlan_allow_public_rest_routes', 100 );
 
 /**
- * Intercept the REST request before dispatch to purge expired JWT errors.
- *
- * @param WP_Error|null  $result
- * @param WP_REST_Server $server
- * @param WP_REST_Request $request
- * @return WP_Error|null
+ * M10: los enlaces de los emails llevan el token en la query
+ * (/mi-cuenta/verify-email?token=…, /mi-cuenta/reset-password?key=…&login=<email>,
+ * ?email_change=…). El gtag de la página envía page_location con la query completa a
+ * Google Analytics. Se redirige a la misma ruta con esos parámetros en el FRAGMENTO
+ * (#token=…): el fragmento no se envía al servidor ni a GA4 (page_location lo excluye)
+ * ni aparece en el Referer. Los enlaces ya enviados siguen funcionando.
  */
-function motorlan_refresh_jwt_on_pre_dispatch( $result, $server, $request ) {
-    if ( ! is_wp_error( $result ) ) {
-        return $result;
+function motorlan_move_auth_tokens_to_fragment() {
+    if ( is_admin() || wp_doing_ajax() || ( defined( 'REST_REQUEST' ) && REST_REQUEST ) ) {
+        return;
     }
-
-    $error_code    = $result->get_error_code();
-    $error_message = $result->get_error_message();
-
-    if ( $error_code === 'jwt_auth_invalid_token' && false !== stripos( $error_message, 'Expired token' ) ) {
-        if ( motorlan_refresh_jwt_for_request( $request ) ) {
-            return null;
-        }
-    }
-
-    return $result;
-}
-
-add_filter( 'rest_pre_dispatch', 'motorlan_refresh_jwt_on_pre_dispatch', 20, 3 );
-
-/**
- * Refreshes an expired JWT by validating its signature and issuing a new token.
- *
- * @param WP_REST_Request $request
- * @return string|null New token string on success.
- */
-function motorlan_refresh_jwt_for_request( WP_REST_Request $request ) {
-    if ( ! class_exists( 'Tmeister\\Firebase\\JWT\\JWT' ) ) {
-        return null;
-    }
-
-    $header = motorlan_get_authorization_header_from_request( $request );
-    if ( ! $header ) {
-        return null;
-    }
-
-    $token = motorlan_extract_bearer_token( $header );
-    if ( ! $token ) {
-        return null;
-    }
-
-    $decoded = motorlan_decode_jwt_payload( $token );
-    if ( ! $decoded || ! isset( $decoded['payload']['data']['user']['id'] ) ) {
-        return null;
-    }
-
-    $user_id = absint( $decoded['payload']['data']['user']['id'] );
-    if ( ! $user_id ) {
-        return null;
-    }
-
-    $token_data = motorlan_generate_jwt_for_user( $user_id );
-    if ( ! $token_data || empty( $token_data['token'] ) ) {
-        return null;
-    }
-
-    $expiration = $token_data['__expiration'] ?? 0;
-    motorlan_store_refreshed_jwt_token( $token_data['token'], $expiration );
-
-    return $token_data['token'];
-}
-
-/**
- * Generate a new JWT for the provided user ID.
- *
- * @param int $user_id
- * @return array|null
- */
-function motorlan_generate_jwt_for_user( $user_id ) {
-    if ( ! class_exists( 'Tmeister\\Firebase\\JWT\\JWT' ) ) {
-        return null;
-    }
-
-    $user = get_userdata( $user_id );
-    if ( ! $user ) {
-        return null;
-    }
-
-    $secret_key = defined( 'JWT_AUTH_SECRET_KEY' ) ? JWT_AUTH_SECRET_KEY : false;
-    if ( ! $secret_key ) {
-        return null;
-    }
-
-    $issued_at  = time();
-    $not_before = apply_filters( 'jwt_auth_not_before', $issued_at, $issued_at );
-    $expire     = apply_filters( 'jwt_auth_expire', $issued_at + ( DAY_IN_SECONDS * 7 ), $issued_at );
-
-    $token = [
-        'iss'  => get_bloginfo( 'url' ),
-        'iat'  => $issued_at,
-        'nbf'  => $not_before,
-        'exp'  => $expire,
-        'data' => [
-            'user' => [
-                'id' => $user->ID,
-            ],
-        ],
-    ];
-
-    $algorithm = apply_filters( 'jwt_auth_algorithm', 'HS256' );
-    $token     = JWT::encode(
-        apply_filters( 'jwt_auth_token_before_sign', $token, $user ),
-        $secret_key,
-        $algorithm
-    );
-
-    $response_data = [
-        'token'             => $token,
-        'user_email'        => $user->user_email,
-        'user_nicename'     => $user->user_nicename,
-        'user_display_name' => $user->display_name,
-        '__expiration'      => $expire,
-    ];
-
-    return apply_filters( 'jwt_auth_token_before_dispatch', $response_data, $user );
-}
-
-/**
- * Record the refreshed token so other hooks can reuse it.
- *
- * @param string $token
- * @param int    $expiration
- */
-function motorlan_store_refreshed_jwt_token( $token, $expiration = 0 ) {
-    $expiration = $expiration ?: time() + ( DAY_IN_SECONDS * 7 );
-    $GLOBALS['motorlan_refreshed_jwt'] = [
-        'token'      => $token,
-        'expiration' => $expiration,
-    ];
-
-    motorlan_set_access_token_cookie( $token, $expiration );
-}
-
-/**
- * Retrieve the refreshed token for the current request.
- *
- * @return array|null
- */
-function motorlan_get_refreshed_jwt_token() {
-    return $GLOBALS['motorlan_refreshed_jwt'] ?? null;
-}
-
-/**
- * Set the access token cookie so the browser picks up the new token.
- *
- * @param string $token
- * @param int    $expiration
- */
-function motorlan_set_access_token_cookie( $token, $expiration = 0 ) {
-    if ( headers_sent() ) {
+    if ( empty( $_GET['token'] ) && empty( $_GET['key'] ) && empty( $_GET['email_change'] ) ) {
         return;
     }
 
-    $expiration = $expiration ?: time() + ( DAY_IN_SECONDS * 7 );
-    $secure     = ! empty( $_SERVER['HTTPS'] ) && 'off' !== strtolower( $_SERVER['HTTPS'] ?? '' );
-    $domain     = $_SERVER['HTTP_HOST'] ?? '';
+    $path = (string) wp_parse_url( $_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH );
+    if ( ! preg_match( '#/(verify-email|reset-password)/?$#', $path ) ) {
+        return;
+    }
 
-    setcookie(
-        'accessToken',
-        $token,
-        $expiration,
-        '/',
-        $domain,
-        $secure,
-        false
-    );
-}
-
-/**
- * Add an extra header to the REST response so clients know a new token was issued.
- *
- * @param mixed            $result
- * @param WP_REST_Server   $server
- * @param WP_REST_Request  $request
- * @return mixed
- */
-function motorlan_add_refreshed_jwt_header( $result, $server, $request ) {
-    $refreshed = motorlan_get_refreshed_jwt_token();
-    if ( $refreshed && ! empty( $refreshed['token'] ) ) {
-        $server->send_header( 'X-Motorlan-New-Access-Token', $refreshed['token'] );
-        if ( ! empty( $refreshed['expiration'] ) ) {
-            $server->send_header( 'X-Motorlan-New-Access-Token-Expires', gmdate( DATE_RFC850, $refreshed['expiration'] ) );
+    $sensitive = [ 'token', 'key', 'login', 'email_change' ];
+    $fragment  = [];
+    $rest      = [];
+    foreach ( (array) $_GET as $name => $value ) {
+        if ( ! is_string( $value ) ) {
+            continue;
+        }
+        if ( in_array( $name, $sensitive, true ) ) {
+            $fragment[ $name ] = wp_unslash( $value );
+        } else {
+            $rest[ $name ] = wp_unslash( $value );
         }
     }
+    if ( empty( $fragment ) ) {
+        return;
+    }
 
-    return $result;
+    $target = $path
+        . ( $rest ? '?' . http_build_query( $rest, '', '&', PHP_QUERY_RFC3986 ) : '' )
+        . '#' . http_build_query( $fragment, '', '&', PHP_QUERY_RFC3986 );
+
+    nocache_headers();
+    header( 'Referrer-Policy: no-referrer' );
+    wp_safe_redirect( $target, 302 );
+    exit;
 }
-
-/**
- * Extract the Authorization header from the request.
- *
- * @param WP_REST_Request $request
- * @return string|null
- */
-function motorlan_get_authorization_header_from_request( WP_REST_Request $request ) {
-    $header = $request->get_header( 'Authorization' );
-
-    if ( empty( $header ) ) {
-        $header = $request->get_header( 'authorization' );
-    }
-
-    if ( empty( $header ) && ! empty( $_SERVER['HTTP_AUTHORIZATION'] ) ) {
-        $header = sanitize_text_field( $_SERVER['HTTP_AUTHORIZATION'] );
-    }
-
-    if ( empty( $header ) && ! empty( $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ) ) {
-        $header = sanitize_text_field( $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] );
-    }
-
-    return $header ?: null;
-}
-
-/**
- * Extract a Bearer token from an Authorization header.
- *
- * @param string $header
- * @return string|null
- */
-function motorlan_extract_bearer_token( $header ) {
-    if ( ! $header ) {
-        return null;
-    }
-
-    [ $token ] = sscanf( $header, 'Bearer %s' );
-
-    return $token ?: null;
-}
-
-/**
- * Decode the JWT payload after verifying the signature.
- *
- * @param string $token
- * @return array|null
- */
-function motorlan_decode_jwt_payload( $token ) {
-    $parts = explode( '.', $token );
-    if ( count( $parts ) !== 3 ) {
-        return null;
-    }
-
-    [ $header_encoded, $payload_encoded, $signature_encoded ] = $parts;
-    $header_json  = motorlan_base64url_decode( $header_encoded );
-    $payload_json = motorlan_base64url_decode( $payload_encoded );
-
-    if ( false === $header_json || false === $payload_json ) {
-        return null;
-    }
-
-    $header  = json_decode( $header_json, true );
-    $payload = json_decode( $payload_json, true );
-
-    if ( ! is_array( $header ) || ! is_array( $payload ) ) {
-        return null;
-    }
-
-    $secret_key = defined( 'JWT_AUTH_SECRET_KEY' ) ? JWT_AUTH_SECRET_KEY : false;
-    if ( ! $secret_key ) {
-        return null;
-    }
-
-    $signature = motorlan_base64url_decode( $signature_encoded );
-    if ( false === $signature ) {
-        return null;
-    }
-
-    if ( empty( $header['alg'] ) ) {
-        return null;
-    }
-
-    if ( ! motorlan_verify_jwt_signature( $header['alg'], $header_encoded . '.' . $payload_encoded, $signature, $secret_key ) ) {
-        return null;
-    }
-
-    return [
-        'header'  => $header,
-        'payload' => $payload,
-    ];
-}
-
-/**
- * Verify a JWT signature.
- *
- * @param string $algorithm
- * @param string $data
- * @param string $signature
- * @param string $secret
- * @return bool
- */
-function motorlan_verify_jwt_signature( $algorithm, $data, $signature, $secret ) {
-    $algorithm = strtoupper( $algorithm );
-
-    switch ( $algorithm ) {
-        case 'HS256':
-            $hash = 'sha256';
-            break;
-        case 'HS384':
-            $hash = 'sha384';
-            break;
-        case 'HS512':
-            $hash = 'sha512';
-            break;
-        default:
-            return false;
-    }
-
-    $expected = hash_hmac( $hash, $data, $secret, true );
-
-    return hash_equals( $expected, $signature );
-}
-
-/**
- * Decode a base64url string.
- *
- * @param string $value
- * @return string|false
- */
-function motorlan_base64url_decode( $value ) {
-    $value = str_replace( [ '-', '_' ], [ '+', '/' ], $value );
-    $remainder = strlen( $value ) % 4;
-    if ( $remainder ) {
-        $value .= str_repeat( '=', 4 - $remainder );
-    }
-
-    return base64_decode( $value );
-}
-
-add_filter( 'rest_post_dispatch', 'motorlan_add_refreshed_jwt_header', 10, 3 );
+add_action( 'template_redirect', 'motorlan_move_auth_tokens_to_fragment', 0 );
 
 
 require_once MOTORLAN_API_VUE_PATH . 'includes/db/db-create-purchase-messages.php';

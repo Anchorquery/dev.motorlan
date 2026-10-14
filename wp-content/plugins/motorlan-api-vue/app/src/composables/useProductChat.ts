@@ -1,8 +1,9 @@
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { createUrl } from '@/@core/composable/createUrl'
 import { useApi } from '@/composables/useApi'
 import { usePolling } from '@/composables/usePolling'
-import { getStoredGuestEmail } from '@/utils/guest'
+import { getGuestRoomToken, getStoredGuestEmail, setGuestRoomToken } from '@/utils/guest'
 
 interface ProductMessage {
   id: string
@@ -20,6 +21,7 @@ interface ChatMeta {
   current_user_id?: number | null
   viewer_role?: string | null
   server_timestamp?: string | null
+  room_token?: string | null
 }
 
 interface ApplyMessagesOptions {
@@ -89,8 +91,10 @@ export function useProductChat(
   opts?: {
     roomKey?: string | null
     viewerName?: string | null
+    roomToken?: string | null
   },
 ) {
+  const { t } = useI18n()
   const messages = ref<ProductMessage[]>([])
   const messageStore = new Map<string, ProductMessage>()
 
@@ -101,6 +105,8 @@ export function useProductChat(
   const isSending = ref(false)
   const isPollingActive = ref(false)
   const isLocked = ref(false)
+  // Último código HTTP de error al cargar (p. ej. 403 = sin permiso para esta sala)
+  const loadErrorStatus = ref<number | null>(null)
 
   const currentUserId = ref<number | null>(null)
   const viewerRole = ref<string | null>(null)
@@ -110,18 +116,20 @@ export function useProductChat(
 
   const roomKey = ref<string | null>(opts?.roomKey ?? null)
   const viewerNameRef = ref<string | null>(opts?.viewerName ?? null)
+  // Token firmado de la sala de invitado: sin él el servidor ya no deja leer ni escribir
+  // en una sala de invitado con mensajes (la clave sola la conoce también el vendedor)
+  const roomToken = ref<string | null>(opts?.roomToken ?? getGuestRoomToken(opts?.roomKey ?? null))
 
   const endpointBase = `/wp-json/motorlan/v1/products/${productId}/messages`
   const endpointQuery = computed(() => {
     const params = new URLSearchParams()
     if (roomKey.value)
       params.set('room_key', roomKey.value)
+    if (roomToken.value)
+      params.set('room_token', roomToken.value)
 
-    // Crucial: Send guest email if we have it, so the backend can identify the user correctly
-    // especially for registered users acting as guests.
-    const storedEmail = getStoredGuestEmail()
-    if (storedEmail)
-      params.set('guest_email', storedEmail)
+    // El email del invitado ya no viaja en la URL de cada poll: el backend dejó de usarlo
+    // para el acceso (era una vía de suplantación) y solo acababa en logs del servidor.
 
     return params.toString()
   })
@@ -176,6 +184,11 @@ export function useProductChat(
     if (typeof meta.server_timestamp === 'string' && meta.server_timestamp)
       lastServerTimestamp.value = meta.server_timestamp
 
+    if (typeof meta.room_token === 'string' && meta.room_token) {
+      roomToken.value = meta.room_token
+      setGuestRoomToken(roomKey.value, meta.room_token)
+    }
+
     refreshMessages()
 
     if (polling.value && lastServerTimestamp.value)
@@ -198,6 +211,20 @@ export function useProductChat(
 
         if (Array.isArray(incoming) && incoming.length)
           applyMessages(incoming, { replace: false })
+      }, {
+        // Backoff sin actividad: de 20 a ~6 peticiones/min por chat abierto e inactivo;
+        // vuelve a 3 s en cuanto llega un mensaje
+        minInterval: 3000,
+        maxInterval: 10000,
+        backoffMultiplier: 1.5,
+        // 403/404 permanentes: el polling se detiene; mostrarlo en lugar de "congelarse"
+        onError: (status: number) => {
+          isPollingActive.value = false
+          isLocked.value = true
+          loadError.value = status === 404
+            ? t('chat.errors.not_found', 'No pudimos encontrar este chat.')
+            : t('chat.errors.forbidden_view', 'No tienes permisos para ver estos mensajes.')
+        },
       })
     }
 
@@ -235,25 +262,28 @@ export function useProductChat(
 
     isFetchingMessages.value = true
     loadError.value = null
+    loadErrorStatus.value = null
 
     try {
-      const { data, error } = await useApi<any>(createUrl(endpointUrl.value)).get().json()
+      const { data, error, statusCode } = await useApi<any>(createUrl(endpointUrl.value)).get().json()
 
       if (error.value) {
-        const status = Number(error.value?.status ?? error.value?.data?.status ?? 0)
+        // El código HTTP está en statusCode (error.value es un Error sin .status)
+        const status = Number(statusCode.value ?? 0)
+        loadErrorStatus.value = status
 
-        if (status === 403) {
-          loadError.value = 'No tienes permisos para ver estos mensajes.'
+        if (status === 403 && data.value?.code !== 'rest_cookie_invalid_nonce') {
+          loadError.value = t('chat.errors.forbidden_view', 'No tienes permisos para ver estos mensajes.')
           isLocked.value = true
           stopPolling()
         }
         else if (status === 404) {
-          loadError.value = 'No pudimos encontrar este chat.'
+          loadError.value = t('chat.errors.not_found', 'No pudimos encontrar este chat.')
           isLocked.value = true
           stopPolling()
         }
         else {
-          loadError.value = 'No se pudieron cargar los mensajes.'
+          loadError.value = t('chat.errors.load', 'No se pudieron cargar los mensajes.')
           isLocked.value = false
         }
 
@@ -272,7 +302,7 @@ export function useProductChat(
     }
   }
 
-  const sendMessage = async (rawMessage: string, meta?: { email?: string; name?: string }) => {
+  const sendMessage = async (rawMessage: string, meta?: { email?: string; name?: string; website?: string }) => {
     if (isSending.value || isLocked.value)
       return
 
@@ -297,18 +327,26 @@ export function useProductChat(
       if (meta?.email)
         payload.guest_email = meta.email
 
-      const { data, error } = await useApi<any>(createUrl(endpointBase)).post(payload).json()
+      if (roomToken.value)
+        payload.room_token = roomToken.value
+
+      // Honeypot del formulario de invitado (vacío para personas)
+      if (meta?.website)
+        payload.website = meta.website
+
+      const { data, error, statusCode } = await useApi<any>(createUrl(endpointBase)).post(payload).json()
 
       if (error.value) {
-        const status = Number(error.value?.status ?? error.value?.data?.status ?? 0)
+        const status = Number(statusCode.value ?? 0)
 
-        if (status === 403) {
-          sendError.value = 'No tienes permisos para enviar mensajes en este chat.'
+        if (status === 403 && data.value?.code !== 'rest_cookie_invalid_nonce') {
+          sendError.value = t('chat.errors.forbidden_send', 'No tienes permisos para enviar mensajes en este chat.')
           isLocked.value = true
           stopPolling()
         }
         else {
-          sendError.value = 'No se pudo enviar el mensaje.'
+          // Mostrar el motivo del backend (p. ej. límite de mensajes 429)
+          sendError.value = (data.value && typeof data.value === 'object' && data.value.message) || t('chat.errors.send', 'No se pudo enviar el mensaje.')
         }
 
         return
@@ -317,7 +355,10 @@ export function useProductChat(
       if (data.value?.data)
         applyMessages([data.value.data], { replace: false })
 
-      handleMeta(data.value?.meta ?? null)
+      // No mover el cursor del polling con la respuesta del POST: los mensajes del otro
+      // participante llegados entre el último poll y este envío se perderían.
+      const { server_timestamp: _ignoredCursor, ...sendMeta } = (data.value?.meta ?? {}) as Record<string, any>
+      handleMeta(sendMeta as any)
       isLocked.value = false
     }
     finally {
@@ -327,6 +368,13 @@ export function useProductChat(
 
   const setRoomKey = (value: string | null) => {
     roomKey.value = value && value.trim().length ? value.trim() : null
+    roomToken.value = getGuestRoomToken(roomKey.value)
+  }
+
+  const setRoomToken = (value: string | null) => {
+    roomToken.value = value && value.trim().length ? value.trim() : null
+    if (roomToken.value)
+      setGuestRoomToken(roomKey.value, roomToken.value)
   }
 
   const setViewerName = (value: string | null) => {
@@ -336,6 +384,7 @@ export function useProductChat(
   return {
     messages,
     loadError,
+    loadErrorStatus,
     sendError,
     isFetchingMessages,
     hasLoadedMessages,
@@ -350,6 +399,7 @@ export function useProductChat(
     setupPolling,
     stopPolling,
     setRoomKey,
+    setRoomToken,
     setViewerName,
   }
 }

@@ -5,7 +5,7 @@ import { useAbility } from '@casl/vue'
 import { useToast } from '@/composables/useToast'
 import { requiredValidator } from '@core/utils/validators'
 import { useUserStore } from '@/@core/stores/user'
-import { useSanitize } from '@/composables/useSanitize'
+import { apiErrorMessage } from '@/composables/useApi'
 
 const props = defineProps<{
   isDialogVisible: boolean
@@ -19,7 +19,6 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const ability = useAbility()
 const { showToast } = useToast()
-const { sanitize } = useSanitize()
 
 const isPasswordVisible = ref(false)
 const errors = ref<Record<string, string | undefined>>({
@@ -61,7 +60,7 @@ const login = async () => {
     const responseData = await response.json().catch(() => ({}))
 
     if (!response.ok || !responseData.success) {
-      genericError.value = responseData.message || t('login.connection_error')
+      genericError.value = apiErrorMessage(responseData, t('login.unknown_error'))
       return
     }
 
@@ -135,7 +134,7 @@ const closeDialog = () => {
           variant="tonal"
           class="mb-4"
         >
-          <div v-html="sanitize(genericError)" />
+          <div>{{ genericError }}</div>
         </VAlert>
 
         <VForm

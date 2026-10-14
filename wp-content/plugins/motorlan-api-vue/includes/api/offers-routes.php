@@ -654,14 +654,15 @@ function motorlan_handle_confirm_offer($request) {
 
     if (function_exists('update_field')) {
         update_field('stock', $new_stock, $offer->publication_id);
-        // Solo pausar cuando el stock llegue a 0
+        // Al llegar el stock a 0 queda como Vendido (antes 'paused': el vendedor lo veía
+        // como "Pausado"). Igual que la venta manual.
         if ($new_stock === 0) {
-            update_field('publicar_acf', 'paused', $offer->publication_id);
+            update_field('publicar_acf', 'sold', $offer->publication_id);
         }
     }
     update_post_meta($offer->publication_id, 'stock', $new_stock);
     if ($new_stock === 0) {
-        update_post_meta($offer->publication_id, 'publicar_acf', 'paused');
+        update_post_meta($offer->publication_id, 'publicar_acf', 'sold');
     }
 
     $confirmed_at = current_time('mysql');

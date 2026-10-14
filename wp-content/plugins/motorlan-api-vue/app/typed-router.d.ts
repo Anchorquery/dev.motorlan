@@ -70,7 +70,6 @@ declare module 'vue-router/auto-routes' {
     'register-success': RouteRecordInfo<'register-success', '/register-success', Record<never, never>, Record<never, never>>,
     'reset-password': RouteRecordInfo<'reset-password', '/reset-password', Record<never, never>, Record<never, never>>,
     'store': RouteRecordInfo<'store', '/store', Record<never, never>, Record<never, never>>,
-    'store-components-chat-inline': RouteRecordInfo<'store-components-chat-inline', '/store/components/ChatInline', Record<never, never>, Record<never, never>>,
     'store-components-chat-modal': RouteRecordInfo<'store-components-chat-modal', '/store/components/ChatModal', Record<never, never>, Record<never, never>>,
     'store-components-empty-state': RouteRecordInfo<'store-components-empty-state', '/store/components/EmptyState', Record<never, never>, Record<never, never>>,
     'store-components-login-modal': RouteRecordInfo<'store-components-login-modal', '/store/components/LoginModal', Record<never, never>, Record<never, never>>,

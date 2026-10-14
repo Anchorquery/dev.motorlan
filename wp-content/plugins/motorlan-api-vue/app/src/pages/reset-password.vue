@@ -2,13 +2,15 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-
-const { t } = useI18n()
 import { VForm } from 'vuetify/components/VForm'
 import { useGenerateImageVariant } from '@core/composable/useGenerateImageVariant'
-import { requiredValidator } from '@core/utils/validators'
+import { passwordValidator, requiredValidator } from '@core/utils/validators'
+import { apiErrorMessage } from '@/composables/useApi'
+import PasswordRequirements from '@/views/apps/user/view/PasswordRequirements.vue'
 import authV2MaskDark from '@images/pages/misc-mask-dark.png'
 import authV2MaskLight from '@images/pages/misc-mask-light.png'
+
+const { t } = useI18n()
 
 const route = useRoute()
 const router = useRouter()
@@ -32,29 +34,44 @@ definePage({
   },
 })
 
-// Get key and login from URL query params
+// Get key and login from URL
 const resetKey = ref('')
 const resetLogin = ref('')
 
+/**
+ * Lee un parámetro del fragmento (#key=…&login=…, adonde el servidor mueve los
+ * tokens para que no lleguen a Google Analytics) o, en enlaces antiguos o en local,
+ * de la query.
+ */
+const readAuthParam = (name: string): string => {
+  const hash = window.location.hash.replace(/^#/, '')
+  if (hash) {
+    const value = new URLSearchParams(hash).get(name)
+    if (value)
+      return value
+  }
+
+  return (route.query[name] as string) || ''
+}
+
 onMounted(() => {
-  resetKey.value = (route.query.key as string) || ''
-  resetLogin.value = (route.query.login as string) || ''
+  resetKey.value = readAuthParam('key')
+  resetLogin.value = readAuthParam('login')
+
+  // No dejar la clave ni el email en la URL (historial, capturas, analítica)
+  if (window.location.search || window.location.hash)
+    window.history.replaceState(window.history.state, '', window.location.pathname)
 
   if (!resetKey.value || !resetLogin.value) {
     isValidLink.value = false
-    errorMessage.value = 'Enlace de restablecimiento inválido. Por favor, solicita uno nuevo.'
+    errorMessage.value = t('reset_password.invalid_link', 'Enlace de restablecimiento inválido. Por favor, solicita uno nuevo.')
   }
 })
 
 const passwordConfirmValidator = (value: string) => {
   if (value !== password.value)
-    return 'Las contraseñas no coinciden'
-  return true
-}
+    return t('reset_password.mismatch', 'Las contraseñas no coinciden.')
 
-const passwordLengthValidator = (value: string) => {
-  if (value.length < 8)
-    return 'La contraseña debe tener al menos 8 caracteres'
   return true
 }
 
@@ -75,18 +92,24 @@ const resetPassword = async () => {
       }),
     })
 
-    const data = await response.json()
+    const data = await response.json().catch(() => ({}))
 
     if (response.ok && data.success) {
       isSuccess.value = true
     }
+    else if (data.code === 'invalid_key' || data.code === 'expired_key') {
+      // El enlace ya no vale: no tiene sentido seguir mostrando el formulario
+      isValidLink.value = false
+      errorMessage.value = apiErrorMessage(data, t('reset_password.invalid_link', 'Enlace de restablecimiento inválido. Por favor, solicita uno nuevo.'))
+    }
     else {
-      errorMessage.value = data.message || 'Error al restablecer la contraseña.'
+      // Incluye la lista de requisitos que faltan (data.errors)
+      errorMessage.value = apiErrorMessage(data, t('reset_password.error', 'No se pudo restablecer la contraseña.'))
     }
   }
   catch (err) {
     console.error('Reset password error:', err)
-    errorMessage.value = 'Error de conexión. Por favor, intenta de nuevo.'
+    errorMessage.value = t('login.connection_error', 'No se pudo conectar con el servidor. Revisa tu conexión.')
   }
   finally {
     isSubmitting.value = false
@@ -102,6 +125,10 @@ const onSubmit = () => {
 
 const goToLogin = () => {
   router.push({ name: 'login' })
+}
+
+const goToForgotPassword = () => {
+  router.push({ name: 'forgot-password' })
 }
 </script>
 
@@ -122,10 +149,10 @@ const goToLogin = () => {
       >
         <VCardText>
           <h4 class="text-h4 font-weight-bold mb-1">
-            Restablecer contraseña
+            {{ t('reset_password.title', 'Restablecer contraseña') }}
           </h4>
           <p class="mb-0 text-body-1 text-medium-emphasis">
-            Ingresa tu nueva contraseña
+            {{ t('reset_password.subtitle', 'Introduce tu nueva contraseña.') }}
           </p>
         </VCardText>
 
@@ -139,10 +166,10 @@ const goToLogin = () => {
             icon="tabler-check"
           >
             <div class="font-weight-medium">
-              ¡Contraseña actualizada!
+              {{ t('reset_password.success_title', '¡Contraseña actualizada!') }}
             </div>
             <div class="text-body-2">
-              Tu contraseña ha sido restablecida correctamente. Ya puedes iniciar sesión.
+              {{ t('reset_password.success_body', 'Tu contraseña ha sido restablecida correctamente. Ya puedes iniciar sesión.') }}
             </div>
           </VAlert>
 
@@ -184,10 +211,18 @@ const goToLogin = () => {
                   :type="isPasswordVisible ? 'text' : 'password'"
                   variant="outlined"
                   density="comfortable"
-                  :rules="[requiredValidator, passwordLengthValidator]"
+                  :rules="[requiredValidator, passwordValidator]"
+                  autocomplete="new-password"
                   :append-inner-icon="isPasswordVisible ? 'tabler-eye-off' : 'tabler-eye'"
                   @click:append-inner="isPasswordVisible = !isPasswordVisible"
                 />
+              </VCol>
+
+              <VCol
+                cols="12"
+                class="pt-0"
+              >
+                <PasswordRequirements :password="password" />
               </VCol>
 
               <!-- Confirm password -->
@@ -200,6 +235,7 @@ const goToLogin = () => {
                   variant="outlined"
                   density="comfortable"
                   :rules="[requiredValidator, passwordConfirmValidator]"
+                  autocomplete="new-password"
                   :append-inner-icon="isConfirmPasswordVisible ? 'tabler-eye-off' : 'tabler-eye'"
                   @click:append-inner="isConfirmPasswordVisible = !isConfirmPasswordVisible"
                 />
@@ -243,13 +279,24 @@ const goToLogin = () => {
             class="text-center mt-4"
           >
             <VBtn
+              v-if="!isSuccess"
+              color="primary"
+              variant="tonal"
+              size="large"
+              rounded="lg"
+              class="font-weight-bold me-2 mb-2"
+              @click="goToForgotPassword"
+            >
+              {{ t('reset_password.request_new_link', 'Solicitar un enlace nuevo') }}
+            </VBtn>
+            <VBtn
               color="primary"
               size="large"
               rounded="lg"
-              class="font-weight-bold"
+              class="font-weight-bold mb-2"
               @click="goToLogin"
             >
-              Ir al login
+              {{ t('reset_password.go_to_login', 'Ir al login') }}
             </VBtn>
           </div>
         </VCardText>

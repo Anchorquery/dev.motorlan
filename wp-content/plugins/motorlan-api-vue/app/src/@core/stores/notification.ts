@@ -2,23 +2,25 @@ import { defineStore } from 'pinia'
 import type { Notification } from '@layouts/types'
 import { useApi } from '@/composables/useApi'
 
+// La API añade created_at (ISO UTC) para formatear la fecha relativa en el idioma del usuario
+export type ApiNotification = Notification & { created_at?: string | null }
+
 export const useNotificationStore = defineStore('notification', {
   state: () => ({
-    notifications: [] as Notification[],
+    notifications: [] as ApiNotification[],
     unreadCount: 0,
   }),
 
   actions: {
     async fetchNotifications() {
-      const { data, error } = await useApi('/wp-json/motorlan/v1/notifications').get().json<Notification[]>()
+      const { data, error } = await useApi('/wp-json/motorlan/v1/notifications').get().json<ApiNotification[]>()
       if (error.value) {
         console.error('Error fetching notifications:', error.value)
         return
       }
-      if (data.value) {
+      if (Array.isArray(data.value)) {
         this.notifications = data.value
-        // Update unread count based on fetched notifications if needed, 
-        // but better to use the specific endpoint for accuracy
+        // El contador real sale del endpoint (la lista solo trae las 20 últimas)
         this.fetchUnreadCount()
       }
     },
@@ -30,7 +32,7 @@ export const useNotificationStore = defineStore('notification', {
         return
       }
       if (data.value)
-        this.unreadCount = data.value.count
+        this.unreadCount = Number(data.value.count) || 0
     },
 
     async markNotificationsAsRead(notificationIds: number[]) {
@@ -52,14 +54,44 @@ export const useNotificationStore = defineStore('notification', {
       })
     },
 
-    removeNotification(notificationId: number) {
+    // "Marcar como no leídas" (antes no hacía nada)
+    async markNotificationsAsUnread(notificationIds: number[]) {
+      if (!notificationIds.length)
+        return
+
+      const { error } = await useApi('/wp-json/motorlan/v1/notifications/unread').post({ notification_ids: notificationIds }).json()
+
+      if (error.value) {
+        console.error('Error marking notifications as unread:', error.value)
+        return
+      }
+
+      this.notifications.forEach(notification => {
+        if (notificationIds.includes(notification.id) && notification.isSeen) {
+          notification.isSeen = false
+          this.unreadCount++
+        }
+      })
+    },
+
+    // Eliminar también en el servidor (antes solo se quitaba en local y reaparecía al recargar)
+    async removeNotification(notificationId: number) {
       const index = this.notifications.findIndex(item => item.id === notificationId)
-      if (index !== -1) {
-        const notification = this.notifications[index]
-        if (!notification.isSeen)
+      if (index === -1)
+        return
+
+      const { error } = await useApi(`/wp-json/motorlan/v1/notifications/${notificationId}`).delete().json()
+      if (error.value) {
+        console.error('Error deleting notification:', error.value)
+        return
+      }
+
+      const current = this.notifications.findIndex(item => item.id === notificationId)
+      if (current !== -1) {
+        if (!this.notifications[current].isSeen)
           this.unreadCount = Math.max(0, this.unreadCount - 1)
 
-        this.notifications.splice(index, 1)
+        this.notifications.splice(current, 1)
       }
     },
   },

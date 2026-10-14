@@ -4,7 +4,8 @@ import { useI18n } from 'vue-i18n'
 import { useProductChat } from '@/composables/useProductChat'
 import type { Publicacion } from '@/interfaces/publicacion'
 import { useUserStore } from '@/@core/stores/user'
-import { getOrCreateGuestId, getStoredGuestName } from '@/utils/guest'
+import { useRoute } from 'vue-router'
+import { getGuestRoomToken, getOrCreateGuestRoomId, getStoredGuestName, rememberGuestRoom, resetGuestRoomId, setGuestRoomToken } from '@/utils/guest'
 import { getPrePurchaseRoomKey } from '@/utils/roomKey'
 import { createUrl } from '@/@core/composable/createUrl'
 import { useApi } from '@/composables/useApi'
@@ -50,7 +51,11 @@ watch(() => t('store.default_message'), (newVal) => {
   formMessage.value = newVal || t('contact_modal.default_message')
 })
 
+// Honeypot anti-bots: campo oculto que una persona nunca rellena
+const formWebsite = ref('')
 const formAgreed = ref(false)
+// Política de privacidad (existe /politica-de-privacidad/ y /en/privacy-policy/ en producción)
+const privacyPolicyUrl = computed(() => (String(locale.value || 'es').toLowerCase() === 'en' ? '/en/privacy-policy/' : '/politica-de-privacidad/'))
 const hasRequestedForThisProduct = computed(() => {
   try {
     const list = JSON.parse(localStorage.getItem('motorlan_requested_prices') || '[]')
@@ -65,9 +70,11 @@ const showGuestForm = computed(() => {
   if (isSuccess.value) return false
   // Returning guest came via email/url token → real roomKey provided
   if (props.roomKey && props.roomKey.trim().length) return false
-  // Already submitted for this specific product in this browser
-  if (hasRequestedForThisProduct.value) return false
-  if (chat.hasLoadedMessages.value && chat.messages.value.length > 0) return false
+  // Mientras carga: si ya consultó este producto en este navegador, no enseñar el formulario
+  if (!chat.hasLoadedMessages.value) return !hasRequestedForThisProduct.value
+  if (chat.messages.value.length > 0) return false
+  // Sala vacía (p. ej. conversación antigua solo accesible desde el enlace del email):
+  // pedir nombre y email otra vez para que el vendedor pueda responder
   return true
 })
 
@@ -88,13 +95,19 @@ const handleGuestSubmit = async () => {
   
   // Update chat state
   chat.setViewerName(formName.value)
-  chat.setRoomKey(roomKey.value)
+  chat.setRoomKey(activeRoomKey.value)
   
   // Send message
-  await chat.sendMessage(formMessage.value, { 
-    email: formEmail.value, 
-    name: formName.value 
+  await chat.sendMessage(formMessage.value, {
+    email: formEmail.value,
+    name: formName.value,
+    website: formWebsite.value,
   })
+
+  // Si falló el envío (o no llegó a hacerse: chat bloqueado/envío en curso) no marcar
+  // éxito ni ocultar el formulario para este producto
+  if (chat.sendError.value || chat.isLocked.value || !chat.messages.value.length)
+    return
 
   // Save to local storage that price was requested
   try {
@@ -161,10 +174,46 @@ const productTitle = computed(() => {
 const viewerId = computed(() => userStore.user?.id ?? guestId.value)
 const defaultRoomKey = computed(() => getPrePurchaseRoomKey(props.publicacion.id, viewerId.value))
 const providedRoomKey = computed(() => props.roomKey || null)
-const roomKey = computed(() => providedRoomKey.value || defaultRoomKey.value)
+// Sala ya existente del usuario registrado para este producto (p. ej. la que inició como
+// invitado y reclamó al verificar su email): sin esto abría un hilo nuevo y vacío
+const existingUserRoomKey = ref<string | null>(null)
+const activeRoomKey = computed(() => providedRoomKey.value || existingUserRoomKey.value || defaultRoomKey.value)
+
+const route = useRoute()
+
+// Enlace del email (?ct=...): recuperar el token de la sala de invitado, sin el cual el
+// servidor ya no deja leerla (la clave sola también la conoce el vendedor)
+const restoreGuestRoomToken = async (roomKey: string) => {
+  if (getGuestRoomToken(roomKey))
+    return
+  const ct = typeof route.query.ct === 'string' ? route.query.ct : ''
+  if (!ct)
+    return
+  const { data, error } = await useApi<any>(createUrl(`/wp-json/motorlan/v1/chat-tokens/${encodeURIComponent(ct)}`)).get().json()
+  if (!error.value && data.value?.room_key === roomKey && data.value?.room_token)
+    setGuestRoomToken(roomKey, String(data.value.room_token))
+}
+
+// Usuario registrado: reclamar sus chats de invitado (email verificado) y reutilizar la
+// conversación que ya tenga con este producto
+const findExistingUserRoom = async (): Promise<string | null> => {
+  try {
+    await useApi<any>(createUrl('/wp-json/motorlan/v1/buyer/claim-guest-chats')).post({}).json()
+    const { data, error } = await useApi<any>(createUrl('/wp-json/motorlan/v1/buyer/inquiries')).get().json()
+    if (error.value || !Array.isArray(data.value?.data))
+      return null
+    // La lista viene ordenada por último mensaje: la primera coincidencia es la más reciente
+    const match = data.value.data.find((item: any) => Number(item?.product_id) === Number(props.publicacion.id))
+
+    return match?.room_key ? String(match.room_key) : null
+  }
+  catch {
+    return null
+  }
+}
 
 const chat = useProductChat(props.publicacion.id, {
-  roomKey: roomKey.value,
+  roomKey: activeRoomKey.value,
   viewerName: initialViewerName.value,
 })
 
@@ -203,7 +252,9 @@ const groupedMessages = computed(() => {
   const buckets = new Map<string, any[]>()
 
   for (const message of items) {
-    const key = message.created_at.slice(0, 10)
+    // Día LOCAL (created_at es ISO UTC: con slice(0, 10) los mensajes de 00:00-02:00 en
+    // España caían en el grupo del día anterior)
+    const key = new Date(message.created_at).toLocaleDateString('sv-SE')
 
     if (!buckets.has(key))
       buckets.set(key, [])
@@ -262,6 +313,10 @@ watch(
     if (length === previous)
       return
 
+    // Empezar a sondear en cuanto existe conversación (p. ej. tras el primer envío)
+    if (length > 0 && !previous)
+      chat.setupPolling()
+
     await nextTick(scrollMessagesToBottom)
   },
 )
@@ -271,8 +326,8 @@ watch(
   value => {
     if (value)
       chat.stopPolling()
-    else
-      chat.setupPolling()
+    else if (chat.messages.value.length)
+      chat.setupPolling() // sin conversación no hay nada que sondear
   },
 )
 
@@ -280,24 +335,47 @@ onMounted(async () => {
   void fetchBrands()
 
   if (!userStore.user) {
-    guestId.value = getOrCreateGuestId()
+    // Id de invitado propio de este producto (antes uno global por navegador)
+    guestId.value = getOrCreateGuestRoomId(props.publicacion.id)
     // Pre-fill form from storage if available
     const storedName = getStoredGuestName()
     const storedEmail = getStoredGuestEmail()
     if (storedName) formName.value = storedName
     if (storedEmail) formEmail.value = storedEmail
+
+    if (providedRoomKey.value) {
+      await restoreGuestRoomToken(providedRoomKey.value)
+      // Recordar la sala recuperada del email para las próximas visitas sin el enlace
+      rememberGuestRoom(props.publicacion.id, providedRoomKey.value)
+    }
   } else {
     guestId.value = String(userStore.user.id)
+    if (!providedRoomKey.value)
+      existingUserRoomKey.value = await findExistingUserRoom()
+    else
+      await restoreGuestRoomToken(providedRoomKey.value) // enlace del email abierto con sesión iniciada
   }
 
   initialViewerName.value = userStore.user?.display_name ?? getStoredGuestName()
   if (initialViewerName.value)
     chat.setViewerName(initialViewerName.value)
 
-  chat.setRoomKey(roomKey.value)
+  chat.setRoomKey(activeRoomKey.value)
 
   await chat.fetchMessages({ reset: true })
-  chat.setupPolling()
+
+  // Invitado cuya sala guardada ya no se puede abrir (token perdido): empezar una sala
+  // nueva en lugar de dejar el chat bloqueado; la anterior sigue en el enlace del email
+  if (!userStore.user && !providedRoomKey.value && chat.isLocked.value && chat.loadErrorStatus.value === 403) {
+    guestId.value = resetGuestRoomId(props.publicacion.id)
+    chat.setRoomKey(activeRoomKey.value)
+    chat.isLocked.value = false
+    await chat.fetchMessages({ reset: true })
+  }
+  // Sin mensajes no hay nada que sondear: antes cada visitante que abría el modal hacía
+  // una petición cada 3 s (contando contra el límite por IP) mientras rellenaba el formulario
+  if (chat.messages.value.length)
+    chat.setupPolling()
   await nextTick(scrollMessagesToBottom)
 })
 
@@ -424,6 +502,15 @@ onBeforeUnmount(() => {
           </p>
         </div>
         <VForm @submit.prevent="handleGuestSubmit">
+          <VAlert
+            v-if="sendError"
+            type="error"
+            variant="tonal"
+            class="mb-4"
+            density="compact"
+          >
+            {{ sendError }}
+          </VAlert>
           <VTextField
             v-model="formName"
             :label="t('chat.name_label')"
@@ -448,7 +535,18 @@ onBeforeUnmount(() => {
             variant="outlined"
             density="comfortable"
             class="mb-4"
+            maxlength="2000"
           />
+          <!-- Honeypot: oculto para personas; los bots que lo rellenan son rechazados -->
+          <input
+            v-model="formWebsite"
+            type="text"
+            name="website"
+            tabindex="-1"
+            autocomplete="off"
+            aria-hidden="true"
+            class="chat-hp-field"
+          >
 
           <div class="d-flex align-start mb-6">
             <VCheckbox
@@ -460,7 +558,8 @@ onBeforeUnmount(() => {
             >
               <template #label>
                 <div class="text-caption text-medium-emphasis ml-2">
-                  {{ t('chat.terms_prefix') }}<a href="#" class="text-primary text-decoration-none">{{ t('chat.terms_of_use') }}</a>{{ t('chat.terms_connector') }}<a href="#" class="text-primary text-decoration-none">{{ t('chat.privacy_policy') }}</a>.
+                  <!-- Sin página de condiciones conocida: texto sin enlace muerto (href="#") -->
+                  {{ t('chat.terms_prefix') }}<span class="text-primary">{{ t('chat.terms_of_use') }}</span>{{ t('chat.terms_connector') }}<a :href="privacyPolicyUrl" target="_blank" rel="noopener" class="text-primary text-decoration-none" @click.stop>{{ t('chat.privacy_policy') }}</a>.
                 </div>
               </template>
             </VCheckbox>
@@ -627,7 +726,18 @@ onBeforeUnmount(() => {
       </VCardText>
       
       <!-- Composer (Hidden if form is shown or success) -->
-      <VCardActions v-if="!showGuestForm && !isSuccess" class="composer bg-surface py-3 px-4 border-t">
+      <VCardActions v-if="!showGuestForm && !isSuccess" class="composer bg-surface py-3 px-4 border-t flex-wrap">
+        <VAlert
+          v-if="sendError"
+          type="error"
+          variant="tonal"
+          class="mb-3 w-100"
+          closable
+          density="compact"
+          @click:close="chat.sendError.value = null"
+        >
+          {{ sendError }}
+        </VAlert>
         <div class="d-flex align-end w-100 gap-2">
           <VTextarea
             v-model="messageText"
@@ -680,6 +790,16 @@ onBeforeUnmount(() => {
 
 .guest-scrollable {
   min-height: 0;
+}
+
+// Honeypot fuera de la vista (no display:none: algunos bots lo detectan)
+.chat-hp-field {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  inset-inline-start: -10000px;
+  opacity: 0;
+  pointer-events: none;
 }
 
 .messages-container {

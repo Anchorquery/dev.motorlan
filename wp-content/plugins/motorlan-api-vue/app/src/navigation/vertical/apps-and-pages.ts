@@ -68,8 +68,6 @@ export default [
     subject: 'all',
   },
 
-
-
   { heading: 'Administración', action: 'manage', subject: 'all' },
   {
     title: 'Publicaciones',

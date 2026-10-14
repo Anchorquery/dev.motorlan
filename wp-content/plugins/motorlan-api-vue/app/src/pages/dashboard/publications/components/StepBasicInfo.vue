@@ -11,7 +11,6 @@ const OTHER_BRAND_VALUE = -1
 const props = defineProps<{
   formState: any
   marcas: any[]
-  categories: any[]
   tipos?: any[]
 }>()
 
@@ -20,7 +19,7 @@ const emit = defineEmits(['update:formState'])
 const { t } = useI18n()
 const { getFormattedPreview } = useMotorFormatter()
 
-// AÃ±adir opciÃ³n "Otros" al inicio de la lista de marcas
+// Añadir opción "Otros" al inicio de la lista de marcas
 const marcasWithOther = computed(() => [
   { title: t('add_publication.post_details.brand_other', 'Otros'), value: OTHER_BRAND_VALUE },
   ...props.marcas,
@@ -53,13 +52,13 @@ const localMarcaCustom = computed({
 
 // Validador para marca custom
 const customBrandValidator = (v: any) => {
-  if (!v || typeof v !== 'string' || v.trim() === '') return 'El nombre de la marca es obligatorio'
+  if (!v || typeof v !== 'string' || v.trim() === '') return t('add_publication.validation.brand_custom_required', 'El nombre de la marca es obligatorio')
   return true
 }
 
-// Validador especÃ­fico para el select de marca
+// Validador específico para el select de marca
 const brandValidator = (v: any) => {
-  if (v === null || v === undefined || v === '') return 'Selecciona una marca'
+  if (v === null || v === undefined || v === '') return t('add_publication.validation.brand_required', 'Selecciona una marca')
   return true
 }
 
@@ -68,7 +67,7 @@ const formattedPreview = computed(() => {
     return getFormattedPreview(props.formState, props.marcas, props.tipos || [])
 })
 
-// Auto-rellenar el tÃ­tulo con el nombre formateado (oculto al usuario)
+// Auto-rellenar el título con el nombre formateado (oculto al usuario)
 watch(formattedPreview, (newVal) => {
     if (newVal) {
         emit('update:formState', { ...props.formState, title: newVal })
@@ -80,7 +79,7 @@ watch(formattedPreview, (newVal) => {
 <template>
   <VRow class="mx-0">
     <VCol cols="12">
-        <h3 class="text-h5 font-weight-bold mb-4">{{ t('add_publication.sections.basic_info', 'InformaciÃ³n BÃ¡sica') }}</h3>
+        <h3 class="text-h5 font-weight-bold mb-4">{{ t('add_publication.sections.basic_info', 'Información Básica') }}</h3>
     </VCol>
     <VCol cols="12" md="6">
       <AppSelect

@@ -25,52 +25,75 @@ class Motorlan_Rate_Limiter {
         return !is_wp_error($check);
     }
 
-    /** 
-     * Verificación genérica adaptable
+    /**
+     * Clave del contador. Única fuente para check/reset/remaining (antes check() y
+     * reset_limit() calculaban claves distintas y el reset nunca funcionaba).
      */
-    public static function check($action, $identifier = null, $max_attempts = 5, $period = 900) {
+    private static function key($action, $identifier = null) {
         if (!$identifier) {
             $identifier = self::get_user_identifier();
         }
-        
-        $key = 'motorlan_rate_limit_' . md5($action . '_' . $identifier);
-        
-        $attempts = get_transient($key);
-        
-        if ($attempts === false) {
-            set_transient($key, 1, $period);
+        return 'motorlan_rate_limit_' . md5($action . '_' . $identifier);
+    }
+
+    /**
+     * Verificación genérica adaptable.
+     *
+     * Ventana FIJA: el contador caduca $period segundos después del PRIMER intento.
+     * Antes cada intento renovaba el TTL (ventana deslizante), así que el polling del
+     * chat (cada 3 s) nunca dejaba caducar el contador y acababa en 429 permanente.
+     */
+    public static function check($action, $identifier = null, $max_attempts = 5, $period = 900) {
+        $key   = self::key($action, $identifier);
+        $now   = time();
+        $state = get_transient($key);
+
+        if (!is_array($state) || !isset($state['count'], $state['start']) || ($now - (int) $state['start']) >= $period) {
+            set_transient($key, ['count' => 1, 'start' => $now], $period);
             return true;
         }
-        
-        if ($attempts >= $max_attempts) {
-            return new WP_Error('too_many_requests', 'Has excedido el límite de solicitudes.', ['status' => 429, 'retry_after' => $period]);
+
+        $retry_after = max(1, $period - ($now - (int) $state['start']));
+
+        if ((int) $state['count'] >= $max_attempts) {
+            return new WP_Error('too_many_requests', __('Has excedido el límite de solicitudes.', 'motorlan-api-vue'), ['status' => 429, 'retry_after' => $retry_after]);
         }
-        
-        // Incrementar contador
-        set_transient($key, $attempts + 1, $period);
+
+        $state['count'] = (int) $state['count'] + 1;
+        set_transient($key, $state, $retry_after);
         return true;
     }
-    
+
+    /**
+     * Segundos hasta que se libera el límite (0 si no hay bloqueo activo).
+     */
+    public static function get_retry_after($action, $period = 900, $identifier = null) {
+        $state = get_transient(self::key($action, $identifier));
+        if (!is_array($state) || !isset($state['start'])) {
+            return 0;
+        }
+        return max(0, $period - (time() - (int) $state['start']));
+    }
+
     /**
      * Obtiene los intentos restantes
      */
-    public static function get_remaining_attempts($action, $max_attempts = 5) {
-        $ip = self::get_client_ip();
-        $key = 'motorlan_rate_limit_' . md5($action . '_' . $ip);
-        $attempts = get_transient($key) ?: 0;
-        
+    public static function get_remaining_attempts($action, $max_attempts = 5, $identifier = null) {
+        $state = get_transient(self::key($action, $identifier));
+        $attempts = is_array($state) && isset($state['count']) ? (int) $state['count'] : 0;
+
         return max(0, $max_attempts - $attempts);
     }
-    
+
     /**
      * Resetea el contador para una acción
      */
-    public static function reset_limit($action) {
-        $ip = self::get_client_ip();
-        $key = 'motorlan_rate_limit_' . md5($action . '_' . $ip);
-        delete_transient($key);
+    public static function reset_limit($action, $identifier = null) {
+        delete_transient(self::key($action, $identifier));
+        // Tras un login correcto el identificador pasa de IP a usuario: limpiar ambos.
+        delete_transient('motorlan_rate_limit_' . md5($action . '_ip_' . md5(self::get_client_ip())));
     }
-    
+
     /**
      * Obtiene la IP del cliente (considerando proxies)
      */

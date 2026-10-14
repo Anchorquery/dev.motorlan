@@ -5,11 +5,13 @@ import { useI18n } from 'vue-i18n'
 // Ajustes correctos de imports según la estructura del proyecto
 // Ajuste final de imports según la estructura real del proyecto
 import type { Publicacion } from '@/interfaces/publicacion'
-import { useApi } from '@/composables/useApi'
+import { assertApiOk, useApi } from '@/composables/useApi'
 import { useUserStore } from '@/@core/stores/user'
 import { createUrl } from '@/@core/composable/createUrl'
 import { useSanitize } from '@/composables/useSanitize'
 import { useCountries } from '@/composables/useCountries'
+import { useToast } from '@/composables/useToast'
+import { uiSlugForTipo } from '@/utils/tipoMapping'
 
 const props = defineProps<{ 
   publicacion: Publicacion; 
@@ -19,7 +21,8 @@ const props = defineProps<{
 const emit = defineEmits(['open-chat'])
 const { sanitize } = useSanitize()
 const { getCountryName, fetchCountries } = useCountries()
-const { t } = useI18n()
+const { t, locale } = useI18n()
+const { showToast } = useToast()
 
 const brand = computed(() => props.publicacion.marca_name || '-')
 
@@ -45,11 +48,12 @@ onMounted(async () => {
 
   if (isLoggedIn.value && !props.isPreview) {
     try {
-      const { data: favorites, error } = await useApi('/wp-json/motorlan/v1/favorites').get().json()
+      // Solo IDs: antes se descargaban todos los favoritos con todos sus datos
+      const { data: favorites, error } = await useApi('/wp-json/motorlan/v1/favorites?fields=ids').get().json()
       if (error.value)
         throw error.value
       if (favorites.value?.data && Array.isArray(favorites.value.data)) {
-        isFavorite.value = favorites.value.data.some((f: { id: number }) => f.id === props.publicacion.id)
+        isFavorite.value = favorites.value.data.some((f: { id: number }) => Number(f.id) === Number(props.publicacion.id))
       }
     } catch (e) {
       console.error('Error cargando favoritos', e)
@@ -72,12 +76,19 @@ const getInitials = (value: string): string => {
   const parts = value.split(' ').filter(Boolean)
   return parts.slice(0, 2).map(part => part.charAt(0).toUpperCase()).join('')
 }
+// calificacion es null si el vendedor aún no tiene valoraciones (Number(null) = 0 pintaba 0 estrellas)
 const sellerRating = computed(() => {
-  const val = Number(props.publicacion.author?.acf?.calificacion)
-  return Number.isFinite(val) ? val : null
+  const raw = (props.publicacion.author?.acf as any)?.calificacion
+  if (raw === null || raw === undefined || raw === '')
+    return null
+  const val = Number(raw)
+  return Number.isFinite(val) && val > 0 ? val : null
 })
 const sellerSales = computed(() => {
-  const val = Number(props.publicacion.author?.acf?.ventas)
+  const raw = (props.publicacion.author?.acf as any)?.ventas
+  if (raw === null || raw === undefined || raw === '')
+    return null
+  const val = Number(raw)
   return Number.isFinite(val) ? val : null
 })
 const location = computed(() => {
@@ -104,14 +115,23 @@ const hasPrice = computed(() => {
   return Number(price) > 0
 })
 
-const negotiableLabel = computed(() => {
-  const val = props.publicacion.acf.precio_negociable
-  if (typeof val === 'string')
-    return val.toLowerCase() === 'si' ? t('product_details.negotiable') : t('product_details.not_negotiable')
-  return val ? t('product_details.negotiable') : t('product_details.not_negotiable')
-})
+// Muestra el tipo de publicación con la alimentación incluida para motores:
+// Motor AC / Motor DC / Regulador / Otros.
+const tipoDisplay = computed(() => {
+  const tipos = (props.publicacion.tipo || []) as { name: string; slug?: string }[]
+  if (!tipos.length) return ''
 
-const categories = computed(() => props.publicacion.categories.map((c: { name: string }) => c.name).join(', '))
+  const slug = tipos[0].slug || ''
+  const ui = uiSlugForTipo(slug, props.publicacion.acf?.tipo_de_alimentacion)
+
+  switch (ui) {
+    case 'motor-ac': return t('select_publication_type.motor_ac_title')
+    case 'motor-dc': return t('select_publication_type.motor_dc_title')
+    case 'regulador': return t('select_publication_type.regulator_title')
+    case 'otro-repuesto': return t('select_publication_type.other_spare_part_title')
+    default: return tipos[0].name || ''
+  }
+})
 
 const productTitleUpper = computed(() => (props.publicacion.title ? props.publicacion.title.toUpperCase() : ''))
 
@@ -137,6 +157,7 @@ const toggleFavorite = async () => {
     }
   } catch (e) {
     console.error('Error al cambiar favorito', e)
+    showToast(t('product_details.favorite_error', 'No se pudo actualizar el favorito. Inténtalo de nuevo.'), 'error')
   } finally {
     isLoadingFavorite.value = false
   }
@@ -148,12 +169,14 @@ const isOfferDialogOpen = ref(false)
 const offerAmount = ref<number | null>(null)
 const offerMessage = ref('')
 const offer = ref<null | { id: number }>(null)
+const offerError = ref('')
 const isSubmittingOffer = ref(false)
 
 
+// author.id llega como string desde la API y el id del store es número: comparar como número
 const isOwner = computed(() => {
   if (!userStore.getUser?.id) return false
-  return props.publicacion.author?.id === userStore.getUser.id
+  return Number(props.publicacion.author?.id) === Number(userStore.getUser.id)
 })
 const actionsAvailable = computed(() => !props.disableActions && !isOwner.value && !props.isPreview)
 
@@ -166,7 +189,8 @@ const isNegotiable = computed(() => {
   if (typeof val === 'string') {
     const lowerVal = val.toLowerCase().trim()
     
-    return lowerVal === 'si' || lowerVal === 'yes' || lowerVal === 'true'
+    // Valores legacy: 'Sí' (con tilde) también es "Consultar precio"
+    return lowerVal === 'si' || lowerVal === 'sí' || lowerVal === 'yes' || lowerVal === 'true'
   }
 
   if (Array.isArray(val))
@@ -257,18 +281,20 @@ const submitOffer = async () => {
     return
 
   isSubmittingOffer.value = true
+  offerError.value = ''
   try {
-    const { data: res, error } = await useApi(`/wp-json/motorlan/v1/publicaciones/${props.publicacion.id}/offers`).post({
+    const { data: res } = assertApiOk(await useApi(`/wp-json/motorlan/v1/publicaciones/${props.publicacion.id}/offers`).post({
       amount: offerAmount.value,
       justification: offerMessage.value,
-    }).json()
-    if (error.value)
-      throw error.value
-    offer.value = res.value
+    }).json())
+    // El backend responde { success, message, data: oferta }
+    offer.value = res.value?.data ?? null
     isOfferDialogOpen.value = false
   }
-  catch (error) {
+  catch (error: any) {
     console.error(error)
+    // Mostrar el motivo (límite diario, sin stock, publicación propia...) en el diálogo
+    offerError.value = error?.message || t('product_details.offer_error', 'No se pudo enviar la oferta')
   }
   finally {
     isSubmittingOffer.value = false
@@ -279,9 +305,10 @@ const removeOffer = async () => {
   if (!offer.value)
     return
   try {
-    const { error } = await useApi(`/wp-json/motorlan/v1/offers/${offer.value.id}`).delete().execute()
-    if (error.value)
-      throw error.value
+    // Una sola ejecución: useApi(url).delete().execute() lanzaba la petición dos veces
+    const req = useApi(`/wp-json/motorlan/v1/offers/${offer.value.id}`, { immediate: false }).delete().json()
+    await req.execute()
+    assertApiOk(req)
     offer.value = null
     offerAmount.value = null
     offerMessage.value = ''
@@ -335,7 +362,7 @@ const removeOffer = async () => {
           <!-- Precio visible: no tiene "Consultar precio" marcado, o es el owner -->
           <VCol v-if="showPrice" cols="12">
             <div class="detail-item d-flex align-center mb-2">
-              <span class="text-h5 font-weight-bold text-primary">{{ Number(props.publicacion.acf.precio_de_venta).toLocaleString('es-ES') }} €</span>
+              <span class="text-h5 font-weight-bold text-primary">{{ Number(props.publicacion.acf.precio_de_venta).toLocaleString(locale) }} €</span>
               <VChip v-if="isConsultPrice && isOwner" size="x-small" color="info" variant="tonal" class="ml-2">{{ t('product_details.reference') }}</VChip>
             </div>
           </VCol>
@@ -358,10 +385,10 @@ const removeOffer = async () => {
               <span>{{ props.publicacion.tipo[0].name || 'N/A' }}</span>
             </div>
           </VCol>-->  
-          <VCol v-if="categories" cols="12" sm="6">
+          <VCol v-if="tipoDisplay" cols="12" sm="6">
             <div class="detail-item d-flex align-center">
               <VIcon icon="tabler-category" class="mr-1" />
-              <span>{{ categories }}</span>
+              <span>{{ tipoDisplay }}</span>
             </div>
           </VCol>
           <VCol cols="12" sm="6">
@@ -473,6 +500,14 @@ const removeOffer = async () => {
           >
             {{ t('product_details.no_charge_until_accept') }}
           </VAlert>
+          <VAlert
+            v-if="offerError"
+            type="error"
+            variant="tonal"
+            class="mt-4"
+          >
+            {{ offerError }}
+          </VAlert>
         </VCardText>
         <VCardActions class="px-6 pb-6">
           <VBtn
@@ -525,7 +560,7 @@ const removeOffer = async () => {
       color="success"
       location="top end"
     >
-      Enlace copiado al portapapeles
+      {{ t('product_details.link_copied') }}
     </VSnackbar>
   </div>
 </template>

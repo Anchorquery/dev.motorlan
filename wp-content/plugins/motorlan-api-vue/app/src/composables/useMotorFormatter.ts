@@ -109,8 +109,11 @@ export const useMotorFormatter = () => {
 		}
 */
 
-		// 2. Marca
-		if (acf.marca && marcas.length > 0) {
+		// 2. Marca (marca nueva "Otros" = -1: usar el nombre escrito; antes el título quedaba sin marca)
+		if (acf.marca === -1 && acf.marca_custom) {
+			parts.push(String(acf.marca_custom).toUpperCase())
+		}
+		else if (acf.marca && marcas.length > 0) {
 			const marcaObj = marcas.find(m => m.value === acf.marca)
 			if (marcaObj) parts.push(marcaObj.title.toUpperCase())
 		}

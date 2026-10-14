@@ -22,7 +22,7 @@ acf_add_local_field_group(array(
 			'name' => 'tipo',
 			'type' => 'taxonomy',
 			'taxonomy' => 'tipo',
-			'field_type' => 'select',
+			'field_type' => 'radio',
 			'allow_null' => 0,
 			'add_term' => 1,
 			'save_terms' => 1,
@@ -160,12 +160,17 @@ acf_add_local_field_group(array(
 			'label' => 'Tipo de alimentación',
 			'name' => 'tipo_de_alimentacion',
 			'type' => 'radio',
+			// Valores 'ac'/'dc' para paridad con la app. Datos legacy migrados a ac/dc.
 			'choices' => array(
-				'Continua (C.C.)' => 'Continua (C.C.)',
-				'Alterna (C.A.)' => 'Alterna (C.A.)',
+				'ac' => 'Alterna (AC)',
+				'dc' => 'Directa (DC)',
 			),
 			'layout' => 'horizontal',
 		),
+		// DESACTIVADOS: 'servomotores' y 'regulacion_electronica_drivers' ya no se
+		// usan en el formulario de la app (crear/editar). Se comentan para paridad
+		// admin <-> app. Reversible.
+		/*
 		array(
 			'key' => 'field_6643d3c3b0353',
 			'label' => 'Servomotores',
@@ -184,6 +189,7 @@ acf_add_local_field_group(array(
 				'Sí' => 'Sí',
 			),
 		),
+		*/
 		array(
 			'key' => 'field_6643d3c3b0355',
 			'label' => 'Precio de venta',
@@ -250,6 +256,8 @@ acf_add_local_field_group(array(
 			'type' => 'radio',
 			'choices' => array(
 				'publish' => 'Publicado',
+				// 'pending' lo guardan el alta y la edición de no-admins (en revisión).
+				'pending' => 'Pendiente de revisión',
 				'draft' => 'Borrador',
 				'paused' => 'Pausado',
 				'sold' => 'Vendido',

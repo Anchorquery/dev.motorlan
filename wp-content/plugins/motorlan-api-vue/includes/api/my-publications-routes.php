@@ -62,6 +62,7 @@ function motorlan_get_my_publications_callback($request) {
 function motorlan_build_my_publications_query_args($params) {
     $page = !empty($params['page']) ? absint($params['page']) : 1;
     $per_page = !empty($params['per_page']) ? absint($params['per_page']) : 10;
+    $per_page = max(1, min(100, $per_page)); // sin tope se podía pedir per_page=100000
 
     $args = [
         'post_type'      => 'publicacion',
@@ -99,6 +100,8 @@ function motorlan_build_my_publications_query_args($params) {
         ];
     }
 
+    // Filtro por "categoria" DESACTIVADO: se usa "tipo".
+    /*
     if (!empty($params['category'])) {
         $tax_query[] = [
             'taxonomy' => 'categoria',
@@ -106,12 +109,18 @@ function motorlan_build_my_publications_query_args($params) {
             'terms'    => array_map('sanitize_text_field', explode(',', $params['category'])),
         ];
     }
+    */
 
     if (!empty($params['tipo'])) {
+        $tipo_terms = array_map('sanitize_text_field', explode(',', $params['tipo']));
+        // Sinónimos de "Otros" por si el slug real del término difiere.
+        if (in_array('otro-repuesto', $tipo_terms, true)) {
+            $tipo_terms = array_values(array_unique(array_merge($tipo_terms, ['repuesto', 'otros'])));
+        }
         $tax_query[] = [
             'taxonomy' => 'tipo',
             'field'    => 'slug',
-            'terms'    => array_map('sanitize_text_field', explode(',', $params['tipo'])),
+            'terms'    => $tipo_terms,
         ];
     }
 
@@ -129,11 +138,32 @@ function motorlan_build_my_publications_query_args($params) {
 
     // --- Sorting ---
     if (!empty($params['orderby'])) {
-        $orderby = sanitize_text_field($params['orderby']);
-        if ($orderby === 'price') {
-            $args['meta_key'] = 'precio_de_venta';
-            $args['orderby'] = 'meta_value_num';
-        } else {
+        // Solo valores conocidos (antes se pasaba crudo a WP_Query, que ignoraba
+        // 'publicacion', 'referencia'... y solo cambiaba la dirección del orden por fecha).
+        $orderby = sanitize_key($params['orderby']);
+        if ($orderby === 'price' || $orderby === 'tipo_o_referencia') {
+            // Cláusula con nombre + NOT EXISTS: con meta_key a secas desaparecían de la lista
+            // las publicaciones sin precio.
+            $sort_key = $orderby === 'price' ? 'precio_de_venta' : 'tipo_o_referencia';
+            if (empty($args['meta_query'])) {
+                $args['meta_query'] = ['relation' => 'AND'];
+            }
+            $args['meta_query'][] = [
+                'relation' => 'OR',
+                'motorlan_sort' => [
+                    'key'     => $sort_key,
+                    'compare' => 'EXISTS',
+                    'type'    => $orderby === 'price' ? 'NUMERIC' : 'CHAR',
+                ],
+                [
+                    'key'     => $sort_key,
+                    'compare' => 'NOT EXISTS',
+                ],
+            ];
+            $args['orderby'] = 'motorlan_sort';
+        } elseif ($orderby === 'post_status') {
+            $args['orderby'] = 'post_status';
+        } elseif (in_array($orderby, ['date', 'title', 'modified'], true)) {
             $args['orderby'] = $orderby;
         }
     }
@@ -167,7 +197,8 @@ function motorlan_format_publication_item($post_id) {
         'status'           => get_field('publicar_acf', $post_id) ?: get_post_status($post_id),
         'imagen_destacada' => motorlan_format_image_for_frontend(get_field('motor_image', $post_id, true)),
         'author_id'        => get_post_field('post_author', $post_id),
-        'categories'       => motorlan_get_post_taxonomy_details($post_id, 'categoria'),
+        // 'categories' DESACTIVADO (taxonomía categoria sustituida por tipo).
+        'categories'       => array(),
         'tipo'             => motorlan_get_post_taxonomy_details($post_id, 'tipo'),
         'acf'              => [],
     ];

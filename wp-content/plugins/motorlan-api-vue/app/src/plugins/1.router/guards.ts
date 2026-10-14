@@ -77,11 +77,12 @@ export const setupGuards = (router: _RouterTyped<RouteNamedMap & { [key: string]
 
     // Redirect to login if not authenticated
     if (!isLoggedIn) {
+      // `to` con la ruta completa (incluida su query, p. ej. ?tab=chat); antes se
+      // guardaba solo el path y la query se mezclaba en la URL del login.
       return {
         name: 'login',
         query: {
-          ...to.query,
-          to: to.fullPath !== '/' ? to.path : undefined,
+          to: to.fullPath !== '/' ? to.fullPath : undefined,
         },
       }
     }

@@ -3,7 +3,7 @@ import { ref, onMounted, watch } from 'vue'
 import type { ComponentPublicInstance } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { UserProfile } from '../types'
-import { useApi } from '@/composables/useApi'
+import { apiErrorMessage, useApi } from '@/composables/useApi'
 import { useToast } from '@/composables/useToast'
 import { requiredValidator, emailValidator } from '@/@core/utils/validators'
 import { VForm } from 'vuetify/components/VForm'
@@ -26,6 +26,14 @@ const {
 
 const isCompany = ref(false)
 
+// Cambio de email: no se aplica hasta confirmarlo desde el enlace enviado al email
+// NUEVO, y para pedirlo hace falta la contraseña actual.
+const pendingEmail = ref('')
+const isEmailPasswordDialogVisible = ref(false)
+const emailChangePassword = ref('')
+const emailChangePasswordError = ref('')
+const isCancellingEmailChange = ref(false)
+
 // Cloned data for editing
 const personalFormData = ref<UserProfile['personal_data']>({
   nombre: '',
@@ -47,6 +55,7 @@ const companyFormData = ref<UserProfile['company_data']>({
 
 watch(userProfile, (newData) => {
   if (newData) {
+    pendingEmail.value = (newData as any).pending_email || ''
     personalFormData.value = JSON.parse(JSON.stringify(newData.personal_data))
     if (newData.company_data && Object.keys(newData.company_data).length > 0 && newData.company_data.nombre) {
       companyFormData.value = JSON.parse(JSON.stringify(newData.company_data))
@@ -129,17 +138,16 @@ const handleAvatarUpload = async (file: File) => {
     await apiCall.execute()
 
     if (apiCall.error.value) {
-      const errorMessage = apiCall.error.value.data?.message || 'Error al actualizar el avatar'
-      showToast(errorMessage, 'error')
+      showToast(apiErrorMessage(apiCall.data.value, t('user_profile.avatar_error', 'Error al actualizar el avatar')), 'error')
     }
     else if (apiCall.data.value && userProfile.value) {
       userProfile.value.personal_data.avatar = apiCall.data.value.avatar
-      showToast('Avatar actualizado correctamente', 'success')
+      showToast(t('user_profile.avatar_updated', 'Avatar actualizado correctamente'), 'success')
     }
   }
   catch (e) {
     console.error('Fatal error during avatar upload:', e)
-    showToast('Ha ocurrido un error al procesar la imagen.', 'error')
+    showToast(t('user_profile.avatar_process_error', 'Ha ocurrido un error al procesar la imagen.'), 'error')
   }
   finally {
     isUploadingAvatar.value = false
@@ -150,59 +158,145 @@ const handleAvatarUpload = async (file: File) => {
 onMounted(async () => {
   await fetchUserProfile()
   if (userProfileError.value) {
-    const errorMessage = userProfileError.value.data?.message || 'Error al cargar el perfil'
-    showToast(errorMessage, 'error')
+    showToast(t('user_profile.load_error', 'Error al cargar el perfil'), 'error')
     console.error('Error fetching profile data:', userProfileError.value)
   }
 })
+
+const emailChanged = () => {
+  const current = (userProfile.value?.personal_data.email || '').trim().toLowerCase()
+  const next = (personalFormData.value.email || '').trim().toLowerCase()
+
+  return !!next && next !== current
+}
+
+const sendProfile = async (currentPassword?: string) => {
+  if (!userProfile.value)
+    return
+  isSaving.value = true
+  try {
+    const payload: Record<string, any> = {
+      personal_data: personalFormData.value,
+      company_data: isCompany.value ? companyFormData.value : {},
+    }
+    if (currentPassword)
+      payload.current_password = currentPassword
+
+    const { error, data: saveData } = await useApi('/wp-json/motorlan/v1/profile').post(payload).json()
+    const result: any = saveData.value || {}
+
+    if (error.value) {
+      // Contraseña ausente o incorrecta: se queda en el diálogo para reintentar
+      if (result.code === 'password_required' || result.code === 'incorrect_password') {
+        emailChangePasswordError.value = apiErrorMessage(result, t('user_profile.email_change_password_error', 'La contraseña actual no es correcta.'))
+        isEmailPasswordDialogVisible.value = true
+
+        return
+      }
+      isEmailPasswordDialogVisible.value = false
+      // Motivo real (email inválido o ya en uso...)
+      showToast(apiErrorMessage(result, t('user_profile.save_error', 'Error al guardar los datos')), 'error')
+
+      return
+    }
+
+    isEmailPasswordDialogVisible.value = false
+    emailChangePassword.value = ''
+    emailChangePasswordError.value = ''
+
+    const savedPersonal = JSON.parse(JSON.stringify(personalFormData.value))
+    if (result.email_change_pending) {
+      // El email de la cuenta no cambia hasta confirmar el enlace
+      savedPersonal.email = userProfile.value.personal_data.email
+      personalFormData.value.email = userProfile.value.personal_data.email
+    }
+    if (typeof result.pending_email === 'string') {
+      pendingEmail.value = result.pending_email
+      // El watch de userProfile vuelve a leer pending_email: mantenerlo al día
+      ;(userProfile.value as any).pending_email = result.pending_email
+    }
+
+    userProfile.value.personal_data = savedPersonal
+    if (isCompany.value) {
+      userProfile.value.company_data = JSON.parse(JSON.stringify(companyFormData.value))
+    }
+    else {
+      userProfile.value.company_data = {
+        nombre: '',
+        direccion: '',
+        cp: '',
+        persona_contacto: '',
+        email_contacto: '',
+        tel_contacto: '',
+        cif_nif: '',
+      }
+    }
+
+    if (result.email_change_pending)
+      showToast(t('user_profile.email_change_sent', { email: pendingEmail.value }, 'Te hemos enviado un enlace a {email}. Tu email no cambiará hasta que lo confirmes.'), 'success')
+    else
+      showToast(t('user_profile.saved', 'Datos guardados correctamente'), 'success')
+  }
+  catch (error) {
+    console.error('Error saving profile data:', error)
+    showToast(t('user_profile.save_error', 'Error al guardar los datos'), 'error')
+  }
+  finally {
+    isSaving.value = false
+  }
+}
 
 const saveProfileData = async () => {
   if (!profileForm.value) return
 
   const { valid } = await profileForm.value.validate()
+  if (!valid)
+    return
 
-  if (valid) {
-    isSaving.value = true
-    try {
-      if (userProfile.value) {
-        const payload = {
-          personal_data: personalFormData.value,
-          company_data: isCompany.value ? companyFormData.value : {},
-        }
+  // Cambiar el email exige la contraseña actual
+  if (emailChanged()) {
+    emailChangePassword.value = ''
+    emailChangePasswordError.value = ''
+    isEmailPasswordDialogVisible.value = true
 
-        const { error } = await useApi('/wp-json/motorlan/v1/profile').post(payload).json()
+    return
+  }
 
-        if (!error.value && userProfile.value) {
-          // On success, update the original state
-          userProfile.value.personal_data = JSON.parse(JSON.stringify(personalFormData.value))
-          if (isCompany.value) {
-            userProfile.value.company_data = JSON.parse(JSON.stringify(companyFormData.value))
-          }
-          else {
-            userProfile.value.company_data = {
-              nombre: '',
-              direccion: '',
-              cp: '',
-              persona_contacto: '',
-              email_contacto: '',
-              tel_contacto: '',
-              cif_nif: '',
-            }
-          }
-          showToast('Datos guardados correctamente', 'success')
-        }
-        else {
-          showToast('Error al guardar los datos', 'error')
-        }
-      }
+  await sendProfile()
+}
+
+const confirmEmailChangeWithPassword = async () => {
+  if (!emailChangePassword.value) {
+    emailChangePasswordError.value = t('user_profile.email_change_password_required', 'Introduce tu contraseña actual para cambiar el email.')
+
+    return
+  }
+  emailChangePasswordError.value = ''
+  await sendProfile(emailChangePassword.value)
+}
+
+const cancelEmailChangeDialog = () => {
+  isEmailPasswordDialogVisible.value = false
+  emailChangePassword.value = ''
+  emailChangePasswordError.value = ''
+}
+
+const cancelPendingEmailChange = async () => {
+  isCancellingEmailChange.value = true
+  try {
+    const { error } = await useApi('/wp-json/motorlan/v1/profile/cancel-email-change').post({}).json()
+    if (!error.value) {
+      pendingEmail.value = ''
+      if (userProfile.value)
+        (userProfile.value as any).pending_email = ''
+      showToast(t('user_profile.email_change_cancelled', 'Cambio de email cancelado.'), 'success')
     }
-    catch (error) {
-      console.error('Error saving profile data:', error)
-      showToast('Error al guardar los datos', 'error')
+    else {
+      showToast(t('user_profile.save_error', 'Error al guardar los datos'), 'error')
     }
-    finally {
-      isSaving.value = false
-    }
+  }
+  finally {
+    isCancellingEmailChange.value = false
   }
 }
 </script>
@@ -315,7 +409,32 @@ const saveProfileData = async () => {
                   type="email"
                   placeholder="tu@email.com"
                   :rules="[requiredValidator, emailValidator]"
+                  :hint="t('user_profile.email_change_hint', 'Si lo cambias, te pediremos tu contraseña y tendrás que confirmarlo desde el nuevo email.')"
                 />
+              </VCol>
+              <VCol
+                v-if="pendingEmail"
+                cols="12"
+              >
+                <VAlert
+                  color="warning"
+                  variant="tonal"
+                  icon="tabler-mail-forward"
+                  class="rounded-lg"
+                >
+                  <div class="d-flex flex-wrap align-center justify-space-between gap-2">
+                    <span>{{ t('user_profile.email_change_pending', { email: pendingEmail }, 'Cambio de email pendiente: confirma el enlace que hemos enviado a {email}.') }}</span>
+                    <VBtn
+                      size="small"
+                      variant="text"
+                      color="warning"
+                      :loading="isCancellingEmailChange"
+                      @click="cancelPendingEmailChange"
+                    >
+                      {{ t('user_profile.email_change_cancel', 'Cancelar cambio') }}
+                    </VBtn>
+                  </div>
+                </VAlert>
               </VCol>
               <VCol
                 cols="12"
@@ -353,7 +472,7 @@ const saveProfileData = async () => {
             <VExpandTransition>
               <div v-if="isCompany">
                 <p class="text-body-2 text-muted mb-6">
-                  Completa los datos de tu empresa para facturación y contacto comercial. Los campos con <span class="text-error">*</span> son obligatorios.
+                  {{ t('user_profile.company_intro', 'Completa los datos de tu empresa para facturación y contacto comercial. Los campos con * son obligatorios.') }}
                 </p>
                 <VRow>
                   <VCol
@@ -444,7 +563,7 @@ const saveProfileData = async () => {
               type="submit"
               class="px-8 rounded-pill"
             >
-              Guardar Cambios
+              {{ t('user_profile.save_changes', 'Guardar cambios') }}
             </VBtn>
             <VBtn
               variant="tonal"
@@ -453,7 +572,7 @@ const saveProfileData = async () => {
               class="rounded-pill"
               @click="isChangePasswordDialogVisible = true"
             >
-              Cambiar Contraseña
+              {{ t('change_password.title', 'Cambiar contraseña') }}
             </VBtn>
           </VCardActions>
         </VForm>
@@ -461,6 +580,54 @@ const saveProfileData = async () => {
     </VCol>
   </VRow>
   <ChangePasswordDialog v-if="userProfile" v-model="isChangePasswordDialogVisible" :email="userProfile.personal_data.email" />
+
+  <!-- Contraseña actual para cambiar el email -->
+  <VDialog
+    v-model="isEmailPasswordDialogVisible"
+    max-width="460px"
+    persistent
+  >
+    <VCard class="motor-card-enhanced">
+      <VCardTitle class="pa-6 pb-0">
+        <span class="text-h5 text-premium-title">{{ t('user_profile.email_change_title', 'Cambiar email') }}</span>
+      </VCardTitle>
+      <VCardText class="pa-6">
+        <p class="text-body-2 mb-4">
+          {{ t('user_profile.email_change_explain', { email: personalFormData.email }, 'Para usar {email} introduce tu contraseña actual. Te enviaremos un enlace a ese email y el cambio no se aplicará hasta que lo confirmes.') }}
+        </p>
+        <AppTextField
+          v-model="emailChangePassword"
+          :label="t('user_profile.current_password', 'Contraseña actual')"
+          type="password"
+          autocomplete="current-password"
+          autofocus
+          :error-messages="emailChangePasswordError ? [emailChangePasswordError] : []"
+          @keyup.enter="confirmEmailChangeWithPassword"
+        />
+      </VCardText>
+      <VCardActions class="pa-6 pt-0">
+        <VSpacer />
+        <VBtn
+          variant="tonal"
+          color="secondary"
+          class="rounded-pill"
+          :disabled="isSaving"
+          @click="cancelEmailChangeDialog"
+        >
+          {{ t('change_password.cancel', 'Cancelar') }}
+        </VBtn>
+        <VBtn
+          color="primary"
+          variant="elevated"
+          class="rounded-pill px-6"
+          :loading="isSaving"
+          @click="confirmEmailChangeWithPassword"
+        >
+          {{ t('user_profile.email_change_confirm', 'Enviar enlace') }}
+        </VBtn>
+      </VCardActions>
+    </VCard>
+  </VDialog>
 </template>
 
 <style lang="scss" scoped>

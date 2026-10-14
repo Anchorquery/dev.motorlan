@@ -207,7 +207,9 @@
     "new_brand_proposed": "New brand proposed by the user",
     "consult_price": "Ask for price",
     "edit": "Edit",
-    "preview": "Preview"
+    "preview": "Preview",
+    "brand_updated": "Brand name updated",
+    "brand_update_error": "Error updating the brand"
   },
   "store": {
     "par_options": {
@@ -312,7 +314,8 @@
       "state_new": "New",
       "state_used": "Used",
       "state_restored": "Refurbished",
-      "responsibility_note": "The vehicle is responsible for verifying the correct fitment."
+      "responsibility_note": "The vehicle is responsible for verifying the correct fitment.",
+      "see_results": "See results"
     }
   },
   "contact_modal": {
@@ -353,12 +356,24 @@
       "subtitle": "Attach manuals, specifications or other documents",
       "doc_name": "Document name",
       "add_btn": "Add document",
-      "no_docs": "No documents added."
+      "no_docs": "No documents added.",
+      "invalid_type": "Only PDF, JPG or PNG files are allowed.",
+      "file_selected": "File selected",
+      "ready": "Ready"
     },
     "tech_specs_not_motor": "Technical specifications only apply to motors.",
     "validation": {
       "main_image_required": "The main image is required",
-      "stock_positive": "Stock must be greater than 0"
+      "stock_positive": "Stock must be greater than 0",
+      "brand_custom_required": "The brand name is required",
+      "brand_required": "Select a brand",
+      "power_or_torque": "Enter the power or the rated torque",
+      "power_or_torque_hint": "For DC motors, enter at least the power or the rated torque.",
+      "positive_number": "Must be a number greater than 0",
+      "price_non_negative": "The price cannot be negative",
+      "stock_integer": "Stock must be a whole number",
+      "file_too_big": "\"{name}\" exceeds the maximum allowed size ({max}).",
+      "total_too_big": "The files exceed the maximum total size allowed ({max}). Remove some images or documents."
     },
     "name_preview_label": "Standardized name preview:",
     "reference_chip": "reference",
@@ -441,7 +456,8 @@
       "additional_documentation": "Additional Documentation",
       "document_name": "Document Name",
       "document_name_placeholder": "User manual",
-      "upload_file": "Upload File"
+      "upload_file": "Upload File",
+      "gallery_limit": "Up to {max} images"
     },
     "warranty": {
       "add_warranty_title": "Add Motorlan Warranty",
@@ -480,8 +496,15 @@
       "login_required": "You must log in to continue.",
       "fetch_brands_error": "Unable to load brands.",
       "fetch_categories_error": "Unable to load categories.",
-      "fetch_types_error": "Unable to load types."
-    }
+      "fetch_types_error": "Unable to load types.",
+      "type_required": "Select the publication type",
+      "draft_restored": "We've restored the data you were filling in. Please add the images and documents again.",
+      "partial_upload": "Publication created, but some files could not be uploaded. You can add them by editing it.",
+      "created_pending": "Publication submitted. It will be visible once an administrator approves it.",
+      "saved_as_draft": "The main image could not be uploaded: it has been saved as a draft. Edit it to add the image and submit it for review."
+    },
+    "step_x_of_y": "Step {current} of {total}",
+    "leave_confirm": "You have an unfinished publication. If you leave, the data will be lost. Do you want to leave?"
   },
   "publication_list": {
     "publication": "Publication",
@@ -521,12 +544,20 @@
       "paused": "Paused",
       "sold": "Sold",
       "pending": "Under Review",
-      "unknown": "Unknown"
+      "unknown": "Unknown",
+      "trash": "Trash"
     },
     "delete_selected": "Delete Selected",
     "deleting_selected_publications": "Deleting selected publications...",
     "delete_selected_dialog_title": "Confirm Deletion",
-    "delete_selected_dialog_text": "Are you sure you want to delete the {count} selected publications? This action cannot be undone."
+    "delete_selected_dialog_text": "Are you sure you want to delete the {count} selected publications? This action cannot be undone.",
+    "action_error": "The action could not be completed",
+    "duplicate_success": "Copy created as a draft. Review it before publishing.",
+    "sent_to_review": "Sent for review. It will be visible once an administrator approves it.",
+    "export_error": "Export failed",
+    "view_publication": "View publication",
+    "edit": "Edit",
+    "delete_irreversible": "This action cannot be undone."
   },
   "select_publication_type": {
     "title": "Select Publication Type",
@@ -601,7 +632,11 @@
     "required_fields_error": "Please fill in all required fields.",
     "save_draft": "Save Draft",
     "status_title": "Status",
-    "pending_review_warning": "Your publication is under review and cannot be edited until it is approved or rejected by an administrator."
+    "pending_review_warning": "Your publication is under review and cannot be edited until it is approved or rejected by an administrator.",
+    "partial_upload": "Publication updated, but some files could not be uploaded: {files}",
+    "sent_to_review": "Changes saved. The publication is under review until an administrator approves it.",
+    "url_will_change": "The URL will be updated when you save",
+    "view_on_web": "View on website"
   },
   "questions": {
     "page_title": "Publication Questions",
@@ -683,7 +718,9 @@
     "motor_power": "Power",
     "fetch_error": "Error loading sales.",
     "my_sales": "My Sales",
-    "no_sales_yet": "You have not made any sales yet."
+    "no_sales_yet": "You have not made any sales yet.",
+    "rate_buyer": "Rate buyer",
+    "view_buyer_chat": "View chat with buyer"
   },
   "login": {
     "welcome": "Access to Motorlan",
@@ -720,7 +757,8 @@
     "buyer_interested": "Interested buyer",
     "user_unknown": "Unknown user",
     "view_chat": "View chat",
-    "go_to_publication": "Go to publication"
+    "go_to_publication": "Go to publication",
+    "reply": "Reply"
   },
   "chat": {
     "product": "Product",
@@ -779,7 +817,18 @@
       "pending": "Pending",
       "cancelled": "Cancelled",
       "progress": "In progress"
-    }
+    },
+    "errors": {
+      "forbidden_view": "You don't have permission to view these messages.",
+      "not_found": "We couldn't find this chat.",
+      "load": "Messages could not be loaded.",
+      "forbidden_send": "You don't have permission to send messages in this chat.",
+      "forbidden_send_purchase": "You don't have permission to send messages for this purchase.",
+      "send": "The message could not be sent.",
+      "purchase_not_found": "We couldn't find this purchase."
+    },
+    "agreed_amount_prompt": "Agreed amount in € (optional; empty = listed price)",
+    "agreed_amount_invalid": "Invalid amount"
   },
   "register": {
     "title": "Create your account",
@@ -797,7 +846,24 @@
     "sign_in_instead": "Log in instead",
     "or": "or",
     "first_name_placeholder": "John",
-    "last_name_placeholder": "Doe"
+    "last_name_placeholder": "Doe",
+    "review_notice": "Check your details before creating your account. You'll receive an email to activate it.",
+    "success_toast": "Account created successfully.",
+    "passwords_mismatch": "Passwords do not match.",
+    "password_requirements_title": "Your password must have:",
+    "must_accept_terms": "You must accept the privacy policy and terms.",
+    "generic_error": "An error occurred while creating the account. Please try again.",
+    "step_account": "Personal details",
+    "step_credentials": "Credentials",
+    "step_confirm": "Confirmation",
+    "next": "Continue",
+    "back": "Back",
+    "password_req_length": "At least 8 characters",
+    "password_req_upper": "One uppercase letter (A-Z)",
+    "password_req_lower": "One lowercase letter (a-z)",
+    "password_req_digit": "One number (0-9)",
+    "password_req_special": "One special character (!#$%…)",
+    "password_confirm": "Confirm password"
   },
   "forgot_password": {
     "title": "Forgot your password?",
@@ -806,7 +872,9 @@
     "send_button": "Send instructions",
     "back_to_login": "Back to login",
     "success": "We sent you an email with instructions.",
-    "error": "Could not send the email. Please try again."
+    "error": "Could not send the email. Please try again.",
+    "sent_title": "Link sent!",
+    "sent_body": "If the email exists in our system, you'll receive a link to reset your password."
   },
   "reset_password": {
     "title": "Reset password",
@@ -818,7 +886,12 @@
     "back_to_login": "Back to login",
     "success": "Password reset successfully.",
     "mismatch": "Passwords do not match.",
-    "error": "Could not reset the password."
+    "error": "Could not reset the password.",
+    "invalid_link": "Invalid reset link. Please request a new one.",
+    "success_title": "Password updated!",
+    "success_body": "Your password has been reset. You can now sign in.",
+    "request_new_link": "Request a new link",
+    "go_to_login": "Go to sign in"
   },
   "register_success": {
     "title": "Congratulations on registering!",
@@ -826,11 +899,17 @@
     "verify_email": "Verify your email address",
     "verify_email_body": "We have sent an activation link to your inbox. Please check it and click the button to confirm your account.",
     "spam_note": "If you don't receive the email within a few minutes, please check your spam or junk folder.",
-    "back_to_login": "Back to login"
+    "back_to_login": "Back to login",
+    "cancel": "Cancel",
+    "resend_button": "Resend link",
+    "resend_prompt": "Didn't get the email? Resend link"
   },
   "publication_slug_page": {
     "not_found_title": "Publication not found",
-    "not_found_action": "Go to store"
+    "not_found_action": "Go to store",
+    "link_expired_title": "Link expired",
+    "link_expired_text": "The email link has expired (valid for 7 days). To resume the conversation, write a new message from the product chat using the same email.",
+    "unavailable": "This item is no longer available: it has been sold or the seller has temporarily withdrawn it."
   },
   "footer": {
     "license": "License",
@@ -871,7 +950,9 @@
   "purchases_opinions": {
     "publication": "Publication",
     "rating": "Rating",
-    "comment": "Comment"
+    "comment": "Comment",
+    "to_seller": "Review of the seller",
+    "to_buyer": "Review of the buyer"
   },
   "dashboard_lists": {
     "show": "Show",
@@ -938,7 +1019,9 @@
     "delete_dialog_body": "This will permanently delete the publication.",
     "cancel": "Cancel",
     "save": "Save",
-    "new_status_label": "New Status"
+    "new_status_label": "New Status",
+    "delete_error": "Error deleting the publication",
+    "status_error": "Error changing the status"
   },
   "motor": {
     "consult_price": "Consult price"
@@ -1082,7 +1165,10 @@
     "share_whatsapp": "WhatsApp",
     "share_telegram": "Telegram",
     "share_email": "Email",
-    "link_copied": "Link copied"
+    "link_copied": "Link copied",
+    "seller_sales_count": "Sales: {n}",
+    "seller_reviews_count": "Reviews: {n}",
+    "favorite_error": "Could not update the favourite. Please try again."
   },
   "offers_received": {
     "title": "Offers Received",
@@ -1155,7 +1241,59 @@
     "published_price": "Published price",
     "accepted_offer": "Accepted offer",
     "total_paid": "Total paid",
-    "payment_delivery_details": "Payment and delivery details"
+    "payment_delivery_details": "Payment and delivery details",
+    "load_error": "An error occurred while loading the purchase.",
+    "seller_data": "Seller details",
+    "buyer_data": "Buyer details",
+    "buyer": "Buyer",
+    "product_fallback": "Product",
+    "sales_count": "Sales: {n}",
+    "units": "{n} unit(s)",
+    "each": "each",
+    "mode_offer": "Purchase via offer",
+    "mode_direct": "Direct purchase",
+    "breadcrumb": "Purchases",
+    "view_product": "View product",
+    "technical_status": "Technical status",
+    "rate_title": "How was your experience?",
+    "rate_seller_button": "Rate seller",
+    "delivery_text": "Arrange the delivery date and place directly with the seller.",
+    "not_found": "We could not find the purchase",
+    "not_found_hint": "Check the link or go back to the store to keep browsing.",
+    "offer_status": {
+      "pending": "Pending",
+      "pending_desc": "The seller has not responded to the offer yet.",
+      "accepted_pending": "Accepted, awaiting confirmation",
+      "accepted_pending_desc": "The offer was accepted. Your purchase confirmation is pending.",
+      "confirmed": "Confirmed",
+      "confirmed_desc": "The offer was confirmed and the purchase was registered.",
+      "rejected": "Rejected",
+      "rejected_desc": "The seller rejected this offer.",
+      "expired": "Expired",
+      "expired_desc": "The offer expired without confirmation."
+    },
+    "state": {
+      "with_date": "On {date}: {text}",
+      "registered_label": "Sale registered",
+      "registered_title": "Purchase registered",
+      "registered_desc": "Arrange payment and delivery directly with the seller.",
+      "pending_label": "Pending",
+      "pending_title": "Agreement pending",
+      "cancelled_label": "Cancelled",
+      "cancelled_title": "The purchase was cancelled",
+      "cancelled_desc": "The purchase was cancelled.",
+      "delivered_label": "Delivered",
+      "delivered_title": "You received your purchase",
+      "delivered_desc": "we confirm you have it.",
+      "shipped_label": "Shipped",
+      "shipped_title": "Your purchase is on its way",
+      "shipped_desc": "it is out for delivery.",
+      "processing_label": "Processing",
+      "processing_title": "We are preparing your purchase",
+      "processing_desc": "we are handling the shipment.",
+      "in_progress": "In progress",
+      "in_progress_desc": "we are still processing your order."
+    }
   },
   "user_profile": {
     "personal_info": "Personal Information",
@@ -1177,7 +1315,26 @@
     "contact_person": "Contact person *",
     "contact_person_placeholder": "Person in charge",
     "contact_email": "Contact email *",
-    "contact_phone": "Contact phone *"
+    "contact_phone": "Contact phone *",
+    "save_changes": "Save changes",
+    "saved": "Details saved",
+    "save_error": "Error saving your details",
+    "load_error": "Error loading profile",
+    "avatar_updated": "Avatar updated",
+    "avatar_error": "Error updating avatar",
+    "avatar_process_error": "An error occurred while processing the image.",
+    "company_intro": "Complete your company details for billing and business contact. Fields marked * are required.",
+    "email_change_hint": "If you change it, we'll ask for your password and you'll need to confirm it from the new email.",
+    "email_change_title": "Change email",
+    "email_change_explain": "To use {email}, enter your current password. We'll send a link to that address and the change won't apply until you confirm it.",
+    "current_password": "Current password",
+    "email_change_confirm": "Send link",
+    "email_change_sent": "We've sent a link to {email}. Your email won't change until you confirm it.",
+    "email_change_pending": "Email change pending: confirm the link we sent to {email}.",
+    "email_change_cancel": "Cancel change",
+    "email_change_cancelled": "Email change cancelled.",
+    "email_change_password_required": "Enter your current password to change your email.",
+    "email_change_password_error": "The current password is incorrect."
   },
   "admin_preview": {
     "admin_preview_mode": "Administrator Preview Mode",
@@ -1221,5 +1378,109 @@
   "publication_edit_form": {
     "required_fields_note": "Fields marked with {asterisk} are required"
   },
-  "date": "Date"
+  "date": "Date",
+  "dropzone": {
+    "only_images": "Only images are allowed (JPG, PNG, GIF or WebP).",
+    "max_files": "Up to {max} images.",
+    "drag_or_tap": "Drag or tap to upload an image",
+    "view": "View",
+    "remove": "Remove",
+    "image": "Image"
+  },
+  "validators": {
+    "required": "This field is required",
+    "email": "Enter a valid email",
+    "password": "Password must be at least 8 characters and include an uppercase letter, a lowercase letter, a number and a special character",
+    "confirmed": "Passwords do not match"
+  },
+  "password_rules": {
+    "personal_data": "Your password must not contain your name or email.",
+    "no_personal_data": "Don't use your name or email in your password."
+  },
+  "auth_errors": {
+    "invalid_credentials": "Incorrect email or password.",
+    "missing_credentials": "Enter your email and password.",
+    "too_many_attempts": "Too many attempts. Try again in {minutes} minutes.",
+    "email_not_verified": "Your account is not activated yet. Check your email for the activation link.",
+    "too_many_registrations": "Too many sign-ups from this connection. Try again later.",
+    "missing_fields": "Required data is missing.",
+    "invalid_email": "The email is not valid.",
+    "first_name_required": "First name is required.",
+    "last_name_required": "Last name is required.",
+    "email_exists": "This email is already registered. Sign in or reset your password if you don't remember it. If the account wasn't activated, you'll receive the activation link again.",
+    "weak_password": "The password does not meet the security requirements.",
+    "registration_failed": "The account could not be created. Please try again.",
+    "registered": "Account created. Check your email to activate it.",
+    "token_required": "The token is missing.",
+    "invalid_token": "The link is invalid or has already been used.",
+    "token_expired": "The link has expired. Request a new one.",
+    "already_verified": "Your account is already active. Please sign in.",
+    "verified": "Email verified. You can now sign in.",
+    "resend_neutral": "If the account exists and is not activated, a new link has been sent.",
+    "resent": "We've sent you a new activation link.",
+    "too_many_requests": "Too many requests. Try again later.",
+    "email_required": "Enter your email.",
+    "reset_sent": "If the email exists, a password reset link has been sent.",
+    "reset_key_failed": "The link could not be generated. Please try again.",
+    "expired_key": "The password reset link has expired. Request a new one.",
+    "invalid_key": "The password reset link is invalid or already used. Request a new one.",
+    "password_reset": "Your password has been reset. You can now sign in.",
+    "rest_cookie_invalid_nonce": "Your session could not be validated. Reload the page and try again.",
+    "password_required": "Enter your current password to change your email.",
+    "incorrect_password": "The current password is incorrect.",
+    "invalid_code": "The verification code is incorrect or has expired.",
+    "update_failed": "The email could not be updated. Please try again."
+  },
+  "verify_email": {
+    "title": "Email verification",
+    "email_change_title": "Email confirmation",
+    "verifying": "Checking the link, please wait...",
+    "success_title": "Email verified!",
+    "success_body": "Your account has been activated. You can now use all Motorlan features.",
+    "already_verified": "Your account was already verified. You can now sign in.",
+    "redirect_countdown": "You'll be redirected to sign in in {seconds} seconds. Use your credentials to log in.",
+    "continue": "Continue",
+    "go_to_login": "Go to sign in now",
+    "go_to_profile": "Go to my profile",
+    "back_to_login": "Back to sign in",
+    "email_changed_title": "Email updated!",
+    "email_changed_body": "From now on, use your new email to sign in and receive Motorlan notifications.",
+    "resent_title": "We've sent you a new link",
+    "resent_body": "Check your inbox (and spam folder) and click the link to activate your account. The link expires in 24 hours.",
+    "help_resend": "You can request a new verification link. If the problem persists, contact support.",
+    "help_login": "Sign in with your email and password: if the account isn't activated, we'll send you a new link automatically.",
+    "request_new_link": "Request a new link",
+    "resend_error": "The link could not be resent.",
+    "invalid_token": "Invalid or expired verification token.",
+    "token_missing": "Verification token not found.",
+    "email_change_invalid": "The email confirmation link is invalid or already used.",
+    "email_change_help": "You can change your email again from your profile to get a new link."
+  },
+  "change_password": {
+    "title": "Change password",
+    "submit": "Change password",
+    "intro": "Choose a strong password you don't use elsewhere.",
+    "new_password": "New password",
+    "confirm_password": "Confirm new password",
+    "check_email_title": "Check your email",
+    "check_email_body": "We've sent a code to your email.",
+    "code": "Verification code",
+    "done_title": "All done!",
+    "success": "Password changed successfully.",
+    "send_code": "Send code",
+    "send_code_error": "Error sending the verification code.",
+    "invalid_code": "The verification code is incorrect or has expired.",
+    "close": "Close",
+    "cancel": "Cancel"
+  },
+  "user_menu": {
+    "profile": "Profile",
+    "role_admin": "Administrator",
+    "role_user": "User",
+    "logout": "Log out"
+  },
+  "favorites": {
+    "remove": "Remove from favourites",
+    "remove_confirm": "Are you sure you want to remove this listing from your favourites?"
+  }
 }

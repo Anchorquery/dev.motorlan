@@ -1,6 +1,8 @@
 ﻿<script setup lang="ts">
-import { useDropZone, useFileDialog, useObjectUrl } from '@vueuse/core'
+import { useDropZone, useFileDialog } from '@vueuse/core'
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { useToast } from '@/composables/useToast'
 
 const props = defineProps({
   modelValue: {
@@ -11,9 +13,17 @@ const props = defineProps({
     type: Boolean,
     default: true,
   },
+  // Máximo de archivos (0 = sin límite). La galería de publicaciones admite 5.
+  max: {
+    type: Number,
+    default: 0,
+  },
 })
 
 const emit = defineEmits(['update:modelValue', 'file-added'])
+
+const { t } = useI18n()
+const { showToast } = useToast()
 
 const dropZoneRef = ref<HTMLDivElement>()
 
@@ -29,66 +39,61 @@ const fileData = computed({
 
 const { open, onChange } = useFileDialog({ accept: 'image/*', multiple: props.multiple })
 
-// function onDrop(DroppedFiles: File[] | null) {
-//   if (!DroppedFiles)
-//     return
+// El diálogo filtra con accept="image/*", pero al arrastrar entraba cualquier archivo
+// (PDF, vídeo...) y acababa guardado como "imagen".
+const addFiles = (incoming: File[]) => {
+  let files = incoming.filter(file => file.type.startsWith('image/'))
+  if (files.length < incoming.length)
+    showToast(t('dropzone.only_images', 'Solo se admiten imágenes (JPG, PNG, GIF o WebP).'), 'error')
 
-//   if (!props.multiple && DroppedFiles.length > 0 && DroppedFiles.length > 1) { // Error en comentario previo, corregido abajo
-//     alert('Only one file is allowed')
-//     return
-//   }
-
-//   const newFiles = DroppedFiles.map(file => ({
-//     file,
-//     url: URL.createObjectURL(file),
-//   }))
-
-//   DroppedFiles.forEach(file => emit('file-added', file))
-
-//   if (props.multiple)
-//     fileData.value = [...fileData.value, ...newFiles]
-//   else
-//     fileData.value = newFiles
-// }
-
-function onDrop(DroppedFiles: File[] | null) {
-  if (!DroppedFiles)
+  if (!files.length)
     return
 
-  if (!props.multiple && DroppedFiles.length > 1) {
-    alert('Only one file is allowed')
-    return
+  if (!props.multiple)
+    files = files.slice(0, 1)
+
+  if (props.multiple && props.max > 0) {
+    const room = Math.max(0, props.max - fileData.value.length)
+    if (files.length > room) {
+      showToast(t('dropzone.max_files', { max: props.max }, `Máximo ${props.max} imágenes.`), 'warning')
+      files = files.slice(0, room)
+    }
+    if (!files.length)
+      return
   }
 
-  const newFiles = DroppedFiles.map(file => ({
+  const newFiles = files.map(file => ({
     file,
     url: URL.createObjectURL(file),
   }))
 
-  DroppedFiles.forEach(file => emit('file-added', file))
+  files.forEach(file => emit('file-added', file))
 
-  if (props.multiple)
+  if (props.multiple) {
     fileData.value = [...fileData.value, ...newFiles]
-  else
+  }
+  else {
+    // Liberar la previsualización anterior al sustituir la imagen
+    ;(fileData.value as FileData[]).forEach(item => {
+      if (item?.url?.startsWith('blob:'))
+        URL.revokeObjectURL(item.url)
+    })
     fileData.value = newFiles
+  }
+}
+
+function onDrop(droppedFiles: File[] | null) {
+  if (!droppedFiles)
+    return
+
+  addFiles(droppedFiles)
 }
 
 onChange((selectedFiles: FileList | null) => {
   if (!selectedFiles)
     return
 
-  const filesArray = Array.from(selectedFiles)
-  const newFiles = filesArray.map((file: File) => ({
-    file,
-    url: URL.createObjectURL(file),
-  }))
-
-  filesArray.forEach(file => emit('file-added', file))
-
-  if (props.multiple)
-    fileData.value = [...fileData.value, ...newFiles]
-  else
-    fileData.value = newFiles
+  addFiles(Array.from(selectedFiles))
 })
 
 useDropZone(dropZoneRef, onDrop)
@@ -133,7 +138,7 @@ defineExpose({
             <VIcon icon="tabler-upload" />
           </IconBtn>
           <p class="text-body-1 text-medium-emphasis text-center mb-0">
-            Arrastra o toca para subir imagen
+            {{ t('dropzone.drag_or_tap', 'Arrastra o toca para subir imagen') }}
           </p>
         </div>
 
@@ -177,7 +182,7 @@ defineExpose({
                           @click.stop="viewImage(item.url)"
                         >
                           <VIcon icon="tabler-eye" />
-                          <VTooltip activator="parent">Ver</VTooltip>
+                          <VTooltip activator="parent">{{ t('dropzone.view', 'Ver') }}</VTooltip>
                         </IconBtn>
                         <IconBtn
                           color="error"
@@ -186,14 +191,14 @@ defineExpose({
                           @click.stop="removeFile(index)"
                         >
                           <VIcon icon="tabler-trash" />
-                          <VTooltip activator="parent">Eliminar</VTooltip>
+                          <VTooltip activator="parent">{{ t('dropzone.remove', 'Eliminar') }}</VTooltip>
                         </IconBtn>
                       </div>
                     </div>
                     
                     <div class="text-center w-100">
                       <div class="text-caption font-weight-medium text-truncate">
-                        {{ item.file?.name || 'Imagen' }}
+                        {{ item.file?.name || t('dropzone.image', 'Imagen') }}
                       </div>
                       <div v-if="item.file?.size" class="text-caption text-medium-emphasis">
                         {{ (item.file.size / 1024).toFixed(1) }} KB

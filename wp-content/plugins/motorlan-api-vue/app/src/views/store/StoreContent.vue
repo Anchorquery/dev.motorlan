@@ -53,7 +53,13 @@ type ApiListResponse<T> = {
 
 const isFiltersDrawerOpen = ref(false)
 
+// Mientras se cargan los filtros desde la URL los watchers no hacen nada: antes el
+// watcher de filtros ponía page = 1, reescribía la URL (se perdía ?page=3) y lanzaba
+// 3 peticiones al abrir un enlace compartido.
+const isHydratingFromUrl = ref(false)
+
 const loadFiltersFromUrl = () => {
+  isHydratingFromUrl.value = true
   const query = route.query
 
   if (query.brand) selectedBrand.value = Number(query.brand)
@@ -92,17 +98,19 @@ const parOptions = computed(() => [
   { title: '>50', value: '50-999999' },
 ])
 
+// Rangos [min, max): el backend ya no cuenta el extremo superior en dos rangos.
+// 1 kW = 1,36 CV (antes "0-100 kW / 0-75 CV" no cuadraba).
 const potenciaOptions = computed(() => [
-  { title: '0-100 kW / 0-75 CV', value: '0-100' },
-  { title: '100-300 kW / 75-135 CV', value: '100-300' },
-  { title: '> 300 kW / > 135 CV', value: '300-999999' },
+  { title: '0-100 kW / 0-136 CV', value: '0-100' },
+  { title: '100-300 kW / 136-408 CV', value: '100-300' },
+  { title: '> 300 kW / > 408 CV', value: '300-999999' },
 ])
 
 const velocidadOptions = computed(() => [
   { title: '0-1.500 rpm', value: '0-1500' },
   { title: '1.500-3.000 rpm', value: '1500-3000' },
   { title: '3.000-5.000 rpm', value: '3000-5000' },
-  { title: 'mayor que 5.000 rpm', value: '5000-999999' },
+  { title: '> 5.000 rpm', value: '5000-999999' },
 ])
 
 const technologyOptions = computed(() => [t('store.technology_options.dc'), t('store.technology_options.ac')])
@@ -204,6 +212,8 @@ watch(
     itemsPerPage,
   ],
   () => {
+    if (isHydratingFromUrl.value)
+      return
     page.value = 1
     syncFiltersToUrl()
     applyFilters()
@@ -212,6 +222,8 @@ watch(
 )
 
 watch(page, () => {
+  if (isHydratingFromUrl.value)
+    return
   syncFiltersToUrl()
   applyFilters()
 })
@@ -223,6 +235,9 @@ watch(display.mdAndUp, value => {
 
 onMounted(async () => {
   loadFiltersFromUrl()
+  // Los watchers (flush 'pre') se ejecutan aquí y salen sin hacer nada
+  await nextTick()
+  isHydratingFromUrl.value = false
 
   try {
     const { data: brandsData, execute: executeBrands } = usePublicApi<any>('/wp-json/motorlan/v1/marcas', { immediate: false }).get().json()
@@ -364,7 +379,7 @@ const search = () => {
               density="comfortable"
               @click="clearAllFilters"
             >
-              Limpiar
+              {{ t('store.filters.clear') }}
             </VBtn>
             <IconBtn variant="text" color="default" @click="isFiltersDrawerOpen = false">
               <VIcon icon="tabler-x" size="20" />
@@ -403,7 +418,7 @@ const search = () => {
             @click="search"
           >
             <VIcon icon="tabler-check" class="me-2" />
-            Ver resultados
+            {{ t('store.filters.see_results', 'Ver resultados') }}
           </VBtn>
         </div>
       </VSheet>

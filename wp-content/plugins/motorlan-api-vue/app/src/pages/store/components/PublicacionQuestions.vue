@@ -32,9 +32,9 @@ const submitQuestion = async () => {
     return
   loading.value = true
   try {
-    await useApi(
+    assertApiOk(await useApi(
       createUrl(`/wp-json/motorlan/v1/publicaciones/${props.publicacionId}/questions`),
-    ).post({ pregunta: newQuestion.value })
+    ).post({ pregunta: newQuestion.value }).json())
     newQuestion.value = ''
     snackbar.value = { show: true, text: t('store.questions.sent_success'), color: 'success' }
     await fetchQuestions()

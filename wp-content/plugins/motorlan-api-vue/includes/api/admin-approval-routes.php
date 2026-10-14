@@ -124,7 +124,7 @@ function motorlan_approve_publication_callback($request) {
     // Permitir que el admin envíe un nombre editado al aprobar
     $params = $request->get_json_params();
     if (!empty($params['brand_name'])) {
-        $pending_brand = strtoupper(sanitize_text_field($params['brand_name']));
+        $pending_brand = motorlan_mb_upper(trim(sanitize_text_field($params['brand_name'])));
     }
 
     if (!empty($pending_brand)) {
@@ -133,10 +133,14 @@ function motorlan_approve_publication_callback($request) {
             $brand_term_id = $existing_term->term_id;
         } else {
             $new_term = wp_insert_term($pending_brand, 'marca');
-            if (is_wp_error($new_term)) {
+            if (is_wp_error($new_term) && $new_term->get_error_code() === 'term_exists') {
+                // get_term_by('name') no encuentra nombres saneados (p. ej. "A&B"): reutilizar el existente
+                $brand_term_id = (int) $new_term->get_error_data();
+            } elseif (is_wp_error($new_term)) {
                 return new WP_Error('brand_create_error', 'Error al crear la marca: ' . $new_term->get_error_message(), ['status' => 500]);
+            } else {
+                $brand_term_id = $new_term['term_id'];
             }
-            $brand_term_id = $new_term['term_id'];
         }
         // Asignar la marca al post
         if (function_exists('update_field')) {
@@ -145,7 +149,17 @@ function motorlan_approve_publication_callback($request) {
         delete_post_meta($post_id, '_pending_brand_name');
     }
 
-    // Regenerar slug y título para reflejar la marca aprobada
+    // Publicar con stock 0 la dejaría "Publicada" pero invisible en la tienda (exige stock >= 1).
+    $current_stock = (int) (function_exists('get_field') ? get_field('stock', $post_id) : get_post_meta($post_id, 'stock', true));
+    if ($current_stock <= 0) {
+        if (function_exists('update_field')) {
+            update_field('stock', 1, $post_id);
+        }
+        update_post_meta($post_id, 'stock', 1);
+    }
+
+    // Regenerar slug y título para reflejar la marca aprobada.
+    // Al pasar a 'publish', WordPress guarda el slug anterior en _wp_old_slug si cambia.
     $new_slug  = motorlan_generate_slug_by_post_id($post_id);
     $new_title = motorlan_format_motor_name($post_id);
 
@@ -171,6 +185,11 @@ function motorlan_approve_publication_callback($request) {
         update_field('publicar_acf', 'publish', $post_id);
     }
     update_post_meta($post_id, 'publicar_acf', 'publish');
+
+    // Aprobada: el dueño podrá reactivarla (pausada/vendida -> publicada) sin nueva revisión.
+    if (function_exists('motorlan_publicacion_mark_approved')) {
+        motorlan_publicacion_mark_approved($post_id);
+    }
 
     // Notificar al usuario
     // Notificar al usuario
@@ -207,7 +226,7 @@ function motorlan_update_pending_brand_callback($request) {
         return new WP_Error('missing_brand_name', 'El nombre de la marca es obligatorio.', ['status' => 400]);
     }
 
-    $new_brand_name = strtoupper(sanitize_text_field($params['brand_name']));
+    $new_brand_name = motorlan_mb_upper(trim(sanitize_text_field($params['brand_name'])));
     update_post_meta($post_id, '_pending_brand_name', $new_brand_name);
 
     return new WP_REST_Response([
@@ -254,6 +273,9 @@ function motorlan_reject_publication_callback($request) {
         update_field('publicar_acf', 'draft', $post_id);
     }
     update_post_meta($post_id, 'publicar_acf', 'draft');
+
+    // Rechazada: volver a publicarla exige una nueva revisión.
+    delete_post_meta($post_id, '_motorlan_approved_at');
 
     // Notificar al usuario con el motivo
     // Notificar al usuario con el motivo

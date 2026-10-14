@@ -181,7 +181,6 @@
   "Preguntas": "Preguntas",
   "Opiniones": "Opiniones",
   "Favoritos": "Favoritos",
-  "Publicaciones": "Publicaciones",
   "Ventas": "Ventas",
   "Perfil": "Perfil",
   "Cuenta": "Cuenta",
@@ -218,7 +217,9 @@
     "new_brand_proposed": "Nueva marca propuesta por el usuario",
     "consult_price": "Consultar precio",
     "edit": "Editar",
-    "preview": "Previsualizar"
+    "preview": "Previsualizar",
+    "brand_updated": "Nombre de marca actualizado",
+    "brand_update_error": "Error al actualizar la marca"
   },
   "store": {
     "par_options": {
@@ -234,8 +235,8 @@
       "range2": "1500 rpm"
     },
     "technology_options": {
-      "dc": "Continua (C.C.)",
-      "ac": "Alterna (C.A.)"
+      "dc": "Directa (DC)",
+      "ac": "Alterna (AC)"
     },
     "order_options": {
       "recents": "Recientes",
@@ -326,7 +327,8 @@
       "select_state": "Seleccionar estado",
       "state_new": "Nuevo",
       "state_used": "Usado",
-      "state_restored": "Reacondicionado"
+      "state_restored": "Reacondicionado",
+      "see_results": "Ver resultados"
     }
   },
   "add_publication": {
@@ -364,12 +366,24 @@
       "subtitle": "Adjunta manuales, especificaciones u otros documentos",
       "doc_name": "Nombre del documento",
       "add_btn": "Añadir documento",
-      "no_docs": "No hay documentos añadidos."
+      "no_docs": "No hay documentos añadidos.",
+      "invalid_type": "Solo se admiten archivos PDF, JPG o PNG.",
+      "file_selected": "Archivo seleccionado",
+      "ready": "Listo"
     },
     "tech_specs_not_motor": "Las especificaciones técnicas solo aplican a motores.",
     "validation": {
       "main_image_required": "La imagen principal es obligatoria",
-      "stock_positive": "El stock debe ser mayor que 0"
+      "stock_positive": "El stock debe ser mayor que 0",
+      "brand_custom_required": "El nombre de la marca es obligatorio",
+      "brand_required": "Selecciona una marca",
+      "power_or_torque": "Indica la potencia o el par nominal",
+      "power_or_torque_hint": "En motores DC indica al menos la potencia o el par nominal.",
+      "positive_number": "Debe ser un número mayor que 0",
+      "price_non_negative": "El precio no puede ser negativo",
+      "stock_integer": "El stock debe ser un número entero",
+      "file_too_big": "\"{name}\" supera el tamaño máximo permitido ({max}).",
+      "total_too_big": "Los archivos superan en total el máximo permitido ({max}). Quita alguna imagen o documento."
     },
     "post_details": {
       "motor_section_title": "Detalles del Motor",
@@ -439,8 +453,8 @@
       "no": "No"
     },
     "power_supply_options": {
-      "dc": "Continua (C.C.)",
-      "ac": "Alterna (C.A.)"
+      "dc": "Directa (DC)",
+      "ac": "Alterna (AC)"
     },
     "name_preview_label": "Vista previa del nombre estandarizado:",
     "reference_chip": "referencia",
@@ -452,7 +466,8 @@
       "additional_documentation": "Documentación Adicional",
       "document_name": "Nombre del Documento",
       "document_name_placeholder": "Manual de usuario",
-      "upload_file": "Subir Archivo"
+      "upload_file": "Subir Archivo",
+      "gallery_limit": "Máximo {max} imágenes"
     },
     "warranty": {
       "add_warranty_title": "Añadir Garantía Motorlan",
@@ -491,8 +506,15 @@
       "login_required": "Debes iniciar sesión para continuar.",
       "fetch_brands_error": "No se pudieron cargar las marcas.",
       "fetch_categories_error": "No se pudieron cargar las categorías.",
-      "fetch_types_error": "No se pudieron cargar los tipos."
-    }
+      "fetch_types_error": "No se pudieron cargar los tipos.",
+      "type_required": "Selecciona el tipo de publicación",
+      "draft_restored": "Hemos recuperado los datos que estabas rellenando. Vuelve a añadir las imágenes y los documentos.",
+      "partial_upload": "Publicación creada, pero algunos archivos no se subieron. Puedes añadirlos editándola.",
+      "created_pending": "Publicación enviada. Quedará visible cuando un administrador la apruebe.",
+      "saved_as_draft": "No se pudo subir la imagen principal: se ha guardado como borrador. Edítala para añadirla y enviarla a revisión."
+    },
+    "step_x_of_y": "Paso {current} de {total}",
+    "leave_confirm": "Tienes una publicación a medias. Si sales se perderán los datos. ¿Quieres salir?"
   },
   "publication_list": {
     "publication": "Publicación",
@@ -532,12 +554,20 @@
       "paused": "Pausado",
       "sold": "Vendido",
       "pending": "En revisión",
-      "unknown": "Desconocido"
+      "unknown": "Desconocido",
+      "trash": "Papelera"
     },
     "delete_selected": "Eliminar Seleccionados",
     "deleting_selected_publications": "Eliminando publicaciones seleccionadas...",
     "delete_selected_dialog_title": "Confirmar Eliminación",
-    "delete_selected_dialog_text": "¿Estás seguro de que quieres eliminar las {count} publicaciones seleccionadas? Esta acción no se puede deshacer."
+    "delete_selected_dialog_text": "¿Estás seguro de que quieres eliminar las {count} publicaciones seleccionadas? Esta acción no se puede deshacer.",
+    "action_error": "No se pudo completar la acción",
+    "duplicate_success": "Copia creada como borrador. Revísala antes de publicarla.",
+    "sent_to_review": "Enviada a revisión. Quedará visible cuando un administrador la apruebe.",
+    "export_error": "No se pudo exportar",
+    "view_publication": "Ver publicación",
+    "edit": "Editar",
+    "delete_irreversible": "Esta acción no se puede deshacer."
   },
   "select_publication_type": {
     "title": "Selecciona el Tipo de Producto",
@@ -612,7 +642,11 @@
     "required_fields_error": "Por favor, rellene todos los campos obligatorios.",
     "save_draft": "Guardar Borrador",
     "status_title": "Estado",
-    "pending_review_warning": "Tu publicación está en revisión y no puede ser editada hasta que sea aprobada o rechazada por un administrador."
+    "pending_review_warning": "Tu publicación está en revisión y no puede ser editada hasta que sea aprobada o rechazada por un administrador.",
+    "partial_upload": "Publicación actualizada, pero algunos archivos no se subieron: {files}",
+    "sent_to_review": "Cambios guardados. La publicación queda en revisión hasta que un administrador la apruebe.",
+    "url_will_change": "La URL se actualizará al guardar",
+    "view_on_web": "Ver en la web"
   },
   "questions": {
     "page_title": "Preguntas de la Publicación",
@@ -694,7 +728,9 @@
     "motor_power": "Potencia",
     "fetch_error": "Error al cargar las ventas.",
     "my_sales": "Mis Ventas",
-    "no_sales_yet": "Aún no has realizado ninguna venta."
+    "no_sales_yet": "Aún no has realizado ninguna venta.",
+    "rate_buyer": "Valorar comprador",
+    "view_buyer_chat": "Ver chat con comprador"
   },
   "login": {
     "welcome": "Acceso a Motorlan",
@@ -741,10 +777,12 @@
     "password_req_upper": "Una letra mayúscula (A-Z)",
     "password_req_lower": "Una letra minúscula (a-z)",
     "password_req_digit": "Un número (0-9)",
-    "password_req_special": "Un carácter especial (!@#$%…)",
+    "password_req_special": "Un carácter especial (!{'@'}#$%…)",
     "must_accept_terms": "Debes aceptar la política de privacidad y los términos.",
     "generic_error": "Ocurrió un error al registrar la cuenta. Inténtalo de nuevo.",
-    "required_fields_alert": "Todos los campos son obligatorios para completar tu registro."
+    "required_fields_alert": "Todos los campos son obligatorios para completar tu registro.",
+    "review_notice": "Revisa que los datos sean correctos antes de crear tu cuenta. Recibirás un email para activarla.",
+    "success_toast": "Usuario registrado con éxito."
   },
   "forgot_password": {
     "title": "¿Olvidaste tu contraseña?",
@@ -753,7 +791,9 @@
     "send_button": "Enviar instrucciones",
     "back_to_login": "Volver al login",
     "success": "Te hemos enviado un correo con instrucciones.",
-    "error": "No se pudo enviar el correo. Intenta de nuevo."
+    "error": "No se pudo enviar el correo. Intenta de nuevo.",
+    "sent_title": "¡Enlace enviado!",
+    "sent_body": "Si el email existe en nuestro sistema, recibirás un enlace para restablecer tu contraseña."
   },
   "reset_password": {
     "title": "Restablecer contraseña",
@@ -765,7 +805,12 @@
     "back_to_login": "Volver al login",
     "success": "Contraseña restablecida correctamente.",
     "mismatch": "Las contraseñas no coinciden.",
-    "error": "No se pudo restablecer la contraseña."
+    "error": "No se pudo restablecer la contraseña.",
+    "invalid_link": "Enlace de restablecimiento inválido. Por favor, solicita uno nuevo.",
+    "success_title": "¡Contraseña actualizada!",
+    "success_body": "Tu contraseña ha sido restablecida correctamente. Ya puedes iniciar sesión.",
+    "request_new_link": "Solicitar un enlace nuevo",
+    "go_to_login": "Ir al login"
   },
   "register_success": {
     "title": "¡Felicidades por registrarte!",
@@ -773,11 +818,17 @@
     "verify_email": "Verifica tu correo electrónico",
     "verify_email_body": "Hemos enviado un enlace de activación a tu bandeja de entrada. Por favor, revísalo y haz clic en el botón para confirmar tu cuenta.",
     "spam_note": "Si no recibes el correo en unos minutos, por favor revisa tu carpeta de spam o correo no deseado.",
-    "back_to_login": "Volver al login"
+    "back_to_login": "Volver al login",
+    "cancel": "Cancelar",
+    "resend_button": "Reenviar enlace",
+    "resend_prompt": "¿No recibiste el correo? Reenviar enlace"
   },
   "publication_slug_page": {
     "not_found_title": "Publicación no encontrada",
-    "not_found_action": "Ir a la tienda"
+    "not_found_action": "Ir a la tienda",
+    "link_expired_title": "Enlace caducado",
+    "link_expired_text": "El enlace del email ha caducado (válido 7 días). Para retomar la conversación, escribe un nuevo mensaje desde el chat del producto usando el mismo correo.",
+    "unavailable": "Este artículo ya no está disponible: se ha vendido o el vendedor lo ha retirado temporalmente."
   },
   "footer": {
     "license": "Licencia",
@@ -818,7 +869,9 @@
   "purchases_opinions": {
     "publication": "Publicación",
     "rating": "Valoración",
-    "comment": "Comentario"
+    "comment": "Comentario",
+    "to_seller": "Valoración al vendedor",
+    "to_buyer": "Valoración al comprador"
   },
   "dashboard_lists": {
     "show": "Mostrar",
@@ -885,7 +938,9 @@
     "delete_dialog_body": "Esta acción eliminará la publicación permanentemente.",
     "cancel": "Cancelar",
     "save": "Guardar",
-    "new_status_label": "Nuevo Estado"
+    "new_status_label": "Nuevo Estado",
+    "delete_error": "Error al eliminar la publicación",
+    "status_error": "Error al cambiar el estado"
   },
   "inquiries": {
     "title": "Interesados",
@@ -893,7 +948,6 @@
     "user": "Usuario",
     "buyer": "Comprador",
     "seller": "Vendedor",
-    "buyer": "Comprador",
     "with_seller": "Chat con el vendedor",
     "with_buyer": "Chat con el comprador",
     "security_note": "Por tu seguridad, no compartas datos de contacto directo.",
@@ -964,7 +1018,8 @@
       "pending": "Pendiente",
       "cancelled": "Cancelado",
       "progress": "En progreso"
-    }
+    },
+    "reply": "Responder"
   },
   "purchases": {
     "title": "Mis Compras",
@@ -1020,7 +1075,10 @@
     "share_whatsapp": "WhatsApp",
     "share_telegram": "Telegram",
     "share_email": "Email",
-    "link_copied": "Enlace copiado"
+    "link_copied": "Enlace copiado",
+    "seller_sales_count": "Ventas: {n}",
+    "seller_reviews_count": "Valoraciones: {n}",
+    "favorite_error": "No se pudo actualizar el favorito. Inténtalo de nuevo."
   },
   "offers_received": {
     "title": "Ofertas Recibidas",
@@ -1093,7 +1151,59 @@
     "published_price": "Precio publicado",
     "accepted_offer": "Oferta aceptada",
     "total_paid": "Total pagado",
-    "payment_delivery_details": "Detalles de pago y entrega"
+    "payment_delivery_details": "Detalles de pago y entrega",
+    "load_error": "Ocurrió un error al consultar la compra.",
+    "seller_data": "Datos del vendedor",
+    "buyer_data": "Datos del comprador",
+    "buyer": "Comprador",
+    "product_fallback": "Producto",
+    "sales_count": "Ventas: {n}",
+    "units": "{n} ud.",
+    "each": "c/u",
+    "mode_offer": "Compra por oferta",
+    "mode_direct": "Compra directa",
+    "breadcrumb": "Compras",
+    "view_product": "Ver producto",
+    "technical_status": "Estado técnico",
+    "rate_title": "¿Qué tal tu experiencia?",
+    "rate_seller_button": "Valorar vendedor",
+    "delivery_text": "Coordina directamente con el vendedor la fecha y el lugar de entrega.",
+    "not_found": "No encontramos la compra",
+    "not_found_hint": "Revisa el enlace o vuelve a la tienda para continuar navegando.",
+    "offer_status": {
+      "pending": "Pendiente",
+      "pending_desc": "El vendedor aún no ha respondido a la oferta.",
+      "accepted_pending": "Aceptada por confirmar",
+      "accepted_pending_desc": "La oferta fue aceptada. Queda pendiente tu confirmación de compra.",
+      "confirmed": "Confirmada",
+      "confirmed_desc": "La oferta se confirmó y se registró la compra.",
+      "rejected": "Rechazada",
+      "rejected_desc": "El vendedor rechazó esta oferta.",
+      "expired": "Expirada",
+      "expired_desc": "La oferta venció sin confirmación."
+    },
+    "state": {
+      "with_date": "El {date}: {text}",
+      "registered_label": "Venta registrada",
+      "registered_title": "Compra registrada",
+      "registered_desc": "Coordina el pago y la entrega directamente con el vendedor.",
+      "pending_label": "Pendiente",
+      "pending_title": "Acuerdo pendiente",
+      "cancelled_label": "Cancelada",
+      "cancelled_title": "La compra se canceló",
+      "cancelled_desc": "La compra fue anulada.",
+      "delivered_label": "Entregado",
+      "delivered_title": "Recibiste la compra",
+      "delivered_desc": "confirmamos que ya la tienes.",
+      "shipped_label": "Enviado",
+      "shipped_title": "Tu compra va en camino",
+      "shipped_desc": "salió a entrega.",
+      "processing_label": "En proceso",
+      "processing_title": "Estamos preparando tu compra",
+      "processing_desc": "estamos gestionando el envío.",
+      "in_progress": "En curso",
+      "in_progress_desc": "seguimos gestionando tu pedido."
+    }
   },
   "user_profile": {
     "personal_info": "Información Personal",
@@ -1115,7 +1225,26 @@
     "contact_person": "Persona de contacto *",
     "contact_person_placeholder": "Nombre del responsable",
     "contact_email": "Email de contacto *",
-    "contact_phone": "Tel. de contacto *"
+    "contact_phone": "Tel. de contacto *",
+    "save_changes": "Guardar cambios",
+    "saved": "Datos guardados correctamente",
+    "save_error": "Error al guardar los datos",
+    "load_error": "Error al cargar el perfil",
+    "avatar_updated": "Avatar actualizado correctamente",
+    "avatar_error": "Error al actualizar el avatar",
+    "avatar_process_error": "Ha ocurrido un error al procesar la imagen.",
+    "company_intro": "Completa los datos de tu empresa para facturación y contacto comercial. Los campos con * son obligatorios.",
+    "email_change_hint": "Si lo cambias, te pediremos tu contraseña y tendrás que confirmarlo desde el nuevo email.",
+    "email_change_title": "Cambiar email",
+    "email_change_explain": "Para usar {email} introduce tu contraseña actual. Te enviaremos un enlace a ese email y el cambio no se aplicará hasta que lo confirmes.",
+    "current_password": "Contraseña actual",
+    "email_change_confirm": "Enviar enlace",
+    "email_change_sent": "Te hemos enviado un enlace a {email}. Tu email no cambiará hasta que lo confirmes.",
+    "email_change_pending": "Cambio de email pendiente: confirma el enlace que hemos enviado a {email}.",
+    "email_change_cancel": "Cancelar cambio",
+    "email_change_cancelled": "Cambio de email cancelado.",
+    "email_change_password_required": "Introduce tu contraseña actual para cambiar el email.",
+    "email_change_password_error": "La contraseña actual no es correcta."
   },
   "admin_preview": {
     "admin_preview_mode": "Modo Previsualización de Administrador",
@@ -1158,5 +1287,194 @@
   },
   "publication_edit_form": {
     "required_fields_note": "Los campos marcados con {asterisk} son obligatorios"
+  },
+  "chat": {
+    "errors": {
+      "forbidden_view": "No tienes permisos para ver estos mensajes.",
+      "not_found": "No pudimos encontrar este chat.",
+      "load": "No se pudieron cargar los mensajes.",
+      "forbidden_send": "No tienes permisos para enviar mensajes en este chat.",
+      "forbidden_send_purchase": "No tienes permisos para enviar mensajes en esta compra.",
+      "send": "No se pudo enviar el mensaje.",
+      "purchase_not_found": "No pudimos encontrar esta compra."
+    },
+    "agreed_amount_prompt": "Importe acordado en € (opcional; vacío = precio publicado)",
+    "product": "Producto",
+    "consult_price": "Consultar precio",
+    "seller": "Vendedor",
+    "buyer": "Comprador",
+    "with_seller": "Chat con el vendedor",
+    "with_buyer": "Chat con el comprador",
+    "security_note": "Por tu seguridad, no compartas datos de contacto directo.",
+    "loading_conversation": "Cargando conversación...",
+    "retry": "Reintentar",
+    "no_messages": "Aún no hay mensajes.",
+    "start_with_seller": "Inicia la conversación con el vendedor.",
+    "start_with_buyer": "Inicia la conversación con el comprador.",
+    "message_placeholder": "Escribe un mensaje...",
+    "message_placeholder_active": "Escribe tu mensaje...",
+    "reply_title": "Responder consulta",
+    "product_inquiry": "Consulta sobre el producto",
+    "inquiry_by_buyer": "Consulta de comprador interesado",
+    "sell": "Vender",
+    "confirm_sale": "¿Confirmas que has vendido este artículo a este usuario? Esto generará una compra y descontará el stock.",
+    "sale_error": "Error al registrar la venta",
+    "sale_success": "Venta registrada correctamente",
+    "unexpected_error": "Ocurrió un error inesperado",
+    "rating_thanks": "¡Gracias por tu valoración!",
+    "inquiry_sent_success": "¡Consulta enviada con éxito!",
+    "inquiry_sent_body": "Hemos enviado tu mensaje al vendedor. Recibirás una copia de la consulta en tu correo electrónico",
+    "follow_up_title": "¿Quieres hacer seguimiento?",
+    "follow_up_body": "Regístrate ahora para guardar tu historial de chats, marcar favoritos y recibir alertas de nuevos productos.",
+    "create_account_free": "Crear mi cuenta gratis",
+    "close_window": "Cerrar ventana",
+    "contact_product_title": "Consulta sobre este producto",
+    "contact_product_body": "Completa tus datos para contactar al vendedor. Recibirás una copia en tu email.",
+    "name_label": "Tu nombre *",
+    "name_placeholder": "Ej. Juan Pérez",
+    "email_label": "Tu e-mail *",
+    "email_placeholder": "ejemplo{'@'}correo.com",
+    "message_label": "Mensaje *",
+    "terms_prefix": "Acepto las ",
+    "terms_connector": " y las ",
+    "terms_of_use": "condiciones de uso",
+    "privacy_policy": "políticas de privacidad",
+    "contact_now": "CONTACTAR AHORA",
+    "chatting_as": "Estás chateando como",
+    "guest": "Invitado",
+    "chatting_as_suffix": "para guardar tu historial.",
+    "register": "Regístrate",
+    "chat_started": "Chat iniciado",
+    "waiting_for_seller": "Espera la respuesta del vendedor.",
+    "write_message": "Escribe tu mensaje...",
+    "visibility_note": "Tu mensaje será visible para la otra parte y quedará registrado en la conversación.",
+    "agreed_amount_invalid": "Importe no válido"
+  },
+  "dropzone": {
+    "only_images": "Solo se admiten imágenes (JPG, PNG, GIF o WebP).",
+    "max_files": "Máximo {max} imágenes.",
+    "drag_or_tap": "Arrastra o toca para subir imagen",
+    "view": "Ver",
+    "remove": "Eliminar",
+    "image": "Imagen"
+  },
+  "validators": {
+    "required": "Este campo es obligatorio",
+    "email": "Introduce un email válido",
+    "password": "La contraseña debe tener al menos 8 caracteres, una mayúscula, una minúscula, un número y un carácter especial",
+    "confirmed": "Las contraseñas no coinciden"
+  },
+  "password_rules": {
+    "personal_data": "La contraseña no debe contener tu nombre ni tu email.",
+    "no_personal_data": "No uses tu nombre ni tu email en la contraseña."
+  },
+  "auth_errors": {
+    "invalid_credentials": "Email o contraseña incorrectos.",
+    "missing_credentials": "Introduce tu email y tu contraseña.",
+    "too_many_attempts": "Demasiados intentos. Inténtalo de nuevo en {minutes} minutos.",
+    "email_not_verified": "Tu cuenta aún no está activada. Revisa tu email: te hemos enviado el enlace de activación.",
+    "too_many_registrations": "Demasiados registros desde esta conexión. Inténtalo más tarde.",
+    "missing_fields": "Faltan datos obligatorios.",
+    "invalid_email": "El email no es válido.",
+    "first_name_required": "El nombre es obligatorio.",
+    "last_name_required": "El apellido es obligatorio.",
+    "email_exists": "Este correo ya está registrado. Inicia sesión o, si no recuerdas la contraseña, restablécela. Si la cuenta no estaba activada, recibirás de nuevo el enlace de activación.",
+    "weak_password": "La contraseña no cumple los requisitos de seguridad.",
+    "registration_failed": "No se pudo crear la cuenta. Inténtalo de nuevo.",
+    "registered": "Usuario registrado con éxito. Revisa tu email para activar tu cuenta.",
+    "token_required": "Falta el token.",
+    "invalid_token": "El enlace no es válido o ya se ha usado.",
+    "token_expired": "El enlace ha caducado. Solicita uno nuevo.",
+    "already_verified": "Tu cuenta ya está activa. Inicia sesión.",
+    "verified": "Email verificado. Ya puedes iniciar sesión.",
+    "resend_neutral": "Si la cuenta existe y no está activada, se ha enviado un nuevo enlace.",
+    "resent": "Te hemos enviado un nuevo enlace de activación.",
+    "too_many_requests": "Demasiadas solicitudes. Inténtalo más tarde.",
+    "email_required": "Indica tu email.",
+    "reset_sent": "Si el email existe, se ha enviado un enlace para restablecer la contraseña.",
+    "reset_key_failed": "No se pudo generar el enlace. Inténtalo de nuevo.",
+    "expired_key": "El enlace para restablecer la contraseña ha caducado. Solicita uno nuevo.",
+    "invalid_key": "El enlace para restablecer la contraseña no es válido o ya se ha usado. Solicita uno nuevo.",
+    "password_reset": "La contraseña se ha restablecido. Ya puedes iniciar sesión.",
+    "rest_cookie_invalid_nonce": "No se pudo validar tu sesión. Recarga la página e inténtalo de nuevo.",
+    "password_required": "Introduce tu contraseña actual para cambiar el email.",
+    "incorrect_password": "La contraseña actual no es correcta.",
+    "invalid_code": "El código de verificación es incorrecto o ha expirado.",
+    "update_failed": "No se pudo actualizar el email. Inténtalo de nuevo."
+  },
+  "verify_email": {
+    "title": "Verificación de email",
+    "email_change_title": "Confirmación de email",
+    "verifying": "Comprobando el enlace, por favor espera...",
+    "success_title": "¡Email verificado!",
+    "success_body": "Tu cuenta ha sido activada con éxito. Ya puedes acceder a todas las funcionalidades de Motorlan.",
+    "already_verified": "Tu cuenta ya estaba verificada. Ya puedes iniciar sesión.",
+    "redirect_countdown": "Serás redirigido al login en {seconds} segundos. Usa tus credenciales para entrar.",
+    "continue": "Continuar",
+    "go_to_login": "Ir al login ahora",
+    "go_to_profile": "Ir a mi perfil",
+    "back_to_login": "Volver al login",
+    "email_changed_title": "¡Email actualizado!",
+    "email_changed_body": "A partir de ahora usa tu nuevo email para iniciar sesión y recibir los avisos de Motorlan.",
+    "resent_title": "Te hemos enviado un nuevo enlace",
+    "resent_body": "Revisa tu correo (también la carpeta de spam) y pulsa el enlace para activar tu cuenta. El enlace caduca en 24 horas.",
+    "help_resend": "Puedes solicitar un nuevo enlace de verificación. Si el problema persiste, contacta con soporte.",
+    "help_login": "Inicia sesión con tu email y contraseña: si la cuenta no está activada, te enviaremos un nuevo enlace automáticamente.",
+    "request_new_link": "Solicitar nuevo enlace",
+    "resend_error": "No se pudo reenviar el enlace.",
+    "invalid_token": "Token de verificación inválido o expirado.",
+    "token_missing": "Token de verificación no encontrado.",
+    "email_change_invalid": "El enlace para confirmar el email no es válido o ya se ha usado.",
+    "email_change_help": "Puedes volver a cambiar el email desde tu perfil para recibir un enlace nuevo."
+  },
+  "change_password": {
+    "title": "Cambiar contraseña",
+    "submit": "Cambiar contraseña",
+    "intro": "Elige una contraseña segura que no uses en otros sitios.",
+    "new_password": "Nueva contraseña",
+    "confirm_password": "Confirmar nueva contraseña",
+    "check_email_title": "Verifica tu correo",
+    "check_email_body": "Hemos enviado un código a tu email.",
+    "code": "Código de verificación",
+    "done_title": "¡Todo listo!",
+    "success": "Contraseña cambiada con éxito.",
+    "send_code": "Enviar código",
+    "send_code_error": "Error al enviar el código de verificación.",
+    "invalid_code": "El código de verificación es incorrecto o ha expirado.",
+    "close": "Cerrar",
+    "cancel": "Cancelar"
+  },
+  "user_menu": {
+    "profile": "Perfil",
+    "role_admin": "Administrador",
+    "role_user": "Usuario",
+    "logout": "Cerrar sesión"
+  },
+  "favorites": {
+    "remove": "Eliminar de favoritos",
+    "remove_confirm": "¿Seguro que quieres quitar esta publicación de tus favoritos?"
+  },
+  "notifications": {
+    "title": "Notificaciones",
+    "new_count": "{count} nuevas",
+    "mark_all_read": "Marcar todas como leídas",
+    "mark_all_unread": "Marcar todas como no leídas",
+    "no_notifications": "No hay notificaciones",
+    "view_all": "Ver todas las notificaciones"
+  },
+  "rating_modal": {
+    "title_seller": "Valora al vendedor",
+    "title_buyer": "Valora al comprador",
+    "experience_with": "¿Cómo fue tu experiencia con {name}?",
+    "experience_default": "¿Cómo fue tu experiencia?",
+    "stars": "{rating} estrellas",
+    "comment_label": "Comentario",
+    "comment_placeholder": "Cuéntanos tu experiencia",
+    "comment_required": "El comentario es obligatorio",
+    "max_chars": "Máximo 1000 caracteres",
+    "cancel": "Cancelar",
+    "submit": "Enviar",
+    "connection_error": "Error de conexión al enviar la valoración",
+    "submit_error": "Error al enviar la valoración"
   }
 }

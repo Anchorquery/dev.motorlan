@@ -1,11 +1,23 @@
 import { isEmpty, isEmptyArray, isNullOrUndefined } from './helpers'
+import { getI18n } from '@/plugins/i18n'
+
+// Texto traducido con respaldo en español (antes los mensajes salían en inglés fijo).
+// Se resuelve en cada validación, así que sigue el idioma activo.
+const vt = (key: string, fallback: string): string => {
+  try {
+    return getI18n().global.t(key, fallback) as string
+  }
+  catch {
+    return fallback
+  }
+}
 
 // 👉 Required Validator
 export const requiredValidator = (value: unknown) => {
   if (isNullOrUndefined(value) || isEmptyArray(value) || value === false)
-    return 'This field is required'
+    return vt('validators.required', 'Este campo es obligatorio')
 
-  return !!String(value).trim().length || 'This field is required'
+  return !!String(value).trim().length || vt('validators.required', 'Este campo es obligatorio')
 }
 
 // 👉 Email Validator
@@ -16,24 +28,26 @@ export const emailValidator = (value: unknown) => {
   const re = /^(?:[^<>()[\]\\.,;:\s@"]+(?:\.[^<>()[\]\\.,;:\s@"]+)*|".+")@(?:\[\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\]|(?:[a-z\-\d]+\.)+[a-z]{2,})$/i
 
   if (Array.isArray(value))
-    return value.every(val => re.test(String(val))) || 'The Email field must be a valid email'
+    return value.every(val => re.test(String(val))) || vt('validators.email', 'Introduce un email válido')
 
-  return re.test(String(value)) || 'The Email field must be a valid email'
+  return re.test(String(value)) || vt('validators.email', 'Introduce un email válido')
 }
 
 // 👉 Password Validator
+// Mismas reglas que el backend (motorlan_validate_password_strength) y el registro:
+// cualquier carácter que no sea letra o número cuenta como especial (antes solo
+// !@#$%&*() y se rechazaban . - _ que el backend sí acepta).
 export const passwordValidator = (password: string) => {
-  const regExp = /(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%&*()]).{8,}/
+  const p = String(password ?? '')
+  const validPassword = p.length >= 8 && /[A-Z]/.test(p) && /[a-z]/.test(p) && /\d/.test(p) && /[^A-Za-z0-9]/.test(p)
 
-  const validPassword = regExp.test(password)
-
-  return validPassword || 'Field must contain at least one uppercase, lowercase, special character and digit with min 8 chars'
+  return validPassword || vt('validators.password', 'La contraseña debe tener al menos 8 caracteres, una mayúscula, una minúscula, un número y un carácter especial')
 }
 
 // 👉 Confirm Password Validator
 export const confirmedValidator = (value: string, target: string) =>
 
-  value === target || 'The Confirm Password field confirmation does not match'
+  value === target || vt('validators.confirmed', 'Las contraseñas no coinciden')
 
 // 👉 Between Validator
 export const betweenValidator = (value: unknown, min: number, max: number) => {

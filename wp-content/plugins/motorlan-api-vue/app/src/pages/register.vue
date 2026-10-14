@@ -2,7 +2,7 @@
 import { ref, computed, watch } from 'vue'
 import { VForm } from 'vuetify/components/VForm'
 import { useI18n } from 'vue-i18n'
-import { useApi } from '@/composables/useApi'
+import { apiErrorMessage, useApi } from '@/composables/useApi'
 import { useToast } from '@/composables/useToast'
 import { emailValidator, requiredValidator } from '@core/utils/validators'
 import { accountUrl } from '@/utils/urls'
@@ -34,6 +34,10 @@ const form = ref<FormState>({
   password_confirm: '',
   privacyPolicies: false,
 })
+
+// Política de privacidad (antes el enlace era javascript:void(0): había que aceptarla
+// sin poder leerla). wpData.privacy_url = get_privacy_policy_url() traducida por WPML.
+const privacyUrl = (window as any)?.wpData?.privacy_url || '/politica-de-privacidad/'
 
 const step = ref(1)
 const isPasswordVisible = ref(false)
@@ -105,6 +109,16 @@ const goNext = async () => {
       errors.value.password_confirm = t('register.passwords_mismatch')
       return
     }
+    // El backend rechaza contraseñas que contienen el nombre o el email: avisar aquí
+    // en lugar de descubrirlo al enviar el paso 3
+    const lowerPass = form.value.password.toLowerCase()
+    const personal = [form.value.first_name.trim(), form.value.email.trim()]
+      .filter(v => v.length >= 3)
+      .map(v => v.toLowerCase())
+    if (personal.some(v => lowerPass.includes(v))) {
+      errors.value.password = t('password_rules.personal_data', 'La contraseña no debe contener tu nombre ni tu email.')
+      return
+    }
     step.value = 3
   }
 }
@@ -130,20 +144,20 @@ const register = async () => {
       username: form.value.email,
       email: form.value.email,
       password: form.value.password,
+      // Idioma de la web: los emails (verificación, avisos) se enviarán en este idioma
+      lang: (window as any)?.wpData?.language || 'es',
     }),
   }).json()
 
-  isSubmitting.value = false
-
   if (error.value) {
+    isSubmitting.value = false
+
     const payload: any = data.value || {}
     const baseMessage = payload.message || t('register.generic_error')
-    const detailedErrors: string[] = Array.isArray(payload.errors) ? payload.errors : []
     const field = payload.field as string | undefined
 
-    const finalMessage = detailedErrors.length
-      ? `${baseMessage} ${detailedErrors.join(' ')}`
-      : baseMessage
+    // Mensaje traducido por `code` + lista de requisitos de contraseña (data.errors)
+    const finalMessage = apiErrorMessage(payload, t('register.generic_error'))
 
     if (field && ['email', 'username', 'password', 'first_name', 'last_name'].includes(field)) {
       const targetField = field === 'username' ? 'email' : field
@@ -176,10 +190,15 @@ const register = async () => {
     }
     try { sessionStorage.setItem('motorlan_register_email', form.value.email) }
     catch {}
-    showToast(payload.message || 'Usuario registrado con éxito.', 'success')
+    // isSubmitting sigue en true hasta la redirección: antes un segundo clic en ese
+    // intervalo volvía a enviar el registro ("ya registrado" bajo un toast de éxito).
+    showToast(apiErrorMessage(payload, t('register.success_toast', 'Usuario registrado con éxito.')), 'success')
     setTimeout(() => {
       window.location.href = accountUrl('register-success')
     }, 1200)
+  }
+  else {
+    isSubmitting.value = false
   }
 }
 </script>
@@ -425,7 +444,7 @@ const register = async () => {
               icon="tabler-info-circle"
             >
               <span class="text-body-2">
-                Revisa que los datos sean correctos antes de crear tu cuenta. Recibirás un email para activarla.
+                {{ t('register.review_notice', 'Revisa que los datos sean correctos antes de crear tu cuenta. Recibirás un email para activarla.') }}
               </span>
             </VAlert>
 
@@ -461,7 +480,9 @@ const register = async () => {
               <VLabel for="privacy-policy" style="opacity: 1;">
                 <span class="me-1 text-medium-emphasis">{{ t('register.agree_to') }}</span>
                 <a
-                  href="javascript:void(0)"
+                  :href="privacyUrl"
+                  target="_blank"
+                  rel="noopener"
                   class="text-primary font-weight-medium text-decoration-none"
                 >{{ t('register.privacy_policy') }}</a>
               </VLabel>

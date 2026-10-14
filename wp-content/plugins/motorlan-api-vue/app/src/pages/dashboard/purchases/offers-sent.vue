@@ -167,10 +167,7 @@ const confirmOffer = async (offerId: number) => {
 
   isConfirmingOffer.value = true
   try {
-    const { data: response, error } = await useApi(`/wp-json/motorlan/v1/offers/${offerId}/confirm`).post().json()
-
-    if (error.value)
-      throw error.value
+    const { data: response } = assertApiOk(await useApi(`/wp-json/motorlan/v1/offers/${offerId}/confirm`).post().json())
 
     const payload = response.value || null
     const updatedOffer = payload?.data || null
@@ -185,8 +182,12 @@ const confirmOffer = async (offerId: number) => {
       router.push(`/dashboard/purchases/${payload.purchase_uuid}`)
 
   }
-  catch (error) {
+  catch (error: any) {
     console.error(error)
+    // Oferta expirada / sin stock: avisar en vez de cerrar en silencio
+    const msg = (error?.data && error.data.message) || error?.message
+    if (msg)
+      alert(msg)
   }
   finally {
     isConfirmingOffer.value = false
@@ -197,7 +198,10 @@ const confirmOffer = async (offerId: number) => {
 
 const withdrawOffer = async (offerId: number) => {
   try {
-    await useApi(`/wp-json/motorlan/v1/offers/${offerId}`).delete().execute()
+    // Una sola ejecución (antes .delete().execute() lanzaba 2 DELETE y recargaba antes de terminar)
+    const req = useApi(`/wp-json/motorlan/v1/offers/${offerId}`, { immediate: false }).delete().json()
+    await req.execute()
+    assertApiOk(req)
     isDetailDialogOpen.value = false
     selectedOffer.value = null
     await fetchOffers()

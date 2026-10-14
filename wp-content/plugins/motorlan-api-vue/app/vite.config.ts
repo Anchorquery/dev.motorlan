@@ -97,12 +97,15 @@ export default ({ mode }) => {
         '@images': fileURLToPath(new URL('./src/assets/images/', import.meta.url)),
         '@styles': fileURLToPath(new URL('./src/assets/styles/', import.meta.url)),
         '@configured-variables': fileURLToPath(new URL('./src/assets/styles/variables/_template.scss', import.meta.url)),
+        // Producción: solo los iconos usados (build:icons); dev: set completo de tabler
+        '@iconify-bundle': fileURLToPath(new URL(mode === 'production' ? './src/plugins/iconify/icons.used.css' : './src/plugins/iconify/icons.css', import.meta.url)),
         '@db': fileURLToPath(new URL('./src/plugins/fake-api/handlers/', import.meta.url)),
         '@api-utils': fileURLToPath(new URL('./src/plugins/fake-api/utils/', import.meta.url)),
       },
     },
-    // Ajustamos la base para que NO busque en la raíz del dominio, sino en la carpeta del plugin.
-    base: '/wp-content/plugins/motorlan-api-vue/app/dist/',
+    // Base en raíz: con inlineDynamicImports no hay chunks dinámicos, así el build
+    // es inmune al nombre real de la carpeta del plugin (motorlan-api-vue, -6, etc.).
+    base: '/',
 
     // 2. Configuración del servidor de desarrollo para solucionar CORS y HMR.
     server: {
@@ -148,9 +151,18 @@ export default ({ mode }) => {
           app: 'src/main.ts',
         },
         output: {
-          entryFileNames: 'assets/[name].js',
-          chunkFileNames: 'assets/[name].js',
-          assetFileNames: 'assets/[name].[ext]',
+          // Nombres estáticos (sin hash) para poder encolarlos en WordPress.
+          entryFileNames: 'js/app.js', // JS principal
+          chunkFileNames: 'js/[name].js', // chunks (no se generan con inlineDynamicImports)
+          assetFileNames: assetInfo => {
+            if (assetInfo.name?.endsWith('.css'))
+              return 'css/style.css' // CSS único con nombre estático
+
+            return 'assets/[name].[ext]'
+          },
+          // CLAVE: todo en un único app.js, sin code-splitting → sin 404 de chunks,
+          // inmune al nombre de carpeta y al despliegue parcial.
+          inlineDynamicImports: true,
         },
       },
     },

@@ -5,7 +5,7 @@ import ProductImage from "@/pages/store/components/ProductImage.vue";
 import ProductDetails from "@/pages/store/components/ProductDetails.vue";
 import PublicacionInfo from "@/pages/store/components/PublicacionInfo.vue";
 import ProductDocs from "@/pages/store/components/ProductDocs.vue";
-import { useApi } from "@/composables/useApi";
+import { assertApiOk, useApi } from "@/composables/useApi";
 import type { Publicacion } from "@/interfaces/publicacion";
 
 import { useToast } from "@/composables/useToast";
@@ -63,17 +63,16 @@ const saveBrandName = async () => {
 
   isBrandSaving.value = true
   try {
-    const { error } = await useApi(`/wp-json/motorlan/v1/admin/update-pending-brand/${publicacion.value.id}`)
+    assertApiOk(await useApi(`/wp-json/motorlan/v1/admin/update-pending-brand/${publicacion.value.id}`)
       .post({ brand_name: editedBrandName.value.trim() })
-      .json()
-    if (error.value) throw error.value
+      .json())
 
-    showToast('Nombre de marca actualizado', 'success')
+    showToast(t('admin_approvals.brand_updated', 'Nombre de marca actualizado'), 'success')
     isEditingBrand.value = false
     await execute()
-  } catch (error) {
+  } catch (error: any) {
     console.error(error)
-    showToast('Error al actualizar la marca', 'error')
+    showToast(error?.message || t('admin_approvals.brand_update_error', 'Error al actualizar la marca'), 'error')
   } finally {
     isBrandSaving.value = false
   }
@@ -94,14 +93,13 @@ const approvePublication = async () => {
   
   isActionLoading.value = true;
   try {
-    const { error } = await useApi(`/wp-json/motorlan/v1/admin/approve-publication/${publicacion.value.id}`).post().json();
-    if (error.value) throw error.value;
+    assertApiOk(await useApi(`/wp-json/motorlan/v1/admin/approve-publication/${publicacion.value.id}`).post().json())
     
     showToast(t('admin_approvals.approve_success', 'Publicación aprobada con éxito'), 'success');
     router.push('/dashboard/admin/approvals');
-  } catch (error) {
+  } catch (error: any) {
     console.error(error);
-    showToast(t('admin_approvals.approve_error', 'Error al aprobar la publicación'), 'error');
+    showToast(error?.message ? `${t('admin_approvals.approve_error', 'Error al aprobar la publicación')}: ${error.message}` : t('admin_approvals.approve_error', 'Error al aprobar la publicación'), 'error');
   } finally {
     isActionLoading.value = false;
   }
@@ -112,18 +110,16 @@ const rejectPublication = async () => {
 
   isActionLoading.value = true;
   try {
-    const { error } = await useApi(`/wp-json/motorlan/v1/admin/reject-publication/${publicacion.value.id}`)
+    assertApiOk(await useApi(`/wp-json/motorlan/v1/admin/reject-publication/${publicacion.value.id}`)
       .post({ reason: rejectReason.value })
-      .json();
-    
-    if (error.value) throw error.value;
+      .json())
     
     showToast(t('admin_approvals.reject_success', 'Publicación rechazada'), 'info');
     isRejectDialogVisible.value = false;
     router.push('/dashboard/admin/approvals');
-  } catch (error) {
+  } catch (error: any) {
     console.error(error);
-    showToast(t('admin_approvals.reject_error', 'Error al rechazar la publicación'), 'error');
+    showToast(error?.message ? `${t('admin_approvals.reject_error', 'Error al rechazar la publicación')}: ${error.message}` : t('admin_approvals.reject_error', 'Error al rechazar la publicación'), 'error');
   } finally {
     isActionLoading.value = false;
   }

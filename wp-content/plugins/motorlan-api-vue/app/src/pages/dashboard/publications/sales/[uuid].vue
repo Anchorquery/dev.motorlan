@@ -6,6 +6,7 @@ import { useApi } from '@/composables/useApi'
 import { formatCurrency } from '@/utils/formatCurrency'
 import type { Publicacion } from '@/interfaces/publicacion'
 import ChatModal from '@/components/ChatModal.vue'
+import RatingModal from '@/components/RatingModal.vue'
 import { useMotorFormatter } from '@/composables/useMotorFormatter'
 
 const route = useRoute()
@@ -35,6 +36,9 @@ watch(saleUuid, newId => {
 })
 
 const sale = computed(() => data.value?.data || null)
+const showRatingModal = ref(false)
+const canRateBuyer = computed(() => Boolean(sale.value && !sale.value.review_done
+  && !['cancelled', 'canceled'].includes(String(sale.value.status || '').toLowerCase())))
 const motor = computed(() => sale.value?.publicacion || sale.value?.motor as Publicacion | null)
 const buyer = computed(() => sale.value?.buyer || null)
 const offer = computed(() => sale.value?.offer || null)
@@ -500,6 +504,18 @@ const resolveBrandName = (value: any): string => {
                   </div>
 
                   <div class="mt-8">
+                    <!-- La valoración al comprador se guardaba en backend pero no había botón -->
+                    <VBtn
+                      v-if="canRateBuyer"
+                      block
+                      color="warning"
+                      variant="tonal"
+                      prepend-icon="tabler-star"
+                      class="mb-3"
+                      @click="showRatingModal = true"
+                    >
+                      {{ t('sales.rate_buyer', 'Valorar comprador') }}
+                    </VBtn>
                     <VBtn
                       block
                       color="primary"
@@ -509,7 +525,7 @@ const resolveBrandName = (value: any): string => {
                       class="rounded-lg shadow-primary font-weight-bold"
                       @click="goToChat"
                     >
-                      Ver chat con comprador
+                      {{ t('sales.view_buyer_chat', 'Ver chat con comprador') }}
                     </VBtn>
                   </div>
                 </VCardText>
@@ -528,6 +544,14 @@ const resolveBrandName = (value: any): string => {
       context-type="sale"
       :publication-title="publicationTitle"
       :publication-image="publicationImage"
+    />
+    <RatingModal
+      v-if="showRatingModal && sale?.uuid"
+      v-model="showRatingModal"
+      :purchase-uuid="sale.uuid"
+      target-role="buyer"
+      :target-name="sale.buyer_name"
+      @success="fetchSale()"
     />
   </div>
 </template>

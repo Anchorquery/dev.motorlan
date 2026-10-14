@@ -13,14 +13,14 @@ if ( ! defined( 'WPINC' ) ) {
 /**
  * Register the migration menu page and enqueue assets on its hook.
  */
-function motorlan_register_migration_menu() {
+function motorlan_register_transfer_publications_menu() {
     $hook = add_menu_page(
-        __( 'Migración motores', 'motorlan-api-vue' ),
-        __( 'Migración motores', 'motorlan-api-vue' ),
+        __( 'Transferir motores', 'motorlan-api-vue' ),
+        __( 'Transferir motores', 'motorlan-api-vue' ),
         'manage_options',
-        'motorlan-migration',
-        'motorlan_render_migration_page',
-        'dashicons-upload',
+        'motorlan-transfer-publications',
+        'motorlan_render_transfer_publications_page',
+        'dashicons-randomize',
         6
     );
 
@@ -29,36 +29,36 @@ function motorlan_register_migration_menu() {
         if ( $hook_suffix !== $hook ) {
             return;
         }
-        motorlan_enqueue_migration_assets();
+        motorlan_enqueue_transfer_publications_assets();
     } );
 }
-add_action( 'admin_menu', 'motorlan_register_migration_menu' );
+add_action( 'admin_menu', 'motorlan_register_transfer_publications_menu' );
 
 /**
  * Enqueue admin scripts/styles for the migration page.
  */
-function motorlan_enqueue_migration_assets() {
-    $css_file = MOTORLAN_API_VUE_PATH . 'assets/css/admin-migration.css';
-    $js_file  = MOTORLAN_API_VUE_PATH . 'assets/js/admin-migration.js';
+function motorlan_enqueue_transfer_publications_assets() {
+    $css_file = MOTORLAN_API_VUE_PATH . 'assets/css/admin-transfer-publications.css';
+    $js_file  = MOTORLAN_API_VUE_PATH . 'assets/js/admin-transfer-publications.js';
 
     wp_enqueue_style(
-        'motorlan-migration-admin',
-        MOTORLAN_API_VUE_URL . 'assets/css/admin-migration.css',
+        'motorlan-transfer-publications-admin',
+        MOTORLAN_API_VUE_URL . 'assets/css/admin-transfer-publications.css',
         [],
         file_exists( $css_file ) ? filemtime( $css_file ) : MOTORLAN_API_VUE_VERSION
     );
 
     wp_enqueue_script(
-        'motorlan-migration-admin',
-        MOTORLAN_API_VUE_URL . 'assets/js/admin-migration.js',
+        'motorlan-transfer-publications-admin',
+        MOTORLAN_API_VUE_URL . 'assets/js/admin-transfer-publications.js',
         [],
         file_exists( $js_file ) ? filemtime( $js_file ) : MOTORLAN_API_VUE_VERSION,
         true
     );
 
     wp_localize_script(
-        'motorlan-migration-admin',
-        'motorlanMigration',
+        'motorlan-transfer-publications-admin',
+        'motorlanTransferPublications',
         [
             'ajaxUrl'     => admin_url( 'admin-ajax.php' ),
             'nonce'       => wp_create_nonce( 'motorlan_migration_action' ),
@@ -74,6 +74,27 @@ function motorlan_enqueue_migration_assets() {
             'strings'     => [
                 'fileRequired' => __( 'Selecciona un fichero CSV.', 'motorlan-api-vue' ),
                 'alreadyRunning' => __( 'Hay una importación en curso. Espera a que termine.', 'motorlan-api-vue' ),
+            ],
+        ]
+    );
+
+    wp_localize_script(
+        'motorlan-transfer-publications-admin',
+        'motorlanTransferPublicationsConfig',
+        [
+            'restNonce' => wp_create_nonce( 'wp_rest' ),
+            'endpoint' => rest_url( 'motorlan/v1/admin/publications/transfer-author' ),
+            'defaults' => [
+                'sourceEmail' => 'daniel@adaki.net',
+                'targetEmail' => 'motorlan@fagorautomation.es',
+            ],
+            'strings' => [
+                'sourceRequired' => __( 'Indica el correo de origen.', 'motorlan-api-vue' ),
+                'targetRequired' => __( 'Indica el correo de destino.', 'motorlan-api-vue' ),
+                'invalidResponse' => __( 'No se pudo procesar la respuesta del servidor.', 'motorlan-api-vue' ),
+                'runSuccess' => __( 'Transferencia completada correctamente.', 'motorlan-api-vue' ),
+                'dryRunSuccess' => __( 'Simulación completada correctamente.', 'motorlan-api-vue' ),
+                'working' => __( 'Procesando...', 'motorlan-api-vue' ),
             ],
         ]
     );
@@ -232,6 +253,63 @@ function motorlan_render_migration_page() {
         console.log('Motorlan Migration: Using wp_localize_script config');
     }
     </script>
+    <?php
+}
+
+/**
+ * Render the transfer admin page.
+ */
+function motorlan_render_transfer_publications_page() {
+    $default_source = 'daniel@adaki.net';
+    $default_target = 'motorlan@fagorautomation.es';
+    ?>
+    <div class="wrap motorlan-transfer-wrap">
+        <div class="motorlan-transfer-hero">
+            <div>
+                <p class="motorlan-transfer-kicker"><?php esc_html_e( 'Transferencia de motores', 'motorlan-api-vue' ); ?></p>
+                <h1><?php esc_html_e( 'Mover motores entre usuarios', 'motorlan-api-vue' ); ?></h1>
+                <p class="motorlan-transfer-subtitle"><?php esc_html_e( 'Simula primero y después ejecuta la reasignación. Solo se modifican los motores del correo de origen.', 'motorlan-api-vue' ); ?></p>
+            </div>
+            <div class="motorlan-transfer-hero__meta">
+                <div class="motorlan-transfer-badge"><?php esc_html_e( 'Admin only', 'motorlan-api-vue' ); ?></div>
+                <div class="motorlan-transfer-badge motorlan-transfer-badge--warning"><?php esc_html_e( 'Irreversible', 'motorlan-api-vue' ); ?></div>
+            </div>
+        </div>
+
+        <div class="motorlan-transfer-grid">
+            <div class="motorlan-transfer-panel">
+                <h2><?php esc_html_e( 'Datos de transferencia', 'motorlan-api-vue' ); ?></h2>
+                <p><?php esc_html_e( 'El sistema busca todas las publicaciones de tipo motor del correo de origen y las reasigna al correo de destino.', 'motorlan-api-vue' ); ?></p>
+
+                <form id="motorlan-transfer-form">
+                    <div class="motorlan-field">
+                        <label for="motorlan-transfer-source"><?php esc_html_e( 'Correo de origen', 'motorlan-api-vue' ); ?></label>
+                        <input type="email" id="motorlan-transfer-source" name="source_email" value="<?php echo esc_attr( $default_source ); ?>" required>
+                    </div>
+
+                    <div class="motorlan-field">
+                        <label for="motorlan-transfer-target"><?php esc_html_e( 'Correo de destino', 'motorlan-api-vue' ); ?></label>
+                        <input type="email" id="motorlan-transfer-target" name="target_email" value="<?php echo esc_attr( $default_target ); ?>" required>
+                    </div>
+
+                    <div class="motorlan-actions">
+                        <button type="button" class="button button-secondary" data-transfer-action="dry-run"><?php esc_html_e( 'Simular', 'motorlan-api-vue' ); ?></button>
+                        <button type="button" class="button button-primary" data-transfer-action="run"><?php esc_html_e( 'Transferir', 'motorlan-api-vue' ); ?></button>
+                    </div>
+
+                    <div id="motorlan-transfer-status" class="motorlan-status" aria-live="polite"></div>
+                </form>
+            </div>
+
+            <div class="motorlan-transfer-panel motorlan-transfer-panel--results">
+                <h2><?php esc_html_e( 'Resultados', 'motorlan-api-vue' ); ?></h2>
+                <p><?php esc_html_e( 'Aquí verás el resumen de la última simulación o ejecución.', 'motorlan-api-vue' ); ?></p>
+                <div id="motorlan-transfer-results" class="motorlan-transfer-results">
+                    <div class="motorlan-transfer-empty"><?php esc_html_e( 'Todavía no hay resultados.', 'motorlan-api-vue' ); ?></div>
+                </div>
+            </div>
+        </div>
+    </div>
     <?php
 }
 
@@ -736,7 +814,8 @@ function motorlan_migration_process_row( array $row ) {
     update_post_meta( $post_id, 'legacy_author_user_id', $author_id );
 
     // Categorías y tipo.
-    motorlan_assign_terms( $post_id, $categories, 'categoria' );
+    // Asignación de "categoria" DESACTIVADA: taxonomía sustituida por "tipo".
+    // motorlan_assign_terms( $post_id, $categories, 'categoria' );
     motorlan_assign_any_term( $post_id, [ 'Motor' ], 'tipo', 'Motor' );
 
     // Marca.

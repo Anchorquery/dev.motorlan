@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useApi } from '@/composables/useApi'
+import { apiErrorMessage, useApi } from '@/composables/useApi'
 import { useToast } from '@/composables/useToast'
 import { emailValidator, requiredValidator } from '@core/utils/validators'
 
@@ -40,11 +40,11 @@ const submitResend = async () => {
   isResending.value = false
 
   if (error.value) {
-    const msg = (data.value as any)?.message || 'No se pudo reenviar el enlace.'
-    showToast(msg, 'error')
+    showToast(apiErrorMessage(data.value, t('verify_email.resend_error', 'No se pudo reenviar el enlace.')), 'error')
     return
   }
-  showToast((data.value as any)?.message || 'Enlace reenviado.', 'success')
+  // Respuesta neutra (no revela si la cuenta existe o ya está activa)
+  showToast(apiErrorMessage(data.value, t('auth_errors.resend_neutral', 'Si la cuenta existe y no está activada, se ha enviado un nuevo enlace.')), 'success')
   showResend.value = false
 }
 </script>
@@ -111,7 +111,7 @@ const submitResend = async () => {
             <VTextField
               v-model="resendEmail"
               :rules="[requiredValidator, emailValidator]"
-              label="Correo electrónico"
+              :label="t('register.email', 'Correo electrónico')"
               type="email"
               variant="outlined"
               density="comfortable"
@@ -124,7 +124,7 @@ const submitResend = async () => {
                 block
                 @click="showResend = false"
               >
-                Cancelar
+                {{ t('register_success.cancel', 'Cancelar') }}
               </VBtn>
               <VBtn
                 color="primary"
@@ -133,7 +133,7 @@ const submitResend = async () => {
                 :disabled="!resendEmail || isResending"
                 @click="submitResend"
               >
-                Reenviar enlace
+                {{ t('register_success.resend_button', 'Reenviar enlace') }}
               </VBtn>
             </div>
           </div>
@@ -144,7 +144,7 @@ const submitResend = async () => {
             class="mb-4"
             @click="showResend = true"
           >
-            ¿No recibiste el correo? Reenviar enlace
+            {{ t('register_success.resend_prompt', '¿No recibiste el correo? Reenviar enlace') }}
           </VBtn>
 
           <VBtn

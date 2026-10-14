@@ -55,19 +55,22 @@ export interface Publicacion {
   }
   marca_name?: string
   status: string
-  categories: { name: string }[]
-  tipo: { name: string }[]
+  tipo: { name: string; slug?: string }[]
   author: {
-    id: number
+    id: number | string
     name: string
     first_name?: string
     last_name?: string
-    nickname?: string
-    user_login?: string
+    // null salvo para el dueño, admin o participantes de una compra
+    nickname?: string | null
+    user_login?: string | null
+    email?: string | null
     avatar?: string
     acf: {
-      calificacion: number
-      ventas: number
+      // null si aún no tiene valoraciones
+      calificacion: number | null
+      valoraciones?: number
+      ventas?: number
     }
   }
 }

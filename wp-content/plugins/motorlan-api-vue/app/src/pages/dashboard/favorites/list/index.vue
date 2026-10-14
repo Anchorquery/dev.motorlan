@@ -2,7 +2,8 @@
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { createUrl } from '@/@core/composable/createUrl'
-import { useApi } from '@/composables/useApi'
+import { assertApiOk, useApi } from '@/composables/useApi'
+import { useToast } from '@/composables/useToast'
 import { useUserStore } from '@/@core/stores/user'
 import { useMotorFormatter } from '@/composables/useMotorFormatter'
 import { storeUrl } from '@/utils/urls'
@@ -10,6 +11,7 @@ import type { Publicacion } from '@/interfaces/publicacion'
 
 const { t } = useI18n()
 const userStore = useUserStore()
+const { showToast } = useToast()
 
 const { formatMotorName } = useMotorFormatter()
 const currentUser = computed(() => userStore.getUser)
@@ -36,7 +38,7 @@ const resolveStatus = (status: string) => {
     publish: { text: t('custom.published'), color: 'success' },
     draft: { text: t('custom.draft'), color: 'secondary' },
     paused: { text: t('custom.paused'), color: 'warning' },
-    sold: { text: t('custom.sold'), color: 'error' },
+    sold: { text: t('publication_list.status_options.sold'), color: 'error' },
   }
 
   return statusMap[status] || { text: t('custom.unknown'), color: 'info' }
@@ -54,7 +56,9 @@ const updateOptions = (options: any) => {
   orderBy.value = options.sortBy[0]?.order
 }
 
-const { data: publicationsData, execute: fetchPublications, isFetching } = useApi<any>(createUrl('/wp-json/motorlan/v1/favorites',
+// /purchases/favorites pagina, busca y filtra por estado (GET /favorites ignoraba los
+// parámetros y no devolvía pagination: "0 de 0" y el buscador no hacía nada)
+const { data: publicationsData, execute: fetchPublications, isFetching } = useApi<any>(createUrl('/wp-json/motorlan/v1/purchases/favorites',
   {
     query: {
       search: searchQuery,
@@ -73,6 +77,12 @@ const totalPublications = computed(() => publicationsData.value?.pagination?.tot
 watch([page, itemsPerPage, sortBy, orderBy, searchQuery, selectedStatus], () => {
   void fetchPublications()
 }, { immediate: true })
+
+// Al buscar o filtrar, volver a la primera página
+watch([searchQuery, selectedStatus], () => {
+  if (page.value !== 1)
+    page.value = 1
+})
 
 const refresh = () => {
   fetchPublications()
@@ -100,15 +110,17 @@ const removeFavorite = async () => {
   
   isDeleting.value = true
   try {
-    const { error } = await useApi(`/wp-json/motorlan/v1/favorites/${(selectedFavorite.value as any).id}`, {
-      method: 'DELETE',
-    })
-    
-    if (!error.value) {
-      // Refrescar la lista después de eliminar
-      refresh()
-    }
-  } finally {
+    const req = useApi(`/wp-json/motorlan/v1/favorites/${(selectedFavorite.value as any).id}`, { immediate: false }).delete().json()
+    await req.execute()
+    assertApiOk(req)
+    // Refrescar la lista después de eliminar
+    refresh()
+  }
+  catch (e) {
+    console.error('Error eliminando favorito', e)
+    showToast(t('product_details.favorite_error', 'No se pudo actualizar el favorito. Inténtalo de nuevo.'), 'error')
+  }
+  finally {
     isDeleting.value = false
     showDeleteConfirm.value = false
     selectedFavorite.value = null
@@ -120,7 +132,7 @@ const removeFavorite = async () => {
   <div>
     <VCard class="motor-card-enhanced overflow-visible">
       <VCardTitle class="pa-6 d-flex align-center justify-space-between flex-wrap gap-4">
-        <span class="text-h5 text-premium-title">{{ t('Favorites') }}</span>
+        <span class="text-h5 text-premium-title">{{ t('dashboard_lists.my_favorites') }}</span>
       </VCardTitle>
 
       <VCardText class="pa-6">
@@ -206,7 +218,7 @@ const removeFavorite = async () => {
 
         <!-- referencia -->
         <template #item.referencia="{ item }">
-          <span class="text-body-1 text-high-emphasis font-weight-medium">{{ (item as any).acf.tipo_o_referencia }}</span>
+          <span class="text-body-1 text-high-emphasis font-weight-medium">{{ (item as any).acf?.tipo_o_referencia || '—' }}</span>
         </template>
 
 
@@ -238,7 +250,7 @@ const removeFavorite = async () => {
                   icon="tabler-eye"
                   size="18"
                 />
-                <VTooltip activator="parent" location="top">{{ t('Ver Publicación') }}</VTooltip>
+                <VTooltip activator="parent" location="top">{{ t('dashboard_lists.view_publication') }}</VTooltip>
               </IconBtn>
 
               <!-- Eliminar de Favoritos -->
@@ -252,7 +264,7 @@ const removeFavorite = async () => {
                   icon="tabler-heart-off"
                   size="18"
                 />
-                <VTooltip activator="parent" location="top">{{ t('Eliminar de Favoritos') }}</VTooltip>
+                <VTooltip activator="parent" location="top">{{ t('favorites.remove', 'Eliminar de favoritos') }}</VTooltip>
               </IconBtn>
             </div>
         </template>
@@ -281,7 +293,7 @@ const removeFavorite = async () => {
       <VCardTitle class="pa-4 d-flex justify-space-between align-center border-b">
         <span class="text-h6 text-premium-title">
           <VIcon icon="tabler-heart-off" class="me-2" color="error" />
-          {{ t('Eliminar de Favoritos') }}
+          {{ t('favorites.remove', 'Eliminar de favoritos') }}
         </span>
         <VBtn icon variant="text" size="small" @click="showDeleteConfirm = false" :disabled="isDeleting">
           <VIcon icon="tabler-x" />
@@ -290,7 +302,7 @@ const removeFavorite = async () => {
       
       <VCardText class="pa-6">
         <p class="text-body-1 mb-0">
-          {{ t('¿Estás seguro que deseas eliminar esta publicación de tus favoritos?') }}
+          {{ t('favorites.remove_confirm', '¿Seguro que quieres quitar esta publicación de tus favoritos?') }}
         </p>
         <p v-if="selectedFavorite" class="text-body-2 text-medium-emphasis mt-2 font-weight-medium">
           "{{ formatMotorName(selectedFavorite as any) || (selectedFavorite as any).title }}"
@@ -304,7 +316,7 @@ const removeFavorite = async () => {
           @click="showDeleteConfirm = false"
           :disabled="isDeleting"
         >
-          {{ t('Cancelar') }}
+          {{ t('publication_list.cancel') }}
         </VBtn>
         <VBtn
           color="error"
@@ -312,7 +324,7 @@ const removeFavorite = async () => {
           :loading="isDeleting"
         >
           <VIcon icon="tabler-heart-off" class="me-1" />
-          {{ t('Eliminar') }}
+          {{ t('publication_list.delete') }}
         </VBtn>
       </VCardActions>
     </VCard>

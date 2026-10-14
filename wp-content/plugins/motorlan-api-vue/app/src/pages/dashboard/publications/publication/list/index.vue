@@ -4,13 +4,15 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import type { ImagenDestacada, Publicacion } from '../../../../../interfaces/publicacion'
-import { useApi } from '@/composables/useApi'
+import { assertApiOk, useApi } from '@/composables/useApi'
+import { useToast } from '@/composables/useToast'
 import { debounce } from '@/utils/debounce'
 import { useUserStore } from '@/@core/stores/user'
 import { useMotorFormatter } from '@/composables/useMotorFormatter'
 import { storeUrl } from '@/utils/urls'
 
 const { t } = useI18n()
+const { showToast } = useToast()
 const router = useRouter()
 const userStore = useUserStore()
 const { formatMotorName } = useMotorFormatter()
@@ -24,7 +26,6 @@ const headers = [
 ]
 
 const selectedStatus = ref()
-const selectedCategory = ref()
 const selectedTipo = ref()
 const searchQuery = ref('')
 const selectedRows = ref([])
@@ -37,7 +38,6 @@ const status = computed(() => [
   { title: t('publication_list.status_options.sold'), value: 'sold' },
 ])
 
-const categories = ref<{ title: string; value: string }[]>([])
 const tipos = ref<{ title: string; value: string }[]>([])
 
 // Data table options
@@ -46,10 +46,18 @@ const page = ref(1)
 const sortBy = ref()
 const orderBy = ref()
 
-// Update data table options
+// Update data table options. Las cabeceras usan claves de la tabla; el backend
+// (my-publications-routes.php) solo entiende estas (antes se enviaban tal cual y se ignoraban).
+const sortKeyMap: Record<string, string> = {
+  publicacion: 'title',
+  referencia: 'tipo_o_referencia',
+  precio: 'price',
+  status: 'post_status',
+}
 const updateOptions = (options: any) => {
-  sortBy.value = options.sortBy[0]?.key
-  orderBy.value = options.sortBy[0]?.order
+  const key = options.sortBy?.[0]?.key
+  sortBy.value = key ? (sortKeyMap[key] ?? undefined) : undefined
+  orderBy.value = options.sortBy?.[0]?.order
 }
 
 const resolveStatus = (statusMsg: string | number) => {
@@ -65,7 +73,7 @@ const resolveStatus = (statusMsg: string | number) => {
   if (statusString === 'paused')
     return { text: t('custom.paused'), color: 'warning' }
   if (statusString === 'sold')
-    return { text: t('custom.sold'), color: 'error' }
+    return { text: t('publication_list.status_options.sold', 'Vendido'), color: 'error' }
   if (statusString === 'private')
     return { text: t('custom.draft'), color: 'secondary' }
   if (statusString === 'future')
@@ -83,8 +91,6 @@ const apiUrl = computed(() => {
   const params = new URLSearchParams()
   if (searchQuery.value)
     params.append('search', searchQuery.value)
-  if (selectedCategory.value)
-    params.append('category', selectedCategory.value)
   if (selectedTipo.value)
     params.append('tipo', selectedTipo.value)
   if (selectedStatus.value)
@@ -110,28 +116,21 @@ const debouncedFetch = debounce(async () => {
   isSearching.value = false
 }, 300)
 
+// Al cambiar búsqueda/filtros/"por página" se vuelve a la página 1 (antes, desde la
+// página 3, un filtro con 1 sola página dejaba la tabla vacía).
 watch(
-  [searchQuery, selectedCategory, selectedTipo, selectedStatus, page, itemsPerPage, sortBy, orderBy],
+  [searchQuery, selectedTipo, selectedStatus, itemsPerPage],
   () => {
-    debouncedFetch()
+    if (page.value !== 1)
+      page.value = 1 // dispara el watch de abajo
+    else
+      debouncedFetch()
   },
   { deep: true },
 )
+watch([page, sortBy, orderBy], () => debouncedFetch())
 
 onMounted(async () => {
-  const fetchCategories = async () => {
-    const { data: categoriesData } = await useApi<any>('/wp-json/motorlan/v1/publicacion-categories').get().json()
-    const cats = Array.isArray(categoriesData.value)
-      ? categoriesData.value
-      : (categoriesData.value?.data ?? [])
-    if (cats && Array.isArray(cats)) {
-      categories.value = cats.map((cat: any) => ({
-        title: cat.name,
-        value: cat.slug,
-      }))
-    }
-  }
-
   const fetchTipos = async () => {
     const { data: tiposData } = await useApi<any>('/wp-json/motorlan/v1/tipos').get().json()
     const tiposArr = Array.isArray(tiposData.value)
@@ -145,7 +144,7 @@ onMounted(async () => {
     }
   }
 
-  await Promise.all([fetchCategories(), fetchTipos()])
+  await Promise.all([fetchTipos()])
   fetchPublicaciones()
 })
 
@@ -183,8 +182,9 @@ const handlePublicacionAction = async (message: string, action: () => Promise<vo
     await action()
     await fetchPublicaciones()
   }
-  catch (error) {
+  catch (error: any) {
     console.error(error)
+    showToast(error?.message || t('publication_list.action_error', 'No se pudo completar la acción'), 'error')
   }
   finally {
     isLoading.value = false
@@ -195,11 +195,14 @@ const handlePublicacionAction = async (message: string, action: () => Promise<vo
 const deleteSelectedPublicaciones = () => {
   isDeleteDialogVisible.value = false
   handlePublicacionAction(t('publication_list.deleting_selected_publications'), async () => {
-    await useApi('/wp-json/motorlan/v1/publicaciones/bulk-delete', {
+    const { data } = assertApiOk(await useApi('/wp-json/motorlan/v1/publicaciones/bulk-delete', {
       method: 'POST',
       body: JSON.stringify({ ids: selectedRows.value }),
-    })
+    }).json())
     selectedRows.value = []
+    // Algunas no se borran si tienen compras asociadas: avisar con el mensaje del backend
+    if ((data.value as any)?.skipped_purchases > 0)
+      showToast((data.value as any).message, 'warning')
   })
 }
 
@@ -210,7 +213,7 @@ const deletePublicacion = () => {
     handlePublicacionAction(t('publication_list.deleting_publication'), async () => {
       if (publicacionToDelete.value === null)
         return
-      await useApi(`/wp-json/motorlan/v1/publicaciones/${publicacionToDelete.value}`, { method: 'DELETE' })
+      assertApiOk(await useApi(`/wp-json/motorlan/v1/publicaciones/${publicacionToDelete.value}`, { method: 'DELETE' }).json())
 
       const index = selectedRows.value.findIndex(row => row === publicacionToDelete.value)
       if (index !== -1)
@@ -228,10 +231,17 @@ const duplicatePublicacion = () => {
     return
 
   isDuplicateDialogVisible.value = false
+  let newUuid = ''
   handlePublicacionAction(t('publication_list.duplicating_publication'), async () => {
     if (publicacionToDuplicate.value === null)
       return
-    await useApi(`/wp-json/motorlan/v1/publicaciones/duplicate/${publicacionToDuplicate.value}`, { method: 'POST' })
+    const { data } = assertApiOk(await useApi(`/wp-json/motorlan/v1/publicaciones/duplicate/${publicacionToDuplicate.value}`, { method: 'POST' }).json())
+    newUuid = (data.value as any)?.uuid || ''
+  }).then(() => {
+    if (!newUuid)
+      return
+    showToast(t('publication_list.duplicate_success', 'Copia creada como borrador. Revísala antes de publicarla.'), 'success')
+    router.push(`/dashboard/publications/publication/edit/${newUuid}`)
   })
 }
 
@@ -249,10 +259,12 @@ const changeStatus = () => {
   }
 
   handlePublicacionAction(messages[status] || t('publication_list.updating_status'), async () => {
-    await useApi(`/wp-json/motorlan/v1/publicaciones/${id}/status`, {
+    const { data } = assertApiOk(await useApi(`/wp-json/motorlan/v1/publicaciones/${id}/status`, {
       method: 'POST',
       body: JSON.stringify({ status }),
-    })
+    }).json())
+    if (status === 'publish' && (data.value as any)?.new_status === 'pending')
+      showToast(t('publication_list.sent_to_review', 'Enviada a revisión. Quedará visible cuando un administrador la apruebe.'), 'info')
   })
 }
 
@@ -301,6 +313,71 @@ const getImageBySize = (image: any, size = 'thumbnail'): string => {
 }
 
 
+// Exporta a CSV las publicaciones que cumplen los filtros actuales (todas las páginas).
+const isExporting = ref(false)
+const exportPublicaciones = async () => {
+  if (isExporting.value)
+    return
+  isExporting.value = true
+  try {
+    const rows: any[] = []
+    let currentPage = 1
+    let totalPages = 1
+    do {
+      const params = new URLSearchParams()
+      if (searchQuery.value) params.append('search', searchQuery.value)
+      if (selectedTipo.value) params.append('tipo', selectedTipo.value)
+      if (selectedStatus.value) params.append('status', selectedStatus.value)
+      params.append('page', String(currentPage))
+      params.append('per_page', '100')
+      const { data } = assertApiOk(await useApi<any>(`/wp-json/motorlan/v1/my-publications?${params.toString()}`).get().json())
+      rows.push(...((data.value as any)?.data || []))
+      totalPages = Number((data.value as any)?.pagination?.totalPages) || 1
+      currentPage++
+    } while (currentPage <= totalPages && currentPage <= 50)
+
+    const csvCell = (v: any) => {
+      const str = v === null || v === undefined ? '' : String(v)
+
+      return /[";\n\r]/.test(str) ? `"${str.replace(/"/g, '""')}"` : str
+    }
+    const header = [
+      'ID',
+      t('publication_list.publication', 'Publicación'),
+      t('publication_list.reference', 'Referencia'),
+      t('add_publication.post_details.brand', 'Marca'),
+      t('publication_list.price', 'Precio'),
+      t('publication_list.status', 'Estado'),
+      'URL',
+    ]
+    const lines = rows.map(item => [
+      item.id,
+      formatMotorName(item) || item.title,
+      item.acf?.tipo_o_referencia,
+      item.acf?.marca?.name,
+      item.acf?.precio_de_venta,
+      resolveStatus(item.status).text,
+      item.status === 'publish' ? item.link : '',
+    ].map(csvCell).join(';'))
+    const csv = `\uFEFF${[header.map(csvCell).join(';'), ...lines].join('\r\n')}`
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }))
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `publicaciones-${new Date().toISOString().slice(0, 10)}.csv`
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    setTimeout(() => URL.revokeObjectURL(url), 1000)
+  }
+  catch (error: any) {
+    console.error(error)
+    showToast(error?.message || t('publication_list.export_error', 'No se pudo exportar'), 'error')
+  }
+  finally {
+    isExporting.value = false
+  }
+}
+
 const canEdit = (item: any) => {
   if (userStore.isAdmin) return true
   // Si está en revisión (pending), y no es admin, no puede editar
@@ -342,21 +419,6 @@ const canEdit = (item: any) => {
             />
           </VCol>
 
-          <!-- 👉 Select Category -->
-          <VCol
-            cols="12"
-            sm="4"
-            md="3"
-          >
-            <AppSelect
-              v-model="selectedCategory"
-              :placeholder="t('Category')"
-              :items="categories"
-              prepend-inner-icon="tabler-category"
-              clearable
-              clear-icon="tabler-x"
-            />
-          </VCol>
           <!-- 👉 Select Tipo -->
           <VCol
             cols="12"
@@ -390,6 +452,8 @@ const canEdit = (item: any) => {
             variant="tonal"
             color="secondary"
             prepend-icon="tabler-upload"
+            :loading="isExporting"
+            @click="exportPublicaciones"
           >
             {{ t('publication_list.export') }}
           </VBtn>
@@ -436,15 +500,6 @@ const canEdit = (item: any) => {
         />
 
         <AppSelect
-          v-model="selectedCategory"
-          :placeholder="t('Category')"
-          :items="categories"
-          prepend-inner-icon="tabler-category"
-          clearable
-          clear-icon="tabler-x"
-        />
-
-        <AppSelect
           v-model="selectedTipo"
           :placeholder="t('Tipo')"
           :items="tipos"
@@ -468,6 +523,8 @@ const canEdit = (item: any) => {
           variant="tonal"
           prepend-icon="tabler-upload"
           block
+          :loading="isExporting"
+          @click="exportPublicaciones"
         >
           {{ t('publication_list.export', 'Exportar') }}
         </VBtn>
@@ -560,7 +617,7 @@ const canEdit = (item: any) => {
               target="_blank"
             >
               <VIcon icon="tabler-eye" size="18" />
-              <VTooltip activator="parent" location="top">{{ t('Ver Publicación') }}</VTooltip>
+              <VTooltip activator="parent" location="top">{{ t('publication_list.view_publication', 'Ver publicación') }}</VTooltip>
             </IconBtn>
 
             <IconBtn 
@@ -571,7 +628,7 @@ const canEdit = (item: any) => {
             >
               <VIcon :icon="canEdit(item) ? 'tabler-pencil' : 'tabler-lock'" size="18" />
               <VTooltip activator="parent" location="top">
-                {{ canEdit(item) ? 'Editar' : t('edit_publication.pending_review_warning') }}
+                {{ canEdit(item) ? t('publication_list.edit', 'Editar') : t('edit_publication.pending_review_warning') }}
               </VTooltip>
             </IconBtn>
 
@@ -718,7 +775,7 @@ const canEdit = (item: any) => {
               </div>
               <div class="publication-mobile-card__price">
                 <span v-if="(item as any).acf?.precio_negociable === 'yes' || (item as any).acf?.precio_negociable === true">
-                  {{ t('publication_list.consult_price', 'Consultar precio') }}
+                  {{ t('publication_list_table.consult_price', 'Consultar precio') }}
                 </span>
                 <span v-else-if="(item as any).acf?.precio_de_venta">
                   {{ (item as any).acf?.precio_de_venta }}€
@@ -740,28 +797,69 @@ const canEdit = (item: any) => {
             </IconBtn>
 
             <IconBtn
-              color="primary"
+              :color="canEdit(item) ? 'primary' : 'warning'"
               variant="tonal"
-              @click="router.push(`/dashboard/publications/publication/edit/${(item as any).uuid}`)"
+              :disabled="!canEdit(item)"
+              @click="canEdit(item) ? router.push(`/dashboard/publications/publication/edit/${(item as any).uuid}`) : null"
             >
-              <VIcon icon="tabler-pencil" />
+              <VIcon :icon="canEdit(item) ? 'tabler-pencil' : 'tabler-lock'" />
             </IconBtn>
 
-            <IconBtn
-              color="secondary"
-              variant="tonal"
-              @click="openDuplicateDialog((item as any).id)"
-            >
-              <VIcon icon="tabler-copy" />
-            </IconBtn>
+            <template v-if="canEdit(item)">
+              <IconBtn
+                color="info"
+                variant="tonal"
+              >
+                <VIcon icon="tabler-switch-horizontal" />
+                <VMenu activator="parent">
+                  <VList density="compact">
+                    <VListItem
+                      v-if="(item as any).status !== 'publish'"
+                      @click="openStatusDialog((item as any).id, 'publish')"
+                    >
+                      <template #prepend>
+                        <VIcon icon="tabler-player-play" color="success" size="18" class="me-2" />
+                      </template>
+                      <VListItemTitle>{{ t('publication_list.publish') }}</VListItemTitle>
+                    </VListItem>
+                    <VListItem
+                      v-if="(item as any).status !== 'paused'"
+                      @click="openStatusDialog((item as any).id, 'paused')"
+                    >
+                      <template #prepend>
+                        <VIcon icon="tabler-player-pause" color="warning" size="18" class="me-2" />
+                      </template>
+                      <VListItemTitle>{{ t('publication_list.pause') }}</VListItemTitle>
+                    </VListItem>
+                    <VListItem
+                      v-if="(item as any).status !== 'draft'"
+                      @click="openStatusDialog((item as any).id, 'draft')"
+                    >
+                      <template #prepend>
+                        <VIcon icon="tabler-file-text" size="18" class="me-2" />
+                      </template>
+                      <VListItemTitle>{{ t('publication_list.move_to_draft') }}</VListItemTitle>
+                    </VListItem>
+                  </VList>
+                </VMenu>
+              </IconBtn>
 
-            <IconBtn
-              color="error"
-              variant="tonal"
-              @click="openDeleteDialog((item as any).id)"
-            >
-              <VIcon icon="tabler-trash" />
-            </IconBtn>
+              <IconBtn
+                color="secondary"
+                variant="tonal"
+                @click="openDuplicateDialog((item as any).id)"
+              >
+                <VIcon icon="tabler-copy" />
+              </IconBtn>
+
+              <IconBtn
+                color="error"
+                variant="tonal"
+                @click="openDeleteDialog((item as any).id)"
+              >
+                <VIcon icon="tabler-trash" />
+              </IconBtn>
+            </template>
           </div>
         </div>
 
@@ -814,7 +912,7 @@ const canEdit = (item: any) => {
               {{ publicacionToDelete === 0 ? t('publication_list.delete_selected_dialog_text', { count: selectedRows.length }) : t('publication_list.delete_dialog_text') }}
             </p>
             <p class="text-caption text-medium-emphasis mt-2">
-              Esta acción no se puede deshacer.
+              {{ t('publication_list.delete_irreversible', 'Esta acción no se puede deshacer.') }}
             </p>
           </div>
         </VCardText>
@@ -1068,7 +1166,7 @@ const canEdit = (item: any) => {
 
   .publication-mobile-card__actions {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(44px, 1fr));
     gap: 0.5rem;
     margin-top: 0.75rem;
   }

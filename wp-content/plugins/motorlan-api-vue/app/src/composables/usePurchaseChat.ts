@@ -1,4 +1,5 @@
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { createUrl } from '@/@core/composable/createUrl'
 import { useApi } from '@/composables/useApi'
 import { usePolling } from '@/composables/usePolling'
@@ -80,6 +81,7 @@ const normalizeMessage = (input: any, fallbackIndex = 0): PurchaseMessage => {
 }
 
 export function usePurchaseChat(uuid: string) {
+  const { t } = useI18n()
   const purchaseData = ref<any>(null)
   const purchaseError = ref<any>(null)
 
@@ -170,6 +172,19 @@ export function usePurchaseChat(uuid: string) {
 
         if (Array.isArray(incoming) && incoming.length)
           applyMessages(incoming, { replace: false })
+      }, {
+        // Backoff sin actividad (3 s → 10 s); vuelve a 3 s al llegar un mensaje
+        minInterval: 3000,
+        maxInterval: 10000,
+        backoffMultiplier: 1.5,
+        // 403/404 permanentes: el polling se detiene; mostrarlo en lugar de "congelarse"
+        onError: (status: number) => {
+          isPollingActive.value = false
+          isLocked.value = true
+          loadError.value = status === 404
+            ? t('chat.errors.purchase_not_found', 'No pudimos encontrar esta compra.')
+            : t('chat.errors.forbidden_view', 'No tienes permisos para ver estos mensajes.')
+        },
       })
     }
 
@@ -215,23 +230,24 @@ export function usePurchaseChat(uuid: string) {
     loadError.value = null
 
     try {
-      const { data, error } = await useApi<any>(createUrl(endpointUrl)).get().json()
+      const { data, error, statusCode } = await useApi<any>(createUrl(endpointUrl)).get().json()
 
       if (error.value) {
-        const status = Number(error.value?.status ?? error.value?.data?.status ?? 0)
+        // El código HTTP está en statusCode (error.value es un Error sin .status)
+        const status = Number(statusCode.value ?? 0)
 
-        if (status === 403) {
-          loadError.value = 'No tienes permisos para ver estos mensajes.'
+        if (status === 403 && data.value?.code !== 'rest_cookie_invalid_nonce') {
+          loadError.value = t('chat.errors.forbidden_view', 'No tienes permisos para ver estos mensajes.')
           isLocked.value = true
           stopPolling()
         }
         else if (status === 404) {
-          loadError.value = 'No pudimos encontrar esta compra.'
+          loadError.value = t('chat.errors.purchase_not_found', 'No pudimos encontrar esta compra.')
           isLocked.value = true
           stopPolling()
         }
         else {
-          loadError.value = 'No se pudieron cargar los mensajes.'
+          loadError.value = t('chat.errors.load', 'No se pudieron cargar los mensajes.')
           isLocked.value = false
         }
 
@@ -263,18 +279,20 @@ export function usePurchaseChat(uuid: string) {
     sendError.value = null
 
     try {
-      const { data, error } = await useApi<any>(createUrl(endpointUrl)).post({ message: trimmed }).json()
+      const { data, error, statusCode } = await useApi<any>(createUrl(endpointUrl)).post({ message: trimmed }).json()
 
       if (error.value) {
-        const status = Number(error.value?.status ?? error.value?.data?.status ?? 0)
+        const status = Number(statusCode.value ?? 0)
+        const isNonce = data.value?.code === 'rest_cookie_invalid_nonce'
 
-        if (status === 403) {
-          sendError.value = 'No tienes permisos para enviar mensajes en esta compra.'
+        if (status === 403 && !isNonce) {
+          sendError.value = t('chat.errors.forbidden_send_purchase', 'No tienes permisos para enviar mensajes en esta compra.')
           isLocked.value = true
           stopPolling()
         }
         else {
-          sendError.value = 'No se pudo enviar el mensaje.'
+          // Motivo real del backend (mensaje demasiado largo, límite 429, sesión renovada...)
+          sendError.value = (data.value && typeof data.value === 'object' && data.value.message) || t('chat.errors.send', 'No se pudo enviar el mensaje.')
         }
 
         return
@@ -283,7 +301,10 @@ export function usePurchaseChat(uuid: string) {
       if (data.value?.data)
         applyMessages([data.value.data], { replace: false })
 
-      handleMeta(data.value?.meta ?? null)
+      // No mover el cursor del polling con la respuesta del POST: los mensajes del otro
+      // participante llegados entre el último poll y este envío se perderían.
+      const { server_timestamp: _ignoredCursor, ...sendMeta } = (data.value?.meta ?? {}) as Record<string, any>
+      handleMeta(sendMeta as any)
       isLocked.value = false
     }
     finally {

@@ -1,10 +1,14 @@
 <script setup lang="ts">
 import { PerfectScrollbar } from 'vue3-perfect-scrollbar'
+import { useI18n } from 'vue-i18n'
 import { useUserStore } from '@/@core/stores/user'
+import { apiFetch } from '@/composables/useApi'
+import { pageUrl } from '@/utils/urls'
 
 const router = useRouter()
 const ability = useAbility()
 const userStore = useUserStore()
+const { t } = useI18n()
 
 // Get user data from store
 const user = computed(() => userStore.getUser)
@@ -12,10 +16,11 @@ const user = computed(() => userStore.getUser)
 const logout = async () => {
   try {
     // Call backend to destroy WordPress session
-    await fetch('/wp-json/motorlan/v1/logout', {
-      method: 'POST',
-      credentials: 'include',
-    })
+    // Sin X-WP-Nonce, WordPress trata la petición como anónima y wp_logout() no
+    // destruía el token de sesión en el servidor (la cookie seguía siendo válida).
+    // apiFetch envía el nonce y, si caducó (pestaña abierta desde ayer), lo renueva y
+    // repite: antes el 403 impedía cerrar sesión (el login volvía al dashboard).
+    await apiFetch('/wp-json/motorlan/v1/logout', { method: 'POST' }, { redirectOnExpired: false })
   }
   catch (e) {
     console.error('Error calling logout endpoint:', e)
@@ -27,9 +32,8 @@ const logout = async () => {
   // Clear abilities
   ability.update([])
 
-  // Redirect to login with full page reload to clear all state
-  const vueBase = (window as any).wpData?.vue_base || '/';
-  window.location.href = `${vueBase}login`
+  // Redirect to login with full page reload to clear all state (URL traducida por WPML)
+  window.location.href = pageUrl('login')
 }
 
 interface ProfileItem {
@@ -42,7 +46,7 @@ interface ProfileItem {
 
 const userProfileList: ProfileItem[] = [
   { type: 'divider' },
-  { type: 'navItem', icon: 'tabler-user', title: 'Profile', to: { name: 'dashboard-user-profile' } },
+  { type: 'navItem', icon: 'tabler-user', title: 'user_menu.profile', to: { name: 'dashboard-user-profile' } },
   { type: 'divider' },
 ]
 </script>
@@ -103,7 +107,7 @@ const userProfileList: ProfileItem[] = [
                 {{ user.display_name }}
               </h6>
               <VListItemSubtitle class="text-capitalize text-disabled">
-                {{ user.isAdmin ? 'Administrador' : 'Usuario' }}
+                {{ user.isAdmin ? t('user_menu.role_admin', 'Administrador') : t('user_menu.role_user', 'Usuario') }}
               </VListItemSubtitle>
             </div>
           </div>
@@ -125,7 +129,7 @@ const userProfileList: ProfileItem[] = [
                 />
               </template>
 
-              <VListItemTitle>{{ item.title }}</VListItemTitle>
+              <VListItemTitle>{{ t(item.title || '', 'Perfil') }}</VListItemTitle>
 
               <template
                 v-if="item.badgeProps"
@@ -153,7 +157,7 @@ const userProfileList: ProfileItem[] = [
               append-icon="tabler-logout"
               @click="logout"
             >
-              Cerrar sesión
+              {{ t('user_menu.logout', 'Cerrar sesión') }}
             </VBtn>
           </div>
         </PerfectScrollbar>

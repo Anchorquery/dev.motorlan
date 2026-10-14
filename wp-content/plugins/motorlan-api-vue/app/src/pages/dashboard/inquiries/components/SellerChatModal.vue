@@ -64,7 +64,8 @@ const groupedMessages = computed(() => {
     return []
   const buckets = new Map<string, any[]>()
   for (const message of items) {
-    const key = message.created_at.slice(0, 10)
+    // Día LOCAL (con slice(0, 10) sobre ISO UTC, 00:00-02:00 caía en el día anterior)
+    const key = new Date(message.created_at).toLocaleDateString('sv-SE')
     if (!buckets.has(key)) buckets.set(key, [])
     buckets.get(key)!.push(message)
   }
@@ -110,15 +111,29 @@ const handleMarkAsSold = async () => {
     return
   }
   
+  // Importe acordado (opcional): sin él se usa el precio publicado; con "Consultar precio"
+  // el backend lo marca como precio de referencia y no se lo muestra al comprador
+  const rawAmount = window.prompt(t('chat.agreed_amount_prompt', 'Importe acordado en € (opcional; vacío = precio publicado)'), '')
+  if (rawAmount === null)
+    return
+  // Formato español: "1.500,50" → 1500.50 (los puntos de miles se quitan)
+  const normalized = String(rawAmount).trim().replace(/[\s€]/g, '').replace(/\.(?=\d{3}(?:\D|$))/g, '').replace(',', '.')
+  const agreed = Number(normalized)
+  if (rawAmount.trim() && !(Number.isFinite(agreed) && agreed > 0)) {
+    alert(t('chat.agreed_amount_invalid', 'Importe no válido'))
+    return
+  }
+
   isMarkingSold.value = true
   try {
     const { data, error } = await useApi<any>(createUrl('/wp-json/motorlan/v1/user/sales/manual')).post({
       product_id: props.productId,
-      room_key: props.roomKey
+      room_key: props.roomKey,
+      ...(rawAmount.trim() && Number.isFinite(agreed) && agreed > 0 ? { amount: agreed } : {}),
     }).json()
 
     if (error.value) {
-      alert(error.value.value?.message || error.value.data?.message || t('chat.sale_error'))
+      alert((data.value && typeof data.value === 'object' && data.value.message) || t('chat.sale_error'))
       return
     }
 
@@ -172,6 +187,8 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   chat.stopPolling()
+  // Marcar como leídos también los mensajes llegados con el modal abierto
+  void markRead()
 })
 </script>
 
@@ -237,7 +254,7 @@ onBeforeUnmount(() => {
       <!-- Security Alert -->
       <div class="bg-primary-lighten-5 px-4 py-2 d-flex align-center gap-3 text-caption text-primary">
         <VIcon icon="tabler-shield-lock" size="16" color="primary" />
-        <span>Por tu seguridad, no compartas datos de contacto directo.</span>
+        <span>{{ t('chat.security_note') }}</span>
       </div>
 
       <!-- Chat Body -->
@@ -257,7 +274,7 @@ onBeforeUnmount(() => {
               size="40"
               width="3"
             />
-            <span class="text-caption">Cargando conversación...</span>
+            <span class="text-caption">{{ t('chat.loading_conversation') }}</span>
           </div>
 
           <!-- Error -->
@@ -277,7 +294,7 @@ onBeforeUnmount(() => {
                 class="ms-2"
                 @click="handleRetryMessages"
               >
-                Reintentar
+                {{ t('chat.retry') }}
               </VBtn>
             </div>
           </VAlert>
@@ -292,10 +309,10 @@ onBeforeUnmount(() => {
             </div>
             <div class="text-center">
               <p class="text-body-2 font-weight-medium mb-1 text-high-emphasis">
-                Sin mensajes previos
+                {{ t('chat.no_messages') }}
               </p>
               <p class="text-caption">
-                Inicia la conversación respondiendo al interesado.
+                {{ t('chat.start_with_buyer') }}
               </p>
             </div>
           </div>
@@ -375,7 +392,18 @@ onBeforeUnmount(() => {
       </VCardText>
       
       <!-- Composer -->
-      <VCardActions class="composer bg-surface py-3 px-4 border-t">
+      <VCardActions class="composer bg-surface py-3 px-4 border-t flex-wrap">
+        <VAlert
+          v-if="sendError"
+          type="error"
+          variant="tonal"
+          class="mb-3 w-100"
+          closable
+          density="compact"
+          @click:close="chat.sendError.value = null"
+        >
+          {{ sendError }}
+        </VAlert>
         <div class="d-flex align-end w-100 gap-2">
           <VTextarea
             v-model="messageText"
@@ -413,7 +441,7 @@ onBeforeUnmount(() => {
         v-model="showRatingModal"
         :purchase-uuid="lastSaleUuid"
         target-role="buyer"
-        :target-name="chat.messages.value?.find(m => !m.is_current_user)?.display_name || 'Comprador'"
+        :target-name="chat.messages.value?.find(m => !m.is_current_user)?.display_name || t('chat.buyer')"
         @success="handleRatingSuccess"
       />
     </VCard>

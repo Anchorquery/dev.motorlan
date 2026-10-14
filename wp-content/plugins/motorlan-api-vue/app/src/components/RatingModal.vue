@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useApi } from '@/composables/useApi'
+import { assertApiOk, useApi } from '@/composables/useApi'
 import { createUrl } from '@/@core/composable/createUrl'
 
 const props = defineProps<{
@@ -30,23 +30,23 @@ const submitReview = async () => {
   error.value = null
 
   try {
-    const { response, error: apiError } = await useApi<any>(createUrl('/wp-json/motorlan/v1/reviews')).post({
+    // assertApiOk lanza con el mensaje del backend (p. ej. 409 "Ya has valorado esta
+    // compra"); antes se leía apiError.value.value?.message, siempre undefined.
+    assertApiOk(await useApi<any>(createUrl('/wp-json/motorlan/v1/reviews')).post({
       purchase_uuid: props.purchaseUuid,
       rating: rating.value,
       comment: comment.value,
       target_role: props.targetRole
-    }).json()
-
-    if (apiError.value) {
-      error.value = apiError.value.value?.message || apiError.value.data?.message || t('rating_modal.submit_error')
-      return
-    }
+    }).json())
 
     emit('success')
     emit('update:modelValue', false)
-  } catch (e) {
+  } catch (e: any) {
     console.error(e)
-    error.value = t('rating_modal.connection_error')
+    if (e?.data?.message)
+      error.value = e.data.message
+    else
+      error.value = e?.status ? t('rating_modal.submit_error') : t('rating_modal.connection_error')
   } finally {
     isLoading.value = false
   }

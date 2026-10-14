@@ -63,7 +63,8 @@ const groupedMessages = computed(() => {
   if (!items.length) return []
   const buckets = new Map<string, any[]>()
   for (const message of items) {
-    const key = message.created_at.slice(0, 10)
+    // Día LOCAL (con slice(0, 10) sobre ISO UTC, 00:00-02:00 caía en el día anterior)
+    const key = new Date(message.created_at).toLocaleDateString('sv-SE')
     if (!buckets.has(key)) buckets.set(key, [])
     buckets.get(key)!.push(message)
   }
@@ -123,6 +124,8 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   chat.stopPolling()
+  // Marcar como leídos también los mensajes llegados con el modal abierto
+  void markRead()
 })
 </script>
 
@@ -315,7 +318,7 @@ onBeforeUnmount(() => {
       </VCardText>
       
       <!-- Composer -->
-      <VCardActions class="composer bg-surface py-3 px-4 border-t">
+      <VCardActions class="composer bg-surface py-3 px-4 border-t flex-wrap">
         <VAlert
           v-if="sendError"
           type="error"

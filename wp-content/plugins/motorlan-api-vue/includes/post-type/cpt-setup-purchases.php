@@ -32,18 +32,18 @@ function motorlan_register_compra_cpt() {
 
     $args = array(
         'labels'             => $labels,
-        'public'             => true,
-        'publicly_queryable' => true,
+        'public'             => false, // privado: datos de compradores/ofertas (antes listables sin login)
+        'publicly_queryable' => false,
         'show_ui'            => true,
         'show_in_menu'       => true,
-        'query_var'          => true,
+        'query_var'          => false,
         'rewrite'            => array( 'slug' => 'compra' ),
         'capability_type'    => 'post',
-        'has_archive'        => true,
+        'has_archive'        => false,
         'hierarchical'       => false,
         'menu_position'      => 6,
         'supports'           => array( 'title', 'editor', 'custom-fields' ),
-        'show_in_rest'       => true,
+        'show_in_rest'       => false, // la app usa rutas propias motorlan/v1
     );
 
     register_post_type( 'compra', $args );
@@ -73,18 +73,18 @@ function motorlan_register_pregunta_cpt() {
 
     $args = array(
         'labels'             => $labels,
-        'public'             => true,
-        'publicly_queryable' => true,
+        'public'             => false, // privado: datos de compradores/ofertas (antes listables sin login)
+        'publicly_queryable' => false,
         'show_ui'            => true,
         'show_in_menu'       => true,
-        'query_var'          => true,
+        'query_var'          => false,
         'rewrite'            => array( 'slug' => 'pregunta' ),
         'capability_type'    => 'post',
-        'has_archive'        => true,
+        'has_archive'        => false,
         'hierarchical'       => false,
         'menu_position'      => 7,
         'supports'           => array( 'title', 'editor', 'custom-fields' ),
-        'show_in_rest'       => true,
+        'show_in_rest'       => false, // la app usa rutas propias motorlan/v1
     );
 
     register_post_type( 'pregunta', $args );
@@ -114,18 +114,18 @@ function motorlan_register_opinion_cpt() {
 
     $args = array(
         'labels'             => $labels,
-        'public'             => true,
-        'publicly_queryable' => true,
+        'public'             => false, // privado: datos de compradores/ofertas (antes listables sin login)
+        'publicly_queryable' => false,
         'show_ui'            => true,
         'show_in_menu'       => true,
-        'query_var'          => true,
+        'query_var'          => false,
         'rewrite'            => array( 'slug' => 'opinion' ),
         'capability_type'    => 'post',
-        'has_archive'        => true,
+        'has_archive'        => false,
         'hierarchical'       => false,
         'menu_position'      => 8,
         'supports'           => array( 'title', 'editor', 'custom-fields' ),
-        'show_in_rest'       => true,
+        'show_in_rest'       => false, // la app usa rutas propias motorlan/v1
     );
 
     register_post_type( 'opinion', $args );
@@ -154,18 +154,18 @@ function motorlan_register_oferta_cpt() {
 
     $args = array(
         'labels'             => $labels,
-        'public'             => true,
-        'publicly_queryable' => true,
+        'public'             => false, // privado: datos de compradores/ofertas (antes listables sin login)
+        'publicly_queryable' => false,
         'show_ui'            => false, // Hidden because we use a custom Admin Page (admin-offers-setup.php)
         'show_in_menu'       => false,
-        'query_var'          => true,
+        'query_var'          => false,
         'rewrite'            => array( 'slug' => 'oferta' ),
         'capability_type'    => 'post',
-        'has_archive'        => true,
+        'has_archive'        => false,
         'hierarchical'       => false,
         'menu_position'      => 9,
         'supports'           => array( 'title', 'editor', 'custom-fields' ),
-        'show_in_rest'       => true,
+        'show_in_rest'       => false, // la app usa rutas propias motorlan/v1
     );
 
     register_post_type( 'oferta', $args );

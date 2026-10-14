@@ -4,7 +4,9 @@ const router = useRouter()
 
 const tabs = [
   { title: 'Compras', to: { name: 'dashboard-purchases-purchases' } },
-  { title: 'Preguntas', to: { name: 'dashboard-purchases-questions' } },
+  // 'Preguntas' DESACTIVADO: las rutas /questions están desactivadas en el backend
+  // (sustituidas por el chat "Interesados"), igual que en el menú lateral.
+  // { title: 'Preguntas', to: { name: 'dashboard-purchases-questions' } },
   { title: 'Opiniones', to: { name: 'dashboard-purchases-opinions' } },
   { title: 'Favoritos', to: { name: 'dashboard-purchases-favorites' } },
 ]

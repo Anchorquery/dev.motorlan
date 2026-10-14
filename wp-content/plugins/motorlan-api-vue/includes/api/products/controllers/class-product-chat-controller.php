@@ -32,6 +32,11 @@ if ( ! class_exists( 'Motorlan_Product_Chat_Controller' ) ) {
                                 'validate_callback' => array( $this, 'validate_timestamp' ),
                                 'description'       => __( 'UTC timestamp for incremental polling.', 'motorlan-api-vue' ),
                             ),
+                            // Token firmado de la sala de invitado (ver room_token())
+                            'room_token' => array(
+                                'type'     => 'string',
+                                'required' => false,
+                            ),
                         ),
                     ),
                     array(
@@ -57,7 +62,30 @@ if ( ! class_exists( 'Motorlan_Product_Chat_Controller' ) ) {
                                 'required' => false,
                                 'sanitize_callback' => 'sanitize_email',
                             ),
+                            'room_token' => array(
+                                'type'     => 'string',
+                                'required' => false,
+                            ),
+                            // Honeypot del formulario de invitado: un humano nunca lo rellena
+                            'website' => array(
+                                'type'     => 'string',
+                                'required' => false,
+                            ),
                         ),
+                    ),
+                )
+            );
+
+            // Reclama los chats de invitado (mismo email VERIFICADO) para el usuario actual.
+            // Cubre los inicios de sesión que no pasan por wp_login (p. ej. wp_set_auth_cookie).
+            register_rest_route(
+                $this->namespace,
+                '/buyer/claim-guest-chats',
+                array(
+                    array(
+                        'methods'             => WP_REST_Server::CREATABLE,
+                        'callback'            => array( $this, 'claim_guest_chats' ),
+                        'permission_callback' => 'motorlan_is_user_authenticated',
                     ),
                 )
             );
@@ -174,7 +202,150 @@ if ( ! class_exists( 'Motorlan_Product_Chat_Controller' ) ) {
                 'room_key'    => $data['rk'],
                 'guest_email' => $data['ge'],
                 'product_id'  => (int) $data['pid'],
+                // El enlace del email es la prueba de identidad del invitado: con él
+                // se entrega el token de la sala (sin él, la sala ya no es accesible)
+                'room_token'  => self::is_guest_room( $data['rk'] ) ? self::room_token( $data['rk'] ) : null,
             ), 200 );
+        }
+
+        /**
+         * Token firmado de una sala de invitado.
+         *
+         * Antes bastaba con conocer la clave de la sala; el vendedor la ve en su bandeja
+         * y, con el id de invitado global por navegador, podía deducir las salas del mismo
+         * invitado con OTROS vendedores (leerlas y escribir suplantándolo).
+         *
+         * @param string $room_key Clave de la sala.
+         * @return string
+         */
+        public static function room_token( $room_key ) {
+            return substr( hash_hmac( 'sha256', 'room|' . (string) $room_key, wp_salt( 'auth' ) ), 0, 32 );
+        }
+
+        /**
+         * ¿La sala es de invitado (id de visitante no numérico)?
+         *
+         * @param string $room_key Clave de la sala.
+         * @return bool
+         */
+        public static function is_guest_room( $room_key ) {
+            return (bool) preg_match( '/^pub-\d+-viewer-(.+)$/', (string) $room_key, $m ) && ! is_numeric( $m[1] );
+        }
+
+        /**
+         * Formato válido de clave de sala (también limita la longitud: la columna es VARCHAR(191)).
+         *
+         * @param string $room_key Clave de la sala.
+         * @return bool
+         */
+        protected function is_valid_room_key( $room_key ) {
+            return (bool) preg_match( '/^pub-\d{1,20}-viewer-[A-Za-z0-9_-]{1,100}$/', (string) $room_key );
+        }
+
+        /**
+         * ¿Tiene la sala algún mensaje?
+         *
+         * @param string $room_key Clave de la sala.
+         * @return bool
+         */
+        protected function room_has_messages( $room_key ) {
+            global $wpdb;
+            if ( ! $this->ensure_table_exists() ) return false;
+            $table = $this->get_table_name();
+            return (bool) $wpdb->get_var( $wpdb->prepare( "SELECT 1 FROM {$table} WHERE room_key = %s LIMIT 1", $room_key ) );
+        }
+
+        /**
+         * ¿El usuario participa como comprador en la sala (sala de invitado reclamada)?
+         *
+         * @param string $room_key Clave de la sala.
+         * @param int    $user_id  Usuario.
+         * @return bool
+         */
+        protected function user_is_room_viewer( $room_key, $user_id ) {
+            if ( ! $user_id ) return false;
+            global $wpdb;
+            if ( ! $this->ensure_table_exists() ) return false;
+            $table = $this->get_table_name();
+            return (bool) $wpdb->get_var( $wpdb->prepare(
+                "SELECT 1 FROM {$table} WHERE room_key = %s AND user_id = %d AND sender_role = 'viewer' LIMIT 1",
+                $room_key,
+                $user_id
+            ) );
+        }
+
+        /**
+         * Usuario registrado que reclamó una sala de invitado (0 si nadie).
+         *
+         * @param string $room_key Clave de la sala.
+         * @return int
+         */
+        protected function get_room_claimed_user_id( $room_key ) {
+            global $wpdb;
+            $table = $this->get_table_name();
+            return (int) $wpdb->get_var( $wpdb->prepare(
+                "SELECT user_id FROM {$table} WHERE room_key = %s AND sender_role = 'viewer' AND user_id > 0 ORDER BY id DESC LIMIT 1",
+                $room_key
+            ) );
+        }
+
+        /**
+         * Reclama para el usuario actual los mensajes de invitado enviados con su email,
+         * solo si ese email está verificado (o es un usuario antiguo sin la marca).
+         *
+         * @param WP_REST_Request $request Petición.
+         * @return WP_REST_Response|WP_Error
+         */
+        public function claim_guest_chats( WP_REST_Request $request ) {
+            $user = wp_get_current_user();
+            if ( ! $user || ! $user->ID ) {
+                return new WP_Error( 'rest_not_logged_in', __( 'Debes iniciar sesión.', 'motorlan-api-vue' ), array( 'status' => 401 ) );
+            }
+
+            $claimed = $this->ensure_table_exists() ? self::claim_for_user( $user ) : 0;
+
+            return new WP_REST_Response( array( 'claimed' => $claimed ), 200 );
+        }
+
+        /**
+         * Asigna al usuario las salas de invitado iniciadas con su email.
+         *
+         * Solo con el email verificado ('1') o en usuarios antiguos sin la marca
+         * _motorlan_email_verified: si no, registrarse con el email de otro permitiría
+         * quedarse con sus conversaciones. Reclama la SALA entera (los mensajes
+         * siguientes del invitado se guardaban sin guest_email y quedaban huérfanos).
+         * También lo puede usar motorlan_claim_guest_chats_on_login().
+         *
+         * @param WP_User $user Usuario.
+         * @return int Filas reclamadas.
+         */
+        public static function claim_for_user( $user ) {
+            if ( ! $user instanceof WP_User || ! $user->ID || empty( $user->user_email ) ) return 0;
+
+            $has_flag = metadata_exists( 'user', $user->ID, '_motorlan_email_verified' );
+            if ( $has_flag && '1' !== (string) get_user_meta( $user->ID, '_motorlan_email_verified', true ) ) return 0;
+
+            global $wpdb;
+            $table = $wpdb->prefix . 'motorlan_product_messages';
+
+            // Se llama en wp_login: sin la tabla (instalación nueva) el error de wpdb se
+            // imprimía delante del JSON de /login con WP_DEBUG_DISPLAY
+            if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $table ) ) ) !== $table ) return 0;
+
+            // SELECT barato primero (índice guest_email): casi nunca hay nada que reclamar
+            $rooms = $wpdb->get_col( $wpdb->prepare(
+                "SELECT DISTINCT room_key FROM {$table} WHERE user_id = 0 AND guest_email = %s LIMIT 200",
+                $user->user_email
+            ) );
+            if ( empty( $rooms ) ) return 0;
+
+            $placeholders = implode( ',', array_fill( 0, count( $rooms ), '%s' ) );
+            $sql = $wpdb->prepare(
+                "UPDATE {$table} SET user_id = %d WHERE user_id = 0 AND sender_role = 'viewer' AND room_key IN ({$placeholders})",
+                array_merge( array( (int) $user->ID ), $rooms )
+            );
+
+            return (int) $wpdb->query( $sql );
         }
 
         protected function get_table_name() {
@@ -196,15 +367,20 @@ if ( ! class_exists( 'Motorlan_Product_Chat_Controller' ) ) {
         }
 
         protected function ensure_table_exists() {
-            if ( function_exists( 'motorlan_run_migrations' ) ) {
+            static $checked = null;
+            if ( null !== $checked ) return $checked;
+
+            // Migraciones (SHOW TABLES/COLUMNS) como mucho cada 12 h, no en cada poll del chat
+            if ( function_exists( 'motorlan_run_migrations' ) && ! get_transient( 'motorlan_chat_migrations_checked_v2' ) ) {
                 motorlan_run_migrations();
+                set_transient( 'motorlan_chat_migrations_checked_v2', 1, 12 * HOUR_IN_SECONDS );
             }
-            if ( $this->table_exists() ) return true;
+            if ( $this->table_exists() ) return $checked = true;
             if ( function_exists( 'motorlan_create_product_messages_table' ) ) {
                 motorlan_create_product_messages_table();
-                return $this->table_exists();
+                return $checked = $this->table_exists();
             }
-            return false;
+            return $checked = false;
         }
 
         protected function ensure_reads_table_exists() {
@@ -302,18 +478,24 @@ if ( ! class_exists( 'Motorlan_Product_Chat_Controller' ) ) {
             return $post && (int) $post->post_author === (int) $user_id;
         }
 
-        protected function user_can_access_room( $product_id, $room_key, $user_id ) {
+        protected function user_can_access_room( $product_id, $room_key, $user_id, $room_token = '' ) {
             list( $key_pid, $viewer_id ) = $this->parse_room_key( $room_key );
             if ( empty( $room_key ) ) return ( $this->is_user_product_author( $product_id, $user_id ) );
             if ( (int) $key_pid !== (int) $product_id ) return false;
             if ( $this->is_user_product_author( $product_id, $user_id ) ) return true;
             if ( ! empty( $viewer_id ) && ! is_numeric( $viewer_id ) ) {
-                // If it's a UUID/string based room, allow access if they have the key.
-                // These are inherently secret for guest sessions.
-                return true;
+                // Sala de invitado: ya NO basta con conocer la clave (el vendedor la ve y,
+                // con el id global antiguo, podía deducir las salas del invitado con otros
+                // vendedores). Hace falta el token firmado que se entrega al crear la sala
+                // y en el enlace del email, o haber reclamado la sala con el email verificado.
+                $room_token = (string) $room_token;
+                if ( '' !== $room_token && hash_equals( self::room_token( $room_key ), $room_token ) ) return true;
+                if ( $user_id && $this->user_is_room_viewer( $room_key, $user_id ) ) return true;
+                // Sala nueva (aún sin mensajes): se permite el primer envío; el POST devuelve el token
+                return ! $this->room_has_messages( $room_key );
             }
             if ( $user_id && (string) $user_id === (string) $viewer_id ) return true;
-            
+
             return false;
         }
 
@@ -328,8 +510,12 @@ if ( ! class_exists( 'Motorlan_Product_Chat_Controller' ) ) {
             $where = 'WHERE product_id = %d AND room_key = %s';
             $params = array( $product_id, $room_key );
             if ( $since_timestamp ) {
-                $where .= ' AND created_at > %s';
-                $params[] = $this->normalize_datetime_for_storage( $since_timestamp );
+                // >= (no >): created_at tiene resolución de 1 s y un mensaje insertado en el
+                // mismo segundo que el poll anterior se perdía. Además, margen de 5 s: el
+                // created_at se fija en PHP antes del INSERT y un mensaje confirmado después
+                // del poll quedaba por detrás del cursor. El frontend deduplica por id.
+                $where .= ' AND created_at >= %s';
+                $params[] = gmdate( 'Y-m-d H:i:s', strtotime( $this->normalize_datetime_for_storage( $since_timestamp ) . ' UTC' ) - 5 );
             }
             $sql = $wpdb->prepare( "SELECT * FROM {$table} {$where} ORDER BY created_at ASC, id ASC", $params );
             $rows = $wpdb->get_results( $sql );
@@ -360,16 +546,41 @@ if ( ! class_exists( 'Motorlan_Product_Chat_Controller' ) ) {
             $table = $this->get_reads_table_name();
             if ( ! $this->ensure_reads_table_exists() ) return false;
             $now = gmdate( 'Y-m-d H:i:s' );
+            $fields  = array( 'last_read_at' => $now, 'updated_at' => $now );
+            $formats = array( '%s', '%s' );
+            // Último id leído: con solo last_read_at (resolución 1 s) un mensaje insertado en
+            // el mismo segundo en que se marcaba la sala como leída no contaba nunca como no leído
+            if ( $this->reads_have_last_read_id() ) {
+                $fields['last_read_id'] = (int) $wpdb->get_var( $wpdb->prepare(
+                    "SELECT MAX(id) FROM {$this->get_table_name()} WHERE product_id = %d AND room_key = %s",
+                    $product_id, $room_key
+                ) );
+                $formats[] = '%d';
+            }
             $exists = $wpdb->get_var( $wpdb->prepare(
                 "SELECT COUNT(*) FROM {$table} WHERE user_id = %d AND product_id = %d AND room_key = %s",
                 $user_id, $product_id, $room_key
             ) );
             if ( $exists ) {
-                $wpdb->update( $table, array( 'last_read_at' => $now, 'updated_at' => $now ), array( 'user_id' => $user_id, 'product_id' => $product_id, 'room_key' => $room_key ), array( '%s', '%s' ), array( '%d', '%d', '%s' ) );
+                $wpdb->update( $table, $fields, array( 'user_id' => $user_id, 'product_id' => $product_id, 'room_key' => $room_key ), $formats, array( '%d', '%d', '%s' ) );
             } else {
-                $wpdb->insert( $table, array( 'user_id' => $user_id, 'product_id' => $product_id, 'room_key' => $room_key, 'last_read_at' => $now, 'updated_at' => $now ), array( '%d','%d','%s','%s','%s' ) );
+                $wpdb->insert(
+                    $table,
+                    array_merge( array( 'user_id' => $user_id, 'product_id' => $product_id, 'room_key' => $room_key ), $fields ),
+                    array_merge( array( '%d', '%d', '%s' ), $formats )
+                );
             }
             return true;
+        }
+
+        /**
+         * ¿Existe ya la columna last_read_id? (la añade motorlan_migrate_product_messages_v1_2;
+         * hasta entonces se sigue usando solo last_read_at).
+         *
+         * @return bool
+         */
+        protected function reads_have_last_read_id() {
+            return '1' === (string) get_option( 'motorlan_room_reads_last_read_id', '' );
         }
 
         protected function get_unread_count( $product_id, $room_key, $user_id ) {
@@ -410,8 +621,7 @@ if ( ! class_exists( 'Motorlan_Product_Chat_Controller' ) ) {
                 error_log( 'Motorlan Chat DB Error: ' . $wpdb->last_error );
                 return new WP_Error( 'db_error', __( 'No se pudo guardar el mensaje.', 'motorlan-api-vue' ), array( 'status' => 500 ) );
             }
-            
-            error_log( 'Motorlan Chat: Persisted msg ' . $key . ' in room ' . $room_key );
+            // (Sin error_log por mensaje: llenaba el log con las claves de sala)
 
             $row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$table} WHERE message_key = %s", $key ) );
             return $row;
@@ -430,7 +640,13 @@ if ( ! class_exists( 'Motorlan_Product_Chat_Controller' ) ) {
                 $user = get_user_by( 'id', $user_id );
                 if ( $user ) $display = $user->display_name;
             }
-            if ( ! $avatar && $user_id ) $avatar = get_avatar_url( $user_id );
+            if ( 'viewer' === $role ) {
+                // Sin Gravatar del comprador/invitado: la URL es el hash MD5 de su email y
+                // permitía cotejar emails conocidos. El front pinta sus iniciales.
+                $avatar = '';
+            } elseif ( ! $avatar && $user_id ) {
+                $avatar = get_avatar_url( $user_id );
+            }
 
             return array(
                 'id'              => $id ?: uniqid( 'msg_', true ),
@@ -458,40 +674,29 @@ if ( ! class_exists( 'Motorlan_Product_Chat_Controller' ) ) {
         list( $current_user_id, $display_name, $avatar ) = $this->current_user_info();
         $guest_em        = sanitize_email( (string) $request->get_param( 'guest_email' ) );
         $is_real_guest   = ! is_user_logged_in();
+        // SEGURIDAD: no se amplía el acceso por un guest_email sin verificar (permitía leer
+        // y escribir en salas ajenas, o listar todas las salas con el email del vendedor/admin).
+        // Los invitados usan salas con id no numérico (secreto); las numéricas exigen login.
         $access_user_id  = $current_user_id;
 
-        if ( ! $current_user_id && ! empty( $guest_em ) ) {
-            $user_by_email = get_user_by( 'email', $guest_em );
-            if ( $user_by_email ) {
-                // Use promoted id only for access check; keep current_user_id at 0 for guests
-                $access_user_id = (int) $user_by_email->ID;
-            }
-        }
-
-        if ( ! $this->user_can_access_room( $product_id, $room_key, $access_user_id ) ) {
+        $room_token = sanitize_text_field( (string) $request->get_param( 'room_token' ) );
+        if ( ! $this->user_can_access_room( $product_id, $room_key, $access_user_id, $room_token ) ) {
             return new WP_Error( 'forbidden', __( 'No tienes permisos para ver estos mensajes.', 'motorlan-api-vue' ), array( 'status' => 403 ) );
         }
 
         $since = $request->get_param( 'since_timestamp' );
         $since = $since ? $this->normalize_datetime_for_storage( $since ) : null;
 
-        // 1. Cache Check (Fast Path - Bypass Rate Limiter)
-        $cache_key = 'motorlan_chat_' . $product_id . '_' . md5( $room_key . '_' . ( $since ?? 'all' ) . '_' . $current_user_id );
-        
-        // Verificar validez contra última actualización de la sala
-        $room_update_key = 'motorlan_chat_room_updated_' . md5($room_key);
-        $last_update = get_transient($room_update_key);
-        $cached_response = get_transient( $cache_key );
-        
-        if ( false !== $cached_response && is_array( $cached_response ) ) {
-             return new WP_REST_Response( $cached_response, 200 );
-        }
+        // Sin caché por transient: la clave dependía del since de cada poll (nunca se
+        // reutilizaba), escribía 2 filas en wp_options por poll y la carga inicial podía
+        // servir mensajes con hasta 10 s de retraso. La consulta usa índice y es barata.
 
-        // 2. Rate limiting (Missing Cache, protect DB)
+        // Rate limiting (Missing Cache, protect DB)
         if ( class_exists( 'Motorlan_Rate_Limiter' ) ) {
             $user_identifier = Motorlan_Rate_Limiter::get_user_identifier();
             // 200 solicitudes cada 60 segundos
-            $rate_check = Motorlan_Rate_Limiter::check( 'product_messages_get', $user_identifier, 200, 60 );
+            // Por usuario/IP y sala: con IP compartida (NAT) varios invitados no se bloquean entre sí
+            $rate_check = Motorlan_Rate_Limiter::check( 'product_messages_get', $user_identifier . '_' . md5( (string) $room_key ), 200, 60 );
             
             if ( is_wp_error( $rate_check ) ) {
                 Motorlan_Rate_Limiter::send_rate_limit_headers( $rate_check );
@@ -499,13 +704,15 @@ if ( ! class_exists( 'Motorlan_Product_Chat_Controller' ) ) {
             }
         }
 
+        // Marca de tiempo ANTES de consultar: si se toma después, un mensaje insertado
+        // entre la consulta y la marca quedaba fuera del siguiente poll para siempre.
+        $server_ts = gmdate( 'Y-m-d H:i:s' );
+
         $table_ready = $this->ensure_table_exists();
         $messages = array();
         if ( $table_ready ) {
             $messages = $this->get_messages_from_table( $product_id, $room_key, $since, $current_user_id );
         }
-
-        $server_ts = gmdate( 'Y-m-d H:i:s' );
 
         $response_data = array(
             'data' => $messages,
@@ -515,9 +722,6 @@ if ( ! class_exists( 'Motorlan_Product_Chat_Controller' ) ) {
                 'server_timestamp'=> $server_ts,
             ),
         );
-
-        // Guardar en cache por 10 segundos
-        set_transient( $cache_key, $response_data, 10 );
 
         return new WP_REST_Response( $response_data, 200 );
     }
@@ -546,57 +750,110 @@ if ( ! class_exists( 'Motorlan_Product_Chat_Controller' ) ) {
         $product    = $this->get_product( $product_id );
         if ( is_wp_error( $product ) ) return $product;
 
-        $message   = sanitize_textarea_field( (string) $request->get_param( 'message' ) );
-        $room_key  = trim( (string) $request->get_param( 'room_key' ) );
-        $viewer_nm = sanitize_text_field( (string) $request->get_param( 'viewer_name' ) );
-        $guest_em  = sanitize_email( (string) $request->get_param( 'guest_email' ) );
+        $message    = sanitize_textarea_field( (string) $request->get_param( 'message' ) );
+        $room_key   = sanitize_text_field( (string) $request->get_param( 'room_key' ) );
+        // display_name es VARCHAR(191): un nombre más largo hacía fallar el INSERT (500)
+        $viewer_nm  = mb_substr( sanitize_text_field( (string) $request->get_param( 'viewer_name' ) ), 0, 100 );
+        $guest_em   = sanitize_email( (string) $request->get_param( 'guest_email' ) );
+        $room_token = sanitize_text_field( (string) $request->get_param( 'room_token' ) );
 
         if ( '' === $message ) {
-            error_log( 'Motorlan Chat: Empty message received for product ' . $product_id );
             return new WP_Error( 'no_message', __( 'Debes escribir un mensaje.', 'motorlan-api-vue' ), array( 'status' => 400 ) );
         }
 
-        // Invalidar cache de esta sala al crear mensaje nuevo
-        $this->invalidate_room_cache( $product_id, $room_key );
+        // Sin tope, un mensaje de decenas de KB se guardaba, se enviaba entero por email y
+        // se pintaba en la bandeja (el chat de compra ya limitaba a 1000)
+        if ( mb_strlen( $message ) > 2000 ) {
+            return new WP_Error( 'message_too_long', __( 'El mensaje es demasiado largo.', 'motorlan-api-vue' ), array( 'status' => 400 ) );
+        }
 
-        error_log( 'Motorlan Chat: Creating message. Product: ' . $product_id . ' | Room: ' . $room_key . ' | Guest Email: ' . $guest_em );
+        // Clave de sala con formato y longitud válidos (room_key es VARCHAR(191): una clave
+        // más larga fallaba o se truncaba y el mensaje acababa en otra sala)
+        if ( ! $this->is_valid_room_key( $room_key ) ) {
+            return new WP_Error( 'invalid_room', __( 'La sala no es válida.', 'motorlan-api-vue' ), array( 'status' => 400 ) );
+        }
+
+        // Honeypot del formulario de invitado
+        if ( '' !== trim( (string) $request->get_param( 'website' ) ) ) {
+            return new WP_Error( 'invalid_request', __( 'No se pudo enviar el mensaje.', 'motorlan-api-vue' ), array( 'status' => 400 ) );
+        }
 
             $was_guest_request = ! is_user_logged_in();
             list( $current_user_id, $display_name, $avatar ) = $this->current_user_info();
+            // SEGURIDAD: no se amplía el acceso por un guest_email sin verificar (permitía leer
+            // y escribir en salas ajenas, o listar todas las salas con el email del vendedor/admin).
+            // Los invitados usan salas con id no numérico (secreto); las numéricas exigen login.
             $access_user_id = $current_user_id;
-
-            if ( ! $current_user_id && ! empty( $guest_em ) ) {
-                $user_by_email = get_user_by( 'email', $guest_em );
-                if ( $user_by_email ) {
-                    $access_user_id = (int) $user_by_email->ID;
-                    if ( ! $display_name ) $display_name = $user_by_email->display_name;
-                    if ( ! $avatar )       $avatar      = get_avatar_url( $access_user_id );
-                    // Keep $current_user_id = 0 for guest storage — preserves guest identity in chat
-                }
-            }
 
             if ( ! $display_name && $viewer_nm ) $display_name = $viewer_nm;
 
-            if ( ! $this->user_can_access_room( $product_id, $room_key, $access_user_id ) ) {
+            if ( ! $this->user_can_access_room( $product_id, $room_key, $access_user_id, $room_token ) ) {
                 return new WP_Error( 'forbidden', __( 'No tienes permisos para enviar mensajes.', 'motorlan-api-vue' ), array( 'status' => 403 ) );
             }
 
             // Use $current_user_id (0 for guest) so unauthenticated requests never become 'seller' even if email matches author
             $sender_role = $this->compute_sender_role( $product_id, $current_user_id, $room_key );
 
+            // Publicación en la papelera o borrador automático: solo su autor puede escribir
+            if ( 'seller' !== $sender_role && in_array( $product->post_status, array( 'trash', 'auto-draft' ), true ) ) {
+                return new WP_Error( 'not_found', __( 'Publicación no encontrada.', 'motorlan-api-vue' ), array( 'status' => 404 ) );
+            }
+
             $table_ready = $this->ensure_table_exists();
             if ( ! $table_ready ) {
                 return new WP_Error( 'server_error', __( 'El chat no está disponible.', 'motorlan-api-vue' ), array( 'status' => 500 ) );
             }
 
+            // Sala nueva de invitado: límite por producto y por IP. Cada room_key nueva era una
+            // conversación nueva y un script anónimo podía inundar de avisos al vendedor.
+            $is_new_room = ! $this->room_has_messages( $room_key );
+            if ( $was_guest_request && $is_new_room && class_exists( 'Motorlan_Rate_Limiter' ) ) {
+                $room_limits = array(
+                    Motorlan_Rate_Limiter::check( 'guest_room_create', 'p' . $product_id, 30, HOUR_IN_SECONDS ),
+                    // 30/h por IP: con 10 un comprador que consultaba 11 motores, o una oficina con NAT, recibía 429
+                    Motorlan_Rate_Limiter::check( 'guest_room_create_ip', Motorlan_Rate_Limiter::get_user_identifier(), 30, HOUR_IN_SECONDS ),
+                );
+                foreach ( $room_limits as $room_limit ) {
+                    if ( is_wp_error( $room_limit ) ) {
+                        Motorlan_Rate_Limiter::send_rate_limit_headers( $room_limit );
+                        return $room_limit;
+                    }
+                }
+            }
+
+            // ¿Primer mensaje de este email en la sala? (la copia por email solo se manda una vez)
+            $is_first_guest_message = false;
+            if ( $was_guest_request && ! empty( $guest_em ) ) {
+                global $wpdb;
+                $msg_table = $this->get_table_name();
+                $is_first_guest_message = 0 === (int) $wpdb->get_var( $wpdb->prepare(
+                    "SELECT COUNT(*) FROM {$msg_table} WHERE room_key = %s AND guest_email = %s",
+                    $room_key,
+                    $guest_em
+                ) );
+            }
+
             $row = $this->persist_message( $product_id, $room_key, $message, $current_user_id, $sender_role, $display_name, $avatar, $guest_em );
             if ( is_wp_error( $row ) ) return $row;
+
+            // Idioma del invitado: los emails de respuesta del vendedor salían en el idioma
+            // de la petición del vendedor, no en el del invitado
+            if ( $was_guest_request && 'seller' !== $sender_role && ! empty( $guest_em ) ) {
+                set_transient( 'motorlan_guest_locale_' . md5( $room_key ), determine_locale(), 90 * DAY_IN_SECONDS );
+            }
 
             // Mark as read immediately for the sender so it doesn't count as unread for themselves
             $this->set_last_read_now( $current_user_id, $product_id, $room_key );
 
             // Send copy to guest sender (if request came in unauthenticated with email)
-            if ( $was_guest_request && ! empty( $guest_em ) && $sender_role !== 'seller' ) {
+            // Solo en el primer mensaje de la sala y como mucho 3 copias por email y hora:
+            // antes se enviaba en cada mensaje a cualquier email indicado por un anónimo, y
+            // rotando room_key se podía seguir usando como relay de spam.
+            $copy_allowed = $is_first_guest_message;
+            if ( $copy_allowed && class_exists( 'Motorlan_Rate_Limiter' ) ) {
+                $copy_allowed = ! is_wp_error( Motorlan_Rate_Limiter::check( 'guest_message_copy', 'email_' . md5( strtolower( $guest_em ) ), 3, HOUR_IN_SECONDS ) );
+            }
+            if ( $copy_allowed && $sender_role !== 'seller' ) {
                 $product_title = function_exists( 'motorlan_format_motor_name' ) ? motorlan_format_motor_name( $product_id ) : get_the_title( $product_id );
                 $post_for_copy = get_post( $product_id );
                 $seller_name   = '';
@@ -609,7 +866,7 @@ if ( ! class_exists( 'Motorlan_Product_Chat_Controller' ) ) {
                         $seller_name = $full !== '' ? $full : $seller->display_name;
                     }
                 }
-                do_action( 'motorlan_send_guest_message_copy', $guest_em, $message, $product_title, $seller_name, $product_id );
+                do_action( 'motorlan_send_guest_message_copy', $guest_em, $message, $product_title, $seller_name, $product_id, $room_key );
             }
 
             // Notification Logic
@@ -626,7 +883,13 @@ if ( ! class_exists( 'Motorlan_Product_Chat_Controller' ) ) {
                 
                 $buyer_id = is_numeric( $viewer_id ) ? (int) $viewer_id : 0;
                 $buyer_email = '';
-                
+
+                if ( ! $buyer_id ) {
+                    // Sala de invitado ya reclamada por un usuario (claim con email verificado):
+                    // avisarle en la web y no solo por email con el enlace de invitado
+                    $buyer_id = $this->get_room_claimed_user_id( $room_key );
+                }
+
                 if ( ! $buyer_id ) {
                     // It's a guest. Find their email from the FIRST message of the room if not already in $row
                     global $wpdb;
@@ -643,14 +906,31 @@ if ( ! class_exists( 'Motorlan_Product_Chat_Controller' ) ) {
             $response_message                    = $this->format_message( $row, $current_user_id );
             $response_message['is_current_user'] = true;
 
+            $meta = array(
+                'current_user_id' => $current_user_id ?: null,
+                'viewer_role'     => $sender_role,
+                'server_timestamp'=> gmdate( 'Y-m-d H:i:s' ),
+            );
+            // El invitado guarda este token para volver a leer/escribir en su sala
+            if ( 'seller' !== $sender_role && self::is_guest_room( $room_key ) ) {
+                $meta['room_token'] = self::room_token( $room_key );
+            }
+
             return new WP_REST_Response( array(
                 'data' => $response_message,
-                'meta' => array(
-                    'current_user_id' => $current_user_id ?: null,
-                    'viewer_role'     => $sender_role,
-                    'server_timestamp'=> gmdate( 'Y-m-d H:i:s' ),
-                ),
+                'meta' => $meta,
             ), 201 );
+        }
+
+        /**
+         * Idioma con el que escribió el invitado de una sala (vacío si no se conoce).
+         *
+         * @param string $room_key Clave de la sala.
+         * @return string
+         */
+        public static function get_guest_locale( $room_key ) {
+            $locale = get_transient( 'motorlan_guest_locale_' . md5( (string) $room_key ) );
+            return is_string( $locale ) ? $locale : '';
         }
 
         protected function get_rooms_for_products( $product_ids ) {
@@ -691,12 +971,10 @@ if ( ! class_exists( 'Motorlan_Product_Chat_Controller' ) ) {
             }
 
             list( $current_user_id ) = $this->current_user_info();
-            
-            if ( ! $current_user_id && ! empty( $guest_em ) ) {
-                $user_by_email = get_user_by( 'email', $guest_em );
-                if ( $user_by_email ) {
-                    $current_user_id = (int) $user_by_email->ID;
-                }
+            // SEGURIDAD: sin promoción por guest_email (con el email del vendedor o de un
+            // admin se listaban todas las salas sin iniciar sesión).
+            if ( ! $current_user_id ) {
+                return new WP_Error( 'rest_not_logged_in', __( 'Debes iniciar sesión.', 'motorlan-api-vue' ), array( 'status' => 401 ) );
             }
 
             $post = get_post( $product_id );
@@ -722,6 +1000,10 @@ if ( ! class_exists( 'Motorlan_Product_Chat_Controller' ) ) {
             // Get all product IDs authored by the current user
             $posts = get_posts( array(
                 'post_type'      => 'publicacion',
+                // Sin esto solo 'publish': los chats de publicaciones pausadas, vendidas,
+                // pendientes o en borrador desaparecían de la bandeja aunque el comprador
+                // siguiera escribiendo (y el enlace ?room_key= no abría nada)
+                'post_status'    => array( 'publish', 'paused', 'sold', 'pending', 'draft', 'private', 'future' ),
                 'posts_per_page' => -1,
                 'fields'         => 'ids',
                 'author'         => $current_user,
@@ -794,7 +1076,7 @@ if ( ! class_exists( 'Motorlan_Product_Chat_Controller' ) ) {
                     $user_data = get_userdata( $viewer_id ); // Uses cache
                     if ( $user_data ) {
                         $viewer_name = $user_data->display_name;
-                        $viewer_avatar = get_avatar_url( $viewer_id );
+                        // Sin Gravatar del comprador (hash MD5 de su email): iniciales en el front
                     }
                 }
                 
@@ -813,7 +1095,6 @@ if ( ! class_exists( 'Motorlan_Product_Chat_Controller' ) ) {
                      $viewer_row = $wpdb->get_row( $sql );
                      if ( $viewer_row ) {
                          $viewer_name = $viewer_row->display_name;
-                         $viewer_avatar = $viewer_row->avatar;
                      }
                 }
                 
@@ -896,11 +1177,17 @@ if ( ! class_exists( 'Motorlan_Product_Chat_Controller' ) ) {
             
             // Approach: LEFT JOIN reads ON ... AND created_at > reads.last_read_at
             
-            $sql = "SELECT m.room_key, COUNT(m.id) as unread_count 
-                    FROM {$messages_table} m 
+            // Con last_read_id se compara por id (exacto); las filas antiguas sin él, por fecha
+            $read_condition = $this->reads_have_last_read_id()
+                ? "( ( r.last_read_id IS NOT NULL AND r.last_read_id > 0 AND m.id > r.last_read_id )
+                     OR ( ( r.last_read_id IS NULL OR r.last_read_id = 0 ) AND m.created_at > COALESCE(r.last_read_at, '0000-00-00 00:00:00') ) )"
+                : "m.created_at > COALESCE(r.last_read_at, '0000-00-00 00:00:00')";
+
+            $sql = "SELECT m.room_key, COUNT(m.id) as unread_count
+                    FROM {$messages_table} m
                     LEFT JOIN {$reads_table} r ON m.product_id = r.product_id AND m.room_key = r.room_key AND r.user_id = %d
                     WHERE m.product_id IN ($pids_in)
-                    AND m.created_at > COALESCE(r.last_read_at, '0000-00-00 00:00:00')
+                    AND {$read_condition}
                     AND m.user_id != %d
                     GROUP BY m.room_key";
             

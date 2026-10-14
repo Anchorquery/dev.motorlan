@@ -6,6 +6,8 @@ export interface PollingOptions {
   minInterval?: number
   maxInterval?: number
   backoffMultiplier?: number
+  /** Error permanente (403/404): el polling se detiene y se avisa al composable */
+  onError?: (status: number) => void
 }
 
 /**
@@ -21,9 +23,9 @@ export function usePolling(
   onData: (data: any[], meta: any | null) => void,
   intervalMsOrOptions: number | PollingOptions = 3000
 ) {
-  const options = typeof intervalMsOrOptions === 'number'
+  const options: Required<Omit<PollingOptions, 'onError'>> & Pick<PollingOptions, 'onError'> = typeof intervalMsOrOptions === 'number'
     ? { minInterval: intervalMsOrOptions, maxInterval: intervalMsOrOptions, backoffMultiplier: 1 }
-    : { minInterval: 3000, maxInterval: 15000, backoffMultiplier: 1.5, ...intervalMsOrOptions }
+    : { minInterval: 3000, maxInterval: 15000, backoffMultiplier: 1.5, ...intervalMsOrOptions } as Required<Omit<PollingOptions, 'onError'>> & Pick<PollingOptions, 'onError'>
 
   const isRunning = ref(false)
   const lastTimestamp = ref<string | null>(null)
@@ -40,19 +42,33 @@ export function usePolling(
         url += (url.includes('?') ? '&' : '?') + params.toString()
       }
 
-      const { data, error, statusCode } = await useApi<any>(createUrl(url)).get().json()
+      const { data, error, statusCode, response } = await useApi<any>(createUrl(url)).get().json()
 
-      // Manejar rate limiting (429)
+      // Rate limiting (429): esperar Retry-After o 60-180 s, pero NUNCA parar del todo
+      // (antes, tras 3 respuestas 429 el polling moría en silencio y el chat parecía congelado)
       if (statusCode.value === 429) {
         consecutive429.value++
-        if (consecutive429.value >= 3) {
-          isRunning.value = false
-          return
-        }
-        currentInterval.value = 60000 * consecutive429.value
+        const retryAfter = Number(response.value?.headers?.get('Retry-After') ?? 0)
+        currentInterval.value = Number.isFinite(retryAfter) && retryAfter > 0
+          ? Math.min(retryAfter * 1000 + 1000, 300000)
+          : Math.min(60000 * consecutive429.value, 180000)
         return
       }
       consecutive429.value = 0
+
+      // 403/404 permanentes (sala sin permiso, publicación borrada, sesión caducada):
+      // parar y avisar en lugar de seguir consultando cada pocos segundos.
+      // El 403 por nonce caducado no cuenta: useApi lo renueva y el siguiente poll funciona.
+      const status = Number(statusCode.value ?? 0)
+      if ((status === 403 && data.value?.code !== 'rest_cookie_invalid_nonce') || status === 404) {
+        isRunning.value = false
+        if (timer !== null) {
+          clearTimeout(timer)
+          timer = null
+        }
+        options.onError?.(status)
+        return
+      }
 
       if (!error.value && data.value) {
         const payload = Array.isArray(data.value?.data) ? data.value.data : []
@@ -84,17 +100,41 @@ export function usePolling(
     }
   }
 
+  let inFlight = false
+
+  const isDocumentHidden = () => typeof document !== 'undefined' && document.visibilityState === 'hidden'
+
   const poll = () => {
-    if (!isRunning.value) return
+    if (!isRunning.value || inFlight) return
+    timer = null
+
+    // RENDIMIENTO: con la pestaña oculta no se consulta (cada poll es un arranque
+    // completo de WordPress en el servidor). Se reanuda en visibilitychange.
+    if (isDocumentHidden()) return
+
+    inFlight = true
 
     // Ejecutar fetch
     void fetchUpdates().finally(() => {
+      inFlight = false
+
       // Programar siguiente ejecución solo después de terminar la actual
       // esto previene solapamiento de peticiones lentas
-      if (isRunning.value) {
+      if (isRunning.value && timer === null) {
         timer = setTimeout(poll, currentInterval.value)
       }
     })
+  }
+
+  // Al volver a la pestaña se consulta en el acto en lugar de esperar al siguiente ciclo
+  const onVisibilityChange = () => {
+    if (!isRunning.value || isDocumentHidden() || inFlight) return
+
+    if (timer !== null) {
+      clearTimeout(timer)
+      timer = null
+    }
+    poll()
   }
 
   const start = () => {
@@ -105,11 +145,19 @@ export function usePolling(
     currentInterval.value = options.minInterval ?? 3000
     consecutiveEmptyPolls.value = 0
 
+    if (typeof document !== 'undefined') {
+      document.removeEventListener('visibilitychange', onVisibilityChange)
+      document.addEventListener('visibilitychange', onVisibilityChange)
+    }
+
     // Iniciar polling
     poll()
   }
 
   const stop = () => {
+    if (typeof document !== 'undefined')
+      document.removeEventListener('visibilitychange', onVisibilityChange)
+
     if (!isRunning.value)
       return
 

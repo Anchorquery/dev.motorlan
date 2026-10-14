@@ -224,8 +224,11 @@ if ( ! class_exists( 'Motorlan_Purchase_Chat_Controller' ) ) {
 			$params = array( $uuid );
 
 			if ( $since_timestamp ) {
-				$sql     .= ' AND created_at > %s';
-				$params[] = gmdate( 'Y-m-d H:i:s', $since_timestamp );
+				// >= (no >): resolución de 1 s. Margen de 5 s: created_at se fija en PHP antes
+				// del INSERT y un mensaje confirmado después del poll quedaba tras el cursor.
+				// El frontend deduplica por id.
+				$sql     .= ' AND created_at >= %s';
+				$params[] = gmdate( 'Y-m-d H:i:s', $since_timestamp - 5 );
 			}
 
 			$sql .= ' ORDER BY created_at ASC, id ASC';
@@ -280,7 +283,7 @@ if ( ! class_exists( 'Motorlan_Purchase_Chat_Controller' ) ) {
 				$created_at = isset( $message['created_at'] ) ? $message['created_at'] : gmdate( 'Y-m-d H:i:s' );
 				$created_ts = strtotime( $created_at );
 
-				if ( $since_timestamp && $created_ts && $created_ts <= $since_timestamp ) {
+				if ( $since_timestamp && $created_ts && $created_ts < $since_timestamp ) {
 					continue;
 				}
 
@@ -357,6 +360,7 @@ if ( ! class_exists( 'Motorlan_Purchase_Chat_Controller' ) ) {
 		 * @param WP_REST_Request $request Request object.
 		 *
 		 * @return WP_REST_Response|WP_Error
+		 */
 		public function get_messages( WP_REST_Request $request ) {
 			$purchase = $this->get_purchase_from_request( $request );
 			if ( is_wp_error( $purchase ) ) {
@@ -366,18 +370,22 @@ if ( ! class_exists( 'Motorlan_Purchase_Chat_Controller' ) ) {
 			$current_user_id = get_current_user_id();
 			$purchase_uuid   = $request['uuid'];
 
+			// Solo comprador, vendedor o admin pueden leer la conversación.
+			if ( ! motorlan_user_can_access_purchase( $purchase_id, $current_user_id ) ) {
+				return new WP_Error(
+					'forbidden',
+					__( 'You are not allowed to view messages for this purchase.', 'motorlan-api-vue' ),
+					array( 'status' => 403 )
+				);
+			}
+
 			$since_timestamp = $request->get_param( 'since_timestamp' );
 			$since_timestamp = $since_timestamp ? strtotime( sanitize_text_field( $since_timestamp ) ) : null;
 
-			// 1. Cache Check (Fast Path - Bypass Rate Limiter)
-			$cache_key = 'motorlan_purch_msg_' . md5( $purchase_uuid . '_' . ( $since_timestamp ?? 'all' ) . '_' . $current_user_id );
-			$cached_response = get_transient( $cache_key );
-			
-			if ( false !== $cached_response && is_array( $cached_response ) ) {
-				return new WP_REST_Response( $cached_response, 200 );
-			}
+			// Sin caché por transient: la clave dependía del cursor de cada poll (no se
+			// reutilizaba) y escribía en wp_options en cada petición.
 
-			// 2. Rate Limiting (Missing Cache, protect DB)
+			// Rate Limiting (protect DB)
 			if ( class_exists( 'Motorlan_Rate_Limiter' ) ) {
 				$user_identifier = Motorlan_Rate_Limiter::get_user_identifier();
 				// 200/min for GET
@@ -391,22 +399,20 @@ if ( ! class_exists( 'Motorlan_Purchase_Chat_Controller' ) ) {
 
 			$messages      = array();
 			$table_ready   = $this->ensure_table_exists();
+			// Cursor del siguiente poll: marca tomada ANTES de consultar
 			$server_time   = gmdate( 'Y-m-d H:i:s' );
 
 			if ( $table_ready ) {
 				$this->maybe_migrate_legacy_messages( $purchase_id, $purchase_uuid );
 				$messages = $this->get_messages_from_table( $purchase_uuid, $since_timestamp, $current_user_id );
-			}
-
-			if ( ! $table_ready || empty( $messages ) ) {
+			} else {
+				// Solo sin tabla se lee el historial antiguo de postmeta (antes se releía
+				// en cada poll vacío, aunque ya estuviera migrado a la tabla)
 				$messages = $this->get_messages_from_meta( $purchase_id, $since_timestamp, $current_user_id );
 			}
 
-			if ( ! empty( $messages ) ) {
-				$last        = end( $messages );
-				$server_time = isset( $last['created_at'] ) ? $this->format_datetime_for_response( $last['created_at'] ) : $server_time;
-				reset( $messages );
-			}
+			// (Antes el cursor se movía al created_at del último mensaje y, con ">", se
+			// perdían los mensajes insertados en ese mismo segundo.)
 
 			$participants = motorlan_get_purchase_participants( $purchase_id );
 
@@ -418,12 +424,13 @@ if ( ! class_exists( 'Motorlan_Purchase_Chat_Controller' ) ) {
 					'current_user_id'  => $current_user_id,
 					'participants'     => $participants,
 					'server_timestamp' => $server_time,
+					// Sin esto el comprador se veía a sí mismo como "la otra parte" hasta enviar
+					'viewer_role'      => ( (int) ( $participants['seller_id'] ?? 0 ) === (int) $current_user_id )
+						? 'seller'
+						: ( ( (int) ( $participants['buyer_id'] ?? 0 ) === (int) $current_user_id ) ? 'buyer' : 'admin' ),
 				),
 			);
-	
-			// Guardar en cache por 10 segundos
-			set_transient( $cache_key, $response_data, 10 );
-	
+
 			return new WP_REST_Response( $response_data, 200 );
 		}
 
@@ -460,12 +467,6 @@ if ( ! class_exists( 'Motorlan_Purchase_Chat_Controller' ) ) {
 				return $purchase;
 			}
 			
-			// Invalidate cache
-			$purchase_uuid = $request['uuid'];
-			global $wpdb;
-			$base_key = '_transient_motorlan_purch_msg_' . md5( $purchase_uuid );
-			$wpdb->query( $wpdb->prepare( "DELETE FROM $wpdb->options WHERE option_name LIKE %s", $wpdb->esc_like( $base_key ) . '%' ) );
-
 			$purchase_id     = $purchase->ID;
 			$current_user_id = get_current_user_id();
 			if ( ! motorlan_user_can_access_purchase( $purchase_id, $current_user_id ) ) {
@@ -496,7 +497,16 @@ if ( ! class_exists( 'Motorlan_Purchase_Chat_Controller' ) ) {
 			}
 
 			$participants = motorlan_get_purchase_participants( $purchase_id );
-			$sender_role  = ( $participants['seller_id'] === $current_user_id ) ? 'seller' : 'buyer';
+			$seller_id    = (int) ( $participants['seller_id'] ?? 0 );
+			$buyer_id     = (int) ( $participants['buyer_id'] ?? 0 );
+			// Un admin que no participa ya no se hace pasar por el comprador
+			if ( $seller_id === (int) $current_user_id ) {
+				$sender_role = 'seller';
+			} elseif ( $buyer_id === (int) $current_user_id ) {
+				$sender_role = 'buyer';
+			} else {
+				$sender_role = 'admin';
+			}
 			$user         = get_user_by( 'id', $current_user_id );
 			$display_name = $user ? $user->display_name : '';
 			$avatar       = get_avatar_url( $current_user_id );
@@ -511,14 +521,11 @@ if ( ! class_exists( 'Motorlan_Purchase_Chat_Controller' ) ) {
 				'avatar'       => $avatar,
 			);
 
-			$existing_messages   = get_post_meta( $purchase_id, 'purchase_messages', true );
-			$existing_messages   = is_array( $existing_messages ) ? $existing_messages : array();
-			$existing_messages[] = $new_message;
-
-			update_post_meta( $purchase_id, 'purchase_messages', $existing_messages );
-
 			$table_ready = $this->ensure_table_exists();
 			if ( $table_ready ) {
+				// Migrar antes el historial antiguo para no perderlo
+				$this->maybe_migrate_legacy_messages( $purchase_id, $request['uuid'] );
+
 				$persisted = $this->persist_message_to_table( $purchase_id, $request['uuid'], $new_message );
 
 				if ( is_wp_error( $persisted ) ) {
@@ -526,11 +533,28 @@ if ( ! class_exists( 'Motorlan_Purchase_Chat_Controller' ) ) {
 				}
 
 				$new_message = $persisted;
+			} else {
+				// Sin tabla: historial en postmeta. Antes se escribía SIEMPRE además de la
+				// tabla (read-modify-write: con dos mensajes a la vez se perdía uno).
+				$existing_messages   = get_post_meta( $purchase_id, 'purchase_messages', true );
+				$existing_messages   = is_array( $existing_messages ) ? $existing_messages : array();
+				$existing_messages[] = $new_message;
+
+				update_post_meta( $purchase_id, 'purchase_messages', $existing_messages );
 			}
 
-            // Notify the other party
-            $receiver_id = ( $sender_role === 'seller' ) ? $participants['buyer_id'] : $participants['seller_id'];
-            do_action( 'motorlan_new_purchase_message', $receiver_id, $display_name, $message, $purchase_id, $request['uuid'] );
+			// Avisar a la otra parte (a las dos si escribe un admin). Sin comprador
+			// registrado (venta manual a invitado) no se crea una notificación huérfana.
+			if ( 'seller' === $sender_role ) {
+				$receivers = array( $buyer_id );
+			} elseif ( 'buyer' === $sender_role ) {
+				$receivers = array( $seller_id );
+			} else {
+				$receivers = array( $buyer_id, $seller_id );
+			}
+			foreach ( array_unique( array_filter( $receivers ) ) as $receiver_id ) {
+				do_action( 'motorlan_new_purchase_message', $receiver_id, $display_name, $message, $purchase_id, $request['uuid'] );
+			}
 
 			$response_message                    = $this->format_message( $new_message, $current_user_id );
 			$response_message['is_current_user'] = true;

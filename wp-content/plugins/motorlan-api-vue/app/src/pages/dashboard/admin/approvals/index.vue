@@ -2,7 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
-import { useApi } from '@/composables/useApi'
+import { assertApiOk, useApi } from '@/composables/useApi'
 import { useToast } from '@/composables/useToast'
 import { useMotorFormatter } from '@/composables/useMotorFormatter'
 
@@ -13,7 +13,7 @@ const { formatMotorName } = useMotorFormatter()
 
 const headers = [
   { title: t('publication_list.publication'), value: 'publicacion' },
-  { title: t('register.user'), value: 'user' },
+  { title: t('admin_publications.headers.author', 'Autor'), value: 'user' },
   { title: t('publication_list.reference'), value: 'referencia' },
   { title: t('publication_list.price'), value: 'precio' },
   { title: t('publication_list.actions'), value: 'actions', sortable: false },
@@ -37,14 +37,14 @@ const openRejectDialog = (id: number) => {
 const approvePublication = async (id: number) => {
   isActionLoading.value = true
   try {
-    const { error } = await useApi(`/wp-json/motorlan/v1/admin/approve-publication/${id}`).post().json()
-    if (error.value) throw error.value
+    assertApiOk(await useApi(`/wp-json/motorlan/v1/admin/approve-publication/${id}`).post().json())
     
     showToast(t('admin_approvals.approve_success', 'Publicación aprobada con éxito'), 'success')
     await fetchPending()
-  } catch (error) {
+  } catch (error: any) {
     console.error(error)
-    showToast(t('admin_approvals.approve_error', 'Error al aprobar la publicación'), 'error')
+    // Mostrar el motivo real del backend (p. ej. "Error al crear la marca: ...")
+    showToast(error?.message ? `${t('admin_approvals.approve_error', 'Error al aprobar la publicación')}: ${error.message}` : t('admin_approvals.approve_error', 'Error al aprobar la publicación'), 'error')
   } finally {
     isActionLoading.value = false
   }
@@ -55,18 +55,16 @@ const rejectPublication = async () => {
 
   isActionLoading.value = true
   try {
-    const { error } = await useApi(`/wp-json/motorlan/v1/admin/reject-publication/${publicationToReject.value}`)
+    assertApiOk(await useApi(`/wp-json/motorlan/v1/admin/reject-publication/${publicationToReject.value}`)
       .post({ reason: rejectReason.value })
-      .json()
-    
-    if (error.value) throw error.value
+      .json())
     
     showToast(t('admin_approvals.reject_success', 'Publicación rechazada'), 'info')
     isRejectDialogVisible.value = false
     await fetchPending()
-  } catch (error) {
+  } catch (error: any) {
     console.error(error)
-    showToast(t('admin_approvals.reject_error', 'Error al rechazar la publicación'), 'error')
+    showToast(error?.message ? `${t('admin_approvals.reject_error', 'Error al rechazar la publicación')}: ${error.message}` : t('admin_approvals.reject_error', 'Error al rechazar la publicación'), 'error')
   } finally {
     isActionLoading.value = false
   }

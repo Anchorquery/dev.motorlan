@@ -135,7 +135,7 @@ const submitContact = async () => {
           @click="closeDialog"
           :disabled="isLoading"
         >
-          {{ t('Cancelar') }}
+          {{ t('publication_list.cancel', 'Cancelar') }}
         </VBtn>
         <VBtn
           color="primary"

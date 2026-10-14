@@ -53,6 +53,36 @@ function motorlan_register_publicaciones_cpt() {
 }
 add_action( 'init', 'motorlan_register_publicaciones_cpt' );
 
+/**
+ * Register custom post statuses used by publicaciones.
+ *
+ * Sin este registro, WP_Query con post_status 'any' excluye 'paused' y 'sold'
+ * (estados no registrados), por lo que los endpoints por uuid devolvían 404
+ * para motores pausados o vendidos aunque aparezcan en los listados de admin.
+ */
+function motorlan_register_publicacion_statuses() {
+    register_post_status( 'paused', array(
+        'label'                     => _x( 'Pausado', 'post status', 'motorlan-api-vue' ),
+        'public'                    => false,
+        'protected'                 => true,
+        'exclude_from_search'       => false,
+        'show_in_admin_all_list'    => true,
+        'show_in_admin_status_list' => true,
+        'label_count'               => _n_noop( 'Pausado <span class="count">(%s)</span>', 'Pausados <span class="count">(%s)</span>', 'motorlan-api-vue' ),
+    ) );
+
+    register_post_status( 'sold', array(
+        'label'                     => _x( 'Vendido', 'post status', 'motorlan-api-vue' ),
+        'public'                    => false,
+        'protected'                 => true,
+        'exclude_from_search'       => false,
+        'show_in_admin_all_list'    => true,
+        'show_in_admin_status_list' => true,
+        'label_count'               => _n_noop( 'Vendido <span class="count">(%s)</span>', 'Vendidos <span class="count">(%s)</span>', 'motorlan-api-vue' ),
+    ) );
+}
+add_action( 'init', 'motorlan_register_publicacion_statuses' );
+
 
 /**
  * Create two taxonomies, 'categoria' and 'marca' for the post type'publicacion'.
@@ -62,6 +92,10 @@ function motorlan_register_taxonomies() {
     $post_types = array( 'publicacion' );
 
     // Taxonomy: Categoria
+    // DESACTIVADA: se sustituye por la taxonomía "tipo". Se deja comentada por si hay
+    // que revertir. Al no registrarse, desaparece el metabox y la columna "Categorías"
+    // del admin (eran fuente de confusión con "Tipo").
+    /*
     $labels_categoria = array(
         'name'              => _x( 'Categorías', 'taxonomy general name', 'motorlan-api-vue' ),
         'singular_name'     => _x( 'Categoría', 'taxonomy singular name', 'motorlan-api-vue' ),
@@ -87,6 +121,7 @@ function motorlan_register_taxonomies() {
     );
 
     register_taxonomy( 'categoria', $post_types, $args_categoria );
+    */
 
     // Taxonomy: Marca
     $labels_marca = array(
@@ -138,6 +173,10 @@ function motorlan_register_taxonomies() {
         'query_var'         => true,
         'rewrite'           => array( 'slug' => 'tipo' ),
         'show_in_rest'      => true,
+        // Quita el metabox nativo de checkboxes (multi-selección). La selección
+        // del tipo se gestiona con el campo ACF "Tipo" (radio, una sola opción),
+        // para dar paridad con el formulario de la app.
+        'meta_box_cb'       => false,
     );
 
     register_taxonomy( 'tipo', $post_types, $args_tipo );
@@ -165,4 +204,4 @@ function motorlan_add_uuid_to_post( $post_id, $post ) {
         update_post_meta( $post_id, 'uuid', $uuid );
     }
 }
-add_action( 'save_post_publicaciones', 'motorlan_add_uuid_to_post', 10, 2 );
+add_action( 'save_post_publicacion', 'motorlan_add_uuid_to_post', 10, 2 );

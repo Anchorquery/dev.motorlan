@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { VForm } from 'vuetify/components/VForm'
 import { useGenerateImageVariant } from '@core/composable/useGenerateImageVariant'
 import { requiredValidator, emailValidator } from '@core/utils/validators'
+import { apiErrorMessage } from '@/composables/useApi'
 import authV2ForgotPasswordIllustrationDark from '@images/pages/auth-v2-forgot-password-illustration-dark.png'
 import authV2ForgotPasswordIllustrationLight from '@images/pages/auth-v2-forgot-password-illustration-light.png'
 import authV2MaskDark from '@images/pages/misc-mask-dark.png'
@@ -40,18 +41,18 @@ const sendResetLink = async () => {
       body: JSON.stringify({ email: email.value }),
     })
 
-    const data = await response.json()
+    const data = await response.json().catch(() => ({}))
 
     if (response.ok && data.success) {
       isSuccess.value = true
     }
     else {
-      errorMessage.value = data.message || 'Error al enviar el enlace de recuperación.'
+      errorMessage.value = apiErrorMessage(data, t('forgot_password.error', 'No se pudo enviar el correo. Intenta de nuevo.'))
     }
   }
   catch (err) {
     console.error('Forgot password error:', err)
-    errorMessage.value = 'Error de conexión. Por favor, intenta de nuevo.'
+    errorMessage.value = t('login.connection_error', 'No se pudo conectar con el servidor. Revisa tu conexión.')
   }
   finally {
     isSubmitting.value = false
@@ -83,10 +84,10 @@ const onSubmit = () => {
       >
         <VCardText>
           <h4 class="text-h4 font-weight-bold mb-1">
-            ¿Olvidaste tu contraseña?
+            {{ t('forgot_password.title', '¿Olvidaste tu contraseña?') }}
           </h4>
           <p class="mb-0 text-body-1 text-medium-emphasis">
-            Ingresa tu email y te enviaremos instrucciones para restablecer tu contraseña
+            {{ t('forgot_password.subtitle', 'Introduce tu correo y te enviaremos instrucciones para restablecerla.') }}
           </p>
         </VCardText>
 
@@ -100,10 +101,10 @@ const onSubmit = () => {
             icon="tabler-check"
           >
             <div class="font-weight-medium">
-              ¡Enlace enviado!
+              {{ t('forgot_password.sent_title', '¡Enlace enviado!') }}
             </div>
             <div class="text-body-2">
-              Si el email existe en nuestro sistema, recibirás un enlace para restablecer tu contraseña.
+              {{ t('forgot_password.sent_body', 'Si el email existe en nuestro sistema, recibirás un enlace para restablecer tu contraseña.') }}
             </div>
           </VAlert>
 

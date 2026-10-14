@@ -2,7 +2,8 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
-import { useApi } from '@/composables/useApi'
+import { assertApiOk, useApi } from '@/composables/useApi'
+import { useToast } from '@/composables/useToast'
 import { debounce } from '@/utils/debounce'
 import { useUserStore } from '@/@core/stores/user'
 import AppSelect from '@/@core/components/app-form-elements/AppSelect.vue'
@@ -38,6 +39,7 @@ interface ApiResponse {
 }
 
 const { t } = useI18n()
+const { showToast } = useToast()
 const router = useRouter()
 
 const userStore = useUserStore()
@@ -104,9 +106,12 @@ const publications = computed((): PublicationItem[] => {
 
 const totalPublications = computed(() => apiData.value?.total || 0)
 
-// Debounced Search
+// Debounced Search. Volver a la página 1 dispara el watch de page (antes se pedía dos veces).
 const debouncedFetch = debounce(async () => {
-    page.value = 1 // Reset to first page on search
+    if (page.value !== 1) {
+        page.value = 1
+        return
+    }
     await fetchPublications()
 }, 500)
 
@@ -117,12 +122,15 @@ onMounted(() => {
   fetchPublications()
 })
 
+// El backend (admin-publications-routes.php) ordena por title, author, price, status y date.
 const updateOptions = (options: any) => {
-  if (options.sortBy && options.sortBy.length) {
-    sortBy.value = options.sortBy[0].key
-    orderBy.value = options.sortBy[0].order
-    fetchPublications()
-  }
+  const nextSort = options.sortBy?.[0]?.key
+  const nextOrder = options.sortBy?.[0]?.order
+  if (nextSort === sortBy.value && nextOrder === orderBy.value)
+    return
+  sortBy.value = nextSort
+  orderBy.value = nextOrder
+  fetchPublications()
 }
 
 // Actions State
@@ -166,11 +174,11 @@ const confirmDelete = async () => {
   
   isLoadingAction.value = true
   try {
-    await useApi(`/wp-json/motorlan/v1/admin/publications/${itemToDelete.value}`, { method: 'DELETE' })
+    assertApiOk(await useApi(`/wp-json/motorlan/v1/admin/publications/${itemToDelete.value}`, { method: 'DELETE' }).json())
     fetchPublications()
-  } catch (e) {
+  } catch (e: any) {
     console.error(e)
-    // Show error toast
+    showToast(e?.message || t('admin_publications.delete_error', 'Error al eliminar la publicación'), 'error')
   } finally {
     isLoadingAction.value = false
     isDeleteDialogVisible.value = false
@@ -189,13 +197,14 @@ const confirmStatusChange = async () => {
 
   isLoadingAction.value = true
   try {
-    await useApi(`/wp-json/motorlan/v1/admin/publications/${itemToChangeStatus.value.id}`, {
+    assertApiOk(await useApi(`/wp-json/motorlan/v1/admin/publications/${itemToChangeStatus.value.id}`, {
       method: 'PUT',
       body: JSON.stringify({ status: selectedNewStatus.value })
-    })
+    }).json())
     fetchPublications()
-  } catch (e) {
+  } catch (e: any) {
     console.error(e)
+    showToast(e?.message || t('admin_publications.status_error', 'Error al cambiar el estado'), 'error')
   } finally {
     isLoadingAction.value = false
     isStatusDialogVisible.value = false

@@ -404,6 +404,18 @@ function motorlan_sync_vue_i18n_strings_to_wpml() {
         return;
     }
 
+    // Bump this whenever the seeder logic changes to force a one-shot
+    // re-import on the next request after a deploy.
+    $seeder_version = 3;
+
+    // RENDIMIENTO: salida rápida en cada petición. Antes se leían y decodificaban los
+    // ~160 KB de JSON y se consultaban 3 opciones sin autoload solo para comprobar que
+    // nada había cambiado. La huella de mtime+tamaño (opción con autoload) lo evita.
+    $files_stamp = motorlan_get_vue_i18n_files_stamp( $seeder_version );
+    if ( get_option( 'motorlan_vue_i18n_files_stamp' ) === $files_stamp ) {
+        return;
+    }
+
     $messages = motorlan_get_base_vue_i18n_messages();
     $source   = motorlan_get_vue_i18n_source_locale();
     $tree     = $messages[ $source ] ?? [];
@@ -414,12 +426,19 @@ function motorlan_sync_vue_i18n_strings_to_wpml() {
 
     $context = motorlan_get_vue_i18n_wpml_context();
 
-    // Bump this whenever the seeder logic changes to force a one-shot
-    // re-import on the next request after a deploy.
-    $seeder_version = 3;
     if ( (int) get_option( 'motorlan_vue_i18n_seeder_version', 0 ) < $seeder_version ) {
         delete_option( 'motorlan_vue_i18n_seed_hash' );
         update_option( 'motorlan_vue_i18n_seeder_version', $seeder_version, false );
+    }
+
+    // RENDIMIENTO: registrar ~1000 cadenas + realign + migrate en CADA petición
+    // (también REST/AJAX) suponía miles de consultas por guardado. Solo se repite
+    // cuando cambian los JSON o la versión del seeder.
+    $sync_fingerprint = md5( wp_json_encode( $messages ) . '|' . $seeder_version );
+    if ( get_option( 'motorlan_vue_i18n_sync_hash' ) === $sync_fingerprint
+        && get_option( 'motorlan_vue_i18n_seed_hash' ) === md5( wp_json_encode( $messages ) ) ) {
+        update_option( 'motorlan_vue_i18n_files_stamp', $files_stamp, true );
+        return;
     }
 
     // Register the source strings (idempotent).
@@ -440,8 +459,11 @@ function motorlan_sync_vue_i18n_strings_to_wpml() {
     // Seed translations from the bundled JSONs into WPML String Translation.
     // Only runs when the JSON fingerprint changes so we don't hammer WPML on
     // every request.
+    update_option( 'motorlan_vue_i18n_sync_hash', $sync_fingerprint, false );
+
     $fingerprint = md5( wp_json_encode( $messages ) );
     if ( get_option( 'motorlan_vue_i18n_seed_hash' ) === $fingerprint ) {
+        update_option( 'motorlan_vue_i18n_files_stamp', $files_stamp, true );
         return;
     }
 
@@ -453,6 +475,24 @@ function motorlan_sync_vue_i18n_strings_to_wpml() {
     }
 
     update_option( 'motorlan_vue_i18n_seed_hash', $fingerprint, false );
+    update_option( 'motorlan_vue_i18n_files_stamp', $files_stamp, true );
+}
+
+/**
+ * Cheap fingerprint of the bundled Vue i18n JSON files (path + mtime + size),
+ * used to skip the WPML sync without reading the files.
+ *
+ * @param int $seeder_version Seeder logic version.
+ * @return string
+ */
+function motorlan_get_vue_i18n_files_stamp( $seeder_version ) {
+    $parts = [ (string) $seeder_version ];
+
+    foreach ( glob( MOTORLAN_API_VUE_PATH . 'app/src/plugins/i18n/locales/*.json' ) ?: [] as $file ) {
+        $parts[] = basename( $file ) . ':' . (int) @filemtime( $file ) . ':' . (int) @filesize( $file );
+    }
+
+    return md5( implode( '|', $parts ) );
 }
 
 add_action( 'init', 'motorlan_sync_vue_i18n_strings_to_wpml', 20 );
@@ -655,6 +695,7 @@ function motorlan_seed_wpml_translations_from_tree( $context, array $source_tree
  */
 function motorlan_vue_i18n_force_reseed() {
     delete_option( 'motorlan_vue_i18n_seed_hash' );
+    delete_option( 'motorlan_vue_i18n_files_stamp' );
 }
 
 /**
@@ -911,15 +952,21 @@ function motorlan_translate_tree_with_fallback( array $source_tree, array $base_
  * Source locale comes straight from the JSON. Every other locale walks the
  * source tree through WPML, falling back to bundled values when untranslated.
  *
+ * @param string[]|null $locales Locales to build (null = all supported).
  * @return array<string, array<string, mixed>>
  */
-function motorlan_get_effective_vue_i18n_messages() {
+function motorlan_get_effective_vue_i18n_messages( $locales = null ) {
     $base_messages = motorlan_get_base_vue_i18n_messages();
     $source        = motorlan_get_vue_i18n_source_locale();
     $source_tree   = $base_messages[ $source ] ?? [];
     $effective     = [];
 
-    foreach ( array_keys( motorlan_get_supported_locale_map() ) as $code ) {
+    $codes = array_keys( motorlan_get_supported_locale_map() );
+    if ( is_array( $locales ) ) {
+        $codes = array_values( array_intersect( $codes, $locales ) );
+    }
+
+    foreach ( $codes as $code ) {
         if ( $code === $source ) {
             $effective[ $code ] = $source_tree;
             continue;
@@ -944,7 +991,11 @@ function motorlan_get_effective_vue_i18n_messages() {
  */
 function motorlan_get_vue_i18n_payload() {
     $current_locale = motorlan_get_current_language_code();
-    $messages       = motorlan_get_effective_vue_i18n_messages();
+    // RENDIMIENTO: solo el idioma de la página. Con los 5 idiomas cada vista HTML hacía
+    // ~4000 consultas de traducción a WPML e incrustaba ~200 KB de JSON. El resto de
+    // idiomas ya va en el bundle (locales/*.json) y cambiar de idioma recarga la página
+    // en su URL de WPML, que trae su propio payload.
+    $messages       = motorlan_get_effective_vue_i18n_messages( [ $current_locale ] );
 
     return [
         'current_locale'   => $current_locale,

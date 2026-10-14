@@ -78,12 +78,24 @@ class Motorlan_Notification_Listener {
         add_action( 'motorlan_new_review', [ $this, 'on_new_review' ], 10, 3 );
         add_action( 'motorlan_user_verify_email', [ $this, 'on_user_verify_email' ], 10, 2 );
         add_action( 'motorlan_seller_reply', [ $this, 'on_seller_reply' ], 10, 5 );
-        add_action( 'motorlan_send_guest_message_copy', [ $this, 'on_send_guest_message_copy' ], 10, 5 );
+        add_action( 'motorlan_send_guest_message_copy', [ $this, 'on_send_guest_message_copy' ], 10, 6 );
     }
 
-    public function on_send_guest_message_copy( $guest_email, $message, $product_title, $seller_name, $product_id ) {
+    public function on_send_guest_message_copy( $guest_email, $message, $product_title, $seller_name, $product_id, $room_key = '' ) {
         if ( empty( $guest_email ) ) return;
-        $this->notification_manager->send_email_notification_direct(
+
+        $slug         = get_post_field( 'post_name', $product_id );
+        $product_path = motorlan_localized_page_url( 'marketplace-motorlan', $slug ? trailingslashit( $slug ) : '' );
+
+        $query = array( 'open_chat' => '1' );
+        if ( class_exists( 'Motorlan_Product_Chat_Controller' ) && ! empty( $room_key ) ) {
+            $chat_token = Motorlan_Product_Chat_Controller::generate_chat_token( $room_key, $guest_email, $product_id, 604800 );
+            if ( $chat_token ) $query['ct'] = $chat_token;
+        }
+        $product_path = add_query_arg( $query, $product_path );
+
+        // Encolado: el POST del invitado ya no espera al SMTP
+        $this->notification_manager->queue_email(
             0,
             'message_sent',
             __( 'Mensaje enviado', 'motorlan-api-vue' ),
@@ -92,9 +104,28 @@ class Motorlan_Notification_Listener {
                 'direct_email'   => $guest_email,
                 'recipient_name' => $seller_name,
                 'product_title'  => $product_title,
-                'url'            => '/?p=' . (int) $product_id,
+                'url'            => $product_path,
             ]
         );
+    }
+
+    /**
+     * Canales para un aviso de mensaje de chat: la notificación web siempre, el email
+     * como mucho uno cada 15 min por destinatario y conversación. Antes cada mensaje
+     * generaba un email (un comprador que escribía 6 líneas = 6 emails, y un script
+     * anónimo podía inundar al vendedor).
+     *
+     * @param string     $recipient Destinatario (id o email).
+     * @param string     $room      Conversación (room_key o uuid de compra).
+     * @return array
+     */
+    private function chat_message_channels( $recipient, $room ) {
+        $key = 'motorlan_chat_mail_' . md5( (string) $recipient . '|' . (string) $room );
+        if ( get_transient( $key ) ) {
+            return [ 'web' ];
+        }
+        set_transient( $key, 1, 15 * MINUTE_IN_SECONDS );
+        return [ 'web', 'email' ];
     }
 
     // --- Callbacks ---
@@ -369,6 +400,16 @@ class Motorlan_Notification_Listener {
         if ( ! $buyer_id ) $buyer_id = get_post_meta( $purchase_id, 'comprador', true );
         if ( ! $buyer_id ) $buyer_id = get_post_meta( $purchase_id, 'comprador_id', true );
         
+        // ACF user/post_object pueden devolver array/WP_User/WP_Post: normalizar a ID
+        // (get_post_meta/get_userdata con objetos generaban warnings que rompían el JSON).
+        $to_id = function ( $v ) {
+            if ( is_object( $v ) ) return isset( $v->ID ) ? (int) $v->ID : 0;
+            if ( is_array( $v ) ) return isset( $v['ID'] ) ? (int) $v['ID'] : ( isset( $v['id'] ) ? (int) $v['id'] : 0 );
+            return (int) $v;
+        };
+        $seller_id = $to_id( $seller_id );
+        $buyer_id  = $to_id( $buyer_id );
+
         $buyer = get_userdata( $buyer_id );
         $buyer_name = $buyer ? $buyer->display_name : 'Usuario';
 
@@ -376,7 +417,8 @@ class Motorlan_Notification_Listener {
         // The purchase title usually contains it, or we can get it from related publication
         $publicacion_id = get_field( 'publicacion', $purchase_id );
         if ( ! $publicacion_id ) $publicacion_id = get_post_meta( $purchase_id, 'publicacion', true );
-        
+        $publicacion_id = $to_id( $publicacion_id );
+
         $publicacion_title = $publicacion_id ? motorlan_format_motor_name( $publicacion_id ) : get_the_title( $purchase_id );
         $uuid = get_field( 'uuid', $purchase_id ) ?: get_post_meta( $purchase_id, 'uuid', true );
 
@@ -451,13 +493,15 @@ class Motorlan_Notification_Listener {
     }
 
     public function on_password_reset_code( $user_id, $code, $expiry ) {
-        $this->notification_manager->create_notification(
+        // Solo por email: create_notification() también lo guardaba en la tabla de
+        // notificaciones y se mostraba en la web, así que con una sesión robada se
+        // podía leer el código sin acceso al correo.
+        $this->notification_manager->send_email_notification_direct(
             $user_id,
             'password_reset_code',
             'Código de restablecimiento de contraseña',
             'Tu código es: ' . $code,
-            [ 'code' => $code ],
-            ['email']
+            [ 'code' => $code ]
         );
     }
 
@@ -466,8 +510,10 @@ class Motorlan_Notification_Listener {
         $room_key = is_object($message_data) ? $message_data->room_key : (isset($message_data['room_key']) ? $message_data['room_key'] : '');
         $message_text = is_object($message_data) ? $message_data->message : (isset($message_data['message']) ? $message_data['message'] : '');
 
+        if ( ! $recipient_id ) return;
+
         $title = motorlan_format_motor_name( $product_id );
-        
+
         $image = get_the_post_thumbnail_url( $product_id, 'medium' );
 
         $switched = switch_to_locale( get_user_locale( $recipient_id ) );
@@ -479,8 +525,9 @@ class Motorlan_Notification_Listener {
                 sprintf( __( 'Nuevo mensaje en "%s"', 'motorlan-api-vue' ), $title ),
                 "{$sender_name}: " . wp_trim_words( $message_text, 10, '...' ),
                 [
-                    'url' => motorlan_account_url( 'dashboard/inquiries?room_key=' . $room_key, $recipient_id ),
-                    'vue_path' => '/dashboard/inquiries?room_key=' . $room_key,
+                    // room_key codificado: va dentro de una URL
+                    'url' => motorlan_account_url( 'dashboard/inquiries?room_key=' . rawurlencode( $room_key ), $recipient_id ),
+                    'vue_path' => '/dashboard/inquiries?room_key=' . rawurlencode( $room_key ),
                     'room_key' => $room_key,
                     'product_id' => $product_id,
                     'sender_name' => $sender_name,
@@ -488,7 +535,7 @@ class Motorlan_Notification_Listener {
                     'product_image' => $image,
                     'message_full'  => $message_text
                 ],
-                ['web', 'email']
+                $this->chat_message_channels( $recipient_id, $room_key )
             );
         } finally {
             if ( $switched ) restore_previous_locale();
@@ -496,6 +543,9 @@ class Motorlan_Notification_Listener {
     }
     
     public function on_new_purchase_message( $recipient_id, $sender_name, $message_text, $purchase_id, $uuid ) {
+        // Compra sin comprador registrado (venta manual a invitado): nadie a quien avisar
+        if ( ! $recipient_id ) return;
+
         // Try to find product_id from purchase if possible, or pass it?
         // Actually, purchase_id has 'publicacion' meta.
         $pid = get_field( 'publicacion', $purchase_id );
@@ -514,14 +564,14 @@ class Motorlan_Notification_Listener {
                 array(
                     'purchase_uuid' => $uuid,
                     'purchase_id'   => $purchase_id,
-                    'url'           => motorlan_account_url( 'dashboard/purchases/' . $uuid, $recipient_id ),
-                    'vue_path'      => '/dashboard/purchases/' . $uuid,
+                    'url'           => motorlan_account_url( 'dashboard/purchases/' . $uuid . '?openChat=true', $recipient_id ),
+                    'vue_path'      => '/dashboard/purchases/' . $uuid . '?openChat=true',
                     'product_title' => $title,
                     'product_image' => $image,
                     'sender_name'   => $sender_name,
                     'message_full'  => $message_text
                 ),
-                array( 'web', 'email' )
+                $this->chat_message_channels( $recipient_id, 'purchase|' . $uuid )
             );
         } finally {
             if ( $switched ) restore_previous_locale();
@@ -657,8 +707,8 @@ class Motorlan_Notification_Listener {
                     sprintf( __( 'Respuesta de vendedor en "%s"', 'motorlan-api-vue' ), $title ),
                     "{$sender_name}: " . wp_trim_words( $message_text, 10, '...' ),
                     [
-                        'url' => motorlan_account_url( 'dashboard/purchases/inquiries?room_key=' . $room_key, $buyer_id ),
-                        'vue_path' => '/dashboard/purchases/inquiries?room_key=' . $room_key,
+                        'url' => motorlan_account_url( 'dashboard/purchases/inquiries?room_key=' . rawurlencode( $room_key ), $buyer_id ),
+                        'vue_path' => '/dashboard/purchases/inquiries?room_key=' . rawurlencode( $room_key ),
                         'room_key' => $room_key,
                         'product_id' => $product_id,
                         'sender_name' => $sender_name,
@@ -666,43 +716,63 @@ class Motorlan_Notification_Listener {
                         'product_image' => $image,
                         'message_full'  => $message_text
                     ],
-                    ['web', 'email']
+                    $this->chat_message_channels( $buyer_id, $room_key )
                 );
             } finally {
                 if ( $switched ) restore_previous_locale();
             }
         } elseif ( ! empty( $buyer_email ) ) {
-            // Guest notification (Email only)
-            $room_key_for_token = is_object( $message_data ) ? $message_data->room_key : ( $message_data['room_key'] ?? '' );
-            $chat_token         = '';
-            $token_ttl          = 604800; // 7 días
-            $token_expires_at   = time() + $token_ttl;
-            if ( class_exists( 'Motorlan_Product_Chat_Controller' ) && ! empty( $room_key_for_token ) ) {
-                $chat_token = Motorlan_Product_Chat_Controller::generate_chat_token( $room_key_for_token, $buyer_email, $product_id, $token_ttl );
+            // Guest notification (Email only), como mucho 1 cada 15 min por conversación
+            if ( ! in_array( 'email', $this->chat_message_channels( strtolower( $buyer_email ), $room_key ), true ) ) {
+                return;
             }
-            $slug      = get_post_field( 'post_name', $product_id );
-            // Guest sin user_id: site default lang (relative path para template)
-            $base_path = motorlan_localized_page_url( 'marketplace-motorlan', trailingslashit( $slug ) );
-            $query     = array( 'open_chat' => '1' );
-            if ( $chat_token ) $query['ct'] = $chat_token;
-            $product_path = add_query_arg( $query, $base_path );
 
-            $this->notification_manager->send_email_notification_direct(
-                0,
-                'new_message',
-                sprintf( __( 'Respuesta de vendedor en "%s"', 'motorlan-api-vue' ), $title ),
-                "{$sender_name}: " . wp_trim_words( $message_text, 10, '...' ),
-                [
-                    'url'                    => $product_path,
-                    'direct_email'           => $buyer_email,
-                    'product_title'          => $title,
-                    'product_image'          => $image,
-                    'message_full'           => $message_text,
-                    'sender_name'            => $sender_name,
-                    'chat_link_expires_at'   => $chat_token ? $token_expires_at : 0,
-                ]
-            );
+            // En el idioma en que escribió el invitado (no en el de la petición del vendedor)
+            $guest_locale = class_exists( 'Motorlan_Product_Chat_Controller' ) ? Motorlan_Product_Chat_Controller::get_guest_locale( $room_key ) : '';
+            $switched     = ( $guest_locale && $guest_locale !== determine_locale() ) ? switch_to_locale( $guest_locale ) : false;
+
+            try {
+                $this->send_guest_reply_email( $buyer_email, $message_data, $message_text, $sender_name, $product_id, $title, $image );
+            } finally {
+                if ( $switched ) restore_previous_locale();
+            }
         }
+    }
+
+    /**
+     * Email al invitado con la respuesta del vendedor y el enlace (token) a su conversación.
+     */
+    private function send_guest_reply_email( $buyer_email, $message_data, $message_text, $sender_name, $product_id, $title, $image ) {
+        $room_key_for_token = is_object( $message_data ) ? $message_data->room_key : ( $message_data['room_key'] ?? '' );
+        $chat_token         = '';
+        $token_ttl          = 604800; // 7 días
+        $token_expires_at   = time() + $token_ttl;
+        if ( class_exists( 'Motorlan_Product_Chat_Controller' ) && ! empty( $room_key_for_token ) ) {
+            $chat_token = Motorlan_Product_Chat_Controller::generate_chat_token( $room_key_for_token, $buyer_email, $product_id, $token_ttl );
+        }
+        $slug      = get_post_field( 'post_name', $product_id );
+        // Guest sin user_id: site default lang (relative path para template)
+        $base_path = motorlan_localized_page_url( 'marketplace-motorlan', trailingslashit( $slug ) );
+        $query     = array( 'open_chat' => '1' );
+        if ( $chat_token ) $query['ct'] = $chat_token;
+        $product_path = add_query_arg( $query, $base_path );
+
+        // Encolado: la respuesta del vendedor no espera al SMTP
+        $this->notification_manager->queue_email(
+            0,
+            'new_message',
+            sprintf( __( 'Respuesta de vendedor en "%s"', 'motorlan-api-vue' ), $title ),
+            "{$sender_name}: " . wp_trim_words( $message_text, 10, '...' ),
+            [
+                'url'                    => $product_path,
+                'direct_email'           => $buyer_email,
+                'product_title'          => $title,
+                'product_image'          => $image,
+                'message_full'           => $message_text,
+                'sender_name'            => $sender_name,
+                'chat_link_expires_at'   => $chat_token ? $token_expires_at : 0,
+            ]
+        );
     }
 
 }

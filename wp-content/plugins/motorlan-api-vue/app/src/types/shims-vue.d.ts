@@ -69,6 +69,10 @@ declare global {
 			supported_locales?: string[]
 			rtl_locales?: string[]
 			login_endpoint?: string
+			privacy_url?: string
+			nonce_refresh_url?: string
+			max_upload_size?: number
+			post_max_size?: number
 			rest_nonce?: string
 			nonce?: string
 			[key: string]: any

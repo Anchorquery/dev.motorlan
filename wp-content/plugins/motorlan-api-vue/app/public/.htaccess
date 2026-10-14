@@ -1,0 +1,27 @@
+# Motorlan SPA (app/dist): compresión y caché de los assets compilados.
+# Vite copia este archivo de app/public/ a app/dist/ en cada build.
+#
+# Medido en producción (oct 2026): app.js (1,5 MB) y style.css se servían sin gzip
+# y sin Cache-Control. Comprimidos ocupan ~3-7 veces menos.
+#
+# js/app.js y css/style.css se encolan con ?ver=<mtime> (vue-app-setup.php): cada
+# build cambia la URL, por eso se pueden cachear un año sin servir versiones viejas.
+# OJO: si se vuelve a partir el bundle en chunks, los chunks deben llevar hash en el
+# nombre ([name]-[hash].js); con nombres fijos este año de caché serviría chunks viejos.
+# Solo directivas de tipo FileInfo (las mismas que necesita el .htaccess de WordPress)
+# y protegidas con IfModule: si el módulo no existe, se ignoran.
+
+<IfModule mod_deflate.c>
+  <IfModule mod_filter.c>
+    AddOutputFilterByType DEFLATE text/css text/javascript application/javascript application/x-javascript application/json image/svg+xml
+  </IfModule>
+</IfModule>
+
+<IfModule mod_headers.c>
+  <FilesMatch "\.(js|css)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+  <FilesMatch "\.(png|jpe?g|gif|webp|svg|ico|woff2?|ttf|eot)$">
+    Header set Cache-Control "public, max-age=604800"
+  </FilesMatch>
+</IfModule>

@@ -32,6 +32,8 @@ function motorlan_bulk_delete_publicaciones(WP_REST_Request $request) {
     }
 
     $deleted_count = 0;
+    $skipped_purchases = 0;
+    $is_admin = current_user_can('administrator');
     foreach ($ids as $id) {
         $post = get_post(intval($id));
         if (!$post) {
@@ -47,18 +49,33 @@ function motorlan_bulk_delete_publicaciones(WP_REST_Request $request) {
         }
 
         // Security check: If post is pending, only admin can delete
-        if ($post->post_status === 'pending' && !current_user_can('administrator')) {
-            continue; // Skip pending items if not admin
+        if (in_array($post->post_status, ['pending', 'trash'], true) && !$is_admin) {
+            continue; // Skip pending/trashed items if not admin
         }
 
-        if (wp_delete_post(intval($id), true)) {
+        // Con compras asociadas no se borra (el historial del comprador depende del post).
+        if (!$is_admin && motorlan_publicacion_has_purchases($post->ID)) {
+            $skipped_purchases++;
+            continue;
+        }
+
+        // Papelera en vez de borrado definitivo (recuperable por el admin).
+        if (wp_trash_post($post->ID)) {
             $deleted_count++;
         }
     }
 
     if ($deleted_count === 0) {
-        return new WP_Error('delete_failed', 'Failed to delete any publicacion', ['status' => 500]);
+        if ($skipped_purchases > 0) {
+            return new WP_Error('has_purchases', 'Las publicaciones seleccionadas tienen compras asociadas: pásalas a "Vendido" o "Pausado" en lugar de eliminarlas.', ['status' => 409]);
+        }
+        return new WP_Error('delete_failed', 'No se pudo eliminar ninguna publicación.', ['status' => 500]);
     }
 
-    return new WP_REST_Response(['message' => "$deleted_count publicaciones deleted successfully"], 200);
+    $message = sprintf('%d publicaciones eliminadas correctamente.', $deleted_count);
+    if ($skipped_purchases > 0) {
+        $message .= sprintf(' %d no se han eliminado porque tienen compras asociadas.', $skipped_purchases);
+    }
+
+    return new WP_REST_Response(['message' => $message, 'deleted' => $deleted_count, 'skipped_purchases' => $skipped_purchases], 200);
 }

@@ -10,6 +10,7 @@ if (!defined('WPINC')) {
 }
 
 require_once __DIR__ . '/callbacks/migrate-publicaciones.php';
+require_once __DIR__ . '/callbacks/migrate-tipos-from-categories.php';
 require_once __DIR__ . '/callbacks/refresh-slugs.php';
 
 /**
@@ -45,7 +46,7 @@ function motorlan_register_publicaciones_rest_routes() {
         ],
     ]);
 
-    register_rest_route($namespace, '/publicaciones/(?P<slug>[a-zA-Z0-9-]+)', [
+    register_rest_route($namespace, '/publicaciones/(?P<slug>[a-zA-Z0-9_%-]+)', [
         'methods'  => 'GET',
         'callback' => 'motorlan_get_publicacion_by_slug',
         'permission_callback' => '__return_true',
@@ -84,11 +85,14 @@ function motorlan_register_publicaciones_rest_routes() {
     ]);
 
     // --- Taxonomies ---
+    // Endpoint de categorías DESACTIVADO (taxonomía categoria sustituida por tipo).
+    /*
     register_rest_route($namespace, '/publicacion-categories', [
         'methods'  => WP_REST_Server::READABLE,
         'callback' => 'motorlan_get_publicacion_categories_callback',
         'permission_callback' => '__return_true',
     ]);
+    */
 
     register_rest_route($namespace, '/tipos', [
         'methods'  => WP_REST_Server::READABLE,
@@ -136,6 +140,14 @@ function motorlan_register_publicaciones_rest_routes() {
         'permission_callback' => function () {
             // Global post-type migration across ALL legacy posts regardless of
             // ownership. Restrict to administrators only.
+            return current_user_can('manage_options');
+        },
+    ]);
+
+    register_rest_route($namespace, '/migration/sync-tipos-from-categories', [
+        'methods'  => WP_REST_Server::CREATABLE,
+        'callback' => 'motorlan_sync_tipos_from_categories_callback',
+        'permission_callback' => function () {
             return current_user_can('manage_options');
         },
     ]);

@@ -6,6 +6,8 @@ interface Props {
   notifications: Notification[]
   badgeProps?: object
   location?: any
+  // Contador real de no leídas (la lista solo trae una página de notificaciones)
+  unreadCount?: number
 }
 interface Emit {
   (e: 'read', value: number[]): void
@@ -63,7 +65,7 @@ const getUserImage = (n: Notification): string | undefined => {
   <IconBtn id="notification-btn">
     <VBadge
       v-bind="props.badgeProps"
-      :model-value="props.notifications.some(n => !n.isSeen)"
+      :model-value="(props.unreadCount ?? 0) > 0 || props.notifications.some(n => !n.isSeen)"
       color="error"
       dot
       offset-x="2"
@@ -126,7 +128,7 @@ const getUserImage = (n: Notification): string | undefined => {
           <VList class="notification-list rounded-0 py-0">
             <template
               v-for="(notification, index) in props.notifications"
-              :key="notification.title"
+              :key="notification.id"
             >
               <VDivider v-if="index > 0" />
               <VListItem

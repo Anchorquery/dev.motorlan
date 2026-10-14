@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { onMounted, ref, computed } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useApi } from '@/composables/useApi'
 import { createUrl } from '@/@core/composable/createUrl'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import SellerChatModal from './components/SellerChatModal.vue'
 import { useI18n } from 'vue-i18n'
 import { useMotorFormatter } from '@/composables/useMotorFormatter'
@@ -23,10 +23,16 @@ const getLocaleCode = (): string => {
   return localeMap[lang] || 'es-ES'
 }
 
+// El backend devuelve 'Y-m-d H:i:s' en UTC sin zona: new Date() lo tomaba como hora
+// local (1-2 h de desfase en España y "hoy" erróneo cerca de medianoche)
+const parseUtcDate = (value: string): Date => /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(value)
+  ? new Date(`${value.replace(' ', 'T')}Z`)
+  : new Date(value)
+
 // Formateador de fecha localizado
 const formatLocalizedDate = (value: string): string => {
   if (!value) return ''
-  const date = new Date(value)
+  const date = parseUtcDate(value)
   const now = new Date()
   const isToday = date.toDateString() === now.toDateString()
   
@@ -60,20 +66,23 @@ const isLoading = ref(false)
 const loadError = ref<string | null>(null)
 const items = ref<InquiryItem[]>([])
 const router = useRouter()
+const route = useRoute()
 const { formatMotorName } = useMotorFormatter()
 const searchQuery = ref('')
 const itemsPerPage = ref(10)
 const page = ref(1)
 
-const fetchInquiries = async () => {
-  isLoading.value = true
+const fetchInquiries = async (options: { silent?: boolean } = {}) => {
+  // silent: refresco periódico sin el indicador de carga de la tabla
+  if (!options.silent)
+    isLoading.value = true
   loadError.value = null
   try {
     // Note: If the API supports server-side filtering/pagination, we should implement it here.
     // For now keeping client-side fetch but styling it to match others.
     const { data, error } = await useApi<InquiryItem[]>(createUrl('/wp-json/motorlan/v1/seller/inquiries')).get().json()
     if (error.value) {
-      loadError.value = (error.value.data?.message || error.value.message || t('inquiries.load_error')) as string
+      loadError.value = (data.value?.message || t('inquiries.load_error')) as string
       return
     }
     items.value = Array.isArray(data.value?.data) ? data.value.data : []
@@ -82,7 +91,40 @@ const fetchInquiries = async () => {
   }
 }
 
-onMounted(fetchInquiries)
+// Desde una notificación o email (?room_key=...): abrir directamente esa conversación.
+// También si ya estás en la bandeja (misma ruta, solo cambia la query: el componente se
+// reutiliza y onMounted no vuelve a ejecutarse).
+const openFromQuery = async () => {
+  await fetchInquiries()
+  const targetRoom = typeof route.query.room_key === 'string' ? route.query.room_key : null
+  if (!targetRoom)
+    return
+  const target = items.value.find(i => i.room_key === targetRoom)
+  if (target)
+    openReply(target)
+}
+
+onMounted(openFromQuery)
+
+watch(() => route.query.room_key, (value, previous) => {
+  if (value && value !== previous)
+    void openFromQuery()
+})
+
+// Refresco periódico de la bandeja (nuevas conversaciones y no leídos) con la pestaña
+// visible y sin un chat abierto; antes solo cambiaba al recargar o cerrar un chat
+const REFRESH_MS = 60000
+let refreshTimer: ReturnType<typeof setInterval> | null = null
+onMounted(() => {
+  refreshTimer = setInterval(() => {
+    if (document.visibilityState === 'visible' && !activeRoom.value && !isLoading.value)
+      void fetchInquiries({ silent: true })
+  }, REFRESH_MS)
+})
+onBeforeUnmount(() => {
+  if (refreshTimer)
+    clearInterval(refreshTimer)
+})
 
 const goToProduct = (item: InquiryItem) => {
   // URL absoluta para navegación cross-base (desde mi-cuenta a la tienda)
@@ -200,6 +242,15 @@ const refresh = () => {
         </VRow>
       </VCardText>
 
+      <VAlert
+        v-if="loadError"
+        type="error"
+        variant="tonal"
+        class="mx-6 mb-4"
+      >
+        {{ loadError }}
+      </VAlert>
+
       <div class="table-responsive-shell px-6 pb-6">
         <VDataTable
           v-model:items-per-page="itemsPerPage"
@@ -221,7 +272,7 @@ const refresh = () => {
               activator="parent"
               location="top"
             >
-              {{ new Date(item.last_at).toLocaleString(getLocaleCode()) }}
+              {{ parseUtcDate(item.last_at).toLocaleString(getLocaleCode()) }}
             </VTooltip>
           </div>
         </template>
@@ -274,7 +325,7 @@ const refresh = () => {
               @click="openReply(item)"
             >
               <VIcon icon="tabler-message-circle" start />
-              Responder
+              {{ t('inquiries.reply', 'Responder') }}
               
               <!-- Unread badge -->
               <VBadge

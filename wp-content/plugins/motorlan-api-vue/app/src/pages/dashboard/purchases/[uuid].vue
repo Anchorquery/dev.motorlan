@@ -11,9 +11,10 @@ import { useMotorFormatter } from '@/composables/useMotorFormatter'
 import { useCountries } from '@/composables/useCountries'
 import RatingModal from '@/components/RatingModal.vue'
 import { storeUrl } from '@/utils/urls'
+import { formatCurrency } from '@/utils/formatCurrency'
 
 const route = useRoute()
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const uuid = route.params.uuid as string
 const { formatMotorName } = useMotorFormatter()
 const { getCountryName, fetchCountries } = useCountries()
@@ -36,20 +37,17 @@ const fetchPurchase = async () => {
     await request.execute()
 
     if (request.error.value) {
-      throw new Error(request.error.value.message || 'Error fetching purchase')
+      throw new Error(request.data.value?.message || request.error.value.message || t('purchase_detail.load_error', 'Ocurrió un error al consultar la compra.'))
     }
 
     purchase.value = request.data.value?.data
   } catch (err: any) {
     purchase.value = undefined
-    purchaseError.value = err?.message || 'Ocurrió un error al consultar la compra.'
+    purchaseError.value = err?.message || t('purchase_detail.load_error', 'Ocurrió un error al consultar la compra.')
   } finally {
     isPurchaseLoading.value = false
   }
 }
-
-
-
 
 onMounted(() => {
   fetchCountries()
@@ -70,14 +68,13 @@ const viewerRole = computed<'buyer' | 'seller'>(() => {
   const raw = String(purchase.value?.viewer_role || '').toLowerCase()
   if (raw === 'buyer' || raw === 'seller') return raw as 'buyer' | 'seller'
 
-  const currentId = userStore.getUser?.id ?? null
-  const sellerId = Number((purchase.value?.vendedor_id ?? publication.value?.author) || 0) || null
+  const currentId = Number(userStore.getUser?.id) || null
+  const sellerId = Number((purchase.value?.vendedor_id ?? publication.value?.author?.id) || 0) || null
   if (currentId && sellerId && currentId === sellerId) return 'seller'
   return 'buyer'
 })
 
 const isBuyer = computed(() => viewerRole.value === 'buyer')
-const isSeller = computed(() => viewerRole.value === 'seller')
 
 // Normalize basic user data coming from API
 type BasicUser = { id: number | null; name: string | null; email: string | null; avatar?: string | null }
@@ -100,9 +97,9 @@ const normalizeUser = (input: any): BasicUser => {
 
 const sellerInfo = computed<BasicUser>(() => normalizeUser(publication.value?.author))
 const buyerInfo = computed<BasicUser>(() => normalizeUser(purchase.value?.comprador ?? purchase.value?.comprador_id))
-const partyTitle = computed(() => (isBuyer.value ? 'Datos del vendedor' : 'Datos del comprador'))
+const partyTitle = computed(() => (isBuyer.value ? t('purchase_detail.seller_data', 'Datos del vendedor') : t('purchase_detail.buyer_data', 'Datos del comprador')))
 const partyInfo = computed<BasicUser>(() => (isBuyer.value ? sellerInfo.value : buyerInfo.value))
-const partyName = computed(() => partyInfo.value.name || (isBuyer.value ? 'Vendedor' : 'Comprador'))
+const partyName = computed(() => partyInfo.value.name || (isBuyer.value ? t('product_details.seller_default') : t('purchase_detail.buyer', 'Comprador')))
 const partyAvatar = computed(() => partyInfo.value.avatar || null)
 const partyInitials = computed(() => {
   const parts = (partyName.value || '').split(' ').filter(Boolean)
@@ -112,13 +109,10 @@ const partyInitials = computed(() => {
 const partyEmail = computed(() => (partyInfo.value.email ? String(partyInfo.value.email) : null))
 const partyHasContact = computed(() => Boolean(partyEmail.value))
 
-const opinion = ref({ rating: 0, comment: '' })
-const isSubmittingOpinion = ref(false)
-const opinionSuccess = ref(false)
-const opinionError = ref<string | null>(null)
-
 const motorAcf = computed(() => (publication.value?.acf || {}) as Record<string, any>)
-const sellerAcf = computed(() => (purchase.value?.motor?.author?.acf || {}) as Record<string, any>)
+// La API devuelve la publicación en `publicacion` (antes se leía purchase.motor, que no
+// existe, y la reputación del vendedor nunca se mostraba)
+const sellerAcf = computed(() => (publication.value?.author?.acf || {}) as Record<string, any>)
 
 // Usa el composable centralizado para formatear el nombre
 const productTitle = computed(() => {
@@ -131,7 +125,7 @@ const productTitle = computed(() => {
   if (purchase.value?.title)
     return String(purchase.value.title).toUpperCase()
 
-  return 'PRODUCTO'
+  return t('purchase_detail.product_fallback', 'Producto').toUpperCase()
 })
 
 const productTypeLabel = computed(() => {
@@ -174,11 +168,11 @@ const productTypeLabel = computed(() => {
   const match = (keyword: string) => normalized.find(name => name.toLowerCase().includes(keyword))
 
   if (match('regulador'))
-    return 'Regulador'
-  if (match('repuesto'))
-    return 'Repuesto'
+    return t('select_publication_type.regulator_title')
+  if (match('repuesto') || match('otro'))
+    return t('select_publication_type.other_spare_part_title')
   if (match('motor'))
-    return 'Motor'
+    return t('select_publication_type.motor_title')
 
   return normalized[0] || null
 })
@@ -217,9 +211,13 @@ const sellerCompany = computed(() => {
   return company ? String(company) : null
 })
 
+// calificacion es null mientras el vendedor no tenga valoraciones
 const sellerRating = computed(() => {
-  const rating = Number(sellerAcf.value.calificacion ?? sellerAcf.value.rating)
-  return Number.isFinite(rating) ? rating : null
+  const raw = sellerAcf.value.calificacion ?? sellerAcf.value.rating
+  if (raw === null || raw === undefined || raw === '')
+    return null
+  const rating = Number(raw)
+  return Number.isFinite(rating) && rating > 0 ? rating : null
 })
 
 const sellerRatingLabel = computed(() => {
@@ -230,64 +228,21 @@ const sellerRatingLabel = computed(() => {
 })
 
 const sellerSales = computed(() => {
-  const sales = Number(sellerAcf.value.ventas ?? sellerAcf.value.sales)
-  return Number.isFinite(sales) ? sales : null
-})
-
-const sellerSalesLabel = computed(() => {
-  if (sellerSales.value === null)
+  const raw = sellerAcf.value.ventas ?? sellerAcf.value.sales
+  if (raw === null || raw === undefined || raw === '')
     return null
-
-  return new Intl.NumberFormat('es-ES').format(sellerSales.value)
+  const sales = Number(raw)
+  return Number.isFinite(sales) ? sales : null
 })
 
 const sellerSalesText = computed(() => {
   if (sellerSales.value === null)
     return null
 
-  const label = sellerSalesLabel.value ?? String(sellerSales.value)
-  return `${label} ${sellerSales.value === 1 ? 'venta' : 'ventas'}`
+  return t('purchase_detail.sales_count', { n: new Intl.NumberFormat(locale.value).format(sellerSales.value) }, 'Ventas: {n}')
 })
 
-const sellerPhone = computed(() => {
-  const phone = sellerAcf.value.telefono ?? sellerAcf.value.phone
-  return phone ? String(phone) : null
-})
-
-const sellerWhatsapp = computed(() => {
-  const whatsapp = sellerAcf.value.whatsapp ?? sellerAcf.value.whatsapp_number
-  return whatsapp ? String(whatsapp) : null
-})
-
-const sellerEmail = computed(() => {
-  const authorEmail = purchase.value?.motor?.author?.email
-  const fallbackEmail = sellerAcf.value.email
-  const resolved = authorEmail || fallbackEmail
-
-  return resolved ? String(resolved) : null
-})
-
-const sellerHasContact = computed(() => Boolean(sellerPhone.value || sellerWhatsapp.value || sellerEmail.value))
-
-const normalizePhone = (value: string) => value.replace(/[^\d+]/g, '')
-
-const sellerPhoneHref = computed(() => {
-  if (!sellerPhone.value)
-    return null
-
-  const normalized = normalizePhone(sellerPhone.value)
-  return normalized ? `tel:${normalized}` : null
-})
-
-const sellerWhatsappHref = computed(() => {
-  if (!sellerWhatsapp.value)
-    return null
-
-  const normalized = normalizePhone(sellerWhatsapp.value).replace(/^\+/, '')
-  return normalized ? `https://wa.me/${normalized}` : null
-})
-
-const hasSellerMetrics = computed(() => sellerRating.value !== null || sellerSalesLabel.value !== null)
+const hasSellerMetrics = computed(() => sellerRating.value !== null || sellerSalesText.value !== null)
 
 const isChatModalOpen = ref(false)
 const openChat = () => {
@@ -300,13 +255,7 @@ const quantityValue = computed(() => {
   return qty > 0 ? qty : 1
 })
 
-const quantityLabel = computed(() => {
-  const qty = quantityValue.value
-
-  return `${qty} ${qty === 1 ? 'unidad' : 'unidades'}`
-})
-
-import { formatCurrency } from '@/utils/formatCurrency'
+const quantityLabel = computed(() => t('purchase_detail.units', { n: quantityValue.value }, '{n} ud.'))
 
 const toNumericValue = (value: unknown): number | null => {
   if (typeof value === 'number' && Number.isFinite(value))
@@ -367,11 +316,13 @@ const unitPriceValue = computed(() => {
   return publishedPriceValue.value
 })
 
+const consultPriceLabel = computed(() => t('product_details.consult_price'))
+
 const unitPriceLabel = computed(() => {
   if (unitPriceValue.value !== null)
-    return formatCurrency(unitPriceValue.value) || 'Consultar precio'
+    return formatCurrency(unitPriceValue.value) || consultPriceLabel.value
 
-  return 'Consultar precio'
+  return consultPriceLabel.value
 })
 
 const totalPriceLabel = computed(() => {
@@ -383,7 +334,7 @@ const totalPriceLabel = computed(() => {
     return formatCurrency(total) || unitPriceLabel.value
   }
 
-  return 'Consultar precio'
+  return consultPriceLabel.value
 })
 
 const summaryPriceNotes = computed(() => {
@@ -392,7 +343,7 @@ const summaryPriceNotes = computed(() => {
   if (quantityValue.value > 1) {
     if (unitPriceValue.value !== null) {
       const unitLabel = formatCurrency(unitPriceValue.value) || ''
-      notes.push(`${quantityLabel.value} · ${unitLabel} c/u`.trim())
+      notes.push(`${quantityLabel.value} · ${unitLabel} ${t('purchase_detail.each', 'c/u')}`.trim())
     }
     else {
       notes.push(quantityLabel.value)
@@ -404,7 +355,7 @@ const summaryPriceNotes = computed(() => {
     if (Math.abs(unitPriceValue.value - published) > 0.009) {
       const publishedLabel = formatCurrency(published)
       if (publishedLabel)
-        notes.push(`Precio publicado: ${publishedLabel}`)
+        notes.push(`${t('purchase_detail.published_price')}: ${publishedLabel}`)
     }
   }
 
@@ -421,7 +372,7 @@ const formatDateTime = (value: string | null | undefined) => {
   if (Number.isNaN(date.getTime()))
     return value
 
-  return new Intl.DateTimeFormat('es-ES', {
+  return new Intl.DateTimeFormat(locale.value, {
     dateStyle: 'medium',
     timeStyle: 'short',
   }).format(date)
@@ -439,29 +390,29 @@ const offerStatusInfo = computed(() => {
 
   const map: Record<string, { label: string; color: 'success' | 'warning' | 'info' | 'error'; description?: string }> = {
     pending: {
-      label: 'Pendiente',
+      label: t('purchase_detail.offer_status.pending', 'Pendiente'),
       color: 'warning',
-      description: 'El vendedor aun no responde a la oferta.',
+      description: t('purchase_detail.offer_status.pending_desc', 'El vendedor aún no ha respondido a la oferta.'),
     },
     accepted_pending_confirmation: {
-      label: 'Aceptada por confirmar',
+      label: t('purchase_detail.offer_status.accepted_pending', 'Aceptada por confirmar'),
       color: 'info',
-      description: 'La oferta fue aceptada. Queda pendiente tu confirmacion de compra.',
+      description: t('purchase_detail.offer_status.accepted_pending_desc', 'La oferta fue aceptada. Queda pendiente tu confirmación de compra.'),
     },
     confirmed: {
-      label: 'Confirmada',
+      label: t('purchase_detail.offer_status.confirmed', 'Confirmada'),
       color: 'success',
-      description: 'La oferta se confirmo y se registro la compra.',
+      description: t('purchase_detail.offer_status.confirmed_desc', 'La oferta se confirmó y se registró la compra.'),
     },
     rejected: {
-      label: 'Rechazada',
+      label: t('purchase_detail.offer_status.rejected', 'Rechazada'),
       color: 'error',
-      description: 'El vendedor rechazo esta oferta.',
+      description: t('purchase_detail.offer_status.rejected_desc', 'El vendedor rechazó esta oferta.'),
     },
     expired: {
-      label: 'Expirada',
+      label: t('purchase_detail.offer_status.expired', 'Expirada'),
       color: 'warning',
-      description: 'La oferta vencio sin confirmacion.',
+      description: t('purchase_detail.offer_status.expired_desc', 'La oferta venció sin confirmación.'),
     },
   }
 
@@ -485,7 +436,7 @@ const isNegotiable = computed(() => {
 
   if (typeof negotiable === 'string') {
     const normalized = negotiable.trim().toLowerCase()
-    return normalized === 'si' || normalized === 'yes' || normalized === 'true'
+    return normalized === 'si' || normalized === 'sí' || normalized === 'yes' || normalized === 'true'
   }
 
   return Boolean(negotiable)
@@ -493,22 +444,9 @@ const isNegotiable = computed(() => {
 
 const purchaseModeLabel = computed(() => {
   if (hasOffer.value)
-    return 'Compra por oferta'
+    return t('purchase_detail.mode_offer', 'Compra por oferta')
 
-  return isNegotiable.value ? 'Consultar precio' : 'Compra directa'
-})
-
-const purchaseModeDescription = computed(() => {
-  if (hasOffer.value) {
-    if (offerAmountLabel.value)
-      return `Compra concretada mediante una oferta aceptada por ${offerAmountLabel.value}.`
-
-    return 'Compra concretada mediante una oferta aceptada.'
-  }
-
-  return isNegotiable.value
-    ? 'El precio de este artículo es bajo consulta. Contacta con el vendedor para acordar el precio.'
-    : 'Compra realizada al precio publicado sin negociacion.'
+  return isNegotiable.value ? consultPriceLabel.value : t('purchase_detail.mode_direct', 'Compra directa')
 })
 
 const statusRawLabel = computed(() => {
@@ -523,104 +461,75 @@ const statusInfo = computed(() => {
   const rawStatus = typeof purchase.value?.estado === 'string' ? purchase.value.estado : ''
   const status = rawStatus.toLowerCase()
   const date = purchase.value?.fecha_compra
-  const withDate = (text: string) => (date ? `El ${date} ${text}` : text)
+  const withDate = (text: string) => (date ? t('purchase_detail.state.with_date', { date, text }, 'El {date}: {text}') : text)
 
-  const map: Record<string, { label: string; title: string; description: string; tone: 'success' | 'warning' | 'info' | 'error' }> = {
+  type StatusEntry = { label: string; title: string; description: string; tone: 'success' | 'warning' | 'info' | 'error' }
+
+  const registered: StatusEntry = {
+    label: t('purchase_detail.state.registered_label', 'Venta registrada'),
+    title: t('purchase_detail.state.registered_title', 'Compra registrada'),
+    description: withDate(t('purchase_detail.state.registered_desc', 'Coordina el pago y la entrega directamente con el vendedor.')),
+    tone: 'success',
+  }
+  const pending: StatusEntry = {
+    label: t('purchase_detail.state.pending_label', 'Pendiente'),
+    title: t('purchase_detail.state.pending_title', 'Acuerdo pendiente'),
+    description: withDate(t('purchase_detail.state.registered_desc', 'Coordina el pago y la entrega directamente con el vendedor.')),
+    tone: 'warning',
+  }
+  const cancelled: StatusEntry = {
+    label: t('purchase_detail.state.cancelled_label', 'Cancelada'),
+    title: t('purchase_detail.state.cancelled_title', 'La compra se canceló'),
+    description: withDate(t('purchase_detail.state.cancelled_desc', 'La compra fue anulada.')),
+    tone: 'error',
+  }
+
+  // Valores ACF actuales (completed/pending/cancelled) y antiguos en castellano.
+  // Antes 'completed' (el estado de todas las compras nuevas) salía como "Estado: Completed".
+  const map: Record<string, StatusEntry> = {
+    completed: registered,
     entregado: {
-      label: 'Entregado',
-      title: 'Recibiste la compra',
-      description: withDate('confirmamos que ya la tienes.'),
+      label: t('purchase_detail.state.delivered_label', 'Entregado'),
+      title: t('purchase_detail.state.delivered_title', 'Recibiste la compra'),
+      description: withDate(t('purchase_detail.state.delivered_desc', 'confirmamos que ya la tienes.')),
       tone: 'success',
     },
     enviado: {
-      label: 'Enviado',
-      title: 'Tu compra va en camino',
-      description: withDate('salio a entrega.'),
+      label: t('purchase_detail.state.shipped_label', 'Enviado'),
+      title: t('purchase_detail.state.shipped_title', 'Tu compra va en camino'),
+      description: withDate(t('purchase_detail.state.shipped_desc', 'salió a entrega.')),
       tone: 'info',
     },
     en_proceso: {
-      label: 'En proceso',
-      title: 'Estamos preparando tu compra',
-      description: withDate('estamos gestionando el envio.'),
+      label: t('purchase_detail.state.processing_label', 'En proceso'),
+      title: t('purchase_detail.state.processing_title', 'Estamos preparando tu compra'),
+      description: withDate(t('purchase_detail.state.processing_desc', 'estamos gestionando el envío.')),
       tone: 'info',
     },
-    pendiente: {
-      label: 'Venta Registrada',
-      title: 'Acuerdo pendiente',
-      description: withDate('Coordina el pago y la entrega directamente con el vendedor.'),
-      tone: 'warning',
-    },
-    cancelado: {
-      label: 'Cancelado',
-      title: 'La compra se cancelo',
-      description: withDate('anulamos el pedido.'),
-      tone: 'error',
-    },
+    pending,
+    pendiente: pending,
+    cancelled,
+    canceled: cancelled,
+    cancelado: cancelled,
   }
 
   if (map[status])
     return map[status]
 
-  const fallbackLabel = statusRawLabel.value || 'En progreso'
+  const fallbackLabel = statusRawLabel.value || t('purchase_detail.state.in_progress', 'En curso')
 
   return {
     label: fallbackLabel,
-    title: `Estado: ${fallbackLabel}`,
-    description: withDate('seguimos gestionando tu pedido.'),
+    title: fallbackLabel,
+    description: withDate(t('purchase_detail.state.in_progress_desc', 'seguimos gestionando tu pedido.')),
     tone: 'info',
   }
 })
 
-const statusSummaryLabel = computed(() => statusRawLabel.value || statusInfo.value.label)
+const statusSummaryLabel = computed(() => statusInfo.value.label || statusRawLabel.value)
 
-const sellerName = computed(() => purchase.value?.motor?.author?.name || 'Vendedor')
-const sellerAvatar = computed(() => {
-  const avatar = purchase.value?.motor?.author?.acf?.avatar
-
-  if (!avatar)
-    return null
-
-  if (typeof avatar === 'string')
-    return avatar
-
-  return avatar.url || null
-})
-
-const sellerInitials = computed(() => {
-  const parts = sellerName.value.split(' ').filter(Boolean)
-
-  return parts.slice(0, 2).map((part: string) => part[0]?.toUpperCase()).join('') || 'V'
-})
-
-const helpItems = [
-  { id: 'contact', title: 'Como me pongo en contacto con el vendedor?' },
-  { id: 'delivery', title: 'Necesito ayuda con envio y entrega' },
-  { id: 'payment', title: 'Tengo preguntas sobre el pago' },
-]
-
-const sendOpinion = async () => {
-  if (isSubmittingOpinion.value)
-    return
-
-  opinionError.value = null
-
-  try {
-    isSubmittingOpinion.value = true
-    await useApi(`/wp-json/motorlan/v1/purchases/${uuid}/opinion`).post(opinion.value)
-    opinionSuccess.value = true
-    opinion.value = { rating: 0, comment: '' }
-    setTimeout(() => {
-      opinionSuccess.value = false
-    }, 4000)
-  }
-  catch (error) {
-    console.error(error)
-    opinionError.value = 'No pudimos guardar tu opinion. Intenta de nuevo mas tarde.'
-  }
-  finally {
-    isSubmittingOpinion.value = false
-  }
-}
+// Compras anuladas no se valoran (el backend también lo rechaza)
+const canRate = computed(() => !['cancelled', 'canceled', 'cancelado', 'refunded', 'rejected'].includes(String(purchase.value?.estado || '').toLowerCase()))
 </script>
 
 <template>
@@ -650,11 +559,11 @@ const sendOpinion = async () => {
           :to="{ name: 'dashboard-purchases-purchases' }"
           prepend-icon="tabler-shopping-cart"
         >
-          Compras
+          {{ t('purchase_detail.breadcrumb', 'Compras') }}
         </VBtn>
         <VIcon icon="tabler-chevron-right" size="14" color="medium-emphasis" />
         <span class="text-caption text-high-emphasis font-weight-bold text-uppercase tracking-wide">
-          {{ productTitle || 'Detalle de Compra' }}
+          {{ productTitle || t('purchase_detail.purchase_detail_title') }}
         </span>
     </div>
 
@@ -752,7 +661,7 @@ const sendOpinion = async () => {
                                 color="primary"
                                 append-icon="tabler-external-link"
                               >
-                                Ver Producto
+                                {{ t('purchase_detail.view_product', 'Ver producto') }}
                               </VBtn>
                          </div>
                      </div>
@@ -784,7 +693,7 @@ const sendOpinion = async () => {
                        <div class="text-h6 font-weight-bold text-high-emphasis text-truncate mb-1">
                           {{ partyName }}
                        </div>
-                       <div v-if="sellerCompany" class="text-body-2 text-medium-emphasis d-flex align-center gap-1 mb-1">
+                       <div v-if="isBuyer && sellerCompany" class="text-body-2 text-medium-emphasis d-flex align-center gap-1 mb-1">
                           <VIcon icon="tabler-building-skyscraper" size="14" />
                           <span>{{ sellerCompany }}</span>
                        </div>
@@ -796,7 +705,7 @@ const sendOpinion = async () => {
                  </div>
 
                  <!-- Metrics -->
-                 <div v-if="hasSellerMetrics" class="d-flex gap-4 mb-6">
+                 <div v-if="isBuyer && hasSellerMetrics" class="d-flex gap-4 mb-6">
                     <div v-if="sellerRating !== null" class="d-flex align-center gap-1 bg-surface-variant px-3 py-1 rounded-pill">
                        <VRating
                           :model-value="sellerRating"
@@ -834,7 +743,7 @@ const sendOpinion = async () => {
                       class="flex-grow-1 font-weight-bold shadow-primary"
                       @click="openChat"
                     >
-                      Abrir chat
+                      {{ t('product_details.open_chat') }}
                     </VBtn>
                     
                     <VBtn
@@ -882,7 +791,7 @@ const sendOpinion = async () => {
               </p>
               
               <div v-if="statusRawLabel" class="text-caption text-disabled mt-2">
-                 Estado técnico: {{ statusRawLabel }}
+                 {{ t('purchase_detail.technical_status', 'Estado técnico') }}: {{ statusRawLabel }}
               </div>
             </VCardText>
           </VCard>
@@ -960,12 +869,12 @@ const sendOpinion = async () => {
 
           <!-- Rating CTA Card (If not rated yet and purchase is completed/delivered mechanism exists, or always show for now as requested) -->
           <VCard 
-            v-if="!purchase?.review_done && viewerRole === 'buyer'"
+            v-if="!purchase?.review_done && viewerRole === 'buyer' && canRate"
             class="purchase-card rating-card mb-6"
           >
              <VCardText class="d-flex flex-column flex-sm-row align-center justify-space-between gap-4 pa-6">
                  <div>
-                    <h3 class="text-h6 font-weight-bold mb-1">¿Qué tal tu experiencia?</h3>
+                    <h3 class="text-h6 font-weight-bold mb-1">{{ t('purchase_detail.rate_title', '¿Qué tal tu experiencia?') }}</h3>
                     <p class="text-body-2 text-medium-emphasis mb-0">{{ t('purchase_detail.rate_seller_hint') }}</p>
                  </div>
                  <VBtn
@@ -973,7 +882,7 @@ const sendOpinion = async () => {
                     prepend-icon="tabler-star"
                     @click="showRatingModal = true"
                  >
-                    Valorar Vendedor
+                    {{ t('purchase_detail.rate_seller_button', 'Valorar vendedor') }}
                  </VBtn>
              </VCardText>
           </VCard>
@@ -1061,7 +970,7 @@ const sendOpinion = async () => {
               <VExpansionPanel :title="t('purchase_detail.payment_delivery_details')">
                 <VExpansionPanelText>
                   <p class="summary-panel__details-text">
-                    Coordina directamente con el vendedor la fecha y el lugar de entrega.
+                    {{ t('purchase_detail.delivery_text', 'Coordina directamente con el vendedor la fecha y el lugar de entrega.') }}
                   </p>
                 </VExpansionPanelText>
               </VExpansionPanel>
@@ -1091,35 +1000,28 @@ const sendOpinion = async () => {
     @success="handleRatingSuccess"
   />
 
+  <!-- Antes era v-else y quedaba enlazado a RatingModal: la tarjeta "No encontramos la
+       compra" (con un segundo ChatModal) se mostraba siempre bajo la compra cargada. -->
   <VContainer
-    v-else
+    v-if="!isPurchaseLoading && !purchase"
     class="purchase-page__empty"
   >
     <VCard class="pa-8 text-center mx-auto empty-card">
       <VCardTitle class="justify-center">
-        {{ purchaseError || 'No encontramos la compra' }}
+        {{ purchaseError || t('purchase_detail.not_found', 'No encontramos la compra') }}
       </VCardTitle>
       <VCardText>
-        Revisa el enlace o vuelve a la tienda para continuar navegando.
+        {{ t('purchase_detail.not_found_hint', 'Revisa el enlace o vuelve a la tienda para continuar navegando.') }}
       </VCardText>
       <VCardActions class="justify-center">
         <VBtn
           color="primary"
           :to="{ path: '/' }"
         >
-          Ir a la tienda
+          {{ t('publication_slug_page.not_found_action') }}
         </VBtn>
       </VCardActions>
     </VCard>
-    <!-- Chat Modal -->
-    <ChatModal
-      v-if="purchase?.uuid"
-      v-model:is-open="isChatModalOpen"
-      :purchase-uuid="purchase.uuid"
-      context-type="purchase"
-      :publication-title="productTitle"
-      :publication-image="productImage"
-    />
   </VContainer>
 </template>
 

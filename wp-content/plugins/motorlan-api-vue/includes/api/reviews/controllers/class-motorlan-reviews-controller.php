@@ -15,6 +15,25 @@ if ( ! class_exists( 'Motorlan_Reviews_Controller' ) ) {
         protected $rest_base = 'reviews';
 
         /**
+         * Register routes. Sin esto, WP_REST_Controller::register_routes() base no
+         * registraba nada y POST /motorlan/v1/reviews devolvía 404 (nunca se guardaba
+         * ninguna valoración).
+         */
+        public function register_routes() {
+            register_rest_route(
+                $this->namespace,
+                '/' . $this->rest_base,
+                array(
+                    array(
+                        'methods'             => WP_REST_Server::CREATABLE,
+                        'callback'            => array( $this, 'create_review' ),
+                        'permission_callback' => 'is_user_logged_in',
+                    ),
+                )
+            );
+        }
+
+        /**
          * Create a new review.
          *
          * @param WP_REST_Request $request Request object.
@@ -66,6 +85,12 @@ if ( ! class_exists( 'Motorlan_Reviews_Controller' ) ) {
                 return new WP_Error( 'not_found', __( 'Compra no encontrada.', 'motorlan-api-vue' ), array( 'status' => 404 ) );
             }
             $purchase_id = $posts[0]->ID;
+
+            // Compras anuladas no se valoran
+            $purchase_state = get_post_meta( $purchase_id, 'estado', true );
+            if ( in_array( $purchase_state, array( 'cancelled', 'canceled', 'refunded', 'rejected' ), true ) ) {
+                return new WP_Error( 'invalid_purchase', __( 'Esta compra está anulada y no se puede valorar.', 'motorlan-api-vue' ), array( 'status' => 400 ) );
+            }
 
             // 3. Verify Ownership & Role
             // We need to know WHO 'seller' and 'buyer' are in this purchase to verify the current user
@@ -175,8 +200,10 @@ if ( ! class_exists( 'Motorlan_Reviews_Controller' ) ) {
             
             // Let's stick to SELLER stats for 'calificacion' ACF as that's what's visible publically.
             // If we want buyer stats, we might need new fields. For now, let's implement for Seller.
+            // Valoraciones recibidas como comprador: metas propias (no se mezclan con la
+            // reputación de vendedor, que es la que se muestra en la tienda).
             if ( $role !== 'seller' ) {
-                // TODO: Implement buyer specific rating storage if requested. 
+                $this->aggregate_meta_ratings( $user_id, 'comprador', '_review_buyer_rating', 'motorlan_buyer_rating', 'motorlan_buyer_count' );
                 return;
             }
 
@@ -235,6 +262,50 @@ if ( ! class_exists( 'Motorlan_Reviews_Controller' ) ) {
                 }
                 update_user_meta( $user_id, 'motorlan_seller_rating', $average );
                 update_user_meta( $user_id, 'motorlan_seller_count', $count );
+
+                // La reputación va en las tarjetas cacheadas de la tienda
+                if ( function_exists( 'motorlan_invalidate_store_publicaciones_cache' ) ) {
+                    motorlan_invalidate_store_publicaciones_cache();
+                }
+            }
+        }
+
+        /**
+         * Media y número de valoraciones de un usuario según un campo de la compra.
+         *
+         * @param int    $user_id     Usuario valorado.
+         * @param string $party_key   Meta de la compra que lo identifica ('comprador').
+         * @param string $rating_key  Meta con la nota (_review_buyer_rating).
+         * @param string $avg_meta    Meta de usuario para la media.
+         * @param string $count_meta  Meta de usuario para el número de valoraciones.
+         */
+        protected function aggregate_meta_ratings( $user_id, $party_key, $rating_key, $avg_meta, $count_meta ) {
+            $ids = get_posts( array(
+                'post_type'      => 'compra',
+                'posts_per_page' => -1,
+                'post_status'    => 'any',
+                'fields'         => 'ids',
+                'no_found_rows'  => true,
+                'meta_query'     => array(
+                    'relation' => 'AND',
+                    array( 'key' => $party_key, 'value' => $user_id, 'compare' => '=' ),
+                    array( 'key' => $rating_key, 'compare' => 'EXISTS' ),
+                ),
+            ) );
+
+            $total = 0;
+            $count = 0;
+            foreach ( $ids as $pid ) {
+                $r = get_post_meta( $pid, $rating_key, true );
+                if ( is_numeric( $r ) ) {
+                    $total += floatval( $r );
+                    $count++;
+                }
+            }
+
+            if ( $count > 0 ) {
+                update_user_meta( $user_id, $avg_meta, round( $total / $count, 1 ) );
+                update_user_meta( $user_id, $count_meta, $count );
             }
         }
     }

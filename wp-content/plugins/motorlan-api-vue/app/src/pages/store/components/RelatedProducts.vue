@@ -4,52 +4,50 @@ import { useI18n } from 'vue-i18n'
 import { createUrl } from '@/@core/composable/createUrl'
 import { usePublicApi } from '@/composables/usePublicApi'
 import type { Publicacion } from '@/interfaces/publicacion'
+import { uiSlugForTipo } from '@/utils/tipoMapping'
 
-const props = defineProps<{ currentId: number }>()
+const props = defineProps<{ currentId: number; tipo?: string }>()
 const { t } = useI18n()
 
+// Relacionados = mismo tipo (motor/regulador/repuesto) que la ficha actual, desde el
+// endpoint cacheado de la tienda (listado ligero, sin galerías). Antes eran las 8 últimas
+// publicaciones de /publicaciones, sin caché y con la galería completa de cada una.
 const { data } = usePublicApi<any>(
-  createUrl('/wp-json/motorlan/v1/publicaciones', { query: { per_page: 8, status: 'publish' } }),
+  createUrl('/wp-json/motorlan/v1/store/publicaciones', {
+    query: computed(() => ({
+      per_page: 5,
+      page: 1,
+      status: 'publish',
+      orderby: 'date',
+      order: 'desc',
+      ...(props.tipo ? { tipo: props.tipo } : {}),
+    })),
+  }),
+  { refetch: true },
 ).get().json()
 
 const products = computed(() => {
   const all = data.value?.data || []
 
   return all
-    .filter((m: Publicacion) => m.id !== props.currentId && m.status === 'publish')
+    .filter((m: Publicacion) => Number(m.id) !== Number(props.currentId))
     .slice(0, 4)
 })
 
 const formatProductTitle = (publication: Publicacion) => publication?.title || ''
 
 const resolveProductType = (publication: Publicacion) => {
-  const candidates: string[] = []
+  const tipos = Array.isArray(publication?.tipo) ? publication.tipo : []
+  if (!tipos.length)
+    return t('select_publication_type.motor_title')
 
-  if (Array.isArray(publication?.tipo)) {
-    publication.tipo.forEach(typeItem => {
-      if (typeItem?.name)
-        candidates.push(String(typeItem.name))
-    })
+  switch (uiSlugForTipo(tipos[0].slug || '', publication.acf?.tipo_de_alimentacion)) {
+    case 'motor-ac': return t('select_publication_type.motor_ac_title')
+    case 'motor-dc': return t('select_publication_type.motor_dc_title')
+    case 'regulador': return t('select_publication_type.regulator_title')
+    case 'otro-repuesto': return t('select_publication_type.other_spare_part_title')
+    default: return tipos[0].name || t('select_publication_type.motor_title')
   }
-
-  const acfType = (publication?.acf as Record<string, any>)?.tipo || (publication?.acf as Record<string, any>)?.tipo_producto
-  if (acfType)
-    candidates.push(String(acfType))
-
-  const normalized = candidates
-    .map(name => name.trim())
-    .filter(Boolean)
-
-  const match = (keyword: string) => normalized.find(name => name.toLowerCase().includes(keyword))
-
-  if (match('regulador'))
-    return 'Regulador'
-  if (match('repuesto'))
-    return 'Repuesto'
-  if (match('motor'))
-    return 'Motor'
-
-  return normalized[0] || 'Motor'
 }
 </script>
 

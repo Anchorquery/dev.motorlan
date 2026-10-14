@@ -273,21 +273,10 @@ if ( ! function_exists( 'motorlan_get_motor_data' ) ) {
             }
         }
 
+        // 'categories' DESACTIVADO (taxonomía categoria sustituida por tipo).
         if ( function_exists( 'motorlan_get_post_taxonomy_details' ) ) {
-            $data['categories'] = motorlan_get_post_taxonomy_details( $motor_id, 'categoria' );
             $data['tipo']       = motorlan_get_post_taxonomy_details( $motor_id, 'tipo' );
         } else {
-            $categories = wp_get_post_terms( $motor_id, 'categoria' );
-            if ( ! is_wp_error( $categories ) ) {
-                foreach ( $categories as $term ) {
-                    $data['categories'][] = array(
-                        'id'   => $term->term_id,
-                        'name' => $term->name,
-                        'slug' => $term->slug,
-                    );
-                }
-            }
-
             $types = wp_get_post_terms( $motor_id, 'tipo' );
             if ( ! is_wp_error( $types ) ) {
                 foreach ( $types as $term ) {
@@ -412,6 +401,19 @@ if ( ! function_exists( 'motorlan_create_purchase' ) ) {
     }
 }
 
+if ( ! function_exists( 'motorlan_mb_upper' ) ) {
+    /**
+     * Mayúsculas multibyte (strtoupper deja "ñ", "ü"... en minúscula: "ESPAñA").
+     *
+     * @param string $value
+     * @return string
+     */
+    function motorlan_mb_upper( $value ) {
+        $value = (string) $value;
+        return function_exists( 'mb_strtoupper' ) ? mb_strtoupper( $value, 'UTF-8' ) : strtoupper( $value );
+    }
+}
+
 if ( ! function_exists( 'motorlan_format_motor_name' ) ) {
     /**
      * Format the motor name based on its attributes (Type, Brand, Model, Specs).
@@ -440,23 +442,32 @@ if ( ! function_exists( 'motorlan_format_motor_name' ) ) {
         $marca = function_exists( 'get_field' ) ? get_field( 'marca', $post->ID ) : get_post_meta( $post->ID, 'marca', true );
         if ( $marca ) {
             if ( is_object( $marca ) && isset( $marca->name ) ) {
-                $parts[] = strtoupper( $marca->name );
+                $parts[] = motorlan_mb_upper( $marca->name );
             } elseif ( is_array( $marca ) && isset( $marca['name'] ) ) {
-                $parts[] = strtoupper( $marca['name'] );
+                $parts[] = motorlan_mb_upper( $marca['name'] );
             } elseif ( is_numeric( $marca ) ) {
                 $term = get_term( $marca );
                 if ( $term && ! is_wp_error( $term ) ) {
-                    $parts[] = strtoupper( $term->name );
+                    $parts[] = motorlan_mb_upper( $term->name );
                 }
             } elseif ( is_string( $marca ) ) {
-                $parts[] = strtoupper( $marca );
+                $parts[] = motorlan_mb_upper( $marca );
+            }
+        }
+
+        // Marca nueva pendiente de aprobación (marca = -1, sin término): usar el nombre propuesto
+        // para que el título y los avisos al admin no salgan sin marca.
+        if ( empty( $parts ) ) {
+            $pending_brand = get_post_meta( $post->ID, '_pending_brand_name', true );
+            if ( $pending_brand ) {
+                $parts[] = motorlan_mb_upper( $pending_brand );
             }
         }
 
         // 3. Model/Reference (ACF 'tipo_o_referencia')
         $ref = function_exists( 'get_field' ) ? get_field( 'tipo_o_referencia', $post->ID ) : get_post_meta( $post->ID, 'tipo_o_referencia', true );
         if ( $ref ) {
-            $parts[] = strtoupper( $ref );
+            $parts[] = motorlan_mb_upper( $ref );
         }
 
         // 4. Power or Torque (ACF 'potencia' / 'par_nominal')
@@ -556,3 +567,327 @@ if ( ! function_exists( 'motorlan_validate_password_strength' ) ) {
     }
 }
 
+
+// ---------------------------------------------------------------------------
+// Helpers compartidos por el alta y la edición de publicaciones
+// (create-publicacion.php / update-publicacion-by-uuid.php).
+// ---------------------------------------------------------------------------
+
+if ( ! function_exists( 'motorlan_publicacion_payload_too_large' ) ) {
+    /**
+     * Detecta un envío multipart que PHP ha descartado por superar post_max_size:
+     * en ese caso $_POST y $_FILES llegan vacíos y, sin este aviso, el usuario
+     * veía "El título es obligatorio" (alta) o se borraban imágenes (edición).
+     *
+     * @param WP_REST_Request $request
+     * @return WP_Error|null
+     */
+    function motorlan_publicacion_payload_too_large( $request ) {
+        $content_length = isset( $_SERVER['CONTENT_LENGTH'] ) ? (int) $_SERVER['CONTENT_LENGTH'] : 0;
+        $content_type   = $request->get_content_type();
+        $is_multipart   = is_array( $content_type ) && ! empty( $content_type['value'] ) && false !== strpos( $content_type['value'], 'multipart/form-data' );
+
+        if ( $is_multipart && $content_length > 0 && empty( $_POST ) && empty( $_FILES ) ) {
+            return new WP_Error(
+                'payload_too_large',
+                sprintf(
+                    'Los archivos superan el tamaño máximo permitido (%s en total). Reduce el número o el tamaño de las imágenes. No se ha guardado nada.',
+                    size_format( wp_convert_hr_to_bytes( ini_get( 'post_max_size' ) ) )
+                ),
+                array( 'status' => 413 )
+            );
+        }
+
+        return null;
+    }
+}
+
+if ( ! function_exists( 'motorlan_publicacion_rearrange_files' ) ) {
+    /**
+     * Normaliza una entrada de $_FILES (simple o múltiple "campo[]") a una lista de archivos.
+     *
+     * @param array $entry
+     * @return array[] Lista de ['name','type','tmp_name','error','size'].
+     */
+    function motorlan_publicacion_rearrange_files( $entry ) {
+        if ( empty( $entry ) || ! is_array( $entry ) || ! isset( $entry['name'] ) ) {
+            return array();
+        }
+
+        if ( ! is_array( $entry['name'] ) ) {
+            return array( $entry );
+        }
+
+        $files = array();
+        foreach ( $entry['name'] as $key => $name ) {
+            $files[] = array(
+                'name'     => $name,
+                'type'     => isset( $entry['type'][ $key ] ) ? $entry['type'][ $key ] : '',
+                'tmp_name' => isset( $entry['tmp_name'][ $key ] ) ? $entry['tmp_name'][ $key ] : '',
+                'error'    => isset( $entry['error'][ $key ] ) ? (int) $entry['error'][ $key ] : UPLOAD_ERR_NO_FILE,
+                'size'     => isset( $entry['size'][ $key ] ) ? (int) $entry['size'][ $key ] : 0,
+            );
+        }
+
+        return $files;
+    }
+}
+
+if ( ! function_exists( 'motorlan_publicacion_upload_error_message' ) ) {
+    /**
+     * Mensaje legible para un código de error de subida de PHP.
+     *
+     * @param int    $code
+     * @param string $name Nombre del archivo.
+     * @return string
+     */
+    function motorlan_publicacion_upload_error_message( $code, $name = '' ) {
+        $prefix = $name !== '' ? $name . ': ' : '';
+        if ( in_array( (int) $code, array( UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE ), true ) ) {
+            return $prefix . sprintf( 'el archivo supera el tamaño máximo permitido (%s por archivo).', size_format( wp_max_upload_size() ) );
+        }
+        if ( (int) $code === UPLOAD_ERR_PARTIAL ) {
+            return $prefix . 'el archivo se subió de forma incompleta. Inténtalo de nuevo.';
+        }
+        return $prefix . 'no se pudo subir el archivo.';
+    }
+}
+
+if ( ! function_exists( 'motorlan_publicacion_find_upload_error' ) ) {
+    /**
+     * Busca errores de subida de PHP en los campos de archivo indicados.
+     * UPLOAD_ERR_NO_FILE (campo vacío) no se considera error.
+     *
+     * @param array    $files       $request->get_file_params().
+     * @param string[] $field_names Campos a revisar.
+     * @return WP_Error|null
+     */
+    function motorlan_publicacion_find_upload_error( $files, $field_names ) {
+        foreach ( (array) $field_names as $field ) {
+            if ( empty( $files[ $field ] ) ) {
+                continue;
+            }
+            foreach ( motorlan_publicacion_rearrange_files( $files[ $field ] ) as $file ) {
+                $error = (int) $file['error'];
+                if ( $error !== UPLOAD_ERR_OK && $error !== UPLOAD_ERR_NO_FILE ) {
+                    return new WP_Error(
+                        'upload_error',
+                        motorlan_publicacion_upload_error_message( $error, (string) $file['name'] ) . ' No se ha guardado nada.',
+                        array( 'status' => 413 )
+                    );
+                }
+            }
+        }
+
+        return null;
+    }
+}
+
+if ( ! function_exists( 'motorlan_publicacion_image_mimes' ) ) {
+    /**
+     * Tipos admitidos para la imagen principal y la galería.
+     *
+     * @return array
+     */
+    function motorlan_publicacion_image_mimes() {
+        return array(
+            'jpg|jpeg|jpe' => 'image/jpeg',
+            'png'          => 'image/png',
+            'gif'          => 'image/gif',
+            'webp'         => 'image/webp',
+        );
+    }
+}
+
+if ( ! function_exists( 'motorlan_publicacion_doc_mimes' ) ) {
+    /**
+     * Tipos admitidos para la documentación adicional (lo que anuncia el formulario).
+     *
+     * @return array
+     */
+    function motorlan_publicacion_doc_mimes() {
+        return array(
+            'pdf'          => 'application/pdf',
+            'jpg|jpeg|jpe' => 'image/jpeg',
+            'png'          => 'image/png',
+        );
+    }
+}
+
+if ( ! function_exists( 'motorlan_publicacion_file_type_allowed' ) ) {
+    /**
+     * Comprueba el tipo REAL del archivo subido (contenido + extensión) contra una lista de mimes.
+     *
+     * @param array $file  ['name','tmp_name',...].
+     * @param array $mimes Lista extensión => mime.
+     * @return bool
+     */
+    function motorlan_publicacion_file_type_allowed( $file, $mimes ) {
+        if ( empty( $file['tmp_name'] ) || empty( $file['name'] ) ) {
+            return false;
+        }
+        if ( ! function_exists( 'wp_check_filetype_and_ext' ) ) {
+            require_once ABSPATH . 'wp-admin/includes/file.php';
+        }
+        $check = wp_check_filetype_and_ext( $file['tmp_name'], $file['name'], $mimes );
+        return ! empty( $check['type'] ) && in_array( $check['type'], array_values( $mimes ), true );
+    }
+}
+
+if ( ! function_exists( 'motorlan_publicacion_attachment_usable' ) ) {
+    /**
+     * ¿Puede esta publicación referenciar el adjunto? Debe ser un attachment de la
+     * propia publicación o subido por el usuario actual o por el autor de la publicación.
+     * Evita enlazar fotos/documentos de publicaciones ajenas por ID.
+     *
+     * @param int $attachment_id
+     * @param int $post_id
+     * @return bool
+     */
+    function motorlan_publicacion_attachment_usable( $attachment_id, $post_id ) {
+        $attachment_id = (int) $attachment_id;
+        if ( $attachment_id <= 0 || get_post_type( $attachment_id ) !== 'attachment' ) {
+            return false;
+        }
+        if ( current_user_can( 'administrator' ) ) {
+            return true;
+        }
+        if ( (int) wp_get_post_parent_id( $attachment_id ) === (int) $post_id ) {
+            return true;
+        }
+        $attachment_author = (int) get_post_field( 'post_author', $attachment_id );
+        return $attachment_author === get_current_user_id()
+            || $attachment_author === (int) get_post_field( 'post_author', $post_id );
+    }
+}
+
+if ( ! function_exists( 'motorlan_publicacion_normalize_acf_values' ) ) {
+    /**
+     * Valida y normaliza los valores ACF de alta/edición (solo los presentes en $acf_data):
+     * - potencia, velocidad, par nominal, voltaje e intensidad: número > 0 (vacío = sin valor).
+     * - precio: número >= 0. Stock: entero >= 0.
+     * - Alquiler 'Sí'/'No' y "consultar precio" 'yes'/'no' como en las choices de ACF.
+     * - Alimentación solo 'ac'/'dc'.
+     *
+     * @param array $acf_data
+     * @return array|WP_Error Datos normalizados o error 400.
+     */
+    function motorlan_publicacion_normalize_acf_values( $acf_data ) {
+        // Metas antiguas guardadas como checkbox llegan como array desde el GET: sin esto
+        // (string) $raw daba "Array to string conversion" y "Consultar precio" se perdía
+        foreach ( array( 'posibilidad_de_alquiler', 'precio_negociable' ) as $choice_field ) {
+            if ( isset( $acf_data[ $choice_field ] ) && is_array( $acf_data[ $choice_field ] ) ) {
+                $first = reset( $acf_data[ $choice_field ] );
+                $acf_data[ $choice_field ] = false === $first ? '' : $first;
+            }
+        }
+
+        $positive_fields = array(
+            'potencia'    => 'La potencia',
+            'velocidad'   => 'La velocidad',
+            'par_nominal' => 'El par nominal',
+            'voltaje'     => 'El voltaje',
+            'intensidad'  => 'La intensidad',
+        );
+
+        foreach ( $positive_fields as $field => $label ) {
+            if ( ! array_key_exists( $field, $acf_data ) ) {
+                continue;
+            }
+            $value = $acf_data[ $field ];
+            if ( $value === null || $value === '' || $value === false ) {
+                continue;
+            }
+            if ( is_string( $value ) ) {
+                $value = str_replace( ',', '.', trim( $value ) );
+            }
+            if ( ! is_numeric( $value ) || (float) $value <= 0 ) {
+                return new WP_Error( 'invalid_' . $field, $label . ' debe ser un número mayor que 0.', array( 'status' => 400 ) );
+            }
+            $acf_data[ $field ] = $value + 0;
+        }
+
+        if ( array_key_exists( 'precio_de_venta', $acf_data ) && $acf_data['precio_de_venta'] !== null && $acf_data['precio_de_venta'] !== '' ) {
+            $price = is_string( $acf_data['precio_de_venta'] ) ? str_replace( ',', '.', trim( $acf_data['precio_de_venta'] ) ) : $acf_data['precio_de_venta'];
+            if ( ! is_numeric( $price ) || (float) $price < 0 ) {
+                return new WP_Error( 'invalid_precio_de_venta', 'El precio debe ser un número mayor o igual que 0.', array( 'status' => 400 ) );
+            }
+            $acf_data['precio_de_venta'] = $price + 0;
+        }
+
+        if ( array_key_exists( 'stock', $acf_data ) && $acf_data['stock'] !== null && $acf_data['stock'] !== '' ) {
+            if ( ! is_numeric( $acf_data['stock'] ) || (int) $acf_data['stock'] < 0 || (float) $acf_data['stock'] != (int) $acf_data['stock'] ) {
+                return new WP_Error( 'invalid_stock', 'El stock debe ser un número entero mayor o igual que 0.', array( 'status' => 400 ) );
+            }
+            $acf_data['stock'] = (int) $acf_data['stock'];
+        }
+
+        if ( array_key_exists( 'posibilidad_de_alquiler', $acf_data ) && $acf_data['posibilidad_de_alquiler'] !== null ) {
+            $raw = strtolower( remove_accents( trim( (string) $acf_data['posibilidad_de_alquiler'] ) ) );
+            $acf_data['posibilidad_de_alquiler'] = in_array( $raw, array( 'si', 'yes', '1', 'true' ), true ) ? 'Sí' : 'No';
+        }
+
+        if ( array_key_exists( 'precio_negociable', $acf_data ) && $acf_data['precio_negociable'] !== null ) {
+            $raw = $acf_data['precio_negociable'];
+            $raw = is_bool( $raw ) ? ( $raw ? 'yes' : 'no' ) : strtolower( remove_accents( trim( (string) $raw ) ) );
+            $acf_data['precio_negociable'] = in_array( $raw, array( 'yes', 'si', '1', 'true' ), true ) ? 'yes' : 'no';
+        }
+
+        if ( array_key_exists( 'tipo_de_alimentacion', $acf_data ) && ! in_array( $acf_data['tipo_de_alimentacion'], array( 'ac', 'dc' ), true ) ) {
+            unset( $acf_data['tipo_de_alimentacion'] );
+        }
+
+        return $acf_data;
+    }
+}
+
+if ( ! function_exists( 'motorlan_publicacion_mark_approved' ) ) {
+    /**
+     * Marca la publicación como aprobada por un administrador al menos una vez.
+     * Permite que el dueño la reactive (pausada/vendida -> publicada) sin volver a revisión.
+     *
+     * @param int $post_id
+     * @return void
+     */
+    function motorlan_publicacion_mark_approved( $post_id ) {
+        if ( ! get_post_meta( $post_id, '_motorlan_approved_at', true ) ) {
+            update_post_meta( $post_id, '_motorlan_approved_at', current_time( 'mysql' ) );
+        }
+    }
+}
+
+if ( ! function_exists( 'motorlan_publicacion_was_approved' ) ) {
+    /**
+     * ¿La publicación ya pasó la revisión? Publicada en WP o con marca de aprobación.
+     *
+     * @param int $post_id
+     * @return bool
+     */
+    function motorlan_publicacion_was_approved( $post_id ) {
+        return get_post_status( $post_id ) === 'publish' || (bool) get_post_meta( $post_id, '_motorlan_approved_at', true );
+    }
+}
+
+if ( ! function_exists( 'motorlan_publicacion_has_purchases' ) ) {
+    /**
+     * ¿Tiene compras asociadas? El historial del comprador depende del post.
+     *
+     * @param int $post_id
+     * @return bool
+     */
+    function motorlan_publicacion_has_purchases( $post_id ) {
+        $query = new WP_Query( array(
+            'post_type'      => 'compra',
+            'post_status'    => 'any',
+            'posts_per_page' => 1,
+            'fields'         => 'ids',
+            'no_found_rows'  => true,
+            'meta_query'     => array(
+                'relation' => 'OR',
+                array( 'key' => 'publicacion', 'value' => (int) $post_id ),
+                array( 'key' => 'motor', 'value' => (int) $post_id ),
+            ),
+        ) );
+        return $query->have_posts();
+    }
+}

@@ -87,7 +87,8 @@ const groupedMessages = computed<MessageGroup[]>(() => {
   const buckets = new Map<string, PurchaseMessage[]>()
 
   for (const message of items) {
-    const key = message.created_at.slice(0, 10)
+    // Día LOCAL (con slice(0, 10) sobre ISO UTC, 00:00-02:00 caía en el día anterior)
+    const key = new Date(message.created_at).toLocaleDateString('sv-SE')
 
     if (!buckets.has(key))
       buckets.set(key, [])

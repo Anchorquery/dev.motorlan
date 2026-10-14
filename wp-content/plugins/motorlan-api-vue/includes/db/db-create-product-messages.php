@@ -30,7 +30,8 @@ function motorlan_create_product_messages_table() {
         PRIMARY KEY  (id),
         UNIQUE KEY message_key (message_key),
         KEY product_room (product_id, room_key),
-        KEY created_at (created_at)
+        KEY created_at (created_at),
+        KEY idx_guest_email (guest_email)
     ) {$charset_collate};";
 
     dbDelta( $sql );

@@ -29,3 +29,4 @@ require_once $callbacks_path . 'get-user-favorites.php';
 require_once $callbacks_path . 'add-user-favorite.php';
 require_once $callbacks_path . 'remove-user-favorite.php';
 require_once $callbacks_path . 'get-countries.php';
+require_once $callbacks_path . 'migrate-tipos-from-categories.php';

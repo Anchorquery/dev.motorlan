@@ -21,6 +21,7 @@ function motorlan_create_product_room_reads_table() {
         product_id BIGINT(20) UNSIGNED NOT NULL,
         room_key VARCHAR(191) NOT NULL,
         last_read_at DATETIME NULL,
+        last_read_id BIGINT(20) UNSIGNED NULL,
         updated_at DATETIME NOT NULL,
         PRIMARY KEY (id),
         UNIQUE KEY uniq_user_room (user_id, product_id, room_key),

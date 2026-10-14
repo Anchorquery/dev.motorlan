@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import AppTextField from '@/@core/components/app-form-elements/AppTextField.vue'
+import { useToast } from '@/composables/useToast'
 
 import type { PublicationFormState } from '@/composables/usePublicationForm'
 
@@ -12,6 +13,10 @@ const props = defineProps<{
 const emit = defineEmits(['update:formState'])
 
 const { t } = useI18n()
+const { showToast } = useToast()
+
+// Lo mismo que anuncia el texto del paso y valida el backend
+const ALLOWED_DOC_EXTENSIONS = /\.(pdf|jpe?g|png)$/i
 
 // Computed proxy for docs array
 const docs = computed(() => props.formState.acf.documentacion_adicional || [])
@@ -44,6 +49,11 @@ const handleFileUpload = (event: Event, index: number) => {
   const target = event.target as HTMLInputElement
   if (target.files && target.files[0]) {
     const file = target.files[0]
+    if (!ALLOWED_DOC_EXTENSIONS.test(file.name)) {
+      showToast(t('add_publication.documentacion.invalid_type', 'Solo se admiten archivos PDF, JPG o PNG.'), 'error')
+      target.value = ''
+      return
+    }
     
     // We need to mutate the specific item in the array, then emit the whole state
     const newDocs = [...docs.value]
@@ -57,9 +67,9 @@ const handleFileUpload = (event: Event, index: number) => {
 <template>
   <VRow class="mx-0">
     <VCol cols="12">
-        <h3 class="text-h5 font-weight-bold mb-4">{{ t('add_publication.documentacion.title', 'DocumentaciÃ³n Adicional') }}</h3>
+        <h3 class="text-h5 font-weight-bold mb-4">{{ t('add_publication.documentacion.title', 'Documentación Adicional') }}</h3>
         <p class="text-body-2 text-medium-emphasis mb-6">
-            {{ t('add_publication.documentacion.subtitle', 'Adjunta fichas tÃ©cnicas, planos o manuales (PDF, JPG, PNG). MÃ¡ximo 5 archivos.') }}
+            {{ t('add_publication.documentacion.subtitle', 'Adjunta fichas técnicas, planos o manuales (PDF, JPG, PNG). Máximo 5 archivos.') }}
         </p>
     </VCol>
 
@@ -94,16 +104,17 @@ const handleFileUpload = (event: Event, index: number) => {
                         color="primary"
                         @click="(($refs[`fileInput${index}`] as any)[0] as HTMLInputElement).click()"
                     >
-                        {{ doc.archivo ? (('name' in doc.archivo ? doc.archivo.name : '') || ('filename' in doc.archivo ? doc.archivo.filename : '') || 'Archivo seleccionado') : 'Subir archivo' }}
+                        {{ doc.archivo ? (('name' in doc.archivo ? doc.archivo.name : '') || ('filename' in doc.archivo ? doc.archivo.filename : '') || t('add_publication.documentacion.file_selected', 'Archivo seleccionado')) : t('add_publication.media.upload_file', 'Subir archivo') }}
                     </VBtn>
                     <input
                         type="file"
+                        accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
                         class="d-none"
                         :ref="`fileInput${index}`"
                         @change="(e) => handleFileUpload(e, index)"
                     />
                     <span v-if="doc.archivo" class="text-caption text-success">
-                        <VIcon icon="tabler-check" size="16" start /> Listo
+                        <VIcon icon="tabler-check" size="16" start /> {{ t('add_publication.documentacion.ready', 'Listo') }}
                     </span>
                 </div>
              </div>
@@ -128,7 +139,7 @@ const handleFileUpload = (event: Event, index: number) => {
             class="w-100 mt-2 dashed-border-btn"
             style="border-style: dashed;"
         >
-            {{ t('add_publication.documentacion.add_btn', 'AÃ±adir Documento') }}
+            {{ t('add_publication.documentacion.add_btn', 'Añadir Documento') }}
         </VBtn>
     </VCol>
   </VRow>

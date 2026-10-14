@@ -5,7 +5,8 @@ import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
 import { createUrl } from '@/@core/composable/createUrl'
-import { useApi } from '@/composables/useApi'
+import { assertApiOk, useApi } from '@/composables/useApi'
+import { useToast } from '@/composables/useToast'
 import { useUserStore } from '@/@core/stores/user'
 import type { ImagenDestacada, Publicacion } from '@/interfaces/publicacion'
 import { useMotorFormatter } from '@/composables/useMotorFormatter'
@@ -13,17 +14,18 @@ import { storeUrl } from '@/utils/urls'
 
 const router = useRouter()
 const userStore = useUserStore()
+const { showToast } = useToast()
 const { formatMotorName } = useMotorFormatter()
 
 const currentUser = computed(() => userStore.getUser)
 
-const headers = [
-  { title: 'Publicacion', key: 'title' },
-  { title: 'Referencia', key: 'referencia' },
-  { title: 'Precio', key: 'precio' },
-  { title: 'Estado', key: 'status' },
-  { title: 'Acciones', key: 'actions', sortable: false },
-]
+const headers = computed(() => [
+  { title: t('publication_list.publication'), key: 'title' },
+  { title: t('publication_list.reference'), key: 'referencia', sortable: false },
+  { title: t('publication_list.price'), key: 'precio', sortable: false },
+  { title: t('publication_list.status'), key: 'status', sortable: false },
+  { title: t('publication_list.actions'), key: 'actions', sortable: false },
+])
 
 const searchQuery = ref('')
 
@@ -44,7 +46,7 @@ const {
   data: favoritesData,
   execute: fetchFavorites,
   isFetching,
-} = useApi<any>(createUrl('/wp-json/motorlan/v1/favorites', {
+} = useApi<any>(createUrl('/wp-json/motorlan/v1/purchases/favorites', {
   query: {
     page,
     per_page: itemsPerPage,
@@ -55,7 +57,8 @@ const {
 }), { immediate: false }).get().json()
 
 const favorites = computed((): Publicacion[] => favoritesData.value?.data || [])
-const totalFavorites = computed(() => favoritesData.value?.total ?? favorites.value.length)
+// /purchases/favorites pagina en el servidor y devuelve pagination.total
+const totalFavorites = computed(() => favoritesData.value?.pagination?.total ?? favorites.value.length)
 
 const refreshFavorites = async () => {
   try {
@@ -70,29 +73,34 @@ watch([page, itemsPerPage, sortBy, orderBy, searchQuery], () => {
   void refreshFavorites()
 }, { immediate: true })
 
+watch(searchQuery, () => {
+  if (page.value !== 1)
+    page.value = 1
+})
+
 const resolveStatus = (status: string) => {
   if (status === 'publish')
-    return { text: 'Publicado', color: 'success' }
+    return { text: t('custom.published'), color: 'success' }
   if (status === 'draft')
-    return { text: 'Borrador', color: 'secondary' }
+    return { text: t('custom.draft'), color: 'secondary' }
   if (status === 'paused')
-    return { text: 'Pausado', color: 'warning' }
+    return { text: t('custom.paused'), color: 'warning' }
   if (status === 'sold')
-    return { text: 'Vendido', color: 'error' }
+    return { text: t('publication_list.status_options.sold'), color: 'error' }
 
-  return { text: 'Desconocido', color: 'info' }
+  return { text: t('custom.unknown'), color: 'info' }
 }
 
 const removeFavorite = async (motorId: number) => {
   try {
-    const request = useApi(`/wp-json/motorlan/v1/favorites/${motorId}`, { immediate: false }).delete()
+    const request = useApi(`/wp-json/motorlan/v1/favorites/${motorId}`, { immediate: false }).delete().json()
     await request.execute()
-    if (request.error.value)
-      throw request.error.value
+    assertApiOk(request)
     await refreshFavorites()
   }
   catch (error) {
     console.error('Error removing favorite:', error)
+    showToast(t('product_details.favorite_error', 'No se pudo actualizar el favorito. Inténtalo de nuevo.'), 'error')
   }
 }
 
@@ -182,26 +190,26 @@ const getImageBySize = (image: any, size = 'thumbnail'): string => {
               :class="{ 'cursor-pointer': (item as any).author?.id === currentUser?.id || currentUser?.isAdmin }"
               @click="(item as any).author?.id === currentUser?.id || currentUser?.isAdmin ? router.push(`/dashboard/publications/publication/edit/${(item as any).uuid}`) : null"
             >{{ formatMotorName(item) || item.title }}</span>
-            <span class="text-body-2 text-muted">{{ (item.acf.marca as any)?.name }}</span>
+            <span class="text-body-2 text-muted">{{ (item.acf?.marca as any)?.name || item.marca_name }}</span>
           </div>
         </div>
       </template>
 
       <!-- referencia -->
       <template #item.referencia="{ item }">
-        <span class="text-body-2 text-high-emphasis">{{ item.acf.tipo_o_referencia || '—' }}</span>
+        <span class="text-body-2 text-high-emphasis">{{ item.acf?.tipo_o_referencia || '—' }}</span>
       </template>
 
       <!-- precio -->
       <template #item.precio="{ item }">
-        <span v-if="item.acf?.precio_negociable === 'yes' || item.acf?.precio_negociable === true" class="text-body-1 font-weight-medium text-warning">
-          Consultar precio
+        <span v-if="['yes', 'Sí', 'si'].includes(String(item.acf?.precio_negociable)) || item.acf?.precio_negociable === true" class="text-body-1 font-weight-medium text-warning">
+          {{ t('product_details.consult_price') }}
         </span>
         <span v-else-if="item.acf?.precio_de_venta" class="text-body-1 font-weight-medium text-premium-price">
           {{ formatCurrency(item.acf.precio_de_venta) }}
         </span>
         <span v-else class="text-body-1 font-weight-medium text-premium-price">
-          Consultar
+          {{ t('product_details.consult_price') }}
         </span>
       </template>
 

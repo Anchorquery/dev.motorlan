@@ -16,7 +16,8 @@ const normalizeStatus = (status: string) => status?.toLowerCase() ?? ''
 const headers = computed(() => [
   { title: t('purchases.headers.publicacion'), key: 'publicacion' },
   { title: t('purchases.headers.fecha_compra'), key: 'fecha_compra' },
-  { title: t('purchases.headers.tipo'), key: 'tipo_compra' },
+  // El backend ordena por publicación, fecha y estado (tipo no es ordenable)
+  { title: t('purchases.headers.tipo'), key: 'tipo_compra', sortable: false },
   { title: t('purchases.headers.estado'), key: 'estado' },
   { title: t('purchases.headers.actions'), key: 'actions', sortable: false },
 ])

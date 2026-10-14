@@ -54,6 +54,31 @@ add_action( 'rest_api_init', function () {
             ],
         ],
     ] );
+
+    // "Marcar como no leídas" (la campana lo ofrecía pero no hacía nada)
+    register_rest_route( 'motorlan/v1', '/notifications/unread', [
+        'methods'             => WP_REST_Server::EDITABLE,
+        'callback'            => 'motorlan_mark_notifications_as_unread',
+        'permission_callback' => 'motorlan_is_user_authenticated',
+        'args'                => [
+            'notification_ids' => [
+                'required'          => true,
+                'validate_callback' => function( $param ) {
+                    return is_array( $param ) && count( $param ) > 0 && count( $param ) <= 100;
+                },
+                'sanitize_callback' => function( $param ) {
+                    return array_map( 'absint', $param );
+                },
+            ],
+        ],
+    ] );
+
+    // "Eliminar" una notificación (antes solo se quitaba en el navegador y reaparecía)
+    register_rest_route( 'motorlan/v1', '/notifications/(?P<id>\d+)', [
+        'methods'             => WP_REST_Server::DELETABLE,
+        'callback'            => 'motorlan_delete_notification',
+        'permission_callback' => 'motorlan_is_user_authenticated',
+    ] );
 } );
 
 /**
@@ -64,9 +89,10 @@ add_action( 'rest_api_init', function () {
  */
 function motorlan_get_notifications( WP_REST_Request $request ) {
     $user_id = get_current_user_id();
+    // Límites (page >= 1, per_page 1-50): también se aplican en get_user_notifications()
     $args = [
-        'page'     => $request['page'],
-        'per_page' => $request['per_page'],
+        'page'     => max( 1, (int) $request['page'] ),
+        'per_page' => max( 1, min( 50, (int) $request['per_page'] ) ),
         'status'   => $request['status'],
     ];
 
@@ -124,17 +150,68 @@ function motorlan_mark_notifications_as_read( WP_REST_Request $request ) {
 }
 
 /**
+ * Marca notificaciones como no leídas.
+ *
+ * @param WP_REST_Request $request
+ * @return WP_REST_Response|WP_Error
+ */
+function motorlan_mark_notifications_as_unread( WP_REST_Request $request ) {
+    if ( function_exists( 'motorlan_validate_json_content_type' ) ) {
+        $valid_type = motorlan_validate_json_content_type( $request );
+        if ( is_wp_error( $valid_type ) ) {
+            return $valid_type;
+        }
+    }
+
+    $notification_manager = new Motorlan_Notification_Manager();
+    if ( ! $notification_manager->mark_as_unread( $request['notification_ids'], get_current_user_id() ) ) {
+        return new WP_Error( 'update_failed', __( 'No se pudieron actualizar las notificaciones.', 'motorlan-api-vue' ), [ 'status' => 500 ] );
+    }
+
+    return new WP_REST_Response( [ 'success' => true ], 200 );
+}
+
+/**
+ * Elimina una notificación del usuario actual.
+ *
+ * @param WP_REST_Request $request
+ * @return WP_REST_Response|WP_Error
+ */
+function motorlan_delete_notification( WP_REST_Request $request ) {
+    $notification_manager = new Motorlan_Notification_Manager();
+    if ( ! $notification_manager->delete_notifications( [ absint( $request['id'] ) ], get_current_user_id() ) ) {
+        return new WP_Error( 'delete_failed', __( 'No se pudo eliminar la notificación.', 'motorlan-api-vue' ), [ 'status' => 500 ] );
+    }
+
+    return new WP_REST_Response( [ 'success' => true ], 200 );
+}
+
+/**
  * Formats a notification from the database to match the frontend's expected structure.
  *
  * @param array $notification
  * @return array
  */
 function motorlan_format_notification_for_api( $notification ) {
+    // created_at viene de CURRENT_TIMESTAMP (zona de MySQL): se pasa a UTC con el desfase
+    // real de MySQL. Antes se comparaba con current_time() (zona de WordPress) y se
+    // añadía ' ago' en inglés ("5 minutos ago").
+    $created_utc = 0;
+    if ( ! empty( $notification['created_at'] ) ) {
+        $parsed = strtotime( $notification['created_at'] . ' UTC' );
+        if ( $parsed ) {
+            $created_utc = $parsed - Motorlan_Notification_Manager::get_db_utc_offset();
+        }
+    }
+
     return [
         'id'       => (int) $notification['id'],
         'title'    => $notification['title'],
         'subtitle' => $notification['message'],
-        'time'     => ( ! empty( $notification['created_at'] ) && strtotime( $notification['created_at'] ) ) ? human_time_diff( strtotime( $notification['created_at'] ), current_time( 'timestamp' ) ) . ' ago' : '',
+        /* translators: %s: tiempo transcurrido (p. ej. "5 minutos") */
+        'time'     => $created_utc ? sprintf( __( 'hace %s', 'motorlan-api-vue' ), human_time_diff( $created_utc, time() ) ) : '',
+        // ISO UTC para que el front formatee la fecha relativa en el idioma del usuario
+        'created_at' => $created_utc ? gmdate( 'Y-m-d\TH:i:s\Z', $created_utc ) : null,
         'isSeen'   => (bool) $notification['is_read'],
         'icon'     => 'tabler-bell', // Default icon, can be customized based on type
         'color'    => 'primary',     // Default color

@@ -13,7 +13,10 @@ import ChatUserProfileSidebarContent from '@/views/apps/chat/ChatUserProfileSide
 import { useChat } from '@/views/apps/chat/useChat'
 import { useChatStore } from '@/views/apps/chat/useChatStore'
 
+// Chat de la plantilla Vuexy: sus endpoints (/dashboard/chat/...) no existen y la página
+// salía rota. El chat real está en "Interesados" (/dashboard/inquiries).
 definePage({
+  redirect: '/dashboard/inquiries',
   meta: {
     layoutWrapperClasses: 'layout-content-height-fixed',
   },

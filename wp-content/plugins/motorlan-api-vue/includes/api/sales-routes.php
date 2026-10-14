@@ -205,7 +205,8 @@ function motorlan_prepare_sale_item( $purchase_id ) {
         'seller_email'         => $seller_email,
         'seller'               => $seller,
         'detail_url'           => get_permalink( $purchase_id ),
-        'motor_permalink'      => $publication_id ? get_permalink( $publication_id ) : '',
+        // Ficha real de la SPA (/marketplace-motorlan/{slug}/); el permalink del CPT daba 404
+        'motor_permalink'      => $publication_id ? ( function_exists( 'motorlan_get_store_url' ) ? motorlan_get_store_url( $publication_id ) : get_permalink( $publication_id ) ) : '',
     );
 }
 
@@ -249,7 +250,8 @@ function motorlan_get_user_sales_callback( WP_REST_Request $request ) {
 
     $params = $request->get_params();
     $per_page = isset( $params['per_page'] ) ? (int) $params['per_page'] : 10;
-    $page = isset( $params['page'] ) ? (int) $params['page'] : 1;
+    $per_page = max( 1, min( 100, $per_page ) );
+    $page = isset( $params['page'] ) ? max( 1, (int) $params['page'] ) : 1;
     $search = isset( $params['search'] ) ? sanitize_text_field( $params['search'] ) : '';
     $status = isset( $params['status'] ) ? sanitize_text_field( $params['status'] ) : '';
     $type   = isset( $params['type'] ) ? sanitize_text_field( $params['type'] ) : '';
@@ -272,8 +274,9 @@ function motorlan_get_user_sales_callback( WP_REST_Request $request ) {
     );
 
     $status_meta_map = array(
-        'pending'   => 'pendiente',
-        'pendiente' => 'pendiente',
+        // El valor guardado en ACF es 'pending' (opciones pending/completed/cancelled)
+        'pending'   => 'pending',
+        'pendiente' => 'pending',
         'completed' => 'completed',
         'complete'  => 'completed',
         'processing'=> 'processing',
@@ -433,8 +436,6 @@ function motorlan_get_user_sale_by_uuid_callback( WP_REST_Request $request ) {
         } elseif ( is_numeric( $seller_field ) ) {
             $seller_id = absint( $seller_field );
         }
-
-        error_log( "[SALE_UUID_DEBUG] Sale ID={$sale_id} vendedor field type=" . gettype($seller_field) . " => seller_id={$seller_id}" );
     }
 
     // Fallback: si no se encuentra vendedor, usar autor de la publicación asociada
@@ -447,28 +448,37 @@ function motorlan_get_user_sale_by_uuid_callback( WP_REST_Request $request ) {
         } elseif ( is_numeric( $publicacion_post ) ) {
             $seller_id = (int) get_post_field( 'post_author', (int) $publicacion_post );
         }
-        error_log("[SALE_UUID_DEBUG] Using publicacion author fallback seller_id={$seller_id}");
     }
 
-    if ( intval($seller_id) !== intval($user_id) ) {
-        error_log("[SALE_UUID_DEBUG] Access denied: user_id={$user_id}, seller_id={$seller_id}");
+    // Sin IDs en la respuesta ni log por petición (antes se escribía en el error_log en
+    // cada consulta y el 403 devolvía seller_id/user_id)
+    if ( ! $seller_id || intval($seller_id) !== intval($user_id) ) {
         return new WP_Error(
             'forbidden_sale_access',
             'You are not allowed to view this sale.',
-            array( 'status' => 403, 'seller_id' => $seller_id, 'user_id' => $user_id )
+            array( 'status' => 403 )
         );
     }
 
     $sale_item = motorlan_prepare_sale_item( $sale_id );
     $sale_item = motorlan_enrich_sale_with_publicacion( $sale_item, $sale_id );
+    // ¿El vendedor ya valoró al comprador? (para ofrecer RatingModal en el detalle de venta)
+    $sale_item['review_done'] = (bool) get_post_meta( $sale_id, '_review_by_seller_done', true );
     
     if ( function_exists( 'get_field' ) ) {
         $sale_item['notes']        = get_field( 'notas', $sale_id );
         $sale_item['payment_type'] = get_field( 'tipo_de_pago', $sale_id );
         $sale_item['payment_meta'] = get_fields( $sale_id ) ?: array();
-        $offer_post = get_field('offer', $sale_id);
-        if ($offer_post instanceof WP_Post) {
-            $sale_item['offer'] = motorlan_get_offer_data($offer_post->ID);
+        // La oferta se guarda en el meta offer_id (tabla motorlan_offers), igual que
+        // en el detalle de compra. Antes se leía un campo ACF 'offer' inexistente y se
+        // llamaba a motorlan_get_offer_data(), que no existe.
+        $offer_id = (int) get_post_meta( $sale_id, 'offer_id', true );
+        if ( $offer_id && function_exists( 'motorlan_offers_prepare_offer_item' ) ) {
+            global $wpdb;
+            $offer_row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}motorlan_offers WHERE id = %d", $offer_id ) );
+            if ( $offer_row ) {
+                $sale_item['offer'] = motorlan_offers_prepare_offer_item( $offer_row );
+            }
         }
     }
 
@@ -518,27 +528,68 @@ function motorlan_handle_create_manual_sale( $request ) {
         return new WP_Error( 'invalid_room', 'El chat no corresponde a esta publicación.', array( 'status' => 400 ) );
     }
 
-    if ( ! is_numeric( $viewer_id ) ) {
-        return new WP_Error( 'invalid_buyer', 'No se puede vender a un usuario invitado o desconocido.', array( 'status' => 400 ) );
+    if ( is_numeric( $viewer_id ) ) {
+        $buyer_id = (int) $viewer_id;
+    } else {
+        // Sala de invitado reclamada por un usuario con email verificado: el comprador es
+        // el user_id que tienen ahora sus mensajes
+        global $wpdb;
+        $buyer_id = (int) $wpdb->get_var( $wpdb->prepare(
+            "SELECT user_id FROM {$wpdb->prefix}motorlan_product_messages WHERE room_key = %s AND sender_role = 'viewer' AND user_id > 0 ORDER BY id DESC LIMIT 1",
+            $room_key
+        ) );
+        if ( ! $buyer_id ) {
+            return new WP_Error( 'invalid_buyer', 'No se puede vender a un usuario invitado o desconocido.', array( 'status' => 400 ) );
+        }
     }
-
-    $buyer_id = (int) $viewer_id;
     $buyer    = get_userdata( $buyer_id );
     if ( ! $buyer ) {
         return new WP_Error( 'invalid_buyer', 'El usuario comprador no existe.', array( 'status' => 404 ) );
     }
 
-    // 3. Transaction & Stock Validation
+    if ( $buyer_id === (int) $user_id ) {
+        return new WP_Error( 'invalid_buyer', 'No puedes venderte a ti mismo.', array( 'status' => 400 ) );
+    }
+
     global $wpdb;
+
+    // El room_key lo envía el cliente: exigir que ese comprador haya escrito de verdad
+    // en esa conversación. Antes se podía registrar una "venta" (y luego valorar) a
+    // cualquier usuario inventando el room_key.
+    $messages_table = $wpdb->prefix . 'motorlan_product_messages';
+    $buyer_messages = (int) $wpdb->get_var( $wpdb->prepare(
+        "SELECT COUNT(*) FROM {$messages_table} WHERE product_id = %d AND room_key = %s AND user_id = %d",
+        $product_id,
+        $room_key,
+        $buyer_id
+    ) );
+    if ( $buyer_messages < 1 ) {
+        return new WP_Error( 'invalid_buyer', 'Ese usuario no tiene una conversación sobre esta publicación.', array( 'status' => 400 ) );
+    }
+
+    // 3. Transaction & Stock Validation
     $wpdb->query('START TRANSACTION');
 
     // Lock Stock Row
     $wpdb->get_results( $wpdb->prepare("SELECT meta_id FROM {$wpdb->postmeta} WHERE post_id = %d AND meta_key = 'stock' FOR UPDATE", $product_id) );
-    $current_stock = (int) $wpdb->get_var( $wpdb->prepare("SELECT meta_value FROM {$wpdb->postmeta} WHERE post_id = %d AND meta_key = 'stock'", $product_id) );
+    $raw_stock     = $wpdb->get_var( $wpdb->prepare("SELECT meta_value FROM {$wpdb->postmeta} WHERE post_id = %d AND meta_key = 'stock'", $product_id) );
+    // Sin meta de stock = 1 unidad, igual que el resto del código (antes daba "No hay stock")
+    $current_stock = ( null === $raw_stock || '' === $raw_stock ) ? 1 : (int) $raw_stock;
 
     if ( $current_stock <= 0 ) {
         $wpdb->query('COMMIT'); // Close transaction neatly
         return new WP_Error( 'no_stock', 'No hay stock disponible.', array( 'status' => 400 ) );
+    }
+
+    // Respetar las unidades reservadas por ofertas aceptadas pendientes de confirmar
+    // (antes la venta manual se quedaba la última unidad y el comprador de la oferta
+    // se encontraba "sin stock" al confirmar).
+    if ( function_exists( 'motorlan_offers_get_reserved_units' ) ) {
+        $reserved_units = (int) motorlan_offers_get_reserved_units( $product_id );
+        if ( $current_stock - $reserved_units <= 0 ) {
+            $wpdb->query('COMMIT');
+            return new WP_Error( 'reserved_stock', 'Las unidades disponibles están reservadas por ofertas aceptadas pendientes de confirmar.', array( 'status' => 400 ) );
+        }
     }
 
     // 4. Create Purchase using Helper
@@ -546,9 +597,22 @@ function motorlan_handle_create_manual_sale( $request ) {
         require_once MOTORLAN_API_VUE_PATH . 'includes/api/motor-helpers.php';
     }
 
-    // Get price from publication
-    $price = function_exists( 'get_field' ) ? get_field( 'precio_de_venta', $product_id ) : get_post_meta( $product_id, 'precio_de_venta', true );
-    $amount = (float) $price;
+    // Importe: el acordado en el chat (opcional, `amount`) o, si no, el precio publicado.
+    // Con "Consultar precio" y sin importe acordado se guarda el precio de referencia del
+    // vendedor marcado con _precio_referencia: el comprador no lo ve en el detalle.
+    $agreed_amount = $request->get_param( 'amount' );
+    $has_agreed    = is_numeric( $agreed_amount ) && (float) $agreed_amount > 0 && (float) $agreed_amount < 100000000;
+    if ( $has_agreed ) {
+        $amount = round( (float) $agreed_amount, 2 );
+    } else {
+        $price  = function_exists( 'get_field' ) ? get_field( 'precio_de_venta', $product_id ) : get_post_meta( $product_id, 'precio_de_venta', true );
+        $amount = (float) $price;
+    }
+    $precio_negociable = get_post_meta( $product_id, 'precio_negociable', true );
+    if ( is_array( $precio_negociable ) ) {
+        $precio_negociable = reset( $precio_negociable );
+    }
+    $consult_price = in_array( (string) $precio_negociable, array( 'yes', 'Sí', 'si', 'true', '1' ), true );
 
     $purchase_data = motorlan_create_purchase( $product_id, $buyer_id, $amount, $user_id, 0 );
     if ( is_wp_error( $purchase_data ) ) {
@@ -556,29 +620,31 @@ function motorlan_handle_create_manual_sale( $request ) {
         return $purchase_data;
     }
 
-    // 5. Update Stock
-    $new_stock = max( 0, $current_stock - 1 );
-    if ( function_exists( 'update_field' ) ) {
-        update_field( 'stock', $new_stock, $product_id );
-        if ( $new_stock === 0 ) {
-            update_field( 'publicar_acf', 'paused', $product_id );
+    if ( is_array( $purchase_data ) && ! empty( $purchase_data['id'] ) ) {
+        if ( $has_agreed ) {
+            update_post_meta( (int) $purchase_data['id'], '_precio_acordado', 1 );
+        } elseif ( $consult_price ) {
+            update_post_meta( (int) $purchase_data['id'], '_precio_referencia', 1 );
         }
     }
+
+    // 5. Update Stock: dentro de la transacción (fila bloqueada) y una sola vez.
+    // Al llegar a 0 queda como 'sold' (Vendido), igual que al confirmar una oferta;
+    // antes quedaba 'paused' y el vendedor lo veía como "Pausado".
+    $new_stock = max( 0, $current_stock - 1 );
     update_post_meta( $product_id, 'stock', $new_stock );
-    if ( $new_stock === 0 ) {
-        update_post_meta( $product_id, 'publicar_acf', 'paused' );
+    if ( 0 === $new_stock ) {
+        update_post_meta( $product_id, 'publicar_acf', 'sold' );
     }
 
     $wpdb->query('COMMIT');
+
+    // ACF (referencias de campo) fuera de la transacción
     if ( function_exists( 'update_field' ) ) {
         update_field( 'stock', $new_stock, $product_id );
-        if ( $new_stock === 0 ) {
-            update_field( 'publicar_acf', 'paused', $product_id ); // Or 'sold'? 'paused' usually stops new offers.
+        if ( 0 === $new_stock ) {
+            update_field( 'publicar_acf', 'sold', $product_id );
         }
-    }
-    update_post_meta( $product_id, 'stock', $new_stock );
-    if ( $new_stock === 0 ) {
-        update_post_meta( $product_id, 'publicar_acf', 'paused' );
     }
 
     // 6. Notify Buyer

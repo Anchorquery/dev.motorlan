@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import DropZone from '@/@core/components/DropZone.vue'
 
+import { MAX_GALLERY_IMAGES } from '@/composables/usePublicationForm'
 import type { PublicationFile } from '@/composables/usePublicationForm'
 
 const props = defineProps<{
@@ -89,7 +90,11 @@ watch(galleryImages, (newVal) => {
       <DropZone
         v-model="galleryImages"
         multiple
+        :max="MAX_GALLERY_IMAGES"
       />
+      <div class="text-caption text-medium-emphasis mt-1">
+        {{ t('add_publication.media.gallery_limit', { max: MAX_GALLERY_IMAGES }, 'Máximo ' + MAX_GALLERY_IMAGES + ' imágenes') }}
+      </div>
     </VCol>
   </VRow>
 </template>
