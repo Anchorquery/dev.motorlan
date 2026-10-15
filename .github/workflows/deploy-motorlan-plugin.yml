@@ -12,7 +12,7 @@
 #              FTP_SERVER      www.motorlan.es
 #              FTP_SERVER_DIR  /public/wp-content/plugins/motorlan-api-vue/  (acabada en "/")
 #              FTP_PROTOCOL    ftp (por defecto) | ftps
-#              DEPLOY_BRANCH   rama permitida (por defecto test_change_history_mode)
+#              DEPLOY_BRANCH   rama permitida (por defecto main)
 #              SITE_URL        por defecto https://www.motorlan.es
 
 name: Deploy plugin Motorlan (FTP)
@@ -49,7 +49,7 @@ jobs:
     steps:
       - name: Comprobar rama y confirmación
         env:
-          ALLOWED_BRANCH: ${{ vars.DEPLOY_BRANCH || 'test_change_history_mode' }}
+          ALLOWED_BRANCH: ${{ vars.DEPLOY_BRANCH || 'main' }}
           DRY_RUN: ${{ inputs.dry_run }}
           CONFIRM: ${{ inputs.confirm }}
         run: |
