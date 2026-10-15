@@ -223,7 +223,9 @@ function motorlan_add_security_headers($headers) {
     $csp .= "worker-src 'self' blob:; ";
     $csp .= "img-src 'self' data: https: blob:; ";
     $csp .= "font-src 'self' https://fonts.gstatic.com data:; ";
-    $csp .= "connect-src 'self' https://motorlan.com https://www.motorlan.es https://dev.motorlan.es https://www.googletagmanager.com https://www.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com https://stats.g.doubleclick.net http://localhost:* ws://localhost:* http://127.0.0.1:* ws://127.0.0.1:*; ";
+    // GA4 envía a analytics.google.com y www.google.com/g/collect (Google Signals):
+    // sin ellos la CSP bloqueaba los hits y se perdían visitas
+    $csp .= "connect-src 'self' https://motorlan.com https://www.motorlan.es https://dev.motorlan.es https://www.googletagmanager.com https://*.googletagmanager.com https://www.google-analytics.com https://*.google-analytics.com https://analytics.google.com https://*.analytics.google.com https://www.google.com https://stats.g.doubleclick.net https://*.g.doubleclick.net http://localhost:* ws://localhost:* http://127.0.0.1:* ws://127.0.0.1:*; ";
     $csp .= "frame-src 'self' blob:; ";
     $csp .= "object-src 'none'; ";
     

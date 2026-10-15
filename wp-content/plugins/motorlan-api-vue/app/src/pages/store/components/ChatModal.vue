@@ -408,7 +408,7 @@ onBeforeUnmount(() => {
       <div class="product-info bg-surface-container-low px-4 py-3 border-b d-flex align-center gap-4">
         <VAvatar
           v-if="props.publicacion.imagen_destacada"
-          :image="typeof props.publicacion.imagen_destacada === 'string' ? props.publicacion.imagen_destacada : (!Array.isArray(props.publicacion.imagen_destacada) && props.publicacion.imagen_destacada !== null ? props.publicacion.imagen_destacada.url : '')"
+          :image="typeof props.publicacion.imagen_destacada === 'string' ? props.publicacion.imagen_destacada : (!Array.isArray(props.publicacion.imagen_destacada) && props.publicacion.imagen_destacada !== null ? ((props.publicacion.imagen_destacada as any).sizes?.thumbnail || props.publicacion.imagen_destacada.url) : '')"
           size="48"
           class="rounded-lg elevation-2"
         />

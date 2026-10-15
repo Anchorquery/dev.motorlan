@@ -1,0 +1,95 @@
+/*
+ * Aislamiento del tema de WordPress (GeneratePress)
+ *
+ * main.min.css y el CSS del personalizador del tema dan estilo a ELEMENTOS
+ * (input, select, textarea, table, td, th, ul, ol, p, h1-h6, button...).
+ * Vuetify/Vuexy solo los resetea con `*` (especificidad 0), así que el tema gana y
+ * se colaba en la app: cajas grises dentro de los selects, padding 10px 15px en los
+ * campos, bordes cruzados en las tablas, margin-left 3em en las listas (la
+ * paginación se salía de la pantalla en móvil), botones gris oscuro al pulsarlos...
+ *
+ * Ámbito: la app y sus overlays (VDialog, VMenu, VBottomSheet se montan fuera de
+ * #motorlan-app, en .v-overlay-container).
+ *
+ * Especificidad: :where() no suma, así que cada regla pesa lo mismo que la del tema
+ * que corrige (esta hoja carga después y gana el empate) y MENOS que las clases de
+ * Vuetify, que siguen mandando. Sin !important.
+ */
+
+/* ---- Campos ---- */
+/* tema: input[type=...] (0,1,1) y su :focus (0,2,1) → aquí (0,2,1) con :is(:focus, :not(:focus)) */
+:where(#motorlan-app, .v-overlay-container) input[type]:is(:focus, :not(:focus)),
+:where(#motorlan-app, .v-overlay-container) :is(textarea, select):is(:focus, :not(:focus)) {
+  max-width: none;
+  border: 0;
+  border-radius: 0;
+  background-color: transparent;
+  box-shadow: none;
+  color: inherit;
+  font-family: inherit;
+}
+
+/* Inputs internos (VSelect, VAutocomplete, VCombobox...): sin padding */
+:where(#motorlan-app, .v-overlay-container) input[type]:not(.v-field__input):is(:focus, :not(:focus)),
+:where(#motorlan-app, .v-overlay-container) :is(textarea, select):not(.v-field__input):is(:focus, :not(:focus)) {
+  padding: 0;
+}
+
+/* Campos de Vuetify: el padding correcto sale de sus variables (densidad, variante...) */
+:where(#motorlan-app, .v-overlay-container) :is(input, textarea).v-field__input:is(:focus, :not(:focus)) {
+  padding-block: var(--v-field-input-padding-top) var(--v-field-input-padding-bottom);
+  padding-inline: var(--v-field-padding-start) var(--v-field-padding-end);
+}
+
+/* ---- Botones ---- */
+/* tema: button { font-family } y button:hover/:focus { fondo gris oscuro, texto blanco }:
+   en móvil, tocar un botón de texto o de icono lo dejaba gris con el texto invisible */
+:where(#motorlan-app, .v-overlay-container) button {
+  font-family: inherit;
+}
+
+:where(#motorlan-app, .v-overlay-container) button:is(.v-btn--variant-text, .v-btn--variant-plain, .v-btn--variant-outlined, .v-btn--variant-tonal):is(:hover, :focus, :active) {
+  background-color: transparent;
+  color: inherit;
+}
+
+/* ---- Tablas ---- */
+/* tema: table, td, th { border } + td/th { padding: 8px } + table { margin-bottom: 1.5em } */
+:where(#motorlan-app, .v-overlay-container) :is(table, td, th) {
+  border: 0;
+}
+
+:where(#motorlan-app, .v-overlay-container) table {
+  margin: 0;
+}
+
+:where(#motorlan-app, .v-overlay-container) :is(td, th) {
+  padding: 0;
+}
+
+/* ---- Listas y texto ---- */
+/* tema: ul, ol { margin: 0 0 1.5em 3em } · p { margin-bottom: 1.5em } · h1-h6 { margin-bottom: 20px } */
+:where(#motorlan-app, .v-overlay-container) :is(ul, ol, p, h1, h2, h3, h4, h5, h6) {
+  margin: 0;
+}
+
+:where(#motorlan-app, .v-overlay-container) :is(ul, ol) {
+  padding: 0;
+}
+
+/* Contenido HTML que viene del editor (descripción de la publicación): listas y párrafos legibles */
+:where(#motorlan-app, .v-overlay-container) :where(.rich-text, .publication-description, .product-description) :is(ul, ol) {
+  margin-block: 0 0.75em;
+  padding-inline-start: 1.5em;
+}
+
+:where(#motorlan-app, .v-overlay-container) :where(.rich-text, .publication-description, .product-description) p {
+  margin-block: 0 0.75em;
+}
+
+/* ---- Botón «volver arriba» del tema ---- */
+/* La app ya tiene el suyo (ScrollToTop); el del tema quedaba detrás de la barra
+   inferior de la tienda en móvil y encima del contenido de la ficha */
+body:has(#motorlan-app) .generate-back-to-top {
+  display: none;
+}

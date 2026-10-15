@@ -444,7 +444,11 @@ const removeOffer = async () => {
       v-if="props.publicacion.acf.descripcion"
       class="contact-card pa-4 mb-6"
     >
-      <p v-html="sanitize(props.publicacion.acf.descripcion)" />
+      <!-- div (no p): la descripción puede traer listas y párrafos del editor -->
+      <div
+        class="rich-text"
+        v-html="sanitize(props.publicacion.acf.descripcion)"
+      />
     </div>
 
     <div class="d-flex flex-wrap gap-4 mb-6">

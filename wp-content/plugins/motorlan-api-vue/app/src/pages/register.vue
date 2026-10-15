@@ -233,6 +233,7 @@ const register = async () => {
             :items="[t('register.step_account'), t('register.step_credentials'), t('register.step_confirm')]"
             hide-actions
             flat
+            mobile-breakpoint="sm"
             class="mb-4 bg-transparent"
           />
 
