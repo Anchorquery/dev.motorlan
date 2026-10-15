@@ -1,0 +1,145 @@
+# Despliegue del plugin motorlan-api-vue a producción (www.motorlan.es) por FTP.
+#
+# Solo manual: Actions › "Deploy plugin Motorlan (FTP)" › Run workflow.
+# Compila el frontend (app/dist no está en git), prepara SOLO los archivos que el
+# plugin usa en producción y los sincroniza por FTP. La sincronización es
+# incremental: se guarda un .ftp-deploy-sync-state.json en el servidor y en cada
+# despliegue solo se suben los archivos cambiados (y se borran los eliminados).
+#
+# Configuración (Settings › Environments › production):
+#   Secrets:   FTP_USERNAME, FTP_PASSWORD
+#   Variables (opcionales, con valor por defecto):
+#              FTP_SERVER      www.motorlan.es
+#              FTP_SERVER_DIR  /public/wp-content/plugins/motorlan-api-vue/  (acabada en "/")
+#              FTP_PROTOCOL    ftp (por defecto) | ftps
+#              DEPLOY_BRANCH   rama permitida (por defecto test_change_history_mode)
+#              SITE_URL        por defecto https://www.motorlan.es
+
+name: Deploy plugin Motorlan (FTP)
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Simulación: lista lo que se subiría/borraría sin tocar el servidor"
+        type: boolean
+        default: true
+      confirm:
+        description: 'Escribe SUBIR para desplegar de verdad (no hace falta en simulación)'
+        type: string
+        default: ""
+
+concurrency:
+  group: deploy-motorlan-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  PLUGIN_DIR: wp-content/plugins/motorlan-api-vue
+  STAGE_DIR: ${{ github.workspace }}/_deploy/motorlan-api-vue/
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: production
+
+    steps:
+      - name: Comprobar rama y confirmación
+        env:
+          ALLOWED_BRANCH: ${{ vars.DEPLOY_BRANCH || 'test_change_history_mode' }}
+          DRY_RUN: ${{ inputs.dry_run }}
+          CONFIRM: ${{ inputs.confirm }}
+        run: |
+          if [ "$GITHUB_REF_NAME" != "$ALLOWED_BRANCH" ]; then
+            echo "::error::Solo se despliega desde '$ALLOWED_BRANCH' (has elegido '$GITHUB_REF_NAME')."
+            exit 1
+          fi
+          if [ "$DRY_RUN" != "true" ] && [ "$CONFIRM" != "SUBIR" ]; then
+            echo "::error::Despliegue real sin confirmar: escribe SUBIR en 'confirm' o activa la simulación."
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: yarn
+          cache-dependency-path: ${{ env.PLUGIN_DIR }}/app/yarn.lock
+
+      - name: Instalar dependencias
+        working-directory: ${{ env.PLUGIN_DIR }}/app
+        run: yarn install --frozen-lockfile --network-timeout 600000
+
+      - name: Comprobar sintaxis PHP
+        working-directory: ${{ env.PLUGIN_DIR }}
+        run: |
+          find motorlan-api-vue.php includes -name '*.php' -print0 \
+            | xargs -0 -n1 -P4 php -l > /tmp/php-lint.log 2>&1 \
+            || { grep -v '^No syntax errors' /tmp/php-lint.log; exit 1; }
+
+      - name: Compilar frontend
+        working-directory: ${{ env.PLUGIN_DIR }}/app
+        run: yarn build
+
+      - name: Preparar paquete (solo archivos de producción)
+        working-directory: ${{ env.PLUGIN_DIR }}
+        run: |
+          set -euo pipefail
+          rm -rf "$STAGE_DIR" && mkdir -p "$STAGE_DIR/app/src/plugins/i18n"
+          cp motorlan-api-vue.php "$STAGE_DIR"
+          cp -r includes assets "$STAGE_DIR"
+          cp -r app/dist "$STAGE_DIR/app/dist"
+          # El PHP lee las traducciones directamente de app/src (WPML / emails)
+          cp -r app/src/plugins/i18n/locales "$STAGE_DIR/app/src/plugins/i18n/locales"
+          # El estado de la sincronización no debe poder descargarse por URL
+          printf '%s\n' \
+            '<Files ".ftp-deploy-sync-state.json">' \
+            '  <IfModule mod_authz_core.c>' \
+            '    Require all denied' \
+            '  </IfModule>' \
+            '  <IfModule !mod_authz_core.c>' \
+            '    Order allow,deny' \
+            '    Deny from all' \
+            '  </IfModule>' \
+            '</Files>' > "$STAGE_DIR/.htaccess"
+
+          # Archivos imprescindibles: si falta alguno, WordPress da un error fatal
+          for f in motorlan-api-vue.php app/dist/js/app.js app/dist/css/style.css \
+                   app/dist/loader.css app/dist/.htaccess includes/api/ai-routes.php \
+                   includes/admin/admin-store-cache.php app/src/plugins/i18n/locales/es.json; do
+            [ -s "$STAGE_DIR/$f" ] || { echo "::error::Falta $f en el paquete"; exit 1; }
+          done
+          echo "Paquete: $(find "$STAGE_DIR" -type f | wc -l) archivos, $(du -sh "$STAGE_DIR" | cut -f1)"
+
+      - name: Subir por FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ vars.FTP_SERVER || 'www.motorlan.es' }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ${{ vars.FTP_PROTOCOL || 'ftp' }}
+          port: 21
+          local-dir: ${{ env.STAGE_DIR }}
+          server-dir: ${{ vars.FTP_SERVER_DIR || '/public/wp-content/plugins/motorlan-api-vue/' }}
+          dry-run: ${{ inputs.dry_run }}
+          log-level: standard
+          timeout: 120000
+
+      - name: Verificar que producción sirve el build nuevo
+        if: ${{ !inputs.dry_run }}
+        env:
+          SITE_URL: ${{ vars.SITE_URL || 'https://www.motorlan.es' }}
+        run: |
+          # Un despliegue a medias (app.js viejo) rompe la web: comparar tamaños
+          local_size=$(stat -c %s "$STAGE_DIR/app/dist/js/app.js")
+          url="$SITE_URL/$PLUGIN_DIR/app/dist/js/app.js?deploy=$GITHUB_RUN_ID"
+          # Sin --compressed: el servidor devuelve el archivo sin gzip y el tamaño es comparable
+          read -r status remote_size < <(curl -s -o /dev/null -w '%{http_code} %{size_download}' "$url" || echo "000 0")
+          echo "app.js local=$local_size remoto=$remote_size (HTTP $status)"
+          if [ "$status" != "200" ] || [ "$remote_size" != "$local_size" ]; then
+            echo "::warning::El app.js publicado no coincide con el compilado. Revisa la subida o la caché del servidor/CDN."
+          fi
