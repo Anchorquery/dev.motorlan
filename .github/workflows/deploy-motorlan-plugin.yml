@@ -138,7 +138,10 @@ jobs:
           local_size=$(stat -c %s "$STAGE_DIR/app/dist/js/app.js")
           url="$SITE_URL/$PLUGIN_DIR/app/dist/js/app.js?deploy=$GITHUB_RUN_ID"
           # Sin --compressed: el servidor devuelve el archivo sin gzip y el tamaño es comparable
-          read -r status remote_size < <(curl -s -o /dev/null -w '%{http_code} %{size_download}' "$url" || echo "000 0")
+          # (con \n final: sin él, read devuelve 1 y el paso fallaba aunque todo fuera bien)
+          result=$(curl -s -o /dev/null -w '%{http_code} %{size_download}\n' "$url" || echo "000 0")
+          status=${result%% *}
+          remote_size=${result##* }
           echo "app.js local=$local_size remoto=$remote_size (HTTP $status)"
           if [ "$status" != "200" ] || [ "$remote_size" != "$local_size" ]; then
             echo "::warning::El app.js publicado no coincide con el compilado. Revisa la subida o la caché del servidor/CDN."
