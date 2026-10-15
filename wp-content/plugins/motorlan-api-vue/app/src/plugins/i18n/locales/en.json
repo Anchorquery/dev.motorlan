@@ -1134,7 +1134,10 @@
       "offer": "Offer",
       "rent": "Rental",
       "direct": "Direct"
-    }
+    },
+    "empty": "You don't have any purchases yet.",
+    "view_detail": "View details",
+    "view_publication": "View listing"
   },
   "product_details": {
     "favorite": "Favorite",

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, watch, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useDisplay } from 'vuetify'
 import { useRouter } from 'vue-router'
 import { createUrl } from '@/@core/composable/createUrl'
 import { useApi } from '@/composables/useApi'
@@ -10,6 +11,9 @@ import { storeUrl } from '@/utils/urls'
 
 const router = useRouter()
 const { t } = useI18n()
+const display = useDisplay()
+// En móvil, tarjetas en vez de tabla (la tabla con scroll horizontal era difícil de usar)
+const isMobile = computed(() => display.smAndDown.value)
 
 const normalizeStatus = (status: string) => status?.toLowerCase() ?? ''
 
@@ -222,8 +226,139 @@ const goToProduct = (pub: any) => {
 
     <VDivider />
 
+    <!-- 👉 Móvil: tarjetas -->
+    <div
+      v-if="isMobile"
+      class="purchase-cards-shell"
+    >
+      <VProgressLinear
+        v-if="isTableLoading"
+        indeterminate
+        color="primary"
+      />
+      <div
+        v-else-if="!purchases.length"
+        class="text-center text-medium-emphasis py-8"
+      >
+        {{ t('purchases.empty', 'Aún no tienes compras.') }}
+      </div>
+      <VRow class="ga-4">
+        <VCol
+          v-for="item in purchases"
+          :key="item.uuid"
+          cols="12"
+        >
+          <VCard class="purchase-card-mobile">
+            <VCardText class="pa-4">
+              <div class="d-flex align-start gap-3">
+                <VAvatar
+                  v-if="(item.publicacion || item.motor)?.imagen_destacada"
+                  size="52"
+                  variant="tonal"
+                  rounded
+                  :image="getImageBySize((item.publicacion || item.motor).imagen_destacada, 'thumbnail')"
+                />
+                <div class="flex-grow-1 overflow-hidden">
+                  <div
+                    class="text-subtitle-1 font-weight-bold text-high-emphasis mb-1 cursor-pointer"
+                    @click="goToProduct(item.publicacion || item.motor)"
+                  >
+                    {{ formatPublicationTitle(item.publicacion || item.motor) }}
+                  </div>
+                  <div
+                    v-if="(item.publicacion || item.motor)?.acf?.tipo_o_referencia"
+                    class="text-body-2 text-medium-emphasis"
+                  >
+                    Ref: {{ (item.publicacion || item.motor).acf.tipo_o_referencia }}
+                  </div>
+                </div>
+              </div>
+
+              <VDivider class="my-4" />
+
+              <div class="purchase-card-mobile__meta">
+                <div>
+                  <div class="text-caption text-medium-emphasis text-uppercase">
+                    {{ t('purchases.headers.fecha_compra') }}
+                  </div>
+                  <div class="text-body-2 font-weight-medium">
+                    {{ item.fecha_compra }}
+                  </div>
+                </div>
+                <div>
+                  <div class="text-caption text-medium-emphasis text-uppercase">
+                    {{ t('purchases.headers.tipo') }}
+                  </div>
+                  <VChip
+                    v-bind="resolvePurchaseType(item)"
+                    density="comfortable"
+                    label
+                    size="small"
+                  />
+                </div>
+                <div>
+                  <div class="text-caption text-medium-emphasis text-uppercase">
+                    {{ t('purchases.headers.estado') }}
+                  </div>
+                  <VChip
+                    v-bind="resolveStatus(item.estado)"
+                    density="comfortable"
+                    label
+                    size="small"
+                  />
+                </div>
+              </div>
+
+              <div class="d-flex flex-column gap-2 mt-4">
+                <VBtn
+                  block
+                  color="primary"
+                  variant="tonal"
+                  prepend-icon="tabler-eye"
+                  @click="router.push(`/dashboard/purchases/${item.uuid}`)"
+                >
+                  {{ t('purchases.view_detail', 'Ver detalle') }}
+                </VBtn>
+                <VBtn
+                  block
+                  color="secondary"
+                  variant="tonal"
+                  prepend-icon="tabler-external-link"
+                  :disabled="!(item.publicacion || item.motor)?.slug"
+                  @click="goToProduct(item.publicacion || item.motor)"
+                >
+                  {{ t('purchases.view_publication', 'Ver publicación') }}
+                </VBtn>
+                <VBtn
+                  v-if="!item.review_done"
+                  block
+                  color="warning"
+                  variant="tonal"
+                  prepend-icon="tabler-star"
+                  @click="handleRateSeller(item)"
+                >
+                  {{ t('purchases.rate_seller') }}
+                </VBtn>
+              </div>
+            </VCardText>
+          </VCard>
+        </VCol>
+      </VRow>
+
+      <div class="mt-4">
+        <TablePagination
+          v-model:page="page"
+          :items-per-page="itemsPerPage"
+          :total-items="totalPurchases"
+        />
+      </div>
+    </div>
+
     <!-- 👉 Datatable  -->
-    <div class="purchase-table-shell">
+    <div
+      v-else
+      class="purchase-table-shell"
+    >
     <VDataTableServer
       v-model:items-per-page="itemsPerPage"
       v-model:page="page"
@@ -307,10 +442,7 @@ const goToProduct = (pub: any) => {
         <IconBtn
           class="me-1"
           :disabled="!(item.publicacion || item.motor)?.slug"
-          @click="() => {
-            const slug = (item.publicacion || item.motor)?.slug
-            if (slug) goToProduct(slug)
-          }"
+          @click="goToProduct(item.publicacion || item.motor)"
         >
           <VIcon icon="tabler-external-link" />
         </IconBtn>
@@ -337,18 +469,18 @@ const goToProduct = (pub: any) => {
           :items-per-page="itemsPerPage"
           :total-items="totalPurchases"
         />
-        
-        <RatingModal
-          v-if="showRatingModal"
-          v-model="showRatingModal"
-          :purchase-uuid="selectedPurchaseUuid"
-          target-role="seller"
-          :target-name="selectedSellerName"
-          @success="handleRatingSuccess"
-        />
       </template>
     </VDataTableServer>
     </div>
+
+    <RatingModal
+      v-if="showRatingModal"
+      v-model="showRatingModal"
+      :purchase-uuid="selectedPurchaseUuid"
+      target-role="seller"
+      :target-name="selectedSellerName"
+      @success="handleRatingSuccess"
+    />
   </VCard>
 </template>
 
@@ -359,10 +491,32 @@ const goToProduct = (pub: any) => {
   -webkit-overflow-scrolling: touch;
 }
 
+.purchase-cards-shell {
+  padding: 1rem;
+}
+
+.purchase-card-mobile {
+  border-radius: 18px;
+  border: 1px solid rgba(218, 41, 28, 0.08);
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.06);
+}
+
+.purchase-card-mobile__meta {
+  display: grid;
+  gap: 0.875rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 @media (max-width: 959px) {
   .purchase-toolbar :deep(.v-field),
   .purchase-toolbar :deep(.v-btn) {
     width: 100%;
+  }
+}
+
+@media (max-width: 420px) {
+  .purchase-card-mobile__meta {
+    grid-template-columns: 1fr;
   }
 }
 </style>

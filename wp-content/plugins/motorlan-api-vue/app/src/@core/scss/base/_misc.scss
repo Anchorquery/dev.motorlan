@@ -43,6 +43,24 @@ code {
 
   @media (max-width: 959px) {
     .layout-page-content {
+      .v-data-table,
+      .v-data-table-server,
+      .v-table {
+        border-radius: 18px;
+      }
+
+      .v-table__wrapper > table {
+        min-width: 100%;
+        table-layout: fixed;
+      }
+
+      .v-table__wrapper th,
+      .v-table__wrapper td {
+        white-space: normal;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+      }
+
       .v-data-table-footer,
       .v-table-footer,
       .v-data-table__footer {
@@ -61,6 +79,15 @@ code {
       .v-table-footer .v-pagination,
       .v-data-table__footer .v-pagination {
         max-width: 100%;
+      }
+
+      .v-data-table .d-flex.justify-end.gap-2 {
+        flex-wrap: wrap;
+        justify-content: flex-start;
+      }
+
+      .v-data-table .v-btn {
+        min-inline-size: auto;
       }
     }
   }

@@ -1044,7 +1044,10 @@
       "offer": "Oferta",
       "rent": "Alquiler",
       "direct": "Directa"
-    }
+    },
+    "empty": "Aún no tienes compras.",
+    "view_detail": "Ver detalle",
+    "view_publication": "Ver publicación"
   },
   "product_details": {
     "favorite": "Favorito",

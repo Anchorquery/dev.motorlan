@@ -1126,7 +1126,10 @@
       "offer": "Eskaintza",
       "rent": "Alokairua",
       "direct": "Zuzena"
-    }
+    },
+    "empty": "Oraindik ez duzu erosketarik.",
+    "view_detail": "Ikusi xehetasunak",
+    "view_publication": "Ikusi argitalpena"
   },
   "product_details": {
     "favorite": "Gogokoa",
