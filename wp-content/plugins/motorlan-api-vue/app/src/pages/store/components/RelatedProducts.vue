@@ -77,11 +77,19 @@ const resolveProductType = (publication: Publicacion) => {
         <VCard class="related-card flex-grow-1" rounded="xl">
           <div class="related-card__image">
             <VImg
-              :src="publicacion.imagen_destacada?.url || '/placeholder.png'"
+              v-if="publicacion.imagen_destacada?.url"
+              :src="publicacion.imagen_destacada.url"
               :alt="publicacion.title"
               cover
               aspect-ratio="1.25"
             />
+            <div
+              v-else
+              class="d-flex align-center justify-center bg-grey-lighten-4"
+              style="aspect-ratio: 1.25;"
+            >
+              <VIcon icon="tabler-photo" size="48" color="medium-emphasis" />
+            </div>
           </div>
 
           <VCardText class="d-flex flex-column flex-grow-1 pa-4">

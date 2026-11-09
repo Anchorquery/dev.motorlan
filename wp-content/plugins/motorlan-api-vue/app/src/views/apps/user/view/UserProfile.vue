@@ -316,7 +316,15 @@ const cancelPendingEmailChange = async () => {
               color="primary"
               variant="tonal"
             >
-              <VImg :src="userProfile?.personal_data.avatar || '/placeholder.png'" />
+              <VImg
+                v-if="userProfile?.personal_data.avatar"
+                :src="userProfile.personal_data.avatar"
+              />
+              <VIcon
+                v-else
+                icon="tabler-user"
+                size="56"
+              />
               <div
                 v-if="isUploadingAvatar"
                 class="avatar-upload-overlay"
