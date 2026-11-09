@@ -15,7 +15,6 @@ const isAdmin = computed(() => userStore.isAdmin)
 const HIDE_NAV_PREFIXES = [
   '/dashboard/admin/approvals/preview',
   '/dashboard/publications/sales/', // individual sale detail (not the list)
-  '/dashboard/publications/publication/questions/',
 ]
 
 // purchases/[uuid].vue — uuid pattern, not a named sub-route

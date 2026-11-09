@@ -641,18 +641,6 @@ const canEdit = (item: any) => {
               <VIcon icon="tabler-dots-vertical" size="18" />
               <VMenu activator="parent">
                 <VList density="compact">
-<!--
-                  <VListItem
-                    value="questions"
-                    @click="router.push(`/dashboard/publications/publication/questions/${(item as any).uuid}`)"
-                  >
-                    <template #prepend>
-                      <VIcon icon="tabler-help" size="18" class="me-2" />
-                    </template>
-                    <VListItemTitle>{{ t('publication_list.questions') }}</VListItemTitle>
-                  </VListItem>
--->
-                  
                   <VListItem
                     value="duplicate"
                     @click="openDuplicateDialog((item as any).id)"
