@@ -16,48 +16,6 @@ class Motorlan_Notification_Listener {
         }
     }
     
-    /**
-     * Helper to switch locale, create notification, and restore locale.
-     */
-    private function create_notification_localized( $user_id, $type, $title, $message, $data = [], $channels = ['web', 'email'] ) {
-        // Switch to user locale
-        $user_locale = get_user_locale( $user_id );
-        $original_locale = determine_locale(); // Current locale
-        
-        // Only switch if different (optimization)
-        $switched = false;
-        if ( $user_locale !== $original_locale ) {
-            $switched = switch_to_locale( $user_locale );
-        }
-
-        // We assume the title/message passed might be generated dynamically.
-        // If the caller didn't translate them *before* calling this, they will be translated here?
-        // No, PHP strings are evaluated at call time. 
-        // Example: on_user_welcome calls: create...('Welcome', ...)
-        // 'Welcome' is evaluated inside on_user_welcome BEFORE we switch locale here if we passed a string string.
-        // BUT wait! 
-        // If I use __() inside on_user_welcome, it uses the CURRENT locale logic usually (which might be admin's locale).
-        // So I must switch locale inside the specific handlers BEFORE generating the text.
-        
-        // Actually, the best way is to move the logic inside the handlers, OR pass keys/closures.
-        // But closures are messy here.
-        // So I will NOT use this helper to *translate* the content.
-        // I will use `switch_to_locale` inside each handler function manually to be precise.
-        // Then I call the manager.
-        
-        // However, I can still use this wrapper to ensure the *template rendering* (which happens in manager) uses the correct locale.
-        // Because manager->create_notification -> send_email -> include template -> template calls __().
-        // So this wrapper IS useful for the template part.
-        
-        try {
-            $this->notification_manager->create_notification( $user_id, $type, $title, $message, $data, $channels );
-        } finally {
-            if ( $switched ) {
-                restore_previous_locale();
-            }
-        }
-    }
-
     public function init() {
         // Register all hooks
         add_action( 'motorlan_user_welcome', [ $this, 'on_user_welcome' ], 10, 1 );

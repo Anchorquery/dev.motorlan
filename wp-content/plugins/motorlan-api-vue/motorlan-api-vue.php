@@ -242,9 +242,6 @@ function motorlan_is_user_authenticated() {
     return is_user_logged_in();
 }
 
-function motorlan_permission_callback_true() {
-    return true;
-}
 
 // Autenticación REST: flujos anónimos con nonce caducado y JSONP desactivado.
 require_once MOTORLAN_API_VUE_PATH . 'includes/api/rest-auth.php';

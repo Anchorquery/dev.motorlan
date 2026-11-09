@@ -22,7 +22,6 @@ require_once $callbacks_path . 'delete-publicacion.php';
 require_once $callbacks_path . 'bulk-delete-publicaciones.php';
 require_once $callbacks_path . 'duplicate-publicacion.php';
 require_once $callbacks_path . 'update-publicacion-status.php';
-require_once $callbacks_path . 'get-categories.php';
 require_once $callbacks_path . 'get-tipos.php';
 require_once $callbacks_path . 'get-marcas.php';
 require_once $callbacks_path . 'get-user-favorites.php';
