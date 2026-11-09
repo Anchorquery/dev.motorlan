@@ -43,7 +43,6 @@ require_once MOTORLAN_API_VUE_PATH . 'includes/api/admin-approval-routes.php';
 require_once MOTORLAN_API_VUE_PATH . 'includes/api/admin-publications-routes.php';
 require_once MOTORLAN_API_VUE_PATH . 'includes/api/product-messages-routes.php';
 require_once MOTORLAN_API_VUE_PATH . 'includes/api/reviews-routes.php';
-require_once MOTORLAN_API_VUE_PATH . 'includes/api/ai-routes.php';
 
 require_once MOTORLAN_API_VUE_PATH . 'includes/classes/class-motorlan-rate-limiter.php'; // Security Rate Limiter
 require_once MOTORLAN_API_VUE_PATH . 'includes/classes/class-motorlan-security-logger.php'; // Security Logger
