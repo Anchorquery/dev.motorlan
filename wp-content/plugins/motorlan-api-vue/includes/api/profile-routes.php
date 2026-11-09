@@ -161,6 +161,14 @@ function update_user_profile_data(WP_REST_Request $request) {
     } else {
         $company_data = null;
     }
+    // json_decode('1') o '"x"' no da un array: array_key_exists()/foreach lanzaban
+    // TypeError en PHP 8 (500).
+    if (!is_array($personal_data)) {
+        $personal_data = null;
+    }
+    if (!is_array($company_data)) {
+        $company_data = null;
+    }
 
     // Update personal data
     if ($personal_data) {
@@ -204,7 +212,8 @@ function update_user_profile_data(WP_REST_Request $request) {
                     return new WP_Error('too_many_attempts', __('Demasiados intentos. Inténtalo más tarde.', 'motorlan-api-vue'), ['status' => 429]);
                 }
 
-                $current_password = (string) ($params['current_password'] ?? ($personal_data['current_password'] ?? ''));
+                $current_password = $params['current_password'] ?? ($personal_data['current_password'] ?? '');
+                $current_password = is_string($current_password) ? $current_password : '';
                 if ($current_password === '') {
                     return new WP_Error('password_required', __('Introduce tu contraseña actual para cambiar el email.', 'motorlan-api-vue'), ['status' => 400]);
                 }
@@ -552,7 +561,8 @@ function motorlan_handle_change_password_confirm(WP_REST_Request $request) {
     $user_id = get_current_user_id();
     $params = $request->get_json_params();
     $code = sanitize_text_field($params['code'] ?? '');
-    $new_password = $params['password'] ?? '';
+    // Un array daba TypeError dentro de wp_check_password()/strlen (500).
+    $new_password = is_string($params['password'] ?? null) ? $params['password'] : '';
 
     if (empty($code) || empty($new_password)) {
         return new WP_Error('missing_params', __('Faltan parámetros requeridos.', 'motorlan-api-vue'), ['status' => 400]);
