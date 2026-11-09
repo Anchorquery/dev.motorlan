@@ -483,7 +483,9 @@ if ( ! class_exists( 'Motorlan_Purchase_Chat_Controller' ) ) {
 			}
 
 			$raw_message = $request->get_param( 'message' );
-			$message     = sanitize_textarea_field( wp_unslash( $raw_message ) );
+			// Sin wp_unslash(): WP_REST_Server ya entrega los parámetros sin barras y el
+			// unslash extra borraba las "\" que escribía el usuario (C:\ruta -> C:ruta).
+			$message     = sanitize_textarea_field( (string) $raw_message );
 
 			if ( '' === trim( $message ) ) {
 				return new WP_Error(
