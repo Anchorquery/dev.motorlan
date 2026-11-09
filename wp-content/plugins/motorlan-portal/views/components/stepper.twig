@@ -1,0 +1,28 @@
+{#
+  Stepper (AppStepper de la SPA: alta de publicación, checkout).
+  Dentro de un contenedor x-data="mlStepper(3)" (app.js): next(), prev(), go(i), step.
+    <div x-data="mlStepper(3)">
+      {{ st.stepper([{ title: 'Datos', subtitle: 'Motor y marca', icon: 'file-text' }, …]) }}
+      <section x-show="step === 0">…</section>
+    </div>
+  Sin Alpine (paso fijo, p. ej. un paso por URL): st.stepper(items, { current: 1 }).
+#}
+{% macro stepper(items, o = {}) -%}
+{%- import 'components/icon.twig' as ui -%}
+{%- set fixed = o.current is defined -%}
+<nav class="ml-stepper {{ o.class|default('') }}" aria-label="Pasos">
+  {%- for it in items -%}
+    {%- set i = loop.index0 -%}
+    <button type="button" class="ml-step{{ fixed and i < o.current ? ' is-done' : '' }}"
+      {%- if fixed %}{% if i == o.current %} aria-current="step"{% endif %} disabled
+      {%- else %} @click="go({{ i }})" :class="step > {{ i }} && 'is-done'" :aria-current="step === {{ i }} ? 'step' : null"{% if i == 0 %} aria-current="step"{% endif %}{% endif %}>
+      <span class="ml-step__icon">{{ ui.icon(it.icon|default('circle')) }}</span>
+      <span class="flex flex-col">
+        <span class="ml-step__title">{{ it.title|e }}</span>
+        {%- if it.subtitle|default(false) %}<span class="ml-step__subtitle">{{ it.subtitle|e }}</span>{% endif -%}
+      </span>
+    </button>
+    {%- if not loop.last %}{{ ui.icon('chevron-right', 'ml-stepper__sep hidden sm:inline-block') }}{% endif -%}
+  {%- endfor -%}
+</nav>
+{%- endmacro %}

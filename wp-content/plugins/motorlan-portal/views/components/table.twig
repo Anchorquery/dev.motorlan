@@ -1,0 +1,60 @@
+{#
+  Tabla con filtros y paginación por HTMX (VDataTable de la SPA). Embed:
+    {% embed 'components/table.twig' with { id: 'pubs', url: table_url, columns: [
+        { label: 'Título' }, { label: 'Estado' }, { label: 'Precio', class: 'text-end' } ],
+        page: t.page, pages: t.pages, total: t.total } %}
+      {% block filters %}… campos con name= (se envían en cada recarga) …{% endblock %}
+      {% block rows %}{% for r in t.rows %}<tr>
+          <td data-label="Título">{{ r.titulo|e }}</td> …
+        </tr>{% endfor %}{% endblock %}
+      {% block empty %}… (opcional) …{% endblock %}
+    {% endembed %}
+
+  Cómo funciona:
+   - El formulario #{id}-filters dispara hx-get={url} al cambiar (con retardo al escribir)
+     y reemplaza #{id} (outerHTML). El endpoint devuelve ESTE mismo componente renderizado
+     (un parcial que hace el embed), así filtros, filas y paginación se mantienen juntos.
+   - La paginación incluye los filtros (hx-include).
+   - En móvil (< 960 px) cada fila es una tarjeta: pon data-label en cada <td>.
+  Variables: id · url · columns · page · pages · total · stack (def. true)
+             filters_query: query de los filtros activos (q=…&estado=…) para los href sin JS.
+  Sin JS el formulario y los href recargan la página con ?page=&filtros: el controlador
+  debe leerlos de $_GET igual que el endpoint.
+#}
+{%- import 'components/pagination.twig' as pg -%}
+{%- set sep = '?' in url ? '&' : '?' -%}
+<div id="{{ id|e('html_attr') }}" class="ml-table-loading">
+  <form id="{{ id|e('html_attr') }}-filters" class="flex flex-wrap items-end gap-4 px-6 py-5 max-md:flex-col max-md:items-stretch"
+        hx-get="{{ url|e('html_attr') }}" hx-target="#{{ id|e('html_attr') }}" hx-swap="outerHTML"
+        hx-trigger="input changed delay:350ms, submit"
+        hx-indicator="#{{ id|e('html_attr') }}">
+    {% block filters %}{% endblock %}
+  </form>
+  <div class="ml-table-shell">
+    <table class="ml-table{{ stack|default(true) ? ' ml-table--stack' : '' }}">
+      <thead><tr>
+        {%- for col in columns %}<th class="{{ col.class|default('') }}" scope="col">{{ col.label|e }}</th>{% endfor -%}
+      </tr></thead>
+      <tbody>
+        {%- set rows_html %}{% block rows %}{% endblock %}{% endset -%}
+        {%- if rows_html|trim -%}
+          {{ rows_html }}
+        {%- else -%}
+          <tr><td colspan="{{ columns|length }}" class="!border-0">{% block empty %}
+            {%- import 'components/empty.twig' as em -%}
+            {{ em.empty({ icon: 'search', title: 'Sin resultados', text: 'Prueba con otros filtros.' }) }}
+          {% endblock %}</td></tr>
+        {%- endif -%}
+      </tbody>
+    </table>
+  </div>
+  {%- if total|default(0) > 0 %}
+  <div class="ml-table__footer">
+    <p class="text-sm text-medium-emphasis">{{ total }} {{ total == 1 ? 'resultado' : 'resultados' }}</p>
+    {%- set filters_qs = filters_query|default('') -%}
+    {{ pg.pagination({ page: page|default(1), pages: pages|default(1), url: url ~ sep ~ 'page=%d',
+                       href_url: '?page=%d' ~ (filters_qs ? '&' ~ filters_qs : ''),
+                       hx: { target: '#' ~ id, include: '#' ~ id ~ '-filters' } }) }}
+  </div>
+  {%- endif %}
+</div>

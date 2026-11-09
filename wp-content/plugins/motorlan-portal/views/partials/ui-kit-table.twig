@@ -1,0 +1,46 @@
+{#
+  Tabla del catálogo: la pinta la página y la devuelve el endpoint HTMX
+  (GET motorlan-portal/v1/ui-kit/table) con el mismo marcado. Variables: table, table_url.
+#}
+{% embed 'components/table.twig' with {
+  id: 'uikit-table',
+  url: table_url,
+  columns: [{ label: 'Publicación' }, { label: 'Estado' }, { label: 'Precio', class: 'text-end' }, { label: 'Acciones', class: 'text-end' }],
+  page: table.page, pages: table.pages, total: table.total,
+  filters_query: 'q=' ~ table.filters.q|url_encode ~ '&estado=' ~ table.filters.estado|url_encode,
+} %}
+  {% block filters %}
+    {%- import 'components/field.twig' as f -%}
+    {{ f.text({ name: 'q', id: 'uikit-q', type: 'search', placeholder: 'Buscar por título o marca', icon: 'search', value: table.filters.q, class: 'w-full md:w-80' }) }}
+    {%- set opts = { '': 'Todos los estados' } -%}
+    {%- for k, e in table.estados %}{% set opts = opts|merge({ (k): e.label }) %}{% endfor -%}
+    {{ f.select({ name: 'estado', id: 'uikit-estado', options: opts, value: table.filters.estado, class: 'w-full md:w-56' }) }}
+  {% endblock %}
+  {% block rows %}
+    {%- import 'components/chip.twig' as c -%}
+    {%- import 'components/avatar.twig' as a -%}
+    {%- import 'components/btn.twig' as b -%}
+    {%- for r in table.rows %}
+    <tr>
+      <td data-label="Publicación">
+        <div class="flex items-center gap-3">
+          {{ a.avatar({ icon: 'engine', rounded: true, color: 'secondary' }) }}
+          <div class="min-w-0">
+            <p class="truncate font-medium text-high-emphasis">{{ r.titulo|e }}</p>
+            <p class="text-sm text-disabled">{{ r.marca|e }} · #{{ r.id }}</p>
+          </div>
+        </div>
+      </td>
+      <td data-label="Estado">{{ c.chip({ label: table.estados[r.estado].label, color: table.estados[r.estado].color, size: 'sm' }) }}</td>
+      <td data-label="Precio" class="text-end font-medium text-high-emphasis md:whitespace-nowrap">{{ r.precio|number_format(0, ',', '.') }} €</td>
+      <td data-label="Acciones" class="text-end">
+        <div class="inline-flex gap-1">
+          {{ b.btn({ icon: 'eye', variant: 'text', color: 'secondary', size: 'sm', title: 'Ver' }) }}
+          {{ b.btn({ icon: 'pencil', variant: 'text', color: 'secondary', size: 'sm', title: 'Editar' }) }}
+          {{ b.btn({ icon: 'trash', variant: 'text', color: 'error', size: 'sm', title: 'Eliminar' }) }}
+        </div>
+      </td>
+    </tr>
+    {%- endfor %}
+  {% endblock %}
+{% endembed %}

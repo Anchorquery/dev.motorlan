@@ -1,0 +1,24 @@
+{#
+  Alerta (VAlert tonal con icono).
+    {% import 'components/alert.twig' as al %}
+    {{ al.alert({ color: 'success', title: 'Guardado', text: 'Tu anuncio está publicado.' }) }}
+    {{ al.alert({ color: 'warning', text: 'Falta la foto principal.', variant: 'outlined', closable: true }) }}
+  color: info (def.) | success | warning | error | primary | secondary
+  variant: tonal (def.) | outlined | filled · icon (def. según color) · closable (Alpine)
+  text se escapa; para HTML propio usa html (YA escapado).
+#}
+{% macro alert(o) -%}
+{%- import 'components/icon.twig' as ui -%}
+{%- set color = o.color|default('info') -%}
+{%- set icons = { success: 'circle-check', warning: 'alert-triangle', error: 'alert-circle', info: 'info-circle', primary: 'bell', secondary: 'info-circle' } -%}
+<div class="ml-alert ml-c-{{ color }}{{ o.variant|default('tonal') != 'tonal' ? ' ml-alert--' ~ o.variant : '' }} {{ o.class|default('') }}" role="{{ color == 'error' or color == 'warning' ? 'alert' : 'status' }}"{% if o.closable|default(false) %} x-data="{ show: true }" x-show="show"{% endif %}>
+  <span class="ml-alert__icon">{{ ui.icon(o.icon|default(icons[color]|default('info-circle'))) }}</span>
+  <div class="ml-alert__body">
+    {%- if o.title|default(false) %}<div class="ml-alert__title">{{ o.title|e }}</div>{% endif -%}
+    <div class="ml-alert__text">{{ o.html|default(false) ? o.html|raw : o.text|default('')|e }}</div>
+  </div>
+  {%- if o.closable|default(false) %}
+  <button type="button" class="ml-icon-btn !size-7 !text-current shrink-0" @click="show = false" aria-label="Cerrar">{{ ui.icon('x', 'size-4') }}</button>
+  {%- endif %}
+</div>
+{%- endmacro %}

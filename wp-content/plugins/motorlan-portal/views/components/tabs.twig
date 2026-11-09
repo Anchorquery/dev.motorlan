@@ -1,0 +1,30 @@
+{#
+  Pestañas (VTabs).
+  a) En la página, con Alpine: el contenedor común lleva x-data="mlTabs('general')" y cada
+     panel x-show="isActive('general')".
+       <div x-data="mlTabs('general')">
+         {{ tb.tabs([{ key: 'general', label: 'General', icon: 'user' }, { key: 'seguridad', label: 'Seguridad', icon: 'lock' }]) }}
+         <div x-show="isActive('general')">…</div>
+       </div>
+  b) Como enlaces (una URL por pestaña, p. ej. /comprador/compras/ y /comprador/favoritos/):
+       {{ tb.tabs(items_con_href, { active: 'favoritos' }) }}
+     Con hx: { target: '#panel' } los enlaces cargan el panel por HTMX y actualizan la URL.
+  o.pill: variante pastilla (VTabs v-tabs-pill).
+#}
+{% macro tabs(items, o = {}) -%}
+{%- import 'components/icon.twig' as ui -%}
+<div class="ml-tabs{{ o.pill|default(false) ? ' ml-tabs--pill' : '' }} {{ o.class|default('') }}" role="tablist">
+  {%- for it in items -%}
+    {%- if it.href|default(false) -%}
+    <a class="ml-tab" role="tab" href="{{ it.href|e('html_attr') }}" aria-selected="{{ it.key == o.active|default('') ? 'true' : 'false' }}"
+       {%- if o.hx|default(false) %} hx-get="{{ it.href|e('html_attr') }}" hx-target="{{ o.hx.target|e('html_attr') }}" hx-push-url="true"{% endif %}>
+      {%- if it.icon|default(false) %}{{ ui.icon(it.icon) }}{% endif %}<span>{{ it.label|e }}</span>
+    </a>
+    {%- else -%}
+    <button type="button" class="ml-tab" role="tab" @click="select({{ ml_json(it.key)|e('html_attr') }})" :aria-selected="isActive({{ ml_json(it.key)|e('html_attr') }}).toString()" aria-selected="{{ loop.first ? 'true' : 'false' }}">
+      {%- if it.icon|default(false) %}{{ ui.icon(it.icon) }}{% endif %}<span>{{ it.label|e }}</span>
+    </button>
+    {%- endif -%}
+  {%- endfor -%}
+</div>
+{%- endmacro %}

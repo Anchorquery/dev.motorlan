@@ -1,0 +1,312 @@
+{% extends 'layout/app-shell.twig' %}
+{#
+  Catálogo de componentes (solo administradores): /ml-portal/ui-kit/.
+  Para comparar a ojo con la SPA. Cada bloque nombra su equivalente en Vuetify/Vuexy.
+#}
+{% block navbar_start %}
+  <span class="ml-h6 hidden truncate text-medium-emphasis sm:inline">{{ __('Catálogo de componentes', 'motorlan-portal') }}</span>
+{% endblock %}
+
+{% block main %}
+{%- import 'components/icon.twig' as ui -%}
+{%- import 'components/btn.twig' as b -%}
+{%- import 'components/chip.twig' as c -%}
+{%- import 'components/avatar.twig' as a -%}
+{%- import 'components/badge.twig' as bd -%}
+{%- import 'components/alert.twig' as al -%}
+{%- import 'components/field.twig' as f -%}
+{%- import 'components/tabs.twig' as tb -%}
+{%- import 'components/stepper.twig' as st -%}
+{%- import 'components/pagination.twig' as pg -%}
+{%- import 'components/empty.twig' as em -%}
+{%- import 'components/skeleton.twig' as sk -%}
+{%- set colors = ['primary', 'secondary', 'success', 'info', 'warning', 'error'] -%}
+
+<div class="flex flex-col gap-6">
+
+  {# ── Cabecera ── #}
+  <div class="flex flex-wrap items-end justify-between gap-4">
+    <div>
+      <h1 class="ml-h4">{{ __('Componentes', 'motorlan-portal') }}</h1>
+      <p class="text-medium-emphasis">Motorlan Portal · Twig + HTMX + Alpine + Tailwind v4 · tokens de <code>theme.ts</code> y <code>design-improvements.css</code></p>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      {{ b.btn({ label: 'Layout de acceso', href: ml_url('ui-kit', 'auth'), variant: 'tonal', color: 'secondary', icon: 'lock' }) }}
+      {{ b.btn({ label: 'Layout público', href: ml_url('ui-kit', 'public'), variant: 'tonal', color: 'secondary', icon: 'building-store' }) }}
+      {{ b.btn({ label: 'Abrir la SPA', href: ml_spa('dashboard/publications/publication/list'), variant: 'outlined', append_icon: 'external-link' }) }}
+    </div>
+  </div>
+
+  {# ── Colores ── #}
+  {% embed 'components/card.twig' with { title: 'Colores', subtitle: 'theme.ts › light' } %}
+    {% block body %}
+      <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+        {%- for name, hex in { primary: '#DA291C', secondary: '#808390', success: '#28C76F', info: '#00BAD1', warning: '#FF9F43', error: '#FF4C51' } %}
+        <div class="flex flex-col gap-2">
+          <span class="ml-c-{{ name }} block h-16 rounded-control shadow-sm" style="background: var(--c)"></span>
+          <span class="font-medium text-high-emphasis">{{ name }}</span>
+          <span class="text-sm text-disabled">{{ hex }}</span>
+        </div>
+        {%- endfor %}
+      </div>
+      <div class="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <div class="flex items-center gap-3"><span class="size-10 rounded-control border border-border bg-background"></span><span class="text-sm">background #F8F7FA</span></div>
+        <div class="flex items-center gap-3"><span class="size-10 rounded-control border border-border bg-surface"></span><span class="text-sm">surface #FFF</span></div>
+        <div class="flex items-center gap-3"><span class="size-10 rounded-control bg-on-surface"></span><span class="text-sm">on-surface #2F2B3D</span></div>
+        <div class="flex items-center gap-3"><span class="size-10 rounded-control border-2 border-border"></span><span class="text-sm">border .12</span></div>
+      </div>
+    {% endblock %}
+  {% endembed %}
+
+  <div class="grid gap-6 lg:grid-cols-2">
+    {# ── Tipografía ── #}
+    {% embed 'components/card.twig' with { title: 'Tipografía', subtitle: 'Inter 300–700 · base 15 px' } %}
+      {% block body %}
+        <div class="flex flex-col gap-2">
+          <p class="ml-h3">Heading 3 · 28 px</p>
+          <p class="ml-h4">Heading 4 · 24 px</p>
+          <p class="ml-h5">Heading 5 · 18 px</p>
+          <p class="ml-h6">Heading 6 · 15 px</p>
+          <p class="text-high-emphasis">Texto principal (high-emphasis .9)</p>
+          <p class="text-medium-emphasis">Texto secundario (medium-emphasis .7)</p>
+          <p class="text-disabled">Texto tenue (disabled .4)</p>
+          <p class="text-premium-title text-lg">Motor trifásico 5,5 kW <span class="text-premium-price ms-2">640 €</span></p>
+        </div>
+      {% endblock %}
+    {% endembed %}
+
+    {# ── Avatares, badges, chips ── #}
+    {% embed 'components/card.twig' with { title: 'Avatares, badges y chips', subtitle: 'VAvatar · VBadge · VChip' } %}
+      {% block body %}
+        {%- import 'components/avatar.twig' as a -%}
+        {%- import 'components/badge.twig' as bd -%}
+        {%- import 'components/chip.twig' as c -%}
+        {%- import 'components/icon.twig' as ui -%}
+        <div class="flex flex-wrap items-center gap-4">
+          {{ a.avatar({ icon: 'user', size: 'sm' }) }}
+          {{ a.avatar({ icon: 'user', dot: 'success' }) }}
+          {{ a.avatar({ text: 'DH', color: 'info', size: 'lg' }) }}
+          {{ a.avatar({ icon: 'shopping-cart', color: 'success', rounded: true }) }}
+          {{ a.avatar({ icon: 'currency-euro', color: 'warning', rounded: true, filled: true }) }}
+          {{ a.avatar({ icon: 'message', color: 'secondary', count: 4 }) }}
+          <span class="relative inline-flex p-1 text-high-emphasis">{{ ui.icon('bell', 'size-6') }}{{ bd.badge({ dot: true }) }}</span>
+          <span class="inline-flex items-center gap-2">Mensajes {{ bd.badge({ count: 12, inline: true, color: 'primary' }) }}</span>
+        </div>
+        <div class="mt-5 flex flex-wrap gap-2">
+          {%- for col in ['primary', 'secondary', 'success', 'info', 'warning', 'error'] %}{{ c.chip({ label: col|capitalize, color: col }) }}{% endfor -%}
+        </div>
+        <div class="mt-3 flex flex-wrap gap-2">
+          {{ c.chip({ label: 'Nuevo', color: 'primary', icon: 'star', size: 'sm' }) }}
+          {{ c.chip({ label: 'Garantía', color: 'success', icon: 'shield-check', pill: true }) }}
+          {{ c.chip({ label: 'Outlined', color: 'info', variant: 'outlined' }) }}
+          {{ c.chip({ label: 'Filled', color: 'error', variant: 'filled' }) }}
+        </div>
+      {% endblock %}
+    {% endembed %}
+  </div>
+
+  {# ── Botones ── #}
+  {% embed 'components/card.twig' with { title: 'Botones', subtitle: 'VBtn · filled / tonal / outlined / text · sm 30 · md 38 · lg 48' } %}
+    {% block body %}
+      {%- import 'components/btn.twig' as b -%}
+      <div class="flex flex-col gap-4">
+        {%- for variant in ['filled', 'tonal', 'outlined', 'text'] %}
+        <div class="flex flex-wrap items-center gap-3">
+          <span class="w-20 text-sm text-disabled">{{ variant }}</span>
+          {%- for col in ['primary', 'secondary', 'success', 'info', 'warning', 'error'] %}{{ b.btn({ label: col|capitalize, variant: variant, color: col }) }}{% endfor -%}
+        </div>
+        {%- endfor %}
+        <div class="flex flex-wrap items-center gap-3">
+          <span class="w-20 text-sm text-disabled">tamaños</span>
+          {{ b.btn({ label: 'Small', size: 'sm' }) }}
+          {{ b.btn({ label: 'Medium' }) }}
+          {{ b.btn({ label: 'Large', size: 'lg' }) }}
+          {{ b.btn({ label: 'Publicar', icon: 'circle-plus' }) }}
+          {{ b.btn({ label: 'Siguiente', append_icon: 'arrow-right', variant: 'tonal' }) }}
+          {{ b.btn({ icon: 'heart', variant: 'tonal', title: 'Favorito' }) }}
+          {{ b.btn({ icon: 'share', variant: 'outlined', color: 'secondary', size: 'sm', title: 'Compartir' }) }}
+          {{ b.btn({ label: 'Guardando', loading: true }) }}
+          {{ b.btn({ label: 'Desactivado', disabled: true }) }}
+        </div>
+      </div>
+    {% endblock %}
+  {% endembed %}
+
+  {# ── Alertas ── #}
+  {% embed 'components/card.twig' with { title: 'Alertas', subtitle: 'VAlert tonal · outlined · filled' } %}
+    {% block body %}
+      {%- import 'components/alert.twig' as al -%}
+      <div class="grid gap-4 md:grid-cols-2">
+        {{ al.alert({ color: 'success', title: 'Publicación aprobada', text: 'Tu anuncio ya es visible en la tienda.' }) }}
+        {{ al.alert({ color: 'info', text: 'Recibirás un aviso cuando el comprador responda.' }) }}
+        {{ al.alert({ color: 'warning', text: 'Falta la foto principal del anuncio.', variant: 'outlined', closable: true }) }}
+        {{ al.alert({ color: 'error', title: 'No se pudo guardar', text: 'Revisa los campos marcados.', variant: 'filled' }) }}
+      </div>
+    {% endblock %}
+  {% endembed %}
+
+  {# ── Formularios ── #}
+  {% embed 'components/card.twig' with { title: 'Campos', subtitle: 'AppTextField · AppSelect · AppTextarea · VCheckbox · VSwitch · VFileInput' } %}
+    {% block body %}
+      {%- import 'components/field.twig' as f -%}
+      <form class="grid gap-5 md:grid-cols-2" onsubmit="return false">
+        {{ f.text({ name: 'titulo', label: 'Título del anuncio', placeholder: 'Ej.: Motor trifásico 5,5 kW', required: true }) }}
+        {{ f.text({ name: 'email', label: 'Email', type: 'email', value: 'comprador@ejemplo.com', icon: 'mail', hint: 'No se mostrará en el anuncio.' }) }}
+        {{ f.select({ name: 'marca', label: 'Marca', options: { '': 'Selecciona una marca', siemens: 'Siemens', abb: 'ABB', weg: 'WEG' }, value: 'abb' }) }}
+        {{ f.text({ name: 'precio', label: 'Precio', type: 'number', value: '-5', error: 'El precio debe ser mayor que 0.' }) }}
+        {{ f.textarea({ name: 'descripcion', label: 'Descripción', placeholder: 'Estado, horas de uso, accesorios…', class: 'md:col-span-2' }) }}
+        {{ f.file({ name: 'fotos[]', label: 'Fotos', multiple: true, accept: 'image/*', hint: 'Hasta 10 imágenes JPG o PNG.' }) }}
+        {{ f.text({ name: 'ref', label: 'Referencia', value: 'ML-1001', disabled: true }) }}
+        <div class="flex flex-col gap-3">
+          <span class="ml-label">Opciones</span>
+          {{ f.checkbox({ name: 'negociable', label: 'Precio negociable', checked: true }) }}
+          {{ f.checkbox({ name: 'factura', label: 'Con factura' }) }}
+          {{ f.checkbox({ name: 'bloqueado', label: 'Desactivado', disabled: true }) }}
+        </div>
+        <div class="flex flex-col gap-3">
+          <span class="ml-label">Estado</span>
+          {{ f.radio({ name: 'estado_motor', value: 'nuevo', label: 'Nuevo', checked: true }) }}
+          {{ f.radio({ name: 'estado_motor', value: 'usado', label: 'Usado' }) }}
+          {{ f.switch({ name: 'avisos', label: 'Avisos por email', checked: true }) }}
+          {{ f.switch({ name: 'visible', label: 'Visible en la tienda' }) }}
+        </div>
+      </form>
+    {% endblock %}
+    {% block actions %}
+      {%- import 'components/btn.twig' as b -%}
+      {{ b.btn({ label: 'Guardar', icon: 'device-floppy' }) }}
+      {{ b.btn({ label: 'Cancelar', variant: 'tonal', color: 'secondary' }) }}
+    {% endblock %}
+  {% endembed %}
+
+  {# ── Tarjetas ── #}
+  <div>
+    <h2 class="ml-h5 mb-1">Tarjetas</h2>
+    <p class="mb-4 text-medium-emphasis">.ml-card (motor-card-enhanced, 16 px, shadow-md) · --hover (eleva y borde rojo) · --lg (ficha, 20 px)</p>
+    <div class="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
+      {%- for p in [
+        { t: 'Motor trifásico 5,5 kW 1500 rpm', m: 'Siemens', price: '640 €', chip: 'Nuevo', color: 'primary' },
+        { t: 'Servomotor 1FK7 con freno', m: 'Siemens', price: '1.290 €', chip: 'Garantía', color: 'success' },
+        { t: 'Variador ACS580 7,5 kW', m: 'ABB', price: 'Consultar precio', chip: 'Usado', color: 'secondary' },
+      ] %}
+      {% embed 'components/card.twig' with { hover: true, tag: 'article', body_class: '!p-5' } %}
+        {% block media %}
+          {%- import 'components/icon.twig' as ui -%}
+          <div class="flex h-44 items-center justify-center bg-track text-disabled">{{ ui.icon('photo', 'size-12') }}</div>
+        {% endblock %}
+        {% block body %}
+          {%- import 'components/chip.twig' as c -%}
+          {{ c.chip({ label: p.chip, color: p.color, size: 'sm' }) }}
+          <h3 class="text-premium-title mt-3 line-clamp-2 text-[1.0625rem] leading-6">{{ p.t }}</h3>
+          <p class="mt-1 text-sm text-disabled">{{ p.m }}</p>
+          <p class="text-premium-price mt-3 text-lg">{{ p.price }}</p>
+        {% endblock %}
+      {% endembed %}
+      {%- endfor %}
+      {{ sk.card() }}
+    </div>
+    <div class="mt-6 grid gap-6 md:grid-cols-2">
+      {% embed 'components/card.twig' with { title: 'Tarjeta plana', subtitle: 'sidebar-filters-enhanced (shadow-sm)', variant: 'flat' } %}
+        {% block body %}<p class="text-medium-emphasis">Filtros de la tienda y paneles secundarios.</p>{% endblock %}
+      {% endembed %}
+      {% embed 'components/card.twig' with { title: 'Ficha', subtitle: 'product-detail-card-enhanced (20 px, shadow-lg)', variant: 'lg' } %}
+        {% block body %}<p class="text-medium-emphasis">Ficha de producto y diálogos.</p>{% endblock %}
+      {% endembed %}
+    </div>
+  </div>
+
+  <div class="grid gap-6 lg:grid-cols-2">
+    {# ── Pestañas ── #}
+    {% embed 'components/card.twig' with { title: 'Pestañas', subtitle: 'VTabs · subrayado y pastilla' } %}
+      {% block body %}
+        {%- import 'components/tabs.twig' as tb -%}
+        <div x-data="mlTabs('cuenta')" class="flex flex-col gap-4">
+          {{ tb.tabs([{ key: 'cuenta', label: 'Cuenta', icon: 'user' }, { key: 'seguridad', label: 'Seguridad', icon: 'lock' }, { key: 'avisos', label: 'Avisos', icon: 'bell' }]) }}
+          <p x-show="isActive('cuenta')" class="text-medium-emphasis">Datos de la cuenta.</p>
+          <p x-show="isActive('seguridad')" x-cloak class="text-medium-emphasis">Contraseña y sesiones.</p>
+          <p x-show="isActive('avisos')" x-cloak class="text-medium-emphasis">Preferencias de notificación.</p>
+        </div>
+        <div x-data="mlTabs('compras')" class="mt-6">
+          {{ tb.tabs([{ key: 'compras', label: 'Compras' }, { key: 'favoritos', label: 'Favoritos' }, { key: 'ofertas', label: 'Ofertas' }], { pill: true }) }}
+        </div>
+      {% endblock %}
+    {% endembed %}
+
+    {# ── Stepper ── #}
+    {% embed 'components/card.twig' with { title: 'Stepper', subtitle: 'AppStepper · alta de publicación' } %}
+      {% block body %}
+        {%- import 'components/stepper.twig' as st -%}
+        {%- import 'components/btn.twig' as b -%}
+        <div x-data="mlStepper(3)" class="flex flex-col gap-5">
+          {{ st.stepper([{ title: 'Datos', subtitle: 'Motor y marca', icon: 'file-text' }, { title: 'Fotos', subtitle: 'Hasta 10', icon: 'photo' }, { title: 'Precio', subtitle: 'y envío', icon: 'currency-euro' }]) }}
+          <p class="text-medium-emphasis">Paso <span x-text="step + 1"></span> de 3</p>
+          <div class="flex gap-2">
+            {{ b.btn({ label: 'Anterior', variant: 'tonal', color: 'secondary', icon: 'arrow-left', attrs: '@click="prev()" :disabled="step === 0"' }) }}
+            {{ b.btn({ label: 'Siguiente', append_icon: 'arrow-right', attrs: '@click="next()" :disabled="step === count - 1"' }) }}
+          </div>
+        </div>
+      {% endblock %}
+    {% endembed %}
+  </div>
+
+  {# ── Diálogo, paginación, vacío, skeleton ── #}
+  <div class="grid gap-6 lg:grid-cols-2">
+    {% embed 'components/card.twig' with { title: 'Diálogo y paginación', subtitle: 'VDialog + DialogCloseBtn · VPagination' } %}
+      {% block body %}
+        {%- import 'components/pagination.twig' as pg -%}
+        <div class="flex flex-col gap-6">
+          {% embed 'components/dialog.twig' with { title: 'Eliminar publicación', subtitle: 'Esta acción no se puede deshacer.', max_width: '480px' } %}
+            {% block activator %}
+              {%- import 'components/btn.twig' as b -%}
+              {{ b.btn({ label: 'Abrir diálogo', icon: 'trash', variant: 'tonal', color: 'error', attrs: '@click="show()"' }) }}
+            {% endblock %}
+            {% block content %}<p class="text-medium-emphasis">Se eliminará «Motor trifásico 5,5 kW» y sus fotos.</p>{% endblock %}
+            {% block actions %}
+              {%- import 'components/btn.twig' as b -%}
+              {{ b.btn({ label: 'Cancelar', variant: 'tonal', color: 'secondary', attrs: '@click="close()"' }) }}
+              {{ b.btn({ label: 'Eliminar', color: 'error', attrs: '@click="close()"' }) }}
+            {% endblock %}
+          {% endembed %}
+          {{ pg.pagination({ page: 4, pages: 12, url: '#page-%d' }) }}
+        </div>
+      {% endblock %}
+    {% endembed %}
+
+    {% embed 'components/card.twig' with { title: 'Vacío y carga', subtitle: 'Estado vacío · skeleton' } %}
+      {% block body %}
+        {%- import 'components/empty.twig' as em -%}
+        {%- import 'components/skeleton.twig' as sk -%}
+        <div class="grid gap-6 sm:grid-cols-2">
+          {{ em.empty({ icon: 'shopping-bag', title: 'Sin compras', text: 'Cuando compres un motor aparecerá aquí.', action: { label: 'Ir a la tienda', href: urls.store, size: 'sm' }, class: '!p-4' }) }}
+          <div class="flex flex-col gap-4 pt-4">{{ sk.lines(4) }}{{ sk.block('h-24 w-full') }}</div>
+        </div>
+      {% endblock %}
+    {% endembed %}
+  </div>
+
+  {# ── Tabla con HTMX ── #}
+  <div class="ml-card">
+    <div class="ml-card__header">
+      <div class="flex-1">
+        <h3 class="ml-card__title">Tabla con filtros y paginación (HTMX)</h3>
+        <p class="ml-card__subtitle">VDataTable · GET motorlan-portal/v1/ui-kit/table con cookie + X-WP-Nonce · en móvil, filas como tarjetas</p>
+      </div>
+    </div>
+    {% include 'partials/ui-kit-table.twig' %}
+  </div>
+
+  {# ── Support\Api ── #}
+  {%- if api_check %}
+  {% embed 'components/card.twig' with { title: 'Support\\Api', subtitle: 'Lecturas internas a motorlan/v1 con rest_do_request (sin HTTP, sin escrituras)', variant: 'flat' } %}
+    {% block body %}
+      {%- import 'components/chip.twig' as c -%}
+      <ul class="flex flex-col gap-2">
+        {%- for r in api_check %}
+        <li class="flex flex-wrap items-center gap-3"><code class="text-sm">{{ r.route|e }}</code>{{ c.chip({ label: r.ok ? 'OK' : 'Error', color: r.ok ? 'success' : 'error', size: 'sm' }) }}<span class="text-sm text-medium-emphasis">{{ r.detail|e }}</span></li>
+        {%- endfor %}
+      </ul>
+    {% endblock %}
+  {% endembed %}
+  {%- endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,16 @@
+{#
+  Estado vacío.
+    {% import 'components/empty.twig' as em %}
+    {{ em.empty({ icon: 'shopping-bag', title: 'Aún no has comprado nada', text: 'Explora la tienda…', action: { label: 'Ir a la tienda', href: urls.store } }) }}
+  action: opciones de components/btn.twig.
+#}
+{% macro empty(o) -%}
+{%- import 'components/icon.twig' as ui -%}
+{%- import 'components/btn.twig' as b -%}
+<div class="ml-empty {{ o.class|default('') }}">
+  <span class="ml-empty__icon">{{ ui.icon(o.icon|default('mood-empty')) }}</span>
+  {%- if o.title|default(false) %}<h3 class="ml-h5">{{ o.title|e }}</h3>{% endif -%}
+  {%- if o.text|default(false) %}<p class="max-w-md text-medium-emphasis">{{ o.text|e }}</p>{% endif -%}
+  {%- if o.action|default(false) %}<div class="mt-2">{{ b.btn(o.action) }}</div>{% endif -%}
+</div>
+{%- endmacro %}

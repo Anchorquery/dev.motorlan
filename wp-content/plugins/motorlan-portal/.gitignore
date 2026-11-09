@@ -1,0 +1,7 @@
+/vendor/
+/node_modules/
+/dist/
+/tmp/
+*.log
+/test-results/
+/playwright-report/

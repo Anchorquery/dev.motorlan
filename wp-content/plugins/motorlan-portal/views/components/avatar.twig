@@ -1,0 +1,23 @@
+{#
+  Avatar (VAvatar tonal) con badge opcional.
+    {% import 'components/avatar.twig' as a %}
+    {{ a.avatar({ icon: 'user' }) }}
+    {{ a.avatar({ text: 'DH', color: 'info', size: 'lg' }) }}
+    {{ a.avatar({ image: url, alt: 'Daniel', dot: 'success' }) }}   ← punto de "conectado"
+  size: sm (30) | md (38, def.) | lg (50) · rounded (cuadrado 6 px) · filled · count (badge numérico)
+#}
+{% macro avatar(o) -%}
+{%- import 'components/icon.twig' as ui -%}
+{%- set cls = 'ml-avatar ml-c-' ~ o.color|default('primary')
+  ~ (o.size|default('md') != 'md' ? ' ml-avatar--' ~ o.size : '')
+  ~ (o.rounded|default(false) ? ' ml-avatar--rounded' : '')
+  ~ (o.filled|default(false) ? ' ml-avatar--filled' : '')
+  ~ (o.class|default('') ? ' ' ~ o.class : '') -%}
+<span class="{{ cls }}">
+  {%- if o.image|default(false) -%}<img src="{{ o.image|e('html_attr') }}" alt="{{ o.alt|default('')|e('html_attr') }}" loading="lazy">
+  {%- elseif o.text|default(false) -%}{{ o.text|e }}
+  {%- else -%}{{ ui.icon(o.icon|default('user')) }}{%- endif -%}
+  {%- if o.dot|default(false) %}<span class="ml-badge ml-badge--dot ml-c-{{ o.dot }}" aria-hidden="true"></span>{% endif -%}
+  {%- if o.count|default(0) > 0 %}<span class="ml-badge">{{ o.count > 99 ? '99+' : o.count }}</span>{% endif -%}
+</span>
+{%- endmacro %}

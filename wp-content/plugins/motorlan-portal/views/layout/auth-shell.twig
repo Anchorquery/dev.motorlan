@@ -1,0 +1,26 @@
+{% extends 'layout/base.twig' %}
+{#
+  Acceso (login, registro, recuperar contraseña, verificar email): tarjeta centrada sobre
+  el fondo de la app, como las páginas de acceso de la SPA.
+  Variables: heading · subheading · width (def. 460px). Bloques: auth · below (bajo la tarjeta).
+#}
+{% block body %}
+<main class="ml-auth">
+  <div class="ml-auth__card" style="max-width: {{ width|default('460px')|e('html_attr') }}">
+    <div class="ml-card ml-card--lg">
+      <div class="ml-card__body !p-8 max-sm:!p-6">
+        <a href="{{ urls.home|e('html_attr') }}" class="mb-6 flex items-center justify-center gap-3 no-underline">
+          {%- if assets.logo %}<img src="{{ assets.logo|e('html_attr') }}" alt="{{ site_name|e('html_attr') }}" class="h-9 w-auto">
+          {%- else %}<span class="ml-nav__mark">M</span><span class="ml-nav__title text-high-emphasis">Motorlan</span>{% endif %}
+        </a>
+        {%- if heading|default(false) %}
+        <h1 class="ml-h4 mb-1">{{ heading|e }}</h1>
+        {%- endif %}
+        {%- if subheading|default(false) %}<p class="mb-6 text-medium-emphasis">{{ subheading|e }}</p>{% endif %}
+        {% block auth %}{% endblock %}
+      </div>
+    </div>
+    {% block below %}{% endblock %}
+  </div>
+</main>
+{% endblock %}

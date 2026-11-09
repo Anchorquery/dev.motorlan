@@ -1,0 +1,30 @@
+{#
+  Tarjeta (VCard con los estilos de design-improvements.css). Se usa con embed:
+    {% embed 'components/card.twig' with { title: 'Ventas', subtitle: 'Últimos 30 días' } %}
+      {% block body %}…{% endblock %}
+      {% block actions %}{{ b.btn({ label: 'Ver todo' }) }}{% endblock %}
+    {% endembed %}
+  Variables: title · subtitle · append (HTML ya escapado a la derecha del título)
+             variant: default | flat | lg (ficha, 20 px) · hover (eleva al pasar el ratón)
+             tag (div def. | article | section | a) · href · class · body_class
+  Bloques: header (sustituye título/subtítulo) · body · actions · media (antes del header).
+  OJO: dentro de embed no se ven los import del padre; impórtalos dentro de los bloques.
+#}
+{%- set tag = tag|default(href|default(false) ? 'a' : 'div') -%}
+<{{ tag }} class="ml-card{{ variant|default('default') != 'default' ? ' ml-card--' ~ variant : '' }}{{ hover|default(false) ? ' ml-card--hover' : '' }} {{ class|default('') }}"{% if href|default(false) %} href="{{ href|e('html_attr') }}"{% endif %}>
+  {%- block media %}{% endblock -%}
+  {%- block header -%}
+  {%- if title|default(false) -%}
+  <div class="ml-card__header">
+    <div class="min-w-0 flex-1">
+      <h3 class="ml-card__title">{{ title|e }}</h3>
+      {%- if subtitle|default(false) %}<p class="ml-card__subtitle">{{ subtitle|e }}</p>{% endif -%}
+    </div>
+    {{ append|default('')|raw }}
+  </div>
+  {%- endif -%}
+  {%- endblock -%}
+  <div class="ml-card__body {{ body_class|default('') }}">{% block body %}{% endblock %}</div>
+  {%- set actions_html %}{% block actions %}{% endblock %}{% endset -%}
+  {%- if actions_html|trim %}<div class="ml-card__actions">{{ actions_html }}</div>{% endif -%}
+</{{ tag }}>

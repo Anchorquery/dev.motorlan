@@ -1,0 +1,47 @@
+{% extends 'layout/public.twig' %}
+{# Muestra del layout público (/ml-portal/ui-kit/public/): cabecera y pie del tema + tienda de ejemplo. #}
+{% block main %}
+  {%- import 'components/icon.twig' as ui -%}
+  {%- import 'components/field.twig' as f -%}
+  {%- import 'components/chip.twig' as c -%}
+  {%- import 'components/btn.twig' as b -%}
+  {%- import 'components/pagination.twig' as pg -%}
+  <div class="mb-6 flex flex-wrap items-end justify-between gap-4">
+    <div>
+      <h1 class="ml-h4">Tienda (ejemplo)</h1>
+      <p class="text-medium-emphasis">Layout público: dentro del tema, estilos aislados bajo #ml-portal.</p>
+    </div>
+    <a href="{{ ml_url('ui-kit')|e('html_attr') }}" class="ml-btn ml-btn--tonal ml-c-secondary">{{ ui.icon('arrow-left') }}<span>Catálogo</span></a>
+  </div>
+  <div class="grid gap-6 lg:grid-cols-[280px_1fr]">
+    <aside class="ml-card ml-card--flat h-max">
+      <div class="ml-card__body flex flex-col gap-5">
+        <h2 class="ml-h6">Filtros</h2>
+        {{ f.text({ name: 'q', type: 'search', placeholder: 'Buscar motor…', icon: 'search' }) }}
+        {{ f.select({ name: 'tipo', label: 'Tipo', options: { '': 'Todos', motor: 'Motores', variador: 'Variadores' } }) }}
+        <div class="flex flex-col gap-2">
+          <span class="ml-label">Estado</span>
+          {{ f.checkbox({ name: 'nuevo', label: 'Nuevo' }) }}
+          {{ f.checkbox({ name: 'usado', label: 'Usado', checked: true }) }}
+        </div>
+        {{ b.btn({ label: 'Aplicar', block: true }) }}
+      </div>
+    </aside>
+    <div class="flex flex-col gap-6">
+      <div class="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+        {%- for i in 1..6 %}
+        <article class="ml-card ml-card--hover">
+          <div class="flex h-44 items-center justify-center bg-track text-disabled">{{ ui.icon('photo', 'size-12') }}</div>
+          <div class="ml-card__body !p-5">
+            {{ c.chip({ label: i is odd ? 'Nuevo' : 'Usado', color: i is odd ? 'primary' : 'secondary', size: 'sm' }) }}
+            <h3 class="text-premium-title mt-3 text-[1.0625rem] leading-6">Motor trifásico {{ i * 2 }},2 kW</h3>
+            <p class="mt-1 text-sm text-disabled">Siemens · Gipuzkoa</p>
+            <p class="text-premium-price mt-3 text-lg">{{ (i * 215)|number_format(0, ',', '.') }} €</p>
+          </div>
+        </article>
+        {%- endfor %}
+      </div>
+      {{ pg.pagination({ page: 1, pages: 5, url: '#page-%d' }) }}
+    </div>
+  </div>
+{% endblock %}

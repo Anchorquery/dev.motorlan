@@ -1,0 +1,35 @@
+{#
+  Menú del avatar (UserProfile.vue): avatar tonal con punto verde, cabecera con nombre y
+  rol, enlaces y "Cerrar sesión". Usa user, nav.user y urls del contexto común.
+#}
+{%- import 'components/icon.twig' as ui -%}
+{%- import 'components/avatar.twig' as a -%}
+{%- if user -%}
+<div class="relative" x-data="{ open: false }" @keydown.escape.window="open = false" @click.outside="open = false">
+  <button type="button" class="ml-icon-btn" @click="open = !open" :aria-expanded="open.toString()" aria-haspopup="menu" aria-label="{{ __('Cuenta', 'motorlan-portal')|e('html_attr') }}">
+    {{ a.avatar({ icon: 'user', dot: 'success' }) }}
+  </button>
+  <div class="ml-menu end-0 top-[calc(100%+12px)] w-60" role="menu" x-show="open" x-cloak
+       x-transition:enter="transition duration-150 ease-out" x-transition:enter-start="opacity-0 -translate-y-1" x-transition:enter-end="opacity-100 translate-y-0">
+    <div class="flex items-center gap-2 px-4 py-2">
+      {{ a.avatar({ icon: 'user', dot: 'success' }) }}
+      <div class="min-w-0">
+        <p class="ml-h6 truncate">{{ user.name|e }}</p>
+        <p class="text-sm text-disabled">{{ user.is_admin ? __('Administrador', 'motorlan-portal') : __('Usuario', 'motorlan-portal') }}</p>
+      </div>
+    </div>
+    <hr class="ml-divider my-2">
+    {%- for item in nav.user %}
+    <a class="ml-list-item" role="menuitem" href="{{ item.url|e('html_attr') }}">{{ ui.icon(item.icon) }}<span>{{ item.title|e }}</span></a>
+    {%- endfor %}
+    <hr class="ml-divider my-2">
+    <div class="px-4 py-2">
+      <a class="ml-btn ml-btn--filled ml-c-error ml-btn--sm ml-btn--block" href="{{ urls.logout|e('html_attr') }}">
+        <span>{{ __('Cerrar sesión', 'motorlan-portal') }}</span>{{ ui.icon('logout') }}
+      </a>
+    </div>
+  </div>
+</div>
+{%- else -%}
+<a class="ml-btn ml-btn--filled ml-c-primary ml-btn--sm" href="{{ urls.login|e('html_attr') }}">{{ ui.icon('login') }}<span>{{ __('Acceder', 'motorlan-portal') }}</span></a>
+{%- endif -%}

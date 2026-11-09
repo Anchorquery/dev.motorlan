@@ -1,0 +1,31 @@
+{% extends 'layout/auth-shell.twig' %}
+{# Muestra del layout de acceso (/ml-portal/ui-kit/auth/). Formulario sin envío. #}
+{% set heading = 'Bienvenido a Motorlan 👋' %}
+{% set subheading = 'Inicia sesión para gestionar tus anuncios y compras.' %}
+{% block auth %}
+  {%- import 'components/field.twig' as f -%}
+  {%- import 'components/btn.twig' as b -%}
+  {%- import 'components/alert.twig' as al -%}
+  <form class="flex flex-col gap-5" onsubmit="return false">
+    {{ al.alert({ color: 'info', text: 'Vista de ejemplo: este formulario no envía nada.' }) }}
+    {{ f.text({ name: 'email', label: 'Email', type: 'email', placeholder: 'tu@email.com', autocomplete: 'email' }) }}
+    <div class="ml-field" x-data="{ show: false }">
+      <div class="flex items-center justify-between">
+        <label class="ml-label" for="password">Contraseña</label>
+        <a href="#" class="text-sm no-underline">¿Olvidaste tu contraseña?</a>
+      </div>
+      <div class="relative">
+        <input id="password" name="password" class="ml-input pe-11" :type="show ? 'text' : 'password'" type="password" placeholder="············" autocomplete="current-password">
+        <button type="button" class="ml-icon-btn absolute end-1 top-1/2 !size-8 -translate-y-1/2" @click="show = !show" :aria-pressed="show.toString()" aria-label="Mostrar contraseña">
+          <span x-show="!show">{{ ml_icon('eye', 'size-5') }}</span><span x-show="show" x-cloak>{{ ml_icon('eye-off', 'size-5') }}</span>
+        </button>
+      </div>
+    </div>
+    {{ f.checkbox({ name: 'remember', label: 'Recordarme' }) }}
+    {{ b.btn({ label: 'Iniciar sesión', type: 'submit', block: true }) }}
+    <p class="text-center text-medium-emphasis">¿Nuevo en Motorlan? <a href="#" class="no-underline">Crea una cuenta</a></p>
+  </form>
+{% endblock %}
+{% block below %}
+  <p class="mt-6 text-center"><a href="{{ ml_url('ui-kit')|e('html_attr') }}" class="text-sm no-underline">← Volver al catálogo</a></p>
+{% endblock %}

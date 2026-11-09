@@ -1,0 +1,18 @@
+{#
+  Badge (VBadge) sobre cualquier elemento: el contenedor necesita `relative`.
+    {% import 'components/badge.twig' as bd %}
+    <span class="relative inline-flex">{{ ui.icon('bell') }}{{ bd.badge({ count: 3 }) }}</span>
+    {{ bd.badge({ dot: true, color: 'success' }) }}
+    {{ bd.badge({ count: 12, inline: true, color: 'primary' }) }}   ← en línea (menús, listas)
+#}
+{% macro badge(o) -%}
+{%- set cls = 'ml-badge ml-c-' ~ o.color|default('error')
+  ~ (o.dot|default(false) ? ' ml-badge--dot ml-badge--top' : '')
+  ~ (o.inline|default(false) ? ' ml-badge--inline' : '')
+  ~ (o.class|default('') ? ' ' ~ o.class : '') -%}
+{%- if o.dot|default(false) -%}
+<span class="{{ cls }}" aria-hidden="true"></span>
+{%- elseif o.count|default(0) > 0 -%}
+<span class="{{ cls }}">{{ o.count > 99 ? '99+' : o.count }}</span>
+{%- endif -%}
+{%- endmacro %}

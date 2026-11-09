@@ -1,0 +1,41 @@
+{#
+  Paginación (VPagination). Enlaces normales (funcionan sin JS) y, con `hx`, HTMX.
+    {% import 'components/pagination.twig' as pg %}
+    {{ pg.pagination({ page: 2, pages: 9, url: '?page=%d' }) }}
+    {{ pg.pagination({ page: t.page, pages: t.pages, url: table_url ~ '?page=%d&q=' ~ q|url_encode,
+                       hx: { target: '#tabla', include: '#filtros' } }) }}
+  url: patrón con %d para el número de página · window: páginas a cada lado (def. 1)
+  href_url: patrón del href si difiere de la URL de HTMX (página completa sin JS)
+#}
+{% macro pagination(o) -%}
+{%- import 'components/icon.twig' as ui -%}
+{%- set page = o.page|default(1) -%}
+{%- set pages = o.pages|default(1) -%}
+{%- set win = o.window|default(1) -%}
+{%- if pages > 1 -%}
+{%- set items = [] -%}
+{%- for p in 1..pages -%}
+  {%- if p == 1 or p == pages or (p >= page - win and p <= page + win) -%}
+    {%- set items = items|merge([p]) -%}
+  {%- elseif items|last != '…' -%}
+    {%- set items = items|merge(['…']) -%}
+  {%- endif -%}
+{%- endfor -%}
+
+<nav class="ml-pagination" aria-label="Paginación">
+  {%- if page > 1 %}<a class="ml-page" {{ _self._attrs(o, page - 1) }} aria-label="Anterior">{{ ui.icon('chevron-left') }}</a>
+  {%- else %}<span class="ml-page" aria-disabled="true">{{ ui.icon('chevron-left') }}</span>{% endif %}
+  {%- for p in items -%}
+    {%- if p == '…' %}<span class="ml-page ml-page--gap">…</span>
+    {%- elseif p == page %}<span class="ml-page" aria-current="page">{{ p }}</span>
+    {%- else %}<a class="ml-page" {{ _self._attrs(o, p) }}>{{ p }}</a>{% endif -%}
+  {%- endfor -%}
+  {%- if page < pages %}<a class="ml-page" {{ _self._attrs(o, page + 1) }} aria-label="Siguiente">{{ ui.icon('chevron-right') }}</a>
+  {%- else %}<span class="ml-page" aria-disabled="true">{{ ui.icon('chevron-right') }}</span>{% endif %}
+</nav>
+{%- endif -%}
+{%- endmacro %}
+
+{% macro _attrs(o, p) -%}
+href="{{ o.href_url|default(o.url)|replace({'%d': p})|e('html_attr') }}"{% if o.hx|default(false) %} hx-get="{{ o.url|replace({'%d': p})|e('html_attr') }}" hx-target="{{ o.hx.target|e('html_attr') }}" hx-swap="{{ o.hx.swap|default('outerHTML')|e('html_attr') }}"{% if o.hx.include|default(false) %} hx-include="{{ o.hx.include|e('html_attr') }}"{% endif %}{% if o.hx.push|default(false) %} hx-push-url="true"{% endif %}{% endif %}
+{%- endmacro %}
