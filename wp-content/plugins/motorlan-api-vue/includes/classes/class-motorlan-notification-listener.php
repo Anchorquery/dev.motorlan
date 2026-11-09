@@ -226,7 +226,9 @@ class Motorlan_Notification_Listener {
             [
                 'post_id' => $post_id
             ],
-            ['web', 'email']
+            // Solo web: no existe la plantilla admin_contact.php y el email lo envía ya la
+            // ruta de admin con wp_mail().
+            ['web']
         );
     }
 
@@ -580,7 +582,8 @@ class Motorlan_Notification_Listener {
                 'url'         => motorlan_account_url( 'dashboard/user/profile', $reviewed_id ),
                 'vue_path'    => '/dashboard/user/profile',
             ],
-            ['web', 'email']
+            // Solo web: no existe la plantilla new_review.php, así que el email nunca salía.
+            ['web']
         );
     }
     

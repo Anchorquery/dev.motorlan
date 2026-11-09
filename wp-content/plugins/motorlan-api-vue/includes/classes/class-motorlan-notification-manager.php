@@ -481,6 +481,8 @@ class Motorlan_Notification_Manager {
         $template_path = MOTORLAN_API_VUE_PATH . 'includes/email-templates/' . sanitize_file_name( $template_name ) . '.php';
 
         if ( ! file_exists( $template_path ) ) {
+            // Antes fallaba en silencio: el canal 'email' sin plantilla no enviaba nada.
+            error_log( sprintf( '[Motorlan] Falta la plantilla de email "%s"', sanitize_file_name( $template_name ) ) );
             return '';
         }
 
