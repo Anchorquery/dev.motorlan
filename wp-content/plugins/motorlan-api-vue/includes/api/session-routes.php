@@ -40,7 +40,11 @@ function motorlan_register_session_rest_routes()
     register_rest_route($namespace, '/logout', [
         'methods' => 'POST',
         'callback' => 'motorlan_logout_callback',
-        'permission_callback' => '__return_true',
+        // Antes __return_true: sin nonce el usuario es 0 y wp_logout() no destruía el
+        // token, pero wp_clear_auth_cookie() sí borraba las cookies, así que un
+        // formulario de otro sitio cerraba la sesión de la víctima (CSRF de logout).
+        // La SPA envía X-WP-Nonce y lo renueva si caducó (useApi.ts).
+        'permission_callback' => 'motorlan_is_user_authenticated',
     ]);
 
     // Register new user
