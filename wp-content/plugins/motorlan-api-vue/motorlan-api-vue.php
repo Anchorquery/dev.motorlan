@@ -31,7 +31,6 @@ require_once MOTORLAN_API_VUE_PATH . 'includes/custom-field/acf-setup-purchases.
 
 require_once MOTORLAN_API_VUE_PATH . 'includes/api/publicaciones-routes.php';
 require_once MOTORLAN_API_VUE_PATH . 'includes/api/profile-routes.php';
-require_once MOTORLAN_API_VUE_PATH . 'includes/api/garantia-routes.php';
 require_once MOTORLAN_API_VUE_PATH . 'includes/api/motor-helpers.php';
 require_once MOTORLAN_API_VUE_PATH . 'includes/api/purchases-routes.php';
 require_once MOTORLAN_API_VUE_PATH . 'includes/api/questions-routes.php';
@@ -272,7 +271,6 @@ function motorlan_is_public_rest_route( $request ) {
             '#^/motorlan/v1/publicacion-categories$#',
             '#^/motorlan/v1/tipos$#',
             '#^/motorlan/v1/marcas$#',
-            '#^/motorlan/v1/garantias/publicacion/[A-Za-z0-9-]+$#',
             '#^/motorlan/v1/session$#',
         ],
         // Flujos anónimos (alta, acceso, recuperación, verificación). Se atienden aunque
