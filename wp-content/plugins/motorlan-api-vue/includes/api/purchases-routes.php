@@ -10,12 +10,8 @@ if ( ! defined( 'WPINC' ) ) {
     die;
 }
 
-// Prefer publicacion helpers; keep motor helpers as fallback if not present.
 if ( ! function_exists( 'motorlan_get_publicacion_data' ) ) {
     require_once MOTORLAN_API_VUE_PATH . 'includes/api/publicaciones/helpers.php';
-}
-if ( ! function_exists( 'motorlan_get_publicacion_data' ) && ! function_exists( 'motorlan_get_motor_data' ) ) {
-    require_once MOTORLAN_API_VUE_PATH . 'includes/api/motor-helpers.php';
 }
 
 require_once MOTORLAN_API_VUE_PATH . 'includes/api/purchases/controllers/class-purchase-chat-controller.php';
@@ -239,11 +235,7 @@ function motorlan_get_my_purchases_callback( $request ) {
 
             $publicacion_data = null;
             if ( $publicacion_id ) {
-                if ( function_exists('motorlan_get_publicacion_data') ) {
-                    $publicacion_data = motorlan_get_publicacion_data( $publicacion_id );
-                } elseif ( function_exists('motorlan_get_motor_data') ) {
-                    $publicacion_data = motorlan_get_motor_data( $publicacion_id );
-                }
+                $publicacion_data = motorlan_get_publicacion_data( $publicacion_id );
             }
 
             // Extra purchase meta used in list view
@@ -477,11 +469,7 @@ function motorlan_get_my_favorites_callback( $request ) {
         while ( $query->have_posts() ) {
             $query->the_post();
             $post_id = get_the_ID();
-            if ( function_exists( 'motorlan_get_publicacion_data' ) ) {
-                $data[] = motorlan_get_publicacion_data( $post_id );
-            } elseif ( function_exists( 'motorlan_get_motor_data' ) ) {
-                $data[] = motorlan_get_motor_data( $post_id );
-            }
+            $data[] = motorlan_get_publicacion_data( $post_id );
         }
         wp_reset_postdata();
     }
@@ -543,8 +531,6 @@ function motorlan_get_purchase_callback( WP_REST_Request $request ) {
             if ( ! empty( $publicacion_data['author'] ) && function_exists( 'motorlan_get_seller_reputation' ) ) {
                 $publicacion_data['author']['acf'] = motorlan_get_seller_reputation( (int) $publicacion_data['author']['id'], true );
             }
-        } elseif ( function_exists( 'motorlan_get_motor_data' ) ) {
-            $publicacion_data = motorlan_get_motor_data( $publicacion_id );
         }
     }
 
