@@ -85,20 +85,6 @@ add_action( 'wp_mail_failed', function( $wp_error ) {
 } );
 
 /**
- * Procesa el envío de notificaciones por correo de forma asíncrona.
- */
-function motorlan_execute_async_email( $user_id, $type, $title, $message, $data ) {
-    if ( class_exists( 'Motorlan_Notification_Manager' ) ) {
-        $manager = new Motorlan_Notification_Manager();
-        // Llamamos al método público recién expuesto (necesitamos actualizar la clase también)
-        if ( method_exists( $manager, 'send_email_notification_direct' ) ) {
-            $manager->send_email_notification_direct( $user_id, $type, $title, $message, $data );
-        }
-    }
-}
-add_action( 'motorlan_async_email_notification', 'motorlan_execute_async_email', 10, 5 );
-
-/**
  * Al loguearse, transfiere mensajes guest previos (mismo email) al user_id real.
  */
 function motorlan_claim_guest_chats_on_login( $user_login, $user ) {
