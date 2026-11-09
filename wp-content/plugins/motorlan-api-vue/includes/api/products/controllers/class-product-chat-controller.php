@@ -794,6 +794,23 @@ if ( ! class_exists( 'Motorlan_Product_Chat_Controller' ) ) {
             // Use $current_user_id (0 for guest) so unauthenticated requests never become 'seller' even if email matches author
             $sender_role = $this->compute_sender_role( $product_id, $current_user_id, $room_key );
 
+            // El vendedor solo responde: no puede abrir una sala que el interesado no haya
+            // iniciado. Antes podía crear pub-{suPid}-viewer-{idCualquiera} y mandar a ese
+            // usuario una notificación y un email con texto libre (también desde borradores).
+            // La SPA solo construye salas desde el lado del comprador (utils/roomKey.ts).
+            if ( 'seller' === $sender_role ) {
+                global $wpdb;
+                $msg_table  = $this->get_table_name();
+                $has_viewer = (bool) $wpdb->get_var( $wpdb->prepare(
+                    "SELECT 1 FROM {$msg_table} WHERE product_id = %d AND room_key = %s AND sender_role <> 'seller' LIMIT 1",
+                    $product_id,
+                    $room_key
+                ) );
+                if ( ! $has_viewer ) {
+                    return new WP_Error( 'forbidden', __( 'No tienes permisos para enviar mensajes.', 'motorlan-api-vue' ), array( 'status' => 403 ) );
+                }
+            }
+
             // Publicación en la papelera o borrador automático: solo su autor puede escribir
             if ( 'seller' !== $sender_role && in_array( $product->post_status, array( 'trash', 'auto-draft' ), true ) ) {
                 return new WP_Error( 'not_found', __( 'Publicación no encontrada.', 'motorlan-api-vue' ), array( 'status' => 404 ) );
