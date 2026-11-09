@@ -307,9 +307,10 @@ function motorlan_build_publicaciones_query_args($params) {
     $can_see_unpublished = current_user_can('manage_options');
     if (!$can_see_unpublished) {
         unset($params['post_status'], $params['stock_min']);
-        if (!empty($params['status']) && $params['status'] !== 'publish') {
-            $params['status'] = 'publish';
-        }
+        // También sin 'status': si no, GET /publicaciones devolvía posts con
+        // post_status=publish cuyo publicar_acf estaba en draft/pending/paused (editable a
+        // mano en wp-admin), que /store sí excluye.
+        $params['status'] = 'publish';
     }
 
     $requested_status = !empty($params['status']) && is_string($params['status']) ? sanitize_text_field($params['status']) : null;
