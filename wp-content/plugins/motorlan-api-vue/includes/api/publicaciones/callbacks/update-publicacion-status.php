@@ -55,6 +55,13 @@ function motorlan_update_publicacion_status(WP_REST_Request $request) {
         return new WP_Error('forbidden', 'No puedes cambiar el estado de una publicación que está en revisión.', ['status' => 403]);
     }
 
+    // 'paused' y 'sold' se sirven en la ficha pública (GET /publicaciones/{slug} y SSR):
+    // un no-admin solo puede usarlos sobre una publicación ya aprobada. Antes un borrador
+    // pasaba a 'paused' y quedaba visible para todos sin haber pasado la revisión.
+    if (!$is_admin && in_array($new_status, ['paused', 'sold'], true) && !motorlan_publicacion_was_approved($post_id)) {
+        return new WP_Error('not_approved', 'Solo puedes pausar o marcar como vendida una publicación aprobada.', ['status' => 400]);
+    }
+
     // Si estaba publicada (aprobada), recordarlo antes de pausarla/venderla para poder
     // reactivarla después sin volver a la cola de revisión.
     if ($current_status === 'publish') {

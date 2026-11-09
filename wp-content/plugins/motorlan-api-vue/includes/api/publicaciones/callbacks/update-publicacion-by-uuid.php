@@ -155,6 +155,11 @@ function motorlan_update_publicacion_by_uuid(WP_REST_Request $request) {
         if (!$is_admin && $new_status === 'publish' && !motorlan_publicacion_was_approved($post_id)) {
             $new_status = 'pending';
         }
+        // 'paused'/'sold' son visibles en la ficha pública: solo sobre publicaciones ya
+        // aprobadas (antes un borrador pasaba a 'paused' sin revisión).
+        if (!$is_admin && in_array($new_status, ['paused', 'sold'], true) && !motorlan_publicacion_was_approved($post_id)) {
+            return new WP_Error('not_approved', 'Solo puedes pausar o marcar como vendida una publicación aprobada.', ['status' => 400]);
+        }
         // Admin publicando una publicación en revisión: pasar por el flujo de aprobación
         // (crea la marca pendiente, regenera título/slug y notifica al usuario).
         if ($is_admin && $new_status === 'publish' && $current_post_status === 'pending') {
