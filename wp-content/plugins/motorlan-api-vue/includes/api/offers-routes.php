@@ -296,7 +296,9 @@ function motorlan_handle_create_offer($request) {
     $justification = isset($request['justification']) ? sanitize_textarea_field($request['justification']) : null;
 
     $publication = get_post($post_id);
-    if (!$publication || $publication->post_type !=='publicacion') {
+    // Solo publicaciones publicadas: antes se podía ofertar sobre borradores, pendientes,
+    // privadas o en la papelera (solo se miraba publicar_acf) y el vendedor recibía el email.
+    if (!$publication || $publication->post_type !=='publicacion' || $publication->post_status !== 'publish') {
         return new WP_Error('invalid_publication', 'La publicación no está disponible.', array('status' => 404));
     }
 
