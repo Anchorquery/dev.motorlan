@@ -626,20 +626,6 @@
   resolved "https://registry.npmjs.org/@humanwhocodes/object-schema/-/object-schema-2.0.3.tgz#4a2868d75d6d6963e423bcf90b7fd1be343409d3"
   integrity sha512-93zYdMES/c1D69yZiKDBj0V24vqNzB/koF26KPaagAfd3P/4gUlh3Dys5ogAK+Exi9QyzlD8x/08Zt7wIKcDcA==
 
-"@iconify-json/fa@1.2.1":
-  version "1.2.1"
-  resolved "https://registry.npmjs.org/@iconify-json/fa/-/fa-1.2.1.tgz#9ccfad18e1ac1011f088d487aadc35bf45fa2807"
-  integrity sha512-aY2+tQNWq5ch+ShtAz3KKbNrFfwf4BPrXvyN7S4/lcf6Wms+kIxsd7C7KortzHZhoBnbhVN+qo+YUWLW7rLs9Q==
-  dependencies:
-    "@iconify/types" "*"
-
-"@iconify-json/mdi@1.2.3":
-  version "1.2.3"
-  resolved "https://registry.npmjs.org/@iconify-json/mdi/-/mdi-1.2.3.tgz#5e4ee9d8c8aaad04381c8cc6c6edbe3327f031b5"
-  integrity sha512-O3cLwbDOK7NNDf2ihaQOH5F9JglnulNDFV7WprU2dSoZu3h3cWH//h74uQAB87brHmvFVxIOkuBX2sZSzYhScg==
-  dependencies:
-    "@iconify/types" "*"
-
 "@iconify-json/tabler@1.2.18":
   version "1.2.18"
   resolved "https://registry.npmjs.org/@iconify-json/tabler/-/tabler-1.2.18.tgz#389512973140e89c3bbde327f8483e3c11bf969c"
