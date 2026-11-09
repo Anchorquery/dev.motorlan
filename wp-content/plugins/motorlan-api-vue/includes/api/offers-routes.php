@@ -620,6 +620,18 @@ function motorlan_handle_confirm_offer($request) {
     // We select meta_id to lock the specific row in postmeta
     $wpdb->get_results( $wpdb->prepare("SELECT meta_id FROM {$wpdb->postmeta} WHERE post_id = %d AND meta_key = 'stock' FOR UPDATE", $offer->publication_id) );
 
+    // Releer el estado con bloqueo: el estado se validó fuera de la transacción y un
+    // doble clic (o dos pestañas) creaba dos compras y descontaba dos unidades; con stock
+    // 1, la segunda petición marcaba como 'expired' una oferta ya confirmada.
+    $locked_status = $wpdb->get_var( $wpdb->prepare("SELECT status FROM $table_name WHERE id = %d FOR UPDATE", $offer_id) );
+    if ($locked_status !== MOTORLAN_OFFER_STATUS_ACCEPTED_PENDING) {
+        $wpdb->query('ROLLBACK');
+        if ($locked_status === MOTORLAN_OFFER_STATUS_CONFIRMED) {
+            return new WP_Error('already_confirmed', 'Esta oferta ya fue confirmada.', array('status' => 400));
+        }
+        return new WP_Error('invalid_status', 'La oferta no puede confirmarse en su estado actual.', array('status' => 409));
+    }
+
     // Re-fetch stock directly from DB to ensure we have the locked value (bypass WP object cache)
     $current_stock = $wpdb->get_var( $wpdb->prepare("SELECT meta_value FROM {$wpdb->postmeta} WHERE post_id = %d AND meta_key = 'stock'", $offer->publication_id) );
     
