@@ -696,6 +696,12 @@ function motorlan_handle_confirm_offer($request) {
 
     $wpdb->query('COMMIT');
 
+    // Igual que una compra directa: avisa al vendedor (notificación web + email). Antes la
+    // venta por oferta confirmada no lanzaba ninguna notificación.
+    if (is_array($purchase_data) && !empty($purchase_data['id'])) {
+        do_action('motorlan_new_purchase', (int) $purchase_data['id']);
+    }
+
     $updated_offer = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table_name WHERE id = %d", $offer_id));
 
     return new WP_REST_Response(array(
