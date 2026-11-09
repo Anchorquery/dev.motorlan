@@ -500,9 +500,13 @@ class Motorlan_Notification_Manager {
         $base_html = ob_get_clean();
 
         // Replace placeholders
-        $subject = $args['title'] ?? 'Notificación de Motorlan';
-        $full_html = str_replace( '{{subject}}', $subject, $base_html );
-        $full_html = str_replace( '{{content}}', $content, $full_html );
+        // El asunto se escapa (va en <title>) y se sustituye en una sola pasada: con dos
+        // str_replace, un asunto que contuviera "{{content}}" recibía el cuerpo entero.
+        $subject = (string) ( $args['title'] ?? 'Notificación de Motorlan' );
+        $full_html = strtr( $base_html, array(
+            '{{subject}}' => esc_html( $subject ),
+            '{{content}}' => $content,
+        ) );
 
         return $full_html;
     }
