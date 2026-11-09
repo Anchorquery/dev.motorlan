@@ -1150,40 +1150,8 @@ if ( ! class_exists( 'Motorlan_Product_Chat_Controller' ) ) {
             $messages_table = $this->get_table_name();
             $reads_table    = $this->get_reads_table_name();
 
-            // 1. Get last read timestamps for all rooms
-            // Composite key match is tricky in SQL IN clause generally, but useful here if constructed.
-            // Simplified: Get all reads for this user and these products.
             $product_ids = array_unique( array_column( $rooms, 'product_id' ) );
             $pids_in = implode( ',', array_map( 'intval', $product_ids ) );
-            
-            $reads_sql = $wpdb->prepare( 
-                "SELECT room_key, last_read_at FROM {$reads_table} WHERE user_id = %d AND product_id IN ($pids_in)", 
-                $user_id 
-            );
-            $reads = $wpdb->get_results( $reads_sql, OBJECT_K ); // Key by room_key (first column unique constraint allows this?) 
-            // Warning: room_key implies product, but theoretically unique_user_room idx handles it. 
-            // Actually wait, unique index is (user_id, product_id, room_key). 
-            // If room_key is globally unique (it contains product_id), we can key by it.
-            // YES: room_key format is pub-{id}-viewer-{id}, so it is unique per product.
-
-            $counts = array();
-            
-            // Build a complex query or iterate?
-            // "SELECT room_key, COUNT(*) as cnt FROM msgs WHERE (conditions) GROUP BY room_key"
-            // The condition "created_at > last_read" is dynamic per room.
-            // SQL Case: SUM(CASE WHEN created_at > ... THEN 1 ELSE 0 END)
-            // But we need to join reads.
-            
-            // OPTIMIZED QUERY:
-            // JOIN messages and reads, filter by user.
-            // But reads might not exist (never read).
-            
-            // Let's create a map of room_key -> last_read dates
-            $last_reads_map = array();
-            foreach( $rooms as $r ) $last_reads_map[$r['room_key']] = '0000-00-00 00:00:00';
-            if ( $reads ) {
-                foreach( $reads as $rk => $obj ) $last_reads_map[$rk] = $obj->last_read_at;
-            }
 
             // We need to query messages. To avoid scanning WHOLE table, we filter by Product IDs.
             // And grouping by room_key.
