@@ -421,16 +421,13 @@ require_once MOTORLAN_API_VUE_PATH . 'includes/db/db-create-product-room-reads.p
 require_once MOTORLAN_API_VUE_PATH . 'includes/db/db-create-notifications.php';
 require_once MOTORLAN_API_VUE_PATH . 'includes/db/db-create-security-logs.php'; // Logs de seguridad
 
-register_activation_hook( __FILE__, 'motorlan_create_notifications_table' );
-register_activation_hook( __FILE__, 'motorlan_offers_create_table' );
-register_activation_hook( __FILE__, 'motorlan_create_purchase_messages_table' );
-register_activation_hook( __FILE__, 'motorlan_create_product_messages_table' );
-register_activation_hook( __FILE__, 'motorlan_run_migrations' );
-register_activation_hook( __FILE__, 'motorlan_create_product_room_reads_table' );
-register_activation_hook( __FILE__, 'motorlan_create_security_logs_table' ); // Activar tabla de logs
-
 require_once MOTORLAN_API_VUE_PATH . 'includes/db/db-add-chat-indexes.php';
-register_activation_hook( __FILE__, 'motorlan_add_chat_indexes' );
+
+// Tablas propias: orden y versión en includes/db/db-setup.php (motorlan_install_db).
+register_activation_hook( __FILE__, 'motorlan_install_db' );
+// El hook de desactivación tiene que registrarse con el archivo principal del plugin:
+// en includes/cron/cron-jobs.php usaba su propio __FILE__ y nunca se ejecutaba.
+register_deactivation_hook( __FILE__, 'motorlan_unschedule_daily_offer_reset' );
 /**
  * Filter the JWT payload to fix the "Not Before" (nbf) claim.
  * This prevents issues with server time synchronization.
