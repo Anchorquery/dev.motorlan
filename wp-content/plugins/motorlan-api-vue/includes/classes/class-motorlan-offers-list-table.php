@@ -45,14 +45,15 @@ class Motorlan_Offers_List_Table extends WP_List_Table {
                 // Placeholder actions
                 return '';
             default:
-                return print_r( $item, true );
+                // Antes print_r($item) sin escapar (incluía la justificación del comprador).
+                return isset( $item[ $column_name ] ) ? esc_html( (string) $item[ $column_name ] ) : '';
         }
     }
 
     protected function column_cb( $item ) {
         return sprintf(
             '<input type="checkbox" name="offer[]" value="%s" />',
-            $item['id']
+            absint( $item['id'] )
         );
     }
 
@@ -64,23 +65,27 @@ class Motorlan_Offers_List_Table extends WP_List_Table {
             ? motorlan_format_motor_name($post_id) 
             : $title;
 
-        // Fallback if formatter returns empty for some reason (rare)
+        // Fallback if formatter returns empty for some reason (rare). Antes el <span> se
+        // concatenaba al título y luego se escapaba: se veía como texto literal.
+        $suffix = '';
         if ( ! $formatted_name ) {
-            $formatted_name = $title . ' <span class="description">(Sin datos de formato)</span>';
+            $formatted_name = $title;
+            $suffix = ' <span class="description">(Sin datos de formato)</span>';
         }
 
         $edit_link = get_edit_post_link( $post_id );
         
         // Build actions row
         $actions = array(
-            'view' => sprintf('<a href="%s" target="_blank">Ver Publicación</a>', get_permalink($post_id)),
-            'edit' => sprintf('<a href="%s">Editar Publicación</a>', $edit_link),
+            'view' => sprintf('<a href="%s" target="_blank">Ver Publicación</a>', esc_url( get_permalink($post_id) )),
+            'edit' => sprintf('<a href="%s">Editar Publicación</a>', esc_url( $edit_link )),
         );
 
         return sprintf( 
-            '<strong><a class="row-title" href="%s">%s</a></strong>%s',
-            $edit_link,
+            '<strong><a class="row-title" href="%s">%s</a></strong>%s%s',
+            esc_url( $edit_link ),
             esc_html( $formatted_name ),
+            $suffix,
             $this->row_actions( $actions )
         );
     }
@@ -89,7 +94,7 @@ class Motorlan_Offers_List_Table extends WP_List_Table {
         $user_id = $item['user_id'];
         $user    = get_userdata( $user_id );
         if ( ! $user ) {
-            return 'Usuario Eliminado (' . $user_id . ')';
+            return 'Usuario Eliminado (' . absint( $user_id ) . ')';
         }
         $edit_link = get_edit_user_link( $user_id );
 
@@ -98,9 +103,9 @@ class Motorlan_Offers_List_Table extends WP_List_Table {
         return sprintf( 
             '<div style="display:flex; align-items:center; gap:8px;">%s <a href="%s"><strong>%s</strong></a> <br><span style="color:#666">%s</span></div>',
             $avatar,
-            get_edit_user_link( $user_id ),
-            $user->display_name,
-            $user->user_email
+            esc_url( get_edit_user_link( $user_id ) ),
+            esc_html( $user->display_name ),
+            esc_html( $user->user_email )
         );
     }
 
@@ -118,8 +123,8 @@ class Motorlan_Offers_List_Table extends WP_List_Table {
 
         return sprintf( 
             '<a href="%s">%s</a>',
-            get_edit_user_link( $author_id ),
-            $user->display_name
+            esc_url( get_edit_user_link( $author_id ) ),
+            esc_html( $user->display_name )
         );
     }
 
