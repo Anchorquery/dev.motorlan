@@ -464,10 +464,9 @@ class Motorlan_Notification_Manager {
         $sent = wp_mail( $to, $subject, $body, $headers );
 
         if ( ! $sent ) {
+            // Sin la URL de verificación: lleva el token y quien lea el log podía verificar
+            // (y tomar) la cuenta.
             error_log( sprintf( '[Motorlan] wp_mail FAILED type=%s to=%s subject=%s', $type, $to, $subject ) );
-            if ( $type === 'verify_email' && ! empty( $data['url'] ) ) {
-                error_log( sprintf( '[Motorlan] Verify URL fallback for %s: %s', $to, $data['url'] ) );
-            }
         }
     }
 
