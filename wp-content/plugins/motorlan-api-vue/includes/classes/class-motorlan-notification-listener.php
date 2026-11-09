@@ -94,12 +94,15 @@ class Motorlan_Notification_Listener {
         }
         $product_path = add_query_arg( $query, $product_path );
 
-        // Encolado: el POST del invitado ya no espera al SMTP
+        // Encolado: el POST del invitado ya no espera al SMTP.
+        // Sin el texto del mensaje: el email del invitado no está verificado y un anónimo
+        // podía usar la copia para hacer llegar hasta 2000 caracteres propios a cualquier
+        // dirección con el remitente de Motorlan (relay de spam/phishing).
         $this->notification_manager->queue_email(
             0,
             'message_sent',
             __( 'Mensaje enviado', 'motorlan-api-vue' ),
-            $message,
+            '',
             [
                 'direct_email'   => $guest_email,
                 'recipient_name' => $seller_name,
