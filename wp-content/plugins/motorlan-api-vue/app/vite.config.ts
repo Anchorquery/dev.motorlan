@@ -20,6 +20,8 @@ export default ({ mode }) => {
       // Docs: https://github.com/posva/unplugin-vue-router
       // ℹ️ This plugin should be placed before vue plugin
       VueRouter({
+        // Los componentes que viven junto a sus páginas (pages/**/components) no son rutas
+        exclude: ['src/pages/**/components/**'],
         getRouteName: routeNode => {
           // Convert pascal case to kebab case
           return getPascalCaseRouteName(routeNode)
