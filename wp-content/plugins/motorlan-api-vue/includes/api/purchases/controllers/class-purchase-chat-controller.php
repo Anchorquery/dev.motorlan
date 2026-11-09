@@ -350,6 +350,11 @@ if ( ! class_exists( 'Motorlan_Purchase_Chat_Controller' ) ) {
 			if ( empty( $value ) ) {
 				return true;
 			}
+			// Un validate_callback propio sustituye a la validación por 'type': con
+			// ?since_timestamp[]=1 llegaba un array y strtotime() lanzaba TypeError (500).
+			if ( ! is_string( $value ) ) {
+				return false;
+			}
 
 			return false !== strtotime( $value );
 		}
