@@ -25,7 +25,9 @@ function motorlan_bulk_delete_publicaciones(WP_REST_Request $request) {
     }
 
     $params = $request->get_json_params();
-    $ids = $params['ids'] ?? [];
+    // Un 'ids' escalar daba warning en el foreach y respondía 500; sin tope, una petición
+    // podía recorrer miles de posts.
+    $ids = array_slice(array_values(array_filter(array_map('absint', (array) ($params['ids'] ?? [])))), 0, 100);
 
     if (empty($ids)) {
         return new WP_Error('no_ids', 'No IDs provided', ['status' => 400]);
