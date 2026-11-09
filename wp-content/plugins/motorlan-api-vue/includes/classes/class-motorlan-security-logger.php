@@ -23,8 +23,12 @@ class Motorlan_Security_Logger {
         
         $table_name = $wpdb->prefix . 'motorlan_security_logs';
         
-        // Check if table exists (cache this check ideally, but for now simple)
-        if ($wpdb->get_var("SHOW TABLES LIKE '$table_name'") != $table_name) {
+        // Comprobación de la tabla una vez por petición (antes, un SHOW TABLES por log).
+        static $table_exists = null;
+        if (null === $table_exists) {
+            $table_exists = $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $table_name)) === $table_name;
+        }
+        if (!$table_exists) {
             return; // Fail silently if table doesn't exist yet
         }
         
@@ -68,14 +72,20 @@ class Motorlan_Security_Logger {
      */
     private static function get_client_ip() {
         $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
-        
-        if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-            $ips = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
-            $ip = trim($ips[0]);
-        } elseif (!empty($_SERVER['HTTP_CLIENT_IP'])) {
-            $ip = $_SERVER['HTTP_CLIENT_IP'];
+
+        // Igual que Motorlan_Rate_Limiter: las cabeceras de proxy las controla el
+        // cliente, así que solo se usan si MOTORLAN_TRUST_PROXY_HEADERS lo permite. Antes
+        // se aceptaban siempre y cualquiera podía falsear la IP de los logs de seguridad.
+        $trust_proxy = defined('MOTORLAN_TRUST_PROXY_HEADERS') && MOTORLAN_TRUST_PROXY_HEADERS;
+        if ($trust_proxy) {
+            if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+                $ips = explode(',', (string) $_SERVER['HTTP_X_FORWARDED_FOR']);
+                $ip = trim($ips[0]);
+            } elseif (!empty($_SERVER['HTTP_CLIENT_IP'])) {
+                $ip = $_SERVER['HTTP_CLIENT_IP'];
+            }
         }
-        
+
         return filter_var($ip, FILTER_VALIDATE_IP) ? $ip : '0.0.0.0';
     }
     
