@@ -285,7 +285,10 @@ function motorlan_update_publicacion_by_uuid(WP_REST_Request $request) {
     $kept_gallery_ids = [];
     if (isset($params['motor_gallery_ids'])) {
         // explode(',', '') devuelve [0]: filtrar para no guardar un ID 0.
-        $kept_gallery_ids = array_values(array_filter(array_map('intval', explode(',', (string) $params['motor_gallery_ids'])), $attachment_ok));
+        // Acepta también un array (JSON): (string) sobre un array daba "Array to string
+        // conversion" y vaciaba la galería.
+        $raw_gallery_ids  = is_array($params['motor_gallery_ids']) ? $params['motor_gallery_ids'] : explode(',', (string) $params['motor_gallery_ids']);
+        $kept_gallery_ids = array_values(array_filter(array_map('intval', array_filter($raw_gallery_ids, 'is_scalar')), $attachment_ok));
     }
     if (!empty($gallery_files) && count($kept_gallery_ids) + count($gallery_files) > 5) {
         return new WP_Error('gallery_limit', 'La galería admite como máximo 5 imágenes.', ['status' => 400]);
@@ -304,7 +307,9 @@ function motorlan_update_publicacion_by_uuid(WP_REST_Request $request) {
     $update_docs = isset($params['documentacion_adicional_ids']) || !empty($doc_files);
     $kept_docs = [];
     if (isset($params['documentacion_adicional_ids'])) {
-        $doc_ids = json_decode((string) $params['documentacion_adicional_ids'], true);
+        $doc_ids = is_array($params['documentacion_adicional_ids'])
+            ? $params['documentacion_adicional_ids']
+            : json_decode((string) $params['documentacion_adicional_ids'], true);
         foreach ((is_array($doc_ids) ? $doc_ids : []) as $doc) {
             if (!is_array($doc) || empty($doc['archivo']) || !$attachment_ok($doc['archivo'])) {
                 continue;
@@ -518,7 +523,8 @@ function motorlan_update_publicacion_by_uuid(WP_REST_Request $request) {
 
     // Additional Documentation
     if ($update_docs) {
-        $doc_nombres = isset($params['documentacion_adicional_nombres']) ? json_decode((string) $params['documentacion_adicional_nombres'], true) : [];
+        $doc_nombres = $params['documentacion_adicional_nombres'] ?? [];
+        $doc_nombres = is_array($doc_nombres) ? $doc_nombres : json_decode((string) $doc_nombres, true);
         $doc_nombres = is_array($doc_nombres) ? $doc_nombres : [];
         $uploaded_docs = $kept_docs;
 
