@@ -53,7 +53,7 @@ export default ({ mode }) => {
 
       // Docs: https://github.com/antfu/unplugin-vue-components#unplugin-vue-components
       Components({
-        dirs: ['src/@core/components', 'src/views/demos', 'src/components'],
+        dirs: ['src/@core/components', 'src/components'],
         dts: true,
         resolvers: [
           componentName => {
@@ -99,8 +99,6 @@ export default ({ mode }) => {
         '@configured-variables': fileURLToPath(new URL('./src/assets/styles/variables/_template.scss', import.meta.url)),
         // Producción: solo los iconos usados (build:icons); dev: set completo de tabler
         '@iconify-bundle': fileURLToPath(new URL(mode === 'production' ? './src/plugins/iconify/icons.used.css' : './src/plugins/iconify/icons.css', import.meta.url)),
-        '@db': fileURLToPath(new URL('./src/plugins/fake-api/handlers/', import.meta.url)),
-        '@api-utils': fileURLToPath(new URL('./src/plugins/fake-api/utils/', import.meta.url)),
       },
     },
     // Base en raíz: con inlineDynamicImports no hay chunks dinámicos, así el build

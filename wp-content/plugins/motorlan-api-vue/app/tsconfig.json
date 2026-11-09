@@ -24,9 +24,6 @@
       "@images/*": ["src/assets/images/*"],
       "@styles/*": ["src/assets/styles/*"],
       "@configured-variables": ["src/assets/styles/variables/_template.scss"],
-      "@db/*": ["src/plugins/fake-api/handlers/*"],
-      "@api-utils/*": ["src/plugins/fake-api/utils/*"],
-      "@axios/*": ["src/plugins/axios/*"],
       "virtual:meta-layouts": ["node_modules/vite-plugin-vue-meta-layouts/dist/client.mjs"]
     }
   },
