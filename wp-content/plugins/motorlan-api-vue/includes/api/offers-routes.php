@@ -315,10 +315,11 @@ function motorlan_handle_create_offer($request) {
     }
 
     // Daily offers limit logic
-    $today = date('Y-m-d');
+    $today = current_time('Y-m-d');
     $offers_today = get_user_meta($user_id, 'offers_today', true);
 
-    if (empty($offers_today) || $offers_today['date'] !== $today) {
+    // Un meta que no sea array (p. ej. un valor antiguo) daba TypeError en PHP 8.
+    if (!is_array($offers_today) || ($offers_today['date'] ?? '') !== $today || !isset($offers_today['count'])) {
         $offers_today = ['date' => $today, 'count' => 0];
     }
 
@@ -370,8 +371,11 @@ function motorlan_handle_get_received_offers($request) {
     $table_name = $wpdb->prefix . 'motorlan_offers';
     $user_id = get_current_user_id();
 
-    $page = isset($request['page']) ? absint($request['page']) : 1;
-    $per_page = isset($request['per_page']) ? absint($request['per_page']) : 10;
+    // per_page=0 daba DivisionByZeroError en ceil() (500) y page=0 un OFFSET negativo
+    // (SQL inválido). per_page<=0 ("Todos" en VDataTable envía -1) = máximo, con tope.
+    $page = isset($request['page']) ? max(1, absint($request['page'])) : 1;
+    $per_page = isset($request['per_page']) ? (int) $request['per_page'] : 10;
+    $per_page = $per_page <= 0 ? 100 : min(100, $per_page);
     $offset = ($page - 1) * $per_page;
 
     $search = isset($request['search']) ? sanitize_text_field(wp_unslash($request['search'])) : '';
@@ -719,8 +723,11 @@ function motorlan_handle_get_sent_offers($request) {
     $table_name = $wpdb->prefix . 'motorlan_offers';
     $user_id = get_current_user_id();
 
-    $page = isset($request['page']) ? absint($request['page']) : 1;
-    $per_page = isset($request['per_page']) ? absint($request['per_page']) : 10;
+    // per_page=0 daba DivisionByZeroError en ceil() (500) y page=0 un OFFSET negativo
+    // (SQL inválido). per_page<=0 ("Todos" en VDataTable envía -1) = máximo, con tope.
+    $page = isset($request['page']) ? max(1, absint($request['page'])) : 1;
+    $per_page = isset($request['per_page']) ? (int) $request['per_page'] : 10;
+    $per_page = $per_page <= 0 ? 100 : min(100, $per_page);
     $offset = ($page - 1) * $per_page;
 
     $search = isset($request['search']) ? sanitize_text_field(wp_unslash($request['search'])) : '';
