@@ -318,6 +318,9 @@ function motorlan_get_my_opinions_callback( $request ) {
             array( 'key' => '_review_buyer_by', 'value' => $user_id ),
         ),
     ) );
+    if ( $purchase_ids ) {
+        update_meta_cache( 'post', $purchase_ids ); // N+1: fields=ids no precarga el meta
+    }
 
     foreach ( $purchase_ids as $purchase_id ) {
         foreach ( array( 'seller', 'buyer' ) as $target ) {
