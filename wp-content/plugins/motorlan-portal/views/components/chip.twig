@@ -1,0 +1,21 @@
+{#
+  Chip (VChip label, tonal por defecto).
+    {% import 'components/chip.twig' as c %}
+    {{ c.chip({ label: 'Publicado', color: 'success' }) }}
+    {{ c.chip({ label: 'Nuevo', color: 'primary', icon: 'star', variant: 'outlined', size: 'sm', pill: true }) }}
+  variant: tonal (def.) | outlined | filled · size: sm | md · pill · href · class
+#}
+{% macro chip(o) -%}
+{%- import 'components/icon.twig' as ui -%}
+{%- set variant = o.variant|default('tonal') -%}
+{%- set cls = 'ml-chip ml-c-' ~ o.color|default('secondary')
+  ~ (variant != 'tonal' ? ' ml-chip--' ~ variant : '')
+  ~ (o.size|default('md') == 'sm' ? ' ml-chip--sm' : '')
+  ~ (o.pill|default(false) ? ' ml-chip--pill' : '')
+  ~ (o.class|default('') ? ' ' ~ o.class : '') -%}
+{%- set tag = o.href|default(false) ? 'a' : 'span' -%}
+<{{ tag }} class="{{ cls }}"{% if o.href|default(false) %} href="{{ o.href|e('html_attr') }}"{% endif %}>
+  {%- if o.icon|default(false) %}{{ ui.icon(o.icon) }}{% endif -%}
+  <span>{{ o.label|e }}</span>
+</{{ tag }}>
+{%- endmacro %}

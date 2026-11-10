@@ -1,0 +1,11 @@
+{#
+  Icono Tabler (mismos nombres que la SPA, con o sin el prefijo "tabler-").
+    {% import 'components/icon.twig' as ui %}
+    {{ ui.icon('heart') }}  ·  {{ ui.icon('tabler-heart', 'size-6 text-primary') }}
+  SVG inline desde dist/icons.json (scripts/build-icons.mjs). Solo entran en el build los
+  nombres LITERALES que aparecen en views/ y src/: no construyas el nombre con ~.
+  label: texto accesible (si el icono va solo, sin texto al lado).
+#}
+{% macro icon(name, class = 'size-5', label = null) -%}
+{{ ml_icon(name, class, label ? {'aria-label': label, 'role': 'img'} : {}) }}
+{%- endmacro %}

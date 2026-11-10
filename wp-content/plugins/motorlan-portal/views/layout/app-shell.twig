@@ -1,0 +1,81 @@
+{% extends 'layout/base.twig' %}
+{#
+  Panel (layout default de la SPA: VerticalNavLayout de Vuexy + DashboardMobileNav).
+   - Menú lateral 260 px, plegable a 70 px (se recuerda; al pasar el ratón se despliega).
+     En < 1280 px es un panel lateral con fondo oscuro (botón hamburguesa).
+   - Barra superior flotante, fija, con fondo difuminado; sombra al hacer scroll.
+   - Contenido centrado (máx. 1440 px) y pie.
+   - Barra inferior en < 960 px con 5 accesos (Publicar en el centro). hide_mobile_nav: true
+     la oculta (pantallas de detalle con sus propios botones, como en la SPA).
+  Bloques: main · navbar_start (junto a la hamburguesa) · navbar_end (antes de la campana).
+#}
+{% block body %}
+{%- import 'components/icon.twig' as ui -%}
+<div class="ml-layout{{ hide_mobile_nav|default(false) ? '' : ' ml-has-dnav' }}" x-data="appShell"
+     :class="{ 'is-collapsed': collapsed, 'is-mini': mini, 'is-mobile-open': mobileOpen }">
+
+  {# ── Menú lateral ── #}
+  <aside class="ml-nav" aria-label="{{ __('Menú principal', 'motorlan-portal')|e('html_attr') }}"
+         @mouseenter="hovered = true" @mouseleave="hovered = false">
+    <div class="ml-nav__header">
+      <a class="ml-nav__brand" href="{{ urls.home|e('html_attr') }}">
+        {%- if assets.logo %}<img src="{{ assets.logo|e('html_attr') }}" alt="{{ site_name|e('html_attr') }}" x-show="!mini"><span class="ml-nav__mark" x-show="mini" x-cloak>M</span>
+        {%- else %}<span class="ml-nav__mark">M</span><span class="ml-nav__title">Motorlan</span>{% endif %}
+      </a>
+      <button type="button" class="ml-icon-btn !size-8 ml-nav__pin" @click="toggleCollapsed()" :aria-pressed="collapsed.toString()" aria-label="{{ __('Fijar menú', 'motorlan-portal')|e('html_attr') }}">
+        <span x-show="!collapsed">{{ ui.icon('circle-dot') }}</span><span x-show="collapsed" x-cloak>{{ ui.icon('circle') }}</span>
+      </button>
+      <button type="button" class="ml-icon-btn !size-8 xl:hidden" @click="mobileOpen = false" aria-label="{{ __('Cerrar menú', 'motorlan-portal')|e('html_attr') }}">{{ ui.icon('x') }}</button>
+    </div>
+    <nav class="ml-nav__items">
+      {%- for item in nav.vertical -%}
+        {%- if item.heading is defined -%}
+        <div class="ml-nav__section">{{ ui.icon('minus') }}<span>{{ item.heading|e }}</span></div>
+        {%- else -%}
+        <a class="ml-nav__link{{ item.active ? ' is-active' : '' }}" href="{{ item.url|e('html_attr') }}"{% if item.active %} aria-current="page"{% endif %} title="{{ item.title|e('html_attr') }}">
+          {{ ui.icon(item.icon) }}<span class="ml-nav__label">{{ item.title|e }}</span>
+        </a>
+        {%- endif -%}
+      {%- endfor -%}
+    </nav>
+  </aside>
+  <div class="ml-nav-scrim xl:hidden" x-show="mobileOpen" x-cloak x-transition.opacity @click="mobileOpen = false"></div>
+
+  <div class="ml-main">
+    {# ── Barra superior ── #}
+    <header class="ml-navbar" :class="scrolled && 'is-scrolled'">
+      <div class="ml-navbar__inner">
+        <button type="button" class="ml-icon-btn ml-nav__burger -ms-2" @click="mobileOpen = true" aria-label="{{ __('Abrir menú', 'motorlan-portal')|e('html_attr') }}">{{ ui.icon('menu-2') }}</button>
+        {% block navbar_start %}{% endblock %}
+        <div class="flex-1"></div>
+        {% block navbar_end %}{% endblock %}
+        {% include 'components/notifications.twig' %}
+        {% include 'components/user-menu.twig' %}
+      </div>
+    </header>
+
+    <main class="ml-content" id="ml-main">
+      {% block main %}{% endblock %}
+    </main>
+
+    <footer class="ml-footer">
+      © {{ 'now'|date('Y') }} Motorlan
+    </footer>
+  </div>
+
+  {# ── Barra inferior (móvil) ── #}
+  {%- if not hide_mobile_nav|default(false) and user %}
+  <nav class="ml-dnav" aria-label="{{ __('Navegación del panel', 'motorlan-portal')|e('html_attr') }}">
+    <div class="ml-dnav__bar">
+      {%- for item in nav.mobile %}
+      <a class="ml-dnav__item{{ item.active ? ' is-active' : '' }}{{ item.primary|default(false) ? ' is-primary' : '' }}" href="{{ item.url|e('html_attr') }}"{% if item.active %} aria-current="page"{% endif %}>
+        <span class="ml-dnav__icon">{{ ui.icon(item.icon) }}</span>
+        <span class="ml-dnav__label">{{ item.title|e }}</span>
+      </a>
+      {%- endfor %}
+    </div>
+    <div class="ml-dnav__safe"></div>
+  </nav>
+  {%- endif %}
+</div>
+{% endblock %}

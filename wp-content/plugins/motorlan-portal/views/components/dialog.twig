@@ -1,0 +1,38 @@
+{#
+  Diálogo modal (VDialog + DialogCloseBtn), con Alpine (mlDialog en app.js). Embed:
+    {% embed 'components/dialog.twig' with { title: 'Eliminar anuncio', max_width: '480px' } %}
+      {% block activator %}<button class="ml-btn ml-btn--tonal ml-c-error" @click="show()">Eliminar</button>{% endblock %}
+      {% block content %}<p>¿Seguro?</p>{% endblock %}
+      {% block actions %}…{% endblock %}
+    {% endembed %}
+  Se monta en #ml-overlays (lo ponen los layouts). Esc o clic en el fondo cierran; el foco entra en el diálogo al abrirlo.
+  Variables: title · subtitle · max_width (def. 600px) · open (abierto al cargar) · persistent (sin cierre por fondo/Esc)
+  Para abrirlo desde fuera: id="…" y window.dispatchEvent(new CustomEvent('ml-dialog', { detail: 'id' })).
+#}
+{%- import 'components/icon.twig' as ui -%}
+<div x-data="mlDialog({{ open|default(false) ? 'true' : 'false' }})"{% if id|default(false) %} id="{{ id|e('html_attr') }}" @ml-dialog.window="$event.detail === $el.id && show()"{% endif %} class="contents">
+  {% block activator %}{% endblock %}
+  <template x-teleport="#ml-overlays">
+    {# Un único x-show (los x-show anidados con transición se bloquean al cerrar y reabrir);
+       la entrada del panel la anima CSS (.ml-dialog → ml-dialog-in). #}
+    <div x-show="open" x-cloak x-transition.opacity.duration.150ms{% if not persistent|default(false) %} @keydown.escape.window="close()"{% endif %}>
+      <div class="ml-scrim"></div>
+      <div class="ml-dialog-wrap"{% if not persistent|default(false) %} @click.self="close()"{% endif %}>
+        <div class="ml-dialog" role="dialog" aria-modal="true"{% if title|default(false) %} aria-label="{{ title|e('html_attr') }}"{% endif %} style="max-width: {{ max_width|default('600px')|e('html_attr') }}"
+             x-trap.noscroll="open">
+          <button type="button" class="ml-dialog__close" @click="close()" aria-label="Cerrar">{{ ui.icon('x') }}</button>
+          <div class="ml-card">
+            {%- if title|default(false) %}
+            <div class="ml-card__header">
+              <div><h3 class="ml-card__title">{{ title|e }}</h3>{% if subtitle|default(false) %}<p class="ml-card__subtitle">{{ subtitle|e }}</p>{% endif %}</div>
+            </div>
+            {%- endif %}
+            <div class="ml-card__body">{% block content %}{% endblock %}</div>
+            {%- set actions_html %}{% block actions %}{% endblock %}{% endset -%}
+            {%- if actions_html|trim %}<div class="ml-card__actions justify-end">{{ actions_html }}</div>{% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </template>
+</div>

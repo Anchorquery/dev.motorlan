@@ -1,0 +1,34 @@
+{#
+  Documento base del portal standalone (app-shell y auth-shell). Sin wp_head(): no carga
+  el tema ni la SPA, solo Inter, dist/css/app.css y dist/js/app.js.
+  Bloques: head (extra en <head>) · body · scripts.
+#}
+<!doctype html>
+<html lang="{{ config.lang|slice(0, 2)|e('html_attr') }}" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="{{ robots|default('noindex, nofollow')|e('html_attr') }}">
+  <meta name="theme-color" content="#DA291C">
+  <title>{{ page_title|default('Motorlan')|e }}{% if page_title|default(false) %} · {{ site_name|default('Motorlan')|e }}{% endif %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
+  <link rel="stylesheet" href="{{ assets.css|e('html_attr') }}">
+  <script>window.motorlanPortal = {{ ml_json(config) }};</script>
+  <script type="module" src="{{ assets.js|e('html_attr') }}"></script>
+  {% block head %}{% endblock %}
+</head>
+<body class="{{ body_class|default('')|e('html_attr') }}">
+  {% block body %}{% endblock %}
+  {# Destino de los x-teleport (diálogos): fuera del layout, dentro del ámbito de estilos. #}
+  <div id="ml-overlays"></div>
+
+  {# Aviso flotante (VSnackbar) — Alpine.store('toast') #}
+  <div x-data x-show="$store.toast.open" x-cloak x-transition.opacity class="ml-toast" :class="'ml-c-' + $store.toast.color" :style="$store.toast.color !== 'secondary' && 'background: var(--c)'" role="status" aria-live="polite">
+    <span x-text="$store.toast.text"></span>
+    <button type="button" class="ml-icon-btn !size-7 !text-white" @click="$store.toast.open = false" aria-label="Cerrar">{{ ml_icon('x', 'size-4') }}</button>
+  </div>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,16 +1,22 @@
-# Despliegue del plugin motorlan-api-vue a producción (www.motorlan.es) por FTP.
+# Despliegue de los plugins de Motorlan a producción (www.motorlan.es) por FTP.
 #
-# Solo manual: Actions › "Deploy plugin Motorlan (FTP)" › Run workflow.
-# Compila el frontend (app/dist no está en git), prepara SOLO los archivos que el
-# plugin usa en producción y los sincroniza por FTP. La sincronización es
-# incremental: se guarda un .ftp-deploy-sync-state.json en el servidor y en cada
-# despliegue solo se suben los archivos cambiados (y se borran los eliminados).
+# Solo manual: Actions › "Deploy plugin Motorlan (FTP)" › Run workflow, eligiendo el
+# paquete:
+#   motorlan-api-vue  (por defecto) la SPA Vue + API REST
+#   motorlan-portal   el portal Twig/HTMX (en migración; sus secciones vienen apagadas)
+# Cada paquete compila su frontend (los dist/ no están en git), prepara SOLO los
+# archivos que el plugin usa en producción y los sincroniza por FTP a su carpeta. La
+# sincronización es incremental: se guarda un .ftp-deploy-sync-state.json en el
+# servidor y en cada despliegue solo se suben los archivos cambiados (y se borran los
+# eliminados). Mismas protecciones para los dos: simulación por defecto, SUBIR para
+# el despliegue real y solo desde la rama permitida.
 #
 # Configuración (Settings › Environments › production):
 #   Secrets:   FTP_USERNAME, FTP_PASSWORD
 #   Variables (opcionales, con valor por defecto):
 #              FTP_SERVER      www.motorlan.es
 #              FTP_SERVER_DIR  /public/wp-content/plugins/motorlan-api-vue/  (acabada en "/")
+#              FTP_SERVER_DIR_PORTAL  /public/wp-content/plugins/motorlan-portal/  (acabada en "/")
 #              FTP_PROTOCOL    ftp (por defecto) | ftps
 #              DEPLOY_BRANCH   rama permitida (por defecto main)
 #              SITE_URL        por defecto https://www.motorlan.es
@@ -20,6 +26,13 @@ name: Deploy plugin Motorlan (FTP)
 on:
   workflow_dispatch:
     inputs:
+      paquete:
+        description: "Plugin que se despliega"
+        type: choice
+        options:
+          - motorlan-api-vue
+          - motorlan-portal
+        default: motorlan-api-vue
       dry_run:
         description: "Simulación: lista lo que se subiría/borraría sin tocar el servidor"
         type: boolean
@@ -42,6 +55,8 @@ env:
 
 jobs:
   deploy:
+    name: Desplegar motorlan-api-vue
+    if: ${{ inputs.paquete == 'motorlan-api-vue' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment: production
@@ -146,3 +161,129 @@ jobs:
           if [ "$status" != "200" ] || [ "$remote_size" != "$local_size" ]; then
             echo "::warning::El app.js publicado no coincide con el compilado. Revisa la subida o la caché del servidor/CDN."
           fi
+
+  # ── motorlan-portal (Timber/Twig + HTMX + Alpine + Tailwind) ────────────────────────
+  # Paquete: motorlan-portal.php, src, templates, views, vendor (composer --no-dev) y
+  # dist (4 archivos de nombre fijo: js/app.js, css/app.css, css/public.css, icons.json).
+  deploy-portal:
+    name: Desplegar motorlan-portal
+    if: ${{ inputs.paquete == 'motorlan-portal' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+    env:
+      PLUGIN_DIR: wp-content/plugins/motorlan-portal
+      STAGE_DIR: ${{ github.workspace }}/_deploy/motorlan-portal/
+
+    steps:
+      - name: Comprobar rama y confirmación
+        env:
+          ALLOWED_BRANCH: ${{ vars.DEPLOY_BRANCH || 'main' }}
+          DRY_RUN: ${{ inputs.dry_run }}
+          CONFIRM: ${{ inputs.confirm }}
+        run: |
+          if [ "$GITHUB_REF_NAME" != "$ALLOWED_BRANCH" ]; then
+            echo "::error::Solo se despliega desde '$ALLOWED_BRANCH' (has elegido '$GITHUB_REF_NAME')."
+            exit 1
+          fi
+          if [ "$DRY_RUN" != "true" ] && [ "$CONFIRM" != "SUBIR" ]; then
+            echo "::error::Despliegue real sin confirmar: escribe SUBIR en 'confirm' o activa la simulación."
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+
+      # La versión mínima de composer.json (platform php 8.1): lint y vendor/ válidos para el servidor.
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.1"
+          tools: composer:v2
+          coverage: none
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: ${{ env.PLUGIN_DIR }}/package-lock.json
+
+      - name: Instalar dependencias PHP (sin dev)
+        working-directory: ${{ env.PLUGIN_DIR }}
+        run: composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction --no-progress
+
+      - name: Instalar dependencias JS
+        working-directory: ${{ env.PLUGIN_DIR }}
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
+        run: npm ci --no-audit --no-fund
+
+      - name: Comprobar sintaxis PHP
+        working-directory: ${{ env.PLUGIN_DIR }}
+        run: |
+          find motorlan-portal.php src templates -name '*.php' -print0 \
+            | xargs -0 -n1 -P4 php -l > /tmp/php-lint.log 2>&1 \
+            || { grep -v '^No syntax errors' /tmp/php-lint.log; exit 1; }
+
+      - name: Compilar frontend
+        working-directory: ${{ env.PLUGIN_DIR }}
+        run: npm run build
+
+      - name: Preparar paquete (solo archivos de producción)
+        working-directory: ${{ env.PLUGIN_DIR }}
+        run: |
+          set -euo pipefail
+          rm -rf "$STAGE_DIR" && mkdir -p "$STAGE_DIR"
+          cp motorlan-portal.php composer.json "$STAGE_DIR"
+          cp -r src templates views vendor dist "$STAGE_DIR"
+          if [ -d languages ]; then cp -r languages "$STAGE_DIR"; fi
+          # El estado de la sincronización no debe poder descargarse por URL
+          printf '%s\n' \
+            '<Files ".ftp-deploy-sync-state.json">' \
+            '  <IfModule mod_authz_core.c>' \
+            '    Require all denied' \
+            '  </IfModule>' \
+            '  <IfModule !mod_authz_core.c>' \
+            '    Order allow,deny' \
+            '    Deny from all' \
+            '  </IfModule>' \
+            '</Files>' > "$STAGE_DIR/.htaccess"
+
+          # Imprescindibles: sin ellos WordPress da un error fatal o el portal sale sin estilos
+          for f in motorlan-portal.php vendor/autoload.php vendor/timber/timber/src/Timber.php \
+                   src/Plugin.php templates/template-portal.php views/layout/base.twig \
+                   dist/js/app.js dist/css/app.css dist/css/public.css dist/icons.json; do
+            [ -s "$STAGE_DIR/$f" ] || { echo "::error::Falta $f en el paquete"; exit 1; }
+          done
+          # El build no genera trozos con hash: si aparecen, se ha roto la configuración de Vite
+          extra=$(find "$STAGE_DIR/dist" -type f | grep -vE '/(js/app\.js|css/app\.css|css/public\.css|icons\.json)$' || true)
+          if [ -n "$extra" ]; then echo "::error::dist contiene archivos inesperados:"; echo "$extra"; exit 1; fi
+          echo "Paquete: $(find "$STAGE_DIR" -type f | wc -l) archivos, $(du -sh "$STAGE_DIR" | cut -f1)"
+
+      - name: Subir por FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ vars.FTP_SERVER || 'www.motorlan.es' }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ${{ vars.FTP_PROTOCOL || 'ftp' }}
+          port: 21
+          local-dir: ${{ env.STAGE_DIR }}
+          server-dir: ${{ vars.FTP_SERVER_DIR_PORTAL || '/public/wp-content/plugins/motorlan-portal/' }}
+          dry-run: ${{ inputs.dry_run }}
+          log-level: standard
+          timeout: 120000
+
+      - name: Verificar que producción sirve el build nuevo
+        if: ${{ !inputs.dry_run }}
+        env:
+          SITE_URL: ${{ vars.SITE_URL || 'https://www.motorlan.es' }}
+        run: |
+          local_size=$(stat -c %s "$STAGE_DIR/dist/js/app.js")
+          url="$SITE_URL/$PLUGIN_DIR/dist/js/app.js?deploy=$GITHUB_RUN_ID"
+          result=$(curl -s -o /dev/null -w '%{http_code} %{size_download}\n' "$url" || echo "000 0")
+          status=${result%% *}
+          remote_size=${result##* }
+          echo "app.js local=$local_size remoto=$remote_size (HTTP $status)"
+          if [ "$status" != "200" ] || [ "$remote_size" != "$local_size" ]; then
+            echo "::warning::El app.js publicado no coincide con el compilado. Revisa la subida o la caché del servidor/CDN."
+          fi
+          echo "El plugin se activa a mano en wp-admin; todas sus secciones vienen apagadas."

@@ -1,0 +1,24 @@
+{#
+  Pantallas públicas (tienda, ficha): dentro de la cabecera y el pie del tema de WordPress
+  (GeneratePress), como hoy la SPA dentro de su página. Todo va bajo #ml-portal y se carga
+  dist/css/public.css: el CSS del portal sin capas y con ese prefijo (scripts/build-public-css.mjs)
+  para no tocar el tema ni dejar que el tema lo pise (lo mismo que hace theme-isolation.css
+  en la SPA). public.css y app.js se imprimen aquí mismo (no por wp_enqueue): el layout
+  funciona solo y el tema no los mezcla con sus versiones.
+  Bloques: main.
+#}
+{{ function('get_header') }}
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
+<link rel="stylesheet" href="{{ assets.public_css|e('html_attr') }}">
+<script>window.motorlanPortal = {{ ml_json(config) }};</script>
+<div id="ml-portal" class="ml-public">
+  <div class="mx-auto w-full max-w-[1440px] px-4 py-6 sm:px-6 sm:py-8">
+    {% block main %}{% endblock %}
+  </div>
+  <div id="ml-overlays"></div>
+  <div x-data x-show="$store.toast.open" x-cloak x-transition.opacity class="ml-toast" :class="'ml-c-' + $store.toast.color" :style="$store.toast.color !== 'secondary' && 'background: var(--c)'" role="status" aria-live="polite">
+    <span x-text="$store.toast.text"></span>
+  </div>
+</div>
+<script type="module" src="{{ assets.js|e('html_attr') }}"></script>
+{{ function('get_footer') }}

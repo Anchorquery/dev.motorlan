@@ -1,0 +1,32 @@
+{#
+  Campana de notificaciones (NavBarNotifications.vue). DE MOMENTO SOLO VISUAL: el
+  contador sale de user.unread (0) y el panel muestra el estado vacío. Para activarla:
+  user.unread desde /motorlan/v1/notifications/unread-count y la lista por HTMX
+  (hx-get a un parcial que lea /motorlan/v1/notifications al abrir el panel).
+#}
+{%- import 'components/icon.twig' as ui -%}
+{%- import 'components/badge.twig' as bd -%}
+{%- if user -%}
+<div class="relative" x-data="{ open: false }" @keydown.escape.window="open = false" @click.outside="open = false">
+  <button type="button" class="ml-icon-btn relative" @click="open = !open" :aria-expanded="open.toString()" aria-label="{{ __('Notificaciones', 'motorlan-portal')|e('html_attr') }}">
+    {{ ui.icon('bell') }}
+    {%- if user.unread > 0 %}{{ bd.badge({ dot: true }) }}{% endif %}
+  </button>
+  <div class="ml-menu end-0 top-[calc(100%+12px)] w-[380px] max-w-[calc(100vw-1.5rem)] !py-0 max-sm:fixed max-sm:inset-x-3 max-sm:top-[4.5rem] max-sm:w-auto" x-show="open" x-cloak
+       x-transition:enter="transition duration-150 ease-out" x-transition:enter-start="opacity-0 -translate-y-1" x-transition:enter-end="opacity-100 translate-y-0">
+    <div class="flex items-center justify-between gap-2 px-4 py-3">
+      <h6 class="ml-h5">{{ __('Notificaciones', 'motorlan-portal') }}</h6>
+      {%- if user.unread > 0 %}<span class="ml-chip ml-chip--sm ml-c-primary">{{ user.unread }} {{ __('nuevas', 'motorlan-portal') }}</span>{% endif %}
+    </div>
+    <hr class="ml-divider">
+    <div class="ml-empty !py-8">
+      <span class="ml-empty__icon">{{ ui.icon('bell-off') }}</span>
+      <p class="text-medium-emphasis">{{ __('No hay notificaciones', 'motorlan-portal') }}</p>
+    </div>
+    <hr class="ml-divider">
+    <div class="p-4">
+      <a class="ml-btn ml-btn--filled ml-c-primary ml-btn--block ml-btn--sm" href="{{ ml_spa('dashboard/user/notifications')|e('html_attr') }}">{{ __('Ver todas', 'motorlan-portal') }}</a>
+    </div>
+  </div>
+</div>
+{%- endif -%}

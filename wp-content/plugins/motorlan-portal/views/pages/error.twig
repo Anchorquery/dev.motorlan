@@ -1,0 +1,13 @@
+{% extends 'layout/auth-shell.twig' %}
+{% set messages = {
+  403: ['No tienes acceso', 'Esta pantalla es solo para administradores.'],
+  404: ['Página no encontrada', 'La dirección no existe o ya no está disponible.'],
+} %}
+{% set msg = messages[status]|default(['Ha ocurrido un error', 'Inténtalo de nuevo en unos minutos.']) %}
+{% set heading = msg[0] %}
+{% set subheading = msg[1] %}
+{% block auth %}
+  {%- import 'components/btn.twig' as b -%}
+  <p class="ml-h1 mb-4 text-primary">{{ status }}</p>
+  {{ b.btn({ label: 'Volver al inicio', href: urls.home, icon: 'arrow-left', block: true }) }}
+{% endblock %}

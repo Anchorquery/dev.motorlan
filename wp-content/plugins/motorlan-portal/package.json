@@ -1,0 +1,25 @@
+{
+  "name": "motorlan-portal",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite build --watch",
+    "build": "vite build && node scripts/build-icons.mjs && node scripts/build-public-css.mjs",
+    "preview:ui-kit": "php scripts/preview-ui-kit.php",
+    "test:visual": "playwright test",
+    "test:visual:update": "playwright test --update-snapshots"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.55.0",
+    "@tabler/icons": "^3.34.0",
+    "@tailwindcss/vite": "^4.1.0",
+    "postcss": "^8.5.0",
+    "tailwindcss": "^4.1.0",
+    "vite": "^6.3.0"
+  },
+  "dependencies": {
+    "@alpinejs/focus": "^3.17.5",
+    "alpinejs": "^3.14.0",
+    "htmx.org": "^2.0.0"
+  }
+}

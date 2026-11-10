@@ -1,0 +1,38 @@
+{#
+  Botón (VBtn).
+    {% import 'components/btn.twig' as b %}
+    {{ b.btn({ label: 'Guardar', icon: 'device-floppy' }) }}
+    {{ b.btn({ label: 'Cancelar', variant: 'tonal', color: 'secondary', href: url }) }}
+    {{ b.btn({ icon: 'trash', variant: 'text', color: 'error', size: 'sm', title: 'Borrar' }) }}  ← solo icono
+  Opciones:
+    label · icon (delante) · append_icon (detrás) · title (aria-label si no hay label)
+    variant: filled (def.) | tonal | outlined | text
+    color:   primary (def.) | secondary | success | info | warning | error
+    size:    sm | md (def.) | lg     · block · rounded
+    href (→ <a>) · type (button def. | submit) · disabled · loading
+    class · attrs (atributos extra YA escapados: 'hx-get="…" @click="…"')
+  label/title se escapan aquí; no pases HTML.
+#}
+{% macro btn(o) -%}
+{%- import 'components/icon.twig' as ui -%}
+{%- set variant = o.variant|default('filled') -%}
+{%- set size = o.size|default('md') -%}
+{%- set icon_only = o.icon|default(false) and not o.label|default(false) -%}
+{%- set cls = 'ml-btn ml-btn--' ~ variant ~ ' ml-c-' ~ o.color|default('primary')
+  ~ (size != 'md' ? ' ml-btn--' ~ size : '')
+  ~ (icon_only ? ' ml-btn--icon' : '')
+  ~ (o.block|default(false) ? ' ml-btn--block' : '')
+  ~ (o.rounded|default(false) ? ' ml-btn--rounded' : '')
+  ~ (o.class|default('') ? ' ' ~ o.class : '') -%}
+{%- set inner -%}
+  {%- if o.icon|default(false) %}{{ ui.icon(o.icon) }}{% endif -%}
+  {%- if o.label|default(false) %}<span>{{ o.label|e }}</span>{% endif -%}
+  {%- if o.append_icon|default(false) %}{{ ui.icon(o.append_icon) }}{% endif -%}
+{%- endset -%}
+{%- set aria = icon_only and o.title|default(false) ? ' aria-label="' ~ o.title|e('html_attr') ~ '" title="' ~ o.title|e('html_attr') ~ '"' : '' -%}
+{%- if o.href|default(false) -%}
+<a href="{{ o.href|e('html_attr') }}" class="{{ cls }}"{{ aria|raw }}{% if o.disabled|default(false) %} aria-disabled="true" tabindex="-1"{% endif %}{% if o.loading|default(false) %} data-loading="true"{% endif %} {{ o.attrs|default('')|raw }}>{{ inner }}</a>
+{%- else -%}
+<button type="{{ o.type|default('button') }}" class="{{ cls }}"{{ aria|raw }}{% if o.disabled|default(false) %} disabled{% endif %}{% if o.loading|default(false) %} data-loading="true"{% endif %} {{ o.attrs|default('')|raw }}>{{ inner }}</button>
+{%- endif -%}
+{%- endmacro %}

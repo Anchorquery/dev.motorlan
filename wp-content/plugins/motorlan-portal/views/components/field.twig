@@ -1,0 +1,105 @@
+{#
+  Campos de formulario (AppTextField, AppSelect, AppTextarea, VCheckbox, VSwitch, VFileInput).
+  Etiqueta encima del campo, como la SPA.
+    {% import 'components/field.twig' as f %}
+    {{ f.text({ name: 'email', label: 'Email', type: 'email', value: form.email, required: true }) }}
+    {{ f.text({ name: 'q', placeholder: 'Buscar', icon: 'search', attrs: 'hx-get="…" hx-trigger="input changed delay:300ms"' }) }}
+    {{ f.select({ name: 'estado', label: 'Estado', options: { '': 'Todos', publish: 'Publicado' }, value: 'publish' }) }}
+    {{ f.textarea({ name: 'desc', label: 'Descripción', rows: 4 }) }}
+    {{ f.checkbox({ name: 'acepto', label: 'Acepto las condiciones', checked: true }) }}
+    {{ f.switch({ name: 'avisos', label: 'Avisos por email' }) }}
+    {{ f.file({ name: 'fotos[]', label: 'Fotos', multiple: true, accept: 'image/*' }) }}
+  Comunes: id (def. = name) · label · hint · error (texto → aria-invalid) · required · disabled
+           · class (del contenedor) · attrs (atributos extra del control, YA escapados).
+  Valores y textos se escapan aquí.
+#}
+
+{% macro _label(o, id) -%}
+{%- if o.label|default(false) -%}
+<label class="ml-label" for="{{ id|e('html_attr') }}">{{ o.label|e }}{% if o.required|default(false) %} <span class="ml-required">*</span>{% endif %}</label>
+{%- endif -%}
+{%- endmacro %}
+
+{% macro _hint(o, id) -%}
+{%- if o.error|default(false) -%}<span class="ml-hint ml-hint--error" id="{{ id|e('html_attr') }}-hint">{{ o.error|e }}</span>
+{%- elseif o.hint|default(false) -%}<span class="ml-hint" id="{{ id|e('html_attr') }}-hint">{{ o.hint|e }}</span>{%- endif -%}
+{%- endmacro %}
+
+{% macro _common(o, id) -%}
+ id="{{ id|e('html_attr') }}" name="{{ o.name|e('html_attr') }}"
+{%- if o.required|default(false) %} required{% endif -%}
+{%- if o.disabled|default(false) %} disabled{% endif -%}
+{%- if o.error|default(false) %} aria-invalid="true"{% endif -%}
+{%- if o.error|default(false) or o.hint|default(false) %} aria-describedby="{{ id|e('html_attr') }}-hint"{% endif %} {{ o.attrs|default('')|raw }}
+{%- endmacro %}
+
+{% macro text(o) -%}
+{%- import 'components/icon.twig' as ui -%}
+{%- set id = o.id|default(o.name) -%}
+<div class="ml-field {{ o.class|default('') }}">
+  {{ _self._label(o, id) }}
+  {%- if o.icon|default(false) -%}
+  <div class="ml-input-group">{{ ui.icon(o.icon) }}<input class="ml-input" type="{{ o.type|default('text') }}" value="{{ o.value|default('')|e('html_attr') }}"{% if o.placeholder|default(false) %} placeholder="{{ o.placeholder|e('html_attr') }}"{% endif %}{% if o.autocomplete|default(false) %} autocomplete="{{ o.autocomplete|e('html_attr') }}"{% endif %}{{ _self._common(o, id) }}></div>
+  {%- else -%}
+  <input class="ml-input" type="{{ o.type|default('text') }}" value="{{ o.value|default('')|e('html_attr') }}"{% if o.placeholder|default(false) %} placeholder="{{ o.placeholder|e('html_attr') }}"{% endif %}{% if o.autocomplete|default(false) %} autocomplete="{{ o.autocomplete|e('html_attr') }}"{% endif %}{{ _self._common(o, id) }}>
+  {%- endif -%}
+  {{ _self._hint(o, id) }}
+</div>
+{%- endmacro %}
+
+{% macro select(o) -%}
+{%- set id = o.id|default(o.name) -%}
+<div class="ml-field {{ o.class|default('') }}">
+  {{ _self._label(o, id) }}
+  <select class="ml-input"{{ _self._common(o, id) }}>
+    {%- for value, text in o.options|default({}) %}
+    <option value="{{ value|e('html_attr') }}"{% if (value ~ '') == (o.value|default('') ~ '') %} selected{% endif %}>{{ text|e }}</option>
+    {%- endfor %}
+  </select>
+  {{ _self._hint(o, id) }}
+</div>
+{%- endmacro %}
+
+{% macro textarea(o) -%}
+{%- set id = o.id|default(o.name) -%}
+<div class="ml-field {{ o.class|default('') }}">
+  {{ _self._label(o, id) }}
+  <textarea class="ml-input" rows="{{ o.rows|default(4) }}"{% if o.placeholder|default(false) %} placeholder="{{ o.placeholder|e('html_attr') }}"{% endif %}{{ _self._common(o, id) }}>{{ o.value|default('')|e }}</textarea>
+  {{ _self._hint(o, id) }}
+</div>
+{%- endmacro %}
+
+{% macro checkbox(o) -%}
+{%- set id = o.id|default(o.name ~ (o.value is defined ? '-' ~ o.value : '')) -%}
+<label class="ml-check {{ o.class|default('') }}" for="{{ id|e('html_attr') }}">
+  <input type="{{ o.radio|default(false) ? 'radio' : 'checkbox' }}" value="{{ o.value|default('1')|e('html_attr') }}"{% if o.checked|default(false) %} checked{% endif %}{{ _self._common(o, id) }}>
+  <span>{{ o.label|e }}</span>
+</label>
+{%- endmacro %}
+
+{% macro radio(o) -%}
+{{ _self.checkbox(o|merge({ radio: true })) }}
+{%- endmacro %}
+
+{% macro switch(o) -%}
+{%- set id = o.id|default(o.name) -%}
+<label class="ml-switch {{ o.class|default('') }}" for="{{ id|e('html_attr') }}">
+  <input type="checkbox" role="switch" value="{{ o.value|default('1')|e('html_attr') }}"{% if o.checked|default(false) %} checked{% endif %}{{ _self._common(o, id) }}>
+  <span>{{ o.label|e }}</span>
+</label>
+{%- endmacro %}
+
+{% macro file(o) -%}
+{%- import 'components/icon.twig' as ui -%}
+{%- set id = o.id|default(o.name|replace({'[]': ''})) -%}
+<div class="ml-field {{ o.class|default('') }}" x-data="mlFile()">
+  {{ _self._label(o, id) }}
+  <label class="ml-input ml-file" for="{{ id|e('html_attr') }}">
+    <input x-ref="input" type="file" @change="pick($event)"{% if o.multiple|default(false) %} multiple{% endif %}{% if o.accept|default(false) %} accept="{{ o.accept|e('html_attr') }}"{% endif %}{{ _self._common(o, id) }}>
+    {{ ui.icon('paperclip', 'size-5 text-medium-emphasis') }}
+    <span class="ml-file__name" :class="names.length && 'is-set'" x-text="names.length ? names.join(', ') : {{ ml_json(o.placeholder|default('Ningún archivo seleccionado'))|e('html_attr') }}">{{ o.placeholder|default('Ningún archivo seleccionado')|e }}</span>
+    <button type="button" class="ml-icon-btn !size-7" x-show="names.length" x-cloak @click.prevent="clear()" aria-label="Quitar">{{ ui.icon('x', 'size-4') }}</button>
+  </label>
+  {{ _self._hint(o, id) }}
+</div>
+{%- endmacro %}
