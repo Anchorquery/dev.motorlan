@@ -16,48 +16,6 @@ class Motorlan_Notification_Listener {
         }
     }
     
-    /**
-     * Helper to switch locale, create notification, and restore locale.
-     */
-    private function create_notification_localized( $user_id, $type, $title, $message, $data = [], $channels = ['web', 'email'] ) {
-        // Switch to user locale
-        $user_locale = get_user_locale( $user_id );
-        $original_locale = determine_locale(); // Current locale
-        
-        // Only switch if different (optimization)
-        $switched = false;
-        if ( $user_locale !== $original_locale ) {
-            $switched = switch_to_locale( $user_locale );
-        }
-
-        // We assume the title/message passed might be generated dynamically.
-        // If the caller didn't translate them *before* calling this, they will be translated here?
-        // No, PHP strings are evaluated at call time. 
-        // Example: on_user_welcome calls: create...('Welcome', ...)
-        // 'Welcome' is evaluated inside on_user_welcome BEFORE we switch locale here if we passed a string string.
-        // BUT wait! 
-        // If I use __() inside on_user_welcome, it uses the CURRENT locale logic usually (which might be admin's locale).
-        // So I must switch locale inside the specific handlers BEFORE generating the text.
-        
-        // Actually, the best way is to move the logic inside the handlers, OR pass keys/closures.
-        // But closures are messy here.
-        // So I will NOT use this helper to *translate* the content.
-        // I will use `switch_to_locale` inside each handler function manually to be precise.
-        // Then I call the manager.
-        
-        // However, I can still use this wrapper to ensure the *template rendering* (which happens in manager) uses the correct locale.
-        // Because manager->create_notification -> send_email -> include template -> template calls __().
-        // So this wrapper IS useful for the template part.
-        
-        try {
-            $this->notification_manager->create_notification( $user_id, $type, $title, $message, $data, $channels );
-        } finally {
-            if ( $switched ) {
-                restore_previous_locale();
-            }
-        }
-    }
-
     public function init() {
         // Register all hooks
         add_action( 'motorlan_user_welcome', [ $this, 'on_user_welcome' ], 10, 1 );
@@ -69,7 +27,6 @@ class Motorlan_Notification_Listener {
         add_action( 'motorlan_offer_status_updated', [ $this, 'on_offer_status_updated' ], 10, 2 );
         add_action( 'motorlan_manual_sale_created', [ $this, 'on_manual_sale_created' ], 10, 1 );
         add_action( 'motorlan_new_purchase', [ $this, 'on_new_purchase' ], 10, 1 );
-        add_action( 'motorlan_new_question', [ $this, 'on_new_question' ], 10, 1 );
         add_action( 'motorlan_password_reset_code', [ $this, 'on_password_reset_code' ], 10, 3 );
         add_action( 'motorlan_new_chat_message', [ $this, 'on_new_chat_message' ], 10, 4 );
         add_action( 'motorlan_new_purchase_message', [ $this, 'on_new_purchase_message' ], 10, 5 );
@@ -94,12 +51,15 @@ class Motorlan_Notification_Listener {
         }
         $product_path = add_query_arg( $query, $product_path );
 
-        // Encolado: el POST del invitado ya no espera al SMTP
+        // Encolado: el POST del invitado ya no espera al SMTP.
+        // Sin el texto del mensaje: el email del invitado no está verificado y un anónimo
+        // podía usar la copia para hacer llegar hasta 2000 caracteres propios a cualquier
+        // dirección con el remitente de Motorlan (relay de spam/phishing).
         $this->notification_manager->queue_email(
             0,
             'message_sent',
             __( 'Mensaje enviado', 'motorlan-api-vue' ),
-            $message,
+            '',
             [
                 'direct_email'   => $guest_email,
                 'recipient_name' => $seller_name,
@@ -266,7 +226,9 @@ class Motorlan_Notification_Listener {
             [
                 'post_id' => $post_id
             ],
-            ['web', 'email']
+            // Solo web: no existe la plantilla admin_contact.php y el email lo envía ya la
+            // ruta de admin con wp_mail().
+            ['web']
         );
     }
 
@@ -450,48 +412,6 @@ class Motorlan_Notification_Listener {
         }
     }
 
-    public function on_new_question( $question_id ) {
-        $publication_id = function_exists('get_field') ? get_field( 'publicacion', $question_id ) : get_post_meta($question_id, 'publicacion', true);
-        if ( ! $publication_id ) return;
-        
-        $user_id_asker = function_exists('get_field') ? get_field( 'usuario', $question_id ) : get_post_meta($question_id, 'usuario', true);
-        if ( is_array( $user_id_asker ) ) $user_id_asker = $user_id_asker['ID'];
-        
-        $pregunta = function_exists('get_field') ? get_field( 'pregunta', $question_id ) : get_post_meta($question_id, 'pregunta', true);
-        
-        $publication_author_id = get_post_field( 'post_author', $publication_id );
-        $publication_title = motorlan_format_motor_name( $publication_id );
-        $user_who_asked = get_userdata( $user_id_asker );
-
-        $asker_name = $user_who_asked ? $user_who_asked->display_name : 'Usuario';
-
-        $image = get_the_post_thumbnail_url( $publication_id, 'medium' );
-        
-        $switched = switch_to_locale( get_user_locale( $publication_author_id ) );
-
-        try {
-            $this->notification_manager->create_notification(
-                $publication_author_id,
-                'new_question',
-                sprintf( __( 'Nueva pregunta de %s en "%s"', 'motorlan-api-vue' ), $asker_name, $publication_title ),
-                $pregunta,
-                [
-                    'publication_id' => $publication_id,
-                    'question_id'    => $question_id,
-                    'url'            => motorlan_account_url( 'dashboard/publications/questions', $publication_author_id ),
-                    'vue_path'       => '/dashboard/publications/questions',
-                    'product_title'  => $publication_title,
-                    'product_image'  => $image,
-                    'asker_name'     => $asker_name,
-                    'question_text'  => $pregunta
-                ],
-                ['web', 'email']
-            );
-        } finally {
-            if ( $switched ) restore_previous_locale();
-        }
-    }
-
     public function on_password_reset_code( $user_id, $code, $expiry ) {
         // Solo por email: create_notification() también lo guardaba en la tabla de
         // notificaciones y se mostraba en la web, así que con una sesión robada se
@@ -662,7 +582,8 @@ class Motorlan_Notification_Listener {
                 'url'         => motorlan_account_url( 'dashboard/user/profile', $reviewed_id ),
                 'vue_path'    => '/dashboard/user/profile',
             ],
-            ['web', 'email']
+            // Solo web: no existe la plantilla new_review.php, así que el email nunca salía.
+            ['web']
         );
     }
     

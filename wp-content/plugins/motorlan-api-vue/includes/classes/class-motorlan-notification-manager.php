@@ -464,10 +464,9 @@ class Motorlan_Notification_Manager {
         $sent = wp_mail( $to, $subject, $body, $headers );
 
         if ( ! $sent ) {
+            // Sin la URL de verificación: lleva el token y quien lea el log podía verificar
+            // (y tomar) la cuenta.
             error_log( sprintf( '[Motorlan] wp_mail FAILED type=%s to=%s subject=%s', $type, $to, $subject ) );
-            if ( $type === 'verify_email' && ! empty( $data['url'] ) ) {
-                error_log( sprintf( '[Motorlan] Verify URL fallback for %s: %s', $to, $data['url'] ) );
-            }
         }
     }
 
@@ -482,6 +481,8 @@ class Motorlan_Notification_Manager {
         $template_path = MOTORLAN_API_VUE_PATH . 'includes/email-templates/' . sanitize_file_name( $template_name ) . '.php';
 
         if ( ! file_exists( $template_path ) ) {
+            // Antes fallaba en silencio: el canal 'email' sin plantilla no enviaba nada.
+            error_log( sprintf( '[Motorlan] Falta la plantilla de email "%s"', sanitize_file_name( $template_name ) ) );
             return '';
         }
 
@@ -500,9 +501,13 @@ class Motorlan_Notification_Manager {
         $base_html = ob_get_clean();
 
         // Replace placeholders
-        $subject = $args['title'] ?? 'Notificación de Motorlan';
-        $full_html = str_replace( '{{subject}}', $subject, $base_html );
-        $full_html = str_replace( '{{content}}', $content, $full_html );
+        // El asunto se escapa (va en <title>) y se sustituye en una sola pasada: con dos
+        // str_replace, un asunto que contuviera "{{content}}" recibía el cuerpo entero.
+        $subject = (string) ( $args['title'] ?? 'Notificación de Motorlan' );
+        $full_html = strtr( $base_html, array(
+            '{{subject}}' => esc_html( $subject ),
+            '{{content}}' => $content,
+        ) );
 
         return $full_html;
     }

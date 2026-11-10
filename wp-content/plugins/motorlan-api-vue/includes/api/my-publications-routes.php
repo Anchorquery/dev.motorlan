@@ -112,7 +112,9 @@ function motorlan_build_my_publications_query_args($params) {
     */
 
     if (!empty($params['tipo'])) {
-        $tipo_terms = array_map('sanitize_text_field', explode(',', $params['tipo']));
+        // ?tipo[]=x llega como array: explode() lanzaba TypeError en PHP 8 (500).
+        $tipo_raw   = is_array($params['tipo']) ? implode(',', array_filter($params['tipo'], 'is_scalar')) : (string) $params['tipo'];
+        $tipo_terms = array_map('sanitize_text_field', explode(',', $tipo_raw));
         // Sinónimos de "Otros" por si el slug real del término difiere.
         if (in_array('otro-repuesto', $tipo_terms, true)) {
             $tipo_terms = array_values(array_unique(array_merge($tipo_terms, ['repuesto', 'otros'])));
@@ -168,7 +170,7 @@ function motorlan_build_my_publications_query_args($params) {
         }
     }
 
-    if (!empty($params['order']) && in_array(strtoupper($params['order']), ['ASC', 'DESC'])) {
+    if (!empty($params['order']) && is_string($params['order']) && in_array(strtoupper($params['order']), ['ASC', 'DESC'], true)) {
         $args['order'] = strtoupper(sanitize_text_field($params['order']));
     }
 

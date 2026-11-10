@@ -234,7 +234,8 @@ function motorlan_get_countries_callback( $request ) {
     }
 
     // Ensure it's lowercase
-    $current_lang = strtolower( $current_lang );
+    // Sin WPML ni ?lang= llegaba null (strtolower(null) está obsoleto en PHP 8.1).
+    $current_lang = is_string( $current_lang ) ? strtolower( $current_lang ) : '';
 
     // If WPML is active and language is not Spanish, try to translate via WPML string translation
     if ( $current_lang && $current_lang !== 'es' && function_exists( 'icl_t' ) ) {

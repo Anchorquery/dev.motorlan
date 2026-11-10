@@ -296,7 +296,9 @@ function motorlan_handle_create_offer($request) {
     $justification = isset($request['justification']) ? sanitize_textarea_field($request['justification']) : null;
 
     $publication = get_post($post_id);
-    if (!$publication || $publication->post_type !=='publicacion') {
+    // Solo publicaciones publicadas: antes se podía ofertar sobre borradores, pendientes,
+    // privadas o en la papelera (solo se miraba publicar_acf) y el vendedor recibía el email.
+    if (!$publication || $publication->post_type !=='publicacion' || $publication->post_status !== 'publish') {
         return new WP_Error('invalid_publication', 'La publicación no está disponible.', array('status' => 404));
     }
 
@@ -315,10 +317,11 @@ function motorlan_handle_create_offer($request) {
     }
 
     // Daily offers limit logic
-    $today = date('Y-m-d');
+    $today = current_time('Y-m-d');
     $offers_today = get_user_meta($user_id, 'offers_today', true);
 
-    if (empty($offers_today) || $offers_today['date'] !== $today) {
+    // Un meta que no sea array (p. ej. un valor antiguo) daba TypeError en PHP 8.
+    if (!is_array($offers_today) || ($offers_today['date'] ?? '') !== $today || !isset($offers_today['count'])) {
         $offers_today = ['date' => $today, 'count' => 0];
     }
 
@@ -370,8 +373,11 @@ function motorlan_handle_get_received_offers($request) {
     $table_name = $wpdb->prefix . 'motorlan_offers';
     $user_id = get_current_user_id();
 
-    $page = isset($request['page']) ? absint($request['page']) : 1;
-    $per_page = isset($request['per_page']) ? absint($request['per_page']) : 10;
+    // per_page=0 daba DivisionByZeroError en ceil() (500) y page=0 un OFFSET negativo
+    // (SQL inválido). per_page<=0 ("Todos" en VDataTable envía -1) = máximo, con tope.
+    $page = isset($request['page']) ? max(1, absint($request['page'])) : 1;
+    $per_page = isset($request['per_page']) ? (int) $request['per_page'] : 10;
+    $per_page = $per_page <= 0 ? 100 : min(100, $per_page);
     $offset = ($page - 1) * $per_page;
 
     $search = isset($request['search']) ? sanitize_text_field(wp_unslash($request['search'])) : '';
@@ -620,6 +626,18 @@ function motorlan_handle_confirm_offer($request) {
     // We select meta_id to lock the specific row in postmeta
     $wpdb->get_results( $wpdb->prepare("SELECT meta_id FROM {$wpdb->postmeta} WHERE post_id = %d AND meta_key = 'stock' FOR UPDATE", $offer->publication_id) );
 
+    // Releer el estado con bloqueo: el estado se validó fuera de la transacción y un
+    // doble clic (o dos pestañas) creaba dos compras y descontaba dos unidades; con stock
+    // 1, la segunda petición marcaba como 'expired' una oferta ya confirmada.
+    $locked_status = $wpdb->get_var( $wpdb->prepare("SELECT status FROM $table_name WHERE id = %d FOR UPDATE", $offer_id) );
+    if ($locked_status !== MOTORLAN_OFFER_STATUS_ACCEPTED_PENDING) {
+        $wpdb->query('ROLLBACK');
+        if ($locked_status === MOTORLAN_OFFER_STATUS_CONFIRMED) {
+            return new WP_Error('already_confirmed', 'Esta oferta ya fue confirmada.', array('status' => 400));
+        }
+        return new WP_Error('invalid_status', 'La oferta no puede confirmarse en su estado actual.', array('status' => 409));
+    }
+
     // Re-fetch stock directly from DB to ensure we have the locked value (bypass WP object cache)
     $current_stock = $wpdb->get_var( $wpdb->prepare("SELECT meta_value FROM {$wpdb->postmeta} WHERE post_id = %d AND meta_key = 'stock'", $offer->publication_id) );
     
@@ -684,6 +702,12 @@ function motorlan_handle_confirm_offer($request) {
 
     $wpdb->query('COMMIT');
 
+    // Igual que una compra directa: avisa al vendedor (notificación web + email). Antes la
+    // venta por oferta confirmada no lanzaba ninguna notificación.
+    if (is_array($purchase_data) && !empty($purchase_data['id'])) {
+        do_action('motorlan_new_purchase', (int) $purchase_data['id']);
+    }
+
     $updated_offer = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table_name WHERE id = %d", $offer_id));
 
     return new WP_REST_Response(array(
@@ -701,8 +725,11 @@ function motorlan_handle_get_sent_offers($request) {
     $table_name = $wpdb->prefix . 'motorlan_offers';
     $user_id = get_current_user_id();
 
-    $page = isset($request['page']) ? absint($request['page']) : 1;
-    $per_page = isset($request['per_page']) ? absint($request['per_page']) : 10;
+    // per_page=0 daba DivisionByZeroError en ceil() (500) y page=0 un OFFSET negativo
+    // (SQL inválido). per_page<=0 ("Todos" en VDataTable envía -1) = máximo, con tope.
+    $page = isset($request['page']) ? max(1, absint($request['page'])) : 1;
+    $per_page = isset($request['per_page']) ? (int) $request['per_page'] : 10;
+    $per_page = $per_page <= 0 ? 100 : min(100, $per_page);
     $offset = ($page - 1) * $per_page;
 
     $search = isset($request['search']) ? sanitize_text_field(wp_unslash($request['search'])) : '';

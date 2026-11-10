@@ -118,6 +118,12 @@ function motorlan_approve_publication_callback($request) {
         return new WP_Error('not_found', 'Publicación no encontrada', ['status' => 404]);
     }
 
+    // Desde la papelera: restaurar antes de publicar. Si no, quedaban el slug
+    // "__trashed" y los metadatos _wp_trash_meta_* en una publicación publicada.
+    if ($post->post_status === 'trash') {
+        wp_untrash_post($post_id);
+    }
+
     // Si hay marca pendiente, crearla como término de taxonomía
     $pending_brand = get_post_meta($post_id, '_pending_brand_name', true);
 

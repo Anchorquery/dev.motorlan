@@ -360,6 +360,36 @@ function motorlan_get_user_sales_callback( WP_REST_Request $request ) {
     $query = new WP_Query( $args );
     $sales = array();
 
+    // Precarga (N+1): cada fila pedía comprador y vendedor con get_userdata() y la
+    // publicación con get_post(), una consulta por fila. WP_Query ya trae el meta.
+    if ( $query->posts ) {
+        $user_ids = array();
+        $post_ids = array();
+        foreach ( $query->posts as $p ) {
+            $user_ids[] = (int) $p->post_author;
+            foreach ( array( 'comprador', 'vendedor' ) as $user_key ) {
+                $value = get_post_meta( $p->ID, $user_key, true );
+                if ( is_numeric( $value ) ) {
+                    $user_ids[] = (int) $value;
+                }
+            }
+            foreach ( array( 'publicacion', 'motor' ) as $post_key ) {
+                $value = get_post_meta( $p->ID, $post_key, true );
+                if ( is_numeric( $value ) ) {
+                    $post_ids[] = (int) $value;
+                }
+            }
+        }
+        $user_ids = array_values( array_unique( array_filter( $user_ids ) ) );
+        $post_ids = array_values( array_unique( array_filter( $post_ids ) ) );
+        if ( $user_ids ) {
+            cache_users( $user_ids );
+        }
+        if ( $post_ids ) {
+            _prime_post_caches( $post_ids, true, true );
+        }
+    }
+
     if ( $query->have_posts() ) {
         while ( $query->have_posts() ) {
             $query->the_post();

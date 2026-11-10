@@ -90,16 +90,12 @@ if ( ! class_exists( 'Motorlan_Product_Chat_Controller' ) ) {
                 )
             );
 
-            // List rooms for a product (seller only)
+            // Marcar una sala como leída (POST). El GET (get_rooms_by_product) se eliminó:
+            // la SPA solo hace POST y la bandeja usa /seller/inquiries.
             register_rest_route(
                 $this->namespace,
                 '/products/(?P<id>\\d+)/rooms',
                 array(
-                    array(
-                        'methods'             => WP_REST_Server::READABLE,
-                        'callback'            => array( $this, 'get_rooms_by_product' ),
-                        'permission_callback' => 'motorlan_is_user_authenticated',
-                    ),
                     array(
                         'methods'             => WP_REST_Server::CREATABLE,
                         'callback'            => array( $this, 'mark_room_read' ),
@@ -439,27 +435,6 @@ if ( ! class_exists( 'Motorlan_Product_Chat_Controller' ) ) {
             return array( null, null );
         }
 
-        /**
-         * Invalida la caché de una sala de chat específica.
-         * 
-         * @param int $product_id
-         * @param string $room_key
-         */
-        protected function invalidate_room_cache( $product_id, $room_key ) {
-            // La clave de caché depende también del usuario y el timestamp, 
-            // lo cual hace difícil invalidar una clave específica sin conocer todos los parámetros.
-            // Una estrategia mejor sería usar un "version key" para la sala.
-            
-            // Por simplicidad en este parche, intentaremos invalidar las variantes más comunes
-            // O mejor aún, la validación de caché en get_messages debería chequear un "last_updated" global de la sala.
-            
-            // Implementación simple: Borrar transitorios que coincidan con el patrón (requiere soporte de la DB, WP options no es optimo para wildcards)
-            // Alternativa: Guardar timestamp de última actualización de la sala.
-            
-            $update_key = 'motorlan_chat_room_updated_' . md5($room_key);
-            set_transient($update_key, time(), 3600); // 1 hora
-        }
-
         protected function current_user_info() {
             $id    = get_current_user_id();
             $name  = '';
@@ -528,18 +503,6 @@ if ( ! class_exists( 'Motorlan_Product_Chat_Controller' ) ) {
             return $messages;
         }
 
-        protected function get_last_read_at( $user_id, $product_id, $room_key ) {
-            if ( ! $user_id ) return null;
-            global $wpdb;
-            $table = $this->get_reads_table_name();
-            if ( ! $this->ensure_reads_table_exists() ) return null;
-            $row = $wpdb->get_row( $wpdb->prepare(
-                "SELECT last_read_at FROM {$table} WHERE user_id = %d AND product_id = %d AND room_key = %s",
-                $user_id, $product_id, $room_key
-            ) );
-            return $row ? ( $row->last_read_at ?: null ) : null;
-        }
-
         protected function set_last_read_now( $user_id, $product_id, $room_key ) {
             if ( ! $user_id ) return false;
             global $wpdb;
@@ -581,22 +544,6 @@ if ( ! class_exists( 'Motorlan_Product_Chat_Controller' ) ) {
          */
         protected function reads_have_last_read_id() {
             return '1' === (string) get_option( 'motorlan_room_reads_last_read_id', '' );
-        }
-
-        protected function get_unread_count( $product_id, $room_key, $user_id ) {
-            if ( ! $user_id ) return 0;
-            global $wpdb;
-            $messages_table = $this->get_table_name();
-            $reads_table    = $this->get_reads_table_name();
-            if ( ! $this->ensure_table_exists() ) return 0;
-            if ( ! $this->ensure_reads_table_exists() ) return 0;
-            $last_read = $this->get_last_read_at( $user_id, $product_id, $room_key );
-            if ( ! $last_read ) {
-                $sql = $wpdb->prepare( "SELECT COUNT(*) FROM {$messages_table} WHERE product_id = %d AND room_key = %s AND user_id != %d", $product_id, $room_key, $user_id );
-                return (int) $wpdb->get_var( $sql );
-            }
-            $sql = $wpdb->prepare( "SELECT COUNT(*) FROM {$messages_table} WHERE product_id = %d AND room_key = %s AND created_at > %s AND user_id != %d", $product_id, $room_key, $last_read, $user_id );
-            return (int) $wpdb->get_var( $sql );
         }
 
         protected function persist_message( $product_id, $room_key, $message, $user_id, $sender_role, $display_name, $avatar, $guest_email = null ) {
@@ -794,6 +741,23 @@ if ( ! class_exists( 'Motorlan_Product_Chat_Controller' ) ) {
             // Use $current_user_id (0 for guest) so unauthenticated requests never become 'seller' even if email matches author
             $sender_role = $this->compute_sender_role( $product_id, $current_user_id, $room_key );
 
+            // El vendedor solo responde: no puede abrir una sala que el interesado no haya
+            // iniciado. Antes podía crear pub-{suPid}-viewer-{idCualquiera} y mandar a ese
+            // usuario una notificación y un email con texto libre (también desde borradores).
+            // La SPA solo construye salas desde el lado del comprador (utils/roomKey.ts).
+            if ( 'seller' === $sender_role ) {
+                global $wpdb;
+                $msg_table  = $this->get_table_name();
+                $has_viewer = (bool) $wpdb->get_var( $wpdb->prepare(
+                    "SELECT 1 FROM {$msg_table} WHERE product_id = %d AND room_key = %s AND sender_role <> 'seller' LIMIT 1",
+                    $product_id,
+                    $room_key
+                ) );
+                if ( ! $has_viewer ) {
+                    return new WP_Error( 'forbidden', __( 'No tienes permisos para enviar mensajes.', 'motorlan-api-vue' ), array( 'status' => 403 ) );
+                }
+            }
+
             // Publicación en la papelera o borrador automático: solo su autor puede escribir
             if ( 'seller' !== $sender_role && in_array( $product->post_status, array( 'trash', 'auto-draft' ), true ) ) {
                 return new WP_Error( 'not_found', __( 'Publicación no encontrada.', 'motorlan-api-vue' ), array( 'status' => 404 ) );
@@ -961,37 +925,6 @@ if ( ! class_exists( 'Motorlan_Product_Chat_Controller' ) ) {
             return $result;
         }
 
-        public function get_rooms_by_product( WP_REST_Request $request ) {
-            $product_id = absint( $request['id'] );
-            $room_key   = $request->get_param( 'room_key' );
-            $guest_em   = sanitize_email( (string) $request->get_param( 'guest_email' ) );
-
-            if ( is_wp_error( $this->get_product( $product_id ) ) ) {
-                return new WP_Error( 'invalid_product', __( 'El producto no existe.', 'motorlan-api-vue' ), array( 'status' => 404 ) );
-            }
-
-            list( $current_user_id ) = $this->current_user_info();
-            // SEGURIDAD: sin promoción por guest_email (con el email del vendedor o de un
-            // admin se listaban todas las salas sin iniciar sesión).
-            if ( ! $current_user_id ) {
-                return new WP_Error( 'rest_not_logged_in', __( 'Debes iniciar sesión.', 'motorlan-api-vue' ), array( 'status' => 401 ) );
-            }
-
-            $post = get_post( $product_id );
-            if ( ! $post || 'publicacion' !== $post->post_type ) {
-                return new WP_Error( 'not_found', __( 'Publicación no encontrada.', 'motorlan-api-vue' ), array( 'status' => 404 ) );
-            }
-
-            if ( (int) $post->post_author !== (int) $current_user_id && ! user_can( $current_user_id, 'manage_options' ) ) {
-                return new WP_Error( 'forbidden', __( 'No tienes permisos para ver estos chats.', 'motorlan-api-vue' ), array( 'status' => 403 ) );
-            }
-
-            $table_ready = $this->ensure_table_exists();
-            $rooms = $table_ready ? $this->get_rooms_for_products( array( $product_id ) ) : array();
-
-            return new WP_REST_Response( array( 'data' => $rooms ), 200 );
-        }
-
         public function get_seller_inquiries( WP_REST_Request $request ) {
             $current_user = get_current_user_id();
             if ( ! $current_user )
@@ -1133,40 +1066,8 @@ if ( ! class_exists( 'Motorlan_Product_Chat_Controller' ) ) {
             $messages_table = $this->get_table_name();
             $reads_table    = $this->get_reads_table_name();
 
-            // 1. Get last read timestamps for all rooms
-            // Composite key match is tricky in SQL IN clause generally, but useful here if constructed.
-            // Simplified: Get all reads for this user and these products.
             $product_ids = array_unique( array_column( $rooms, 'product_id' ) );
             $pids_in = implode( ',', array_map( 'intval', $product_ids ) );
-            
-            $reads_sql = $wpdb->prepare( 
-                "SELECT room_key, last_read_at FROM {$reads_table} WHERE user_id = %d AND product_id IN ($pids_in)", 
-                $user_id 
-            );
-            $reads = $wpdb->get_results( $reads_sql, OBJECT_K ); // Key by room_key (first column unique constraint allows this?) 
-            // Warning: room_key implies product, but theoretically unique_user_room idx handles it. 
-            // Actually wait, unique index is (user_id, product_id, room_key). 
-            // If room_key is globally unique (it contains product_id), we can key by it.
-            // YES: room_key format is pub-{id}-viewer-{id}, so it is unique per product.
-
-            $counts = array();
-            
-            // Build a complex query or iterate?
-            // "SELECT room_key, COUNT(*) as cnt FROM msgs WHERE (conditions) GROUP BY room_key"
-            // The condition "created_at > last_read" is dynamic per room.
-            // SQL Case: SUM(CASE WHEN created_at > ... THEN 1 ELSE 0 END)
-            // But we need to join reads.
-            
-            // OPTIMIZED QUERY:
-            // JOIN messages and reads, filter by user.
-            // But reads might not exist (never read).
-            
-            // Let's create a map of room_key -> last_read dates
-            $last_reads_map = array();
-            foreach( $rooms as $r ) $last_reads_map[$r['room_key']] = '0000-00-00 00:00:00';
-            if ( $reads ) {
-                foreach( $reads as $rk => $obj ) $last_reads_map[$rk] = $obj->last_read_at;
-            }
 
             // We need to query messages. To avoid scanning WHOLE table, we filter by Product IDs.
             // And grouping by room_key.

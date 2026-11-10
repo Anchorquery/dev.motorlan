@@ -46,7 +46,8 @@ add_action( 'rest_api_init', function () {
             'notification_ids' => [
                 'required'          => true,
                 'validate_callback' => function( $param ) {
-                    return is_array( $param ) && count( $param ) > 0;
+                    // Mismo tope que /notifications/unread.
+                    return is_array( $param ) && count( $param ) > 0 && count( $param ) <= 100;
                 },
                 'sanitize_callback' => function( $param ) {
                     return array_map( 'absint', $param );

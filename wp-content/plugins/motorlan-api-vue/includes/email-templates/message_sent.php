@@ -29,6 +29,7 @@ $thread_url        = ! empty( $args['data']['url'] )
         '<strong>' . esc_html( $product_title ) . '</strong>'
     );
 ?></p>
+<?php if ( '' !== trim( (string) $message_text ) ) : ?>
 <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 24px;">
     <tr>
         <td style="border-left:4px solid #0073aa;background:#f3f6f9;padding:14px 18px;border-radius:6px;font-style:italic;color:#374151;">
@@ -36,6 +37,7 @@ $thread_url        = ! empty( $args['data']['url'] )
         </td>
     </tr>
 </table>
+<?php endif; ?>
 <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 0;">
     <tr>
         <td align="center" style="border-radius:8px;background:#0073aa;">

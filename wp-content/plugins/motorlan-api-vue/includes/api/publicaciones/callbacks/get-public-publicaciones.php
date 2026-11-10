@@ -20,6 +20,12 @@ function motorlan_get_public_publicaciones_callback($request) {
     $params = $request->get_params();
     $params['status'] = 'publish';
     unset($params['author'], $params['post_status'], $params['stock_min']);
+    // El builder solo ordena por precio para administradores, pero orderby forma parte
+    // de la clave de caché: la petición de un admin dejaba cacheado ese orden y se
+    // servía a anónimos, revelando el orden de los precios ocultos.
+    if (isset($params['orderby']) && $params['orderby'] === 'price') {
+        unset($params['orderby']);
+    }
     // Aplanar arrays (?tipo[]=...) igual que el builder, para que la clave de caché coincida
     foreach ($params as $param_key => $param_value) {
         if (is_array($param_value)) {

@@ -85,14 +85,6 @@ function motorlan_register_publicaciones_rest_routes() {
     ]);
 
     // --- Taxonomies ---
-    // Endpoint de categorías DESACTIVADO (taxonomía categoria sustituida por tipo).
-    /*
-    register_rest_route($namespace, '/publicacion-categories', [
-        'methods'  => WP_REST_Server::READABLE,
-        'callback' => 'motorlan_get_publicacion_categories_callback',
-        'permission_callback' => '__return_true',
-    ]);
-    */
 
     register_rest_route($namespace, '/tipos', [
         'methods'  => WP_REST_Server::READABLE,

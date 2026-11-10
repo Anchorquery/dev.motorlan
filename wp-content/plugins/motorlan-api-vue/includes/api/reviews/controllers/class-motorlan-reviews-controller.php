@@ -234,6 +234,10 @@ if ( ! class_exists( 'Motorlan_Reviews_Controller' ) ) {
             // Query for IDs
             $query = new WP_Query( $args );
             $ids = $query->posts;
+            // fields=ids no precarga el meta: una consulta por compra en el bucle (N+1).
+            if ( $ids ) {
+                update_meta_cache( 'post', $ids );
+            }
 
             if ( empty( $ids ) ) {
                 // No ratings found?
@@ -292,6 +296,10 @@ if ( ! class_exists( 'Motorlan_Reviews_Controller' ) ) {
                     array( 'key' => $rating_key, 'compare' => 'EXISTS' ),
                 ),
             ) );
+
+            if ( $ids ) {
+                update_meta_cache( 'post', $ids ); // N+1: fields=ids no precarga el meta
+            }
 
             $total = 0;
             $count = 0;

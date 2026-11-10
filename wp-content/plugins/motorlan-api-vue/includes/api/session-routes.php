@@ -40,7 +40,11 @@ function motorlan_register_session_rest_routes()
     register_rest_route($namespace, '/logout', [
         'methods' => 'POST',
         'callback' => 'motorlan_logout_callback',
-        'permission_callback' => '__return_true',
+        // Antes __return_true: sin nonce el usuario es 0 y wp_logout() no destruía el
+        // token, pero wp_clear_auth_cookie() sí borraba las cookies, así que un
+        // formulario de otro sitio cerraba la sesión de la víctima (CSRF de logout).
+        // La SPA envía X-WP-Nonce y lo renueva si caducó (useApi.ts).
+        'permission_callback' => 'motorlan_is_user_authenticated',
     ]);
 
     // Register new user
@@ -217,7 +221,8 @@ function motorlan_login_callback(WP_REST_Request $request)
 
     $params = $request->get_json_params();
     $username = sanitize_text_field($params['username'] ?? '');
-    $password = $params['password'] ?? '';
+    // Un array daba TypeError dentro de wp_check_password()/strlen (500).
+    $password = is_string($params['password'] ?? null) ? $params['password'] : '';
     $remember = !empty($params['remember']);
 
     // Rate limiting: 5 attempts per 15 minutes
@@ -453,7 +458,8 @@ function motorlan_register_user_callback(WP_REST_Request $request)
     $params = $request->get_json_params();
     $username = sanitize_text_field($params['username'] ?? '');
     $email = sanitize_email($params['email'] ?? '');
-    $password = $params['password'] ?? '';
+    // Un array daba TypeError dentro de wp_check_password()/strlen (500).
+    $password = is_string($params['password'] ?? null) ? $params['password'] : '';
     $first_name = sanitize_text_field($params['first_name'] ?? '');
     $last_name = sanitize_text_field($params['last_name'] ?? '');
     $name = sanitize_text_field($params['name'] ?? '');
@@ -874,7 +880,8 @@ function motorlan_reset_password_callback(WP_REST_Request $request)
     $params = $request->get_json_params();
     $key = sanitize_text_field($params['key'] ?? '');
     $login = sanitize_text_field($params['login'] ?? '');
-    $password = $params['password'] ?? '';
+    // Un array daba TypeError dentro de wp_check_password()/strlen (500).
+    $password = is_string($params['password'] ?? null) ? $params['password'] : '';
 
     if (empty($key) || empty($login) || empty($password)) {
         return motorlan_auth_error_response('missing_fields', __('Faltan datos para restablecer la contraseña.', 'motorlan-api-vue'), 400);
