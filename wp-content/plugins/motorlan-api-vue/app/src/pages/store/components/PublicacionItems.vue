@@ -35,12 +35,20 @@ const { t } = useI18n()
           <VCardText class="pa-2 pa-sm-4 d-flex flex-column h-100">
             <div class="motor-image mb-4">
               <VImg
-                :src="(!Array.isArray(publicacion.imagen_destacada) && publicacion.imagen_destacada?.url) || '/placeholder.png'"
+                v-if="!Array.isArray(publicacion.imagen_destacada) && publicacion.imagen_destacada?.url"
+                :src="publicacion.imagen_destacada.url"
                 :alt="publicacion.title"
                 cover
                 aspect-ratio="1.25"
                 class="motor-image__media"
               />
+              <div
+                v-else
+                class="d-flex align-center justify-center bg-grey-lighten-4"
+                style="aspect-ratio: 1.25;"
+              >
+                <VIcon icon="tabler-photo" size="48" color="medium-emphasis" />
+              </div>
             </div>
 
             <div class="text-error text-premium-title text-subtitle-1 font-weight-bold mb-2 motor-card__title">

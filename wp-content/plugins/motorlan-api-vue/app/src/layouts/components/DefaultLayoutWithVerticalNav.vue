@@ -4,11 +4,8 @@ import navItems from '@/navigation/vertical'
 import { themeConfig } from '@themeConfig'
 // Components
 import NavBarNotifications from '@/layouts/components/NavBarNotifications.vue'
-import NavbarShortcuts from '@/layouts/components/NavbarShortcuts.vue'
 import NavbarThemeSwitcher from '@/layouts/components/NavbarThemeSwitcher.vue'
-import UserProfile from '@/layouts/components/UserProfile.vue'
 import NavBarI18n from '@core/components/I18n.vue'
-import SidebarNotifications from '@/layouts/components/SidebarNotifications.vue'
 import DashboardMobileNav from '@/layouts/components/DashboardMobileNav.vue'
 
 // @layouts plugin
@@ -27,7 +24,6 @@ const languages = computed(() => {
     <template #navbar-right>
       <NavBarNotifications />
       <NavbarThemeSwitcher />
-      <NavbarShortcuts />
       <NavBarI18n :languages="languages" />
     </template>
 

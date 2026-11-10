@@ -423,7 +423,6 @@ import { UnwrapRef } from 'vue'
 declare module 'vue' {
   interface GlobalComponents {}
   interface ComponentCustomProperties {
-    readonly COOKIE_MAX_AGE_1_YEAR: UnwrapRef<typeof import('./src/utils/constants')['COOKIE_MAX_AGE_1_YEAR']>
     readonly EffectScope: UnwrapRef<typeof import('vue')['EffectScope']>
     readonly MAX_GALLERY_IMAGES: UnwrapRef<typeof import('./src/composables/usePublicationForm')['MAX_GALLERY_IMAGES']>
     readonly MOTOR_SPEC_FIELDS: UnwrapRef<typeof import('./src/composables/usePublicationForm')['MOTOR_SPEC_FIELDS']>
@@ -612,7 +611,6 @@ declare module 'vue' {
     readonly useActiveElement: UnwrapRef<typeof import('@vueuse/core')['useActiveElement']>
     readonly useAnimate: UnwrapRef<typeof import('@vueuse/core')['useAnimate']>
     readonly useApi: UnwrapRef<typeof import('./src/composables/useApi')['useApi']>
-    readonly useAppLoading: UnwrapRef<typeof import('./src/composables/useAppLoading')['useAppLoading']>
     readonly useArrayDifference: UnwrapRef<typeof import('@vueuse/core')['useArrayDifference']>
     readonly useArrayEvery: UnwrapRef<typeof import('@vueuse/core')['useArrayEvery']>
     readonly useArrayFilter: UnwrapRef<typeof import('@vueuse/core')['useArrayFilter']>
@@ -739,11 +737,9 @@ declare module 'vue' {
     readonly usePublicApi: UnwrapRef<typeof import('./src/composables/usePublicApi')['usePublicApi']>
     readonly usePublicationForm: UnwrapRef<typeof import('./src/composables/usePublicationForm')['usePublicationForm']>
     readonly usePurchaseChat: UnwrapRef<typeof import('./src/composables/usePurchaseChat')['usePurchaseChat']>
-    readonly usePusherChannel: UnwrapRef<typeof import('./src/composables/usePusherChannel')['usePusherChannel']>
     readonly useRafFn: UnwrapRef<typeof import('@vueuse/core')['useRafFn']>
     readonly useRefHistory: UnwrapRef<typeof import('@vueuse/core')['useRefHistory']>
     readonly useResizeObserver: UnwrapRef<typeof import('@vueuse/core')['useResizeObserver']>
-    readonly useResponsiveLeftSidebar: UnwrapRef<typeof import('./src/@core/composable/useResponsiveSidebar')['useResponsiveLeftSidebar']>
     readonly useRound: UnwrapRef<typeof import('@vueuse/math')['useRound']>
     readonly useRoute: UnwrapRef<typeof import('vue-router/auto')['useRoute']>
     readonly useRouter: UnwrapRef<typeof import('vue-router/auto')['useRouter']>

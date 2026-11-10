@@ -15,25 +15,25 @@ const postTypes = computed(() => [
     title: t('select_publication_type.motor_ac_title'),
     slug: 'motor-ac',
     description: t('select_publication_type.motor_ac_description'),
-    icon: 'mdi-engine-outline',
+    icon: 'tabler-engine',
   },
   {
     title: t('select_publication_type.motor_dc_title'),
     slug: 'motor-dc',
     description: t('select_publication_type.motor_dc_description'),
-    icon: 'mdi-engine-outline',
+    icon: 'tabler-engine',
   },
   {
     title: t('select_publication_type.regulator_title'),
     slug: 'regulador',
     description: t('select_publication_type.regulator_description'),
-    icon: 'mdi-cog-outline',
+    icon: 'tabler-settings',
   },
   {
     title: t('select_publication_type.other_spare_part_title'),
     slug: 'otro-repuesto',
     description: t('select_publication_type.other_spare_part_description'),
-    icon: 'mdi-cogs',
+    icon: 'tabler-settings-cog',
   },
 ])
 

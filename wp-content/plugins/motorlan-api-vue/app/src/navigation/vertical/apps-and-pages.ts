@@ -21,15 +21,6 @@ export default [
     action: 'read',
     subject: 'all',
   },
-  /*
-    {
-      title: 'Preguntas',
-      icon: { icon: 'tabler-message-question' },
-      to: { name: 'dashboard-questions-list' },
-      action: 'read',
-      subject: 'all',
-    },
-  */
   {
     title: 'Interesados',
     icon: { icon: 'tabler-users' },

@@ -20,6 +20,8 @@ export default ({ mode }) => {
       // Docs: https://github.com/posva/unplugin-vue-router
       // ℹ️ This plugin should be placed before vue plugin
       VueRouter({
+        // Los componentes que viven junto a sus páginas (pages/**/components) no son rutas
+        exclude: ['src/pages/**/components/**'],
         getRouteName: routeNode => {
           // Convert pascal case to kebab case
           return getPascalCaseRouteName(routeNode)
@@ -53,15 +55,8 @@ export default ({ mode }) => {
 
       // Docs: https://github.com/antfu/unplugin-vue-components#unplugin-vue-components
       Components({
-        dirs: ['src/@core/components', 'src/views/demos', 'src/components'],
+        dirs: ['src/@core/components', 'src/components'],
         dts: true,
-        resolvers: [
-          componentName => {
-            // Auto import `VueApexCharts`
-            if (componentName === 'VueApexCharts')
-              return { name: 'default', from: 'vue3-apexcharts', as: 'VueApexCharts' }
-          },
-        ],
       }),
 
       // Docs: https://github.com/antfu/unplugin-auto-import#unplugin-auto-import
@@ -99,8 +94,6 @@ export default ({ mode }) => {
         '@configured-variables': fileURLToPath(new URL('./src/assets/styles/variables/_template.scss', import.meta.url)),
         // Producción: solo los iconos usados (build:icons); dev: set completo de tabler
         '@iconify-bundle': fileURLToPath(new URL(mode === 'production' ? './src/plugins/iconify/icons.used.css' : './src/plugins/iconify/icons.css', import.meta.url)),
-        '@db': fileURLToPath(new URL('./src/plugins/fake-api/handlers/', import.meta.url)),
-        '@api-utils': fileURLToPath(new URL('./src/plugins/fake-api/utils/', import.meta.url)),
       },
     },
     // Base en raíz: con inlineDynamicImports no hay chunks dinámicos, así el build
