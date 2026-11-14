@@ -1,0 +1,118 @@
+{% extends 'layout/public.twig' %}
+{#
+  Tienda: /marketplace-motorlan/ (TiendaController::listing).
+  Un único formulario GET envuelve búsqueda, filtros, orden y resultados. Sin JS recarga la
+  página; con HTMX pide la misma URL y cambia solo #ml-store-results (el servidor responde
+  el parcial y fija la URL con HX-Push-Url). Alpine (mlStore) solo lleva lo visual: bloqueo
+  modelo ↔ filtros, PAR oculto con motor AC, hoja de filtros en móvil y "Limpiar".
+#}
+{% block main %}
+{%- import 'components/icon.twig' as ui -%}
+{%- import 'components/field.twig' as fld -%}
+<div class="ml-store" x-data="mlStore({{ ml_json({ type: f.type, ptype: f.ptype, brand: f.brand ? f.brand ~ '' : '', state: f.state, par: f.par, pot: f.pot, vel: f.vel, q: f.q })|e('html_attr') }})">
+  <form id="ml-store-form" action="{{ store_url|e('html_attr') }}" method="get" role="search"
+        hx-get="{{ store_url|e('html_attr') }}" hx-target="#ml-store-results" hx-swap="outerHTML" hx-sync="this:replace"
+        hx-indicator="#ml-store-results"
+        hx-trigger="submit, change[!target.matches('[data-manual]')], input changed delay:500ms from:#ml-f-type">
+
+    {# ── Buscador (SearchBar.vue) ── #}
+    <section class="ml-store-hero">
+      <div class="ml-store-hero__text">
+        <div class="ml-eyebrow mb-1">{{ __('Tienda Motorlan', 'motorlan-portal')|e }}</div>
+        <h1 class="ml-store-hero__title">{{ __('Compra y venta de motores industriales', 'motorlan-portal')|e }}</h1>
+        <p class="text-sm text-medium-emphasis">{{ __('Motores, reguladores, repuestos y más.', 'motorlan-portal')|e }}</p>
+      </div>
+      <div class="ml-store-hero__controls">
+        <label for="ml-f-q" class="sr-only">{{ __('Buscar', 'motorlan-portal')|e }}</label>
+        <input id="ml-f-q" class="ml-input" type="search" name="q" value="{{ f.q|e('html_attr') }}" x-model="q" data-manual
+               placeholder="{{ __('Buscar...', 'motorlan-portal')|e('html_attr') }}" autocomplete="off" enterkeyhint="search">
+        <button type="submit" class="ml-btn ml-btn--filled ml-c-error">{{ __('BUSCAR', 'motorlan-portal')|e }}</button>
+        <a href="{{ store_url|e('html_attr') }}" class="ml-btn ml-btn--text ml-c-error" x-show="count"{% if not active %} x-cloak style="display:none"{% endif %} @click.prevent="reset()">{{ __('Limpiar', 'motorlan-portal')|e }}</a>
+      </div>
+    </section>
+
+    <div class="ml-store-layout">
+      {# ── Filtros: barra lateral en escritorio, hoja inferior en móvil ── #}
+      <div class="ml-filters-panel" :class="sheet && 'is-open'" id="ml-filters" role="region" aria-label="{{ __('Filtros', 'motorlan-portal')|e('html_attr') }}"
+           @keydown.escape.window="sheet = false">
+        <div class="ml-filters-panel__handle" aria-hidden="true"><span></span></div>
+        <div class="ml-filters-panel__bar">
+          <div class="flex items-center gap-2">
+            {{ ui.icon('filter', 'size-5 text-error') }}
+            <span class="font-semibold">{{ __('Filtros', 'motorlan-portal')|e }}</span>
+            <span class="ml-chip ml-chip--sm ml-c-error" x-show="count" x-cloak x-text="count"></span>
+          </div>
+          <div class="flex items-center gap-1">
+            <button type="button" class="ml-btn ml-btn--text ml-btn--sm ml-c-error" x-show="count" x-cloak @click="reset()">{{ __('Limpiar', 'motorlan-portal')|e }}</button>
+            <button type="button" class="ml-icon-btn" @click="sheet = false" aria-label="{{ __('Cerrar', 'motorlan-portal')|e('html_attr') }}">{{ ui.icon('x') }}</button>
+          </div>
+        </div>
+        <div class="ml-filters-panel__body">
+          <div class="ml-filters">
+            <div class="ml-filters__head">
+              <div class="flex items-center gap-2">
+                {{ ui.icon('filter', 'size-[18px] text-error') }}
+                <span class="ml-eyebrow">{{ __('Filtros', 'motorlan-portal')|e }}</span>
+              </div>
+              <a href="{{ store_url|e('html_attr') }}" class="ml-btn ml-btn--text ml-btn--sm ml-c-error" x-show="count" {% if not active %}x-cloak{% endif %} @click.prevent="reset()">{{ __('Limpiar', 'motorlan-portal')|e }}</a>
+            </div>
+
+            {{ fld.text({ name: 'type', id: 'ml-f-type', label: __('Modelo', 'motorlan-portal'), value: f.type, class: 'mb-5',
+                          attrs: 'x-model="type" data-manual autocomplete="off" :disabled="lockType"' ~ (f.type == '' and active - (f.q != '' ? 1 : 0) > 0 ? ' disabled' : '') }) }}
+
+            <fieldset class="ml-filters__types" :disabled="lockAdv"{% if f.type != '' %} disabled{% endif %}>
+              <legend class="ml-label mb-3">{{ __('Tipo de producto', 'motorlan-portal')|e }}</legend>
+              <div class="flex flex-col gap-3.5 ps-2">
+                {%- for value, label in options.ptype %}
+                {%- set rid = 'ml-f-ptype-' ~ (value ?: 'all') %}
+                <label class="ml-check" for="{{ rid|e('html_attr') }}">
+                  <input type="radio" id="{{ rid|e('html_attr') }}" name="ptype" value="{{ value|e('html_attr') }}"{% if f.ptype == value %} checked{% endif %} x-model="ptype" @change="onType()">
+                  <span>{{ label|e }}</span>
+                </label>
+                {%- endfor %}
+              </div>
+            </fieldset>
+
+            <fieldset class="ml-filters__grid" :disabled="lockAdv"{% if f.type != '' %} disabled{% endif %}>
+              {{ fld.select({ name: 'brand', id: 'ml-f-brand', label: __('Marcas', 'motorlan-portal'), options: brands, value: f.brand ?: '', attrs: 'x-model="brand"' }) }}
+              {{ fld.select({ name: 'pot', id: 'ml-f-pot', label: __('Potencia', 'motorlan-portal'), options: options.pot, value: f.pot, attrs: 'x-model="pot"' }) }}
+              <div x-show="ptype !== 'motor-ac'"{% if f.ptype == 'motor-ac' %} style="display:none"{% endif %}>
+                {{ fld.select({ name: 'par', id: 'ml-f-par', label: __('PAR (Nm)', 'motorlan-portal'), options: options.par, value: f.par, attrs: 'x-model="par" x-ref="par" :disabled="ptype === \'motor-ac\'"' }) }}
+              </div>
+              {{ fld.select({ name: 'vel', id: 'ml-f-vel', label: __('Velocidad', 'motorlan-portal'), options: options.vel, value: f.vel, attrs: 'x-model="vel"' }) }}
+              {{ fld.select({ name: 'state', id: 'ml-f-state', label: __('Estado', 'motorlan-portal'), options: options.state, value: f.state, attrs: 'x-model="state"' }) }}
+            </fieldset>
+
+            <p class="ml-filters__note">{{ __('IMPORTANTE: Motorlan no se hace responsable de aquellos equipos que se vendan directamente entre vendedor-comprador sin una revisión previa en su taller especializado.', 'motorlan-portal')|e }}</p>
+            <noscript><button type="submit" class="ml-btn ml-btn--filled ml-c-error ml-btn--block mt-4">{{ __('Aplicar filtros', 'motorlan-portal')|e }}</button></noscript>
+          </div>
+        </div>
+        <div class="ml-filters-panel__footer">
+          <button type="button" class="ml-btn ml-btn--filled ml-c-error ml-btn--block ml-btn--lg" @click="sheet = false">{{ ui.icon('check') }}<span>{{ __('Ver resultados', 'motorlan-portal')|e }}</span></button>
+        </div>
+      </div>
+      <div class="ml-scrim min-[960px]:!hidden" x-show="sheet" x-cloak x-transition.opacity @click="sheet = false" style="z-index:1099"></div>
+
+      {% include 'partials/tienda-results.twig' %}
+    </div>
+  </form>
+
+  {# ── Barra inferior en móvil (StoreMobileNav.vue) ── #}
+  <nav class="ml-dnav" aria-label="{{ __('Navegación tienda', 'motorlan-portal')|e('html_attr') }}">
+    <div class="ml-dnav__bar" style="grid-template-columns: repeat({{ mnav.logged ? 4 : 2 }}, 1fr)">
+      <button type="button" class="ml-dnav__item" @click="sheet = true" aria-controls="ml-filters" :aria-expanded="sheet">
+        <span class="ml-dnav__icon relative">{{ ui.icon('adjustments-alt') }}<span class="ml-badge" x-show="count" x-cloak x-text="count"></span></span>
+        <span class="ml-dnav__label">{{ __('Filtros', 'motorlan-portal')|e }}</span>
+      </button>
+      {%- if mnav.logged %}
+      <a class="ml-dnav__item" href="{{ mnav.dashboard|e('html_attr') }}"><span class="ml-dnav__icon">{{ ui.icon('layout-dashboard') }}</span><span class="ml-dnav__label">{{ __('Dashboard', 'motorlan-portal')|e }}</span></a>
+      <a class="ml-dnav__item" href="{{ mnav.publish|e('html_attr') }}" aria-label="{{ __('Nueva publicación', 'motorlan-portal')|e('html_attr') }}"><span class="ml-dnav__icon">{{ ui.icon('plus') }}</span><span class="ml-dnav__label">{{ __('Publicar', 'motorlan-portal')|e }}</span></a>
+      <a class="ml-dnav__item" href="{{ mnav.profile|e('html_attr') }}"><span class="ml-dnav__icon">{{ ui.icon('user') }}</span><span class="ml-dnav__label">{{ __('Perfil', 'motorlan-portal')|e }}</span></a>
+      {%- else %}
+      <a class="ml-dnav__item" href="{{ mnav.login|e('html_attr') }}"><span class="ml-dnav__icon">{{ ui.icon('login') }}</span><span class="ml-dnav__label">{{ __('Entrar', 'motorlan-portal')|e }}</span></a>
+      {%- endif %}
+    </div>
+    <div class="ml-dnav__safe"></div>
+  </nav>
+</div>
+{% endblock %}

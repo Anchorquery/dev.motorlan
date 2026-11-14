@@ -56,13 +56,13 @@ src/
   Controllers/             un controlador por sección (handle(string $param))
   Rest/                    endpoints propios motorlan-portal/v1 (parciales HTMX)
   Security/StaleNonce.php  nonce caducado en GET → respuesta de invitado + cabecera de aviso
-  Support/                 Api, View, Urls, Nav, Config, Assets, Icons
+  Support/                 Api, View, Urls, Nav, Config, Assets, Icons, Seo, SpaPages, Store, AuthMessages
   Admin/Settings.php       Ajustes › Motorlan Portal (casillas por sección)
 templates/template-portal.php   plantilla que carga template_include
 views/{layout,components,pages,partials}/
 assets/{js,css}/           fuentes del build
 scripts/                   build de iconos y public.css, vista previa sin WordPress
-tests/visual/              Playwright: referencias de la SPA y del catálogo
+tests/visual/              Playwright: referencias de la SPA, catálogo y pantallas migradas
 ```
 
 ## Coexistencia con la SPA
@@ -106,6 +106,37 @@ $err  = Api::last_error();
 Llama a los endpoints de `motorlan-api-vue` dentro del mismo proceso
 (`rest_do_request`): mismos permisos, sin HTTP, sin CORS. Devuelve arrays (no `stdClass`).
 
+## Secciones migradas
+
+| Sección | URLs (con la sección encendida) | Controlador |
+|---|---|---|
+| `tienda` | `/marketplace-motorlan/` (listado) y `/marketplace-motorlan/{slug}/` (ficha), en cada idioma de WPML | `TiendaController` |
+| `acceso` | `/mi-cuenta/{login,register,register-success,forgot-password,reset-password,verify-email}` (también bajo la página de la tienda, como la SPA) | `AccesoController` |
+
+Las URLs son las de la SPA (`Support\SpaPages`: slugs por idioma y rutas que siguen siendo de
+la SPA, p. ej. `/marketplace-motorlan/dashboard/…`). La consulta principal sigue siendo la
+página de WordPress, así que el tema pinta su cabecera y Rank Math/WPML funcionan igual.
+
+**Tienda.** Un formulario GET con búsqueda, filtros, orden y paginación. Con HTMX pide la
+misma URL y el servidor responde solo `partials/tienda-results.twig` (`Vary: HX-Request`,
+`HX-Push-Url` con la URL normalizada); sin JS recarga la página. La URL usa los mismos
+parámetros que la SPA (`tipo`, `tech`, `marca`…), así que los enlaces viejos siguen valiendo.
+SEO en servidor: canonical, `noindex,follow` con filtros u orden, `prev/next` y JSON-LD
+`ItemList` (`Support\Seo::store_listing`). En la ficha se reutiliza el SEO de la SPA
+(`motorlan_store_seo_setup`: título, canonical, OG, hreflang, JSON-LD `Product`, 301 de
+slugs antiguos); `Seo::product()` solo actúa si esa función no existe. Favoritos por
+`POST motorlan-portal/v1/tienda/favorito/{id}`; chat de la ficha en `assets/js/product-chat.js`
+(mismas claves de `localStorage` que la SPA para el invitado).
+
+**Acceso.** Cada pantalla es un formulario que hace POST a su propia URL (nonce
+`motorlan_portal_auth`); el controlador llama a `motorlan/v1/{login,register,…}` con
+`Support\Api` y responde el parcial `partials/acceso/{pantalla}.twig` (HTMX) o
+`HX-Redirect`/303 si hay que cambiar de página. El login emite la cookie de WordPress
+(`wp_signon` dentro del endpoint). `?to=` se respeta solo si es del mismo sitio. Los enlaces
+de los emails llevan el token en el fragmento (`#token=…`): `mlAuthToken` (`assets/js/auth.js`)
+lo copia al formulario. Con la sección encendida, `Urls::login()` apunta a esta pantalla.
+El registro necesita JS (asistente de 3 pasos, como la SPA).
+
 ## Migrar una pantalla
 
 1. **Controlador** en `src/Controllers/` que extienda `Controller` y renderice una página:
@@ -143,11 +174,15 @@ Llama a los endpoints de `motorlan-api-vue` dentro del mismo proceso
 8. Compara con la SPA (`tests/visual`), enciende la sección en local con la constante y,
    después del despliegue, en *Ajustes › Motorlan Portal*.
 
-## Probar sin tocar la base de datos
+## Probar en local
 
-El WordPress local usa la base de datos **de producción**: activar el plugin escribe
-`active_plugins` y, con alguna sección encendida, `rewrite_rules` y
-`motorlan_portal_rewrite_sig`. Para revisar vistas sin WordPress:
+El WordPress local usa la base de datos local `motorlandev` (variables `SetEnv` en el
+vhost de Laragon). **Ojo:** el PHP de la línea de comandos no ve esas variables y caería en
+la configuración por defecto: antes de escribir nada por CLI comprueba que
+`DB_NAME === 'motorlandev'`. Para encender secciones sin tocar la BD, usa la constante
+`MOTORLAN_PORTAL_SECTIONS`.
+
+Para revisar vistas sin WordPress:
 
 ```bash
 php -S 127.0.0.1:8765 scripts/preview-ui-kit.php
@@ -166,7 +201,12 @@ npm run test:visual:update   # regenera referencias
 `tests/visual/spa-reference.spec.js` captura la SPA actual (tienda, ficha, login y, con
 `ML_E2E_USER`/`ML_E2E_PASS`, el panel) en escritorio y móvil, **solo lectura**
 (`ML_E2E_BASE`, por defecto producción). `tests/visual/ui-kit.spec.js` captura el catálogo
-desde la vista previa (`ML_PREVIEW_BASE`). Usa el Chrome instalado (`ML_E2E_CHANNEL`).
+desde la vista previa (`ML_PREVIEW_BASE`). `tests/visual/portal-publico.spec.js` recorre las
+pantallas migradas en un sitio con las secciones encendidas (`ML_PORTAL_BASE`, por defecto
+`https://dev.motorlan.test`): tienda (SEO + filtro HTMX), ficha (JSON-LD + chat), login con
+credenciales falsas, pasos del registro y enlaces sin token; guarda `portal-*.png` junto a
+las capturas de la SPA (`tienda.png` ↔ `portal-tienda.png`…). Usa el Chrome instalado
+(`ML_E2E_CHANNEL`).
 
 ## Despliegue
 

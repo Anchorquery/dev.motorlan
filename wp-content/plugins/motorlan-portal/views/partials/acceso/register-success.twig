@@ -1,0 +1,42 @@
+{#
+  Registro completado (register-success.vue). El email (y el enlace de verificación en
+  desarrollo) viene de la cookie ml_portal_reg que deja el registro. "Reenviar enlace" ->
+  motorlan/v1/resend-verification.
+#}
+{%- import 'components/field.twig' as fld -%}
+{%- import 'components/alert.twig' as al -%}
+{%- import 'components/icon.twig' as ui -%}
+{%- import 'partials/acceso/_ui.twig' as auth -%}
+<div id="ml-auth-body" class="ml-auth-card text-center" x-data="{ resend: {{ state.show_resend|default(false) ? 'true' : 'false' }} }">
+  <span class="ml-auth-card__icon">{{ ui.icon('confetti') }}</span>
+  {{ auth.eyebrow() }}
+  <h1 class="ml-auth-card__title mb-2">{{ __('¡Felicidades por registrarte!', 'motorlan-portal')|e }}</h1>
+  <p class="ml-auth-card__subtitle">{{ __('Tu cuenta ha sido creada con éxito, pero aún falta un último paso para activarla.', 'motorlan-portal')|e }}</p>
+
+  {{ al.alert({ color: 'primary', icon: 'mail', title: __('Verifica tu correo electrónico', 'motorlan-portal'),
+                text: __('Hemos enviado un enlace de activación a tu bandeja de entrada. Por favor, revísalo y haz clic en el botón para confirmar tu cuenta.', 'motorlan-portal'), class: 'mb-4 text-start' }) }}
+  <p class="mb-4 text-sm text-medium-emphasis">{{ __('Si no recibes el correo en unos minutos, por favor revisa tu carpeta de spam o correo no deseado.', 'motorlan-portal')|e }}</p>
+
+  {%- if state.dev_url|default(false) %}
+  <div class="ml-alert ml-c-warning mb-4 text-start" role="status">
+    <span class="ml-alert__icon">{{ ui.icon('bug') }}</span>
+    <div class="ml-alert__body"><div class="ml-alert__title">DEV: enlace de verificación</div>
+      <a href="{{ state.dev_url|e('html_attr') }}" class="break-all">{{ state.dev_url|e }}</a></div>
+  </div>
+  {%- endif %}
+
+  {%- if state.notice|default(false) %}{{ al.alert({ color: 'success', text: state.notice, class: 'mb-4 text-start' }) }}{% endif %}
+  {%- if state.error|default(false) %}{{ al.alert({ color: 'error', icon: 'alert-triangle', text: state.error, class: 'mb-4 text-start' }) }}{% endif %}
+
+  <form {{ auth.form_attrs(action) }} class="mb-6 flex flex-col gap-4 text-start" x-show="resend" {% if not state.show_resend|default(false) %}x-cloak{% endif %}>
+    {{ auth.hidden(nonce) }}
+    {{ fld.text({ name: 'email', type: 'email', label: __('Correo electrónico', 'motorlan-portal'), value: state.values.email|default(''), required: true, autocomplete: 'email' }) }}
+    <div class="grid grid-cols-2 gap-2">
+      <button type="button" class="ml-btn ml-btn--outlined ml-c-primary ml-btn--block" @click="resend = false">{{ __('Cancelar', 'motorlan-portal')|e }}</button>
+      <button type="submit" class="ml-btn ml-btn--filled ml-c-primary ml-btn--block ml-auth-submit">{{ __('Reenviar enlace', 'motorlan-portal')|e }}</button>
+    </div>
+  </form>
+  <button type="button" class="ml-btn ml-btn--text ml-c-primary mb-4" x-show="!resend" @click="resend = true">{{ __('¿No recibiste el correo? Reenviar enlace', 'motorlan-portal')|e }}</button>
+
+  <a href="{{ links.login|e('html_attr') }}" class="ml-btn ml-btn--filled ml-c-primary ml-btn--block ml-btn--lg font-bold">{{ __('Volver al login', 'motorlan-portal')|e }}</a>
+</div>

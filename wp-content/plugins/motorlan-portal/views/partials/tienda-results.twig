@@ -1,0 +1,54 @@
+{#
+  Resultados de la tienda: lo que HTMX sustituye al filtrar, buscar, ordenar o paginar.
+  Va dentro de #ml-store-form (el orden es un campo más del formulario).
+  Variables: f · result {items, total, pages, page, ok} · active · page_pattern · store_url
+#}
+{%- import 'components/icon.twig' as ui -%}
+{%- import 'components/pagination.twig' as pg -%}
+{%- import 'components/empty.twig' as em -%}
+{%- import 'components/alert.twig' as al -%}
+<section id="ml-store-results" class="ml-store-results" aria-live="polite" aria-busy="false" data-active="{{ active }}">
+  <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+    <div>
+      <h2 class="font-bold text-primary">{{ __('Resultados', 'motorlan-portal')|e }}</h2>
+      <p class="text-sm text-medium-emphasis">
+        {%- if result.total -%}
+          {{ _n('%s publicación encontrada', '%s publicaciones encontradas', result.total, 'motorlan-portal')|format(result.total|number_format(0, ',', '.'))|e }}
+        {%- else -%}
+          {{ __('Sin resultados', 'motorlan-portal')|e }}
+        {%- endif -%}
+      </p>
+    </div>
+    <div class="flex flex-wrap items-center gap-3">
+      {%- if active %}
+      <span class="ml-chip ml-chip--sm ml-c-error">{{ _n('%s filtro activo', '%s filtros activos', active, 'motorlan-portal')|format(active)|e }}</span>
+      {%- endif %}
+      <label class="flex items-center gap-2 text-sm text-medium-emphasis">
+        <span>{{ __('Ordenar', 'motorlan-portal')|e }}</span>
+        <select name="sort" class="ml-input !h-9 !w-auto !py-0 !text-sm" aria-label="{{ __('Ordenar resultados', 'motorlan-portal')|e('html_attr') }}">
+          {%- for value, label in options_sort|default({ recent: __('Más recientes', 'motorlan-portal'), oldest: __('Más antiguos', 'motorlan-portal'), title: __('Nombre (A-Z)', 'motorlan-portal') }) %}
+          <option value="{{ value|e('html_attr') }}"{% if f.sort == value %} selected{% endif %}>{{ label|e }}</option>
+          {%- endfor %}
+        </select>
+      </label>
+    </div>
+  </div>
+
+  {%- if not result.ok %}
+    {{ al.alert({ color: 'error', text: __('No se han podido cargar las publicaciones. Inténtalo de nuevo en unos minutos.', 'motorlan-portal') }) }}
+  {%- elseif result.items %}
+  <div class="ml-pgrid">
+    {%- for item in result.items %}
+      {% include 'components/product-card.twig' with { item: item } only %}
+    {%- endfor %}
+  </div>
+  {%- else %}
+    {{ em.empty({ icon: 'search', title: __('No se encontraron publicaciones', 'motorlan-portal'), text: __('Intenta ajustar los filtros de búsqueda.', 'motorlan-portal') }) }}
+  {%- endif %}
+
+  {%- if result.pages > 1 %}
+  <div class="mt-8 flex justify-center">
+    {{ pg.pagination({ page: f.page, pages: result.pages, url: page_pattern, hx: { target: '#ml-store-results', swap: 'outerHTML show:#ml-store-results:top' } }) }}
+  </div>
+  {%- endif %}
+</section>

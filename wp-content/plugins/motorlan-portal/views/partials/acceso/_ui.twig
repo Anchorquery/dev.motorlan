@@ -1,0 +1,73 @@
+{#
+  Piezas comunes de las pantallas de acceso.
+    {% import 'partials/acceso/_ui.twig' as auth %}
+    {{ auth.form_attrs(action) }}           atributos del <form> (POST normal + hx-post al mismo sitio)
+    {{ auth.hidden(nonce) }}                 nonce del formulario
+    {{ auth.password({ name, id, label, value, error, autocomplete, model, autofocus }) }}
+    {{ auth.eyebrow() }}                     antetítulo rojo de marca
+    {{ auth.back(url, label) }}              enlace "‹ Volver al login"
+    {{ auth.requirements('password') }}      lista de requisitos de contraseña (Alpine: mlPassword)
+#}
+
+{% macro form_attrs(action, auto = false) -%}
+method="post" action="{{ action|e('html_attr') }}" hx-post="{{ action|e('html_attr') }}" hx-target="#ml-auth-body" hx-swap="outerHTML"{% if not auto %} hx-disabled-elt="find button[type='submit']"{% endif %}
+{%- endmacro %}
+
+{% macro hidden(nonce) -%}
+<input type="hidden" name="_mlnonce" value="{{ nonce|e('html_attr') }}">
+{%- endmacro %}
+
+{% macro password(o) -%}
+{%- import 'components/icon.twig' as ui -%}
+{%- set id = o.id|default(o.name) -%}
+<div class="ml-field" x-data="{ show: false }">
+  <label class="ml-label" for="{{ id|e('html_attr') }}">{{ o.label|e }}</label>
+  <div class="relative">
+    <input id="{{ id|e('html_attr') }}" name="{{ o.name|e('html_attr') }}" class="ml-input pe-11" type="password" :type="show ? 'text' : 'password'"
+           placeholder="············" autocomplete="{{ o.autocomplete|default('current-password')|e('html_attr') }}"
+           {%- if o.value|default('') != '' %} value="{{ o.value|e('html_attr') }}"{% endif %}
+           {%- if o.required|default(true) %} required{% endif %}
+           {%- if o.autofocus|default(false) %} autofocus{% endif %}
+           {%- if o.model|default(false) %} x-model="{{ o.model|e('html_attr') }}"{% endif %}
+           {%- if o.error|default(false) %} aria-invalid="true" aria-describedby="{{ id|e('html_attr') }}-hint"{% endif %}>
+    <button type="button" class="ml-icon-btn absolute end-1 top-1/2 !size-8 -translate-y-1/2" @click="show = !show" :aria-pressed="show.toString()" aria-label="{{ __('Mostrar contraseña', 'motorlan-portal')|e('html_attr') }}">
+      <span x-show="!show">{{ ui.icon('eye', 'size-5') }}</span><span x-show="show" x-cloak>{{ ui.icon('eye-off', 'size-5') }}</span>
+    </button>
+  </div>
+  {%- if o.error|default(false) %}<span class="ml-hint ml-hint--error" id="{{ id|e('html_attr') }}-hint">{{ o.error|e }}</span>{% endif %}
+  {%- if o.client_error|default(false) %}<span class="ml-hint ml-hint--error" x-show="{{ o.client_error|e('html_attr') }}" x-cloak x-text="{{ o.client_error|e('html_attr') }}"></span>{% endif %}
+</div>
+{%- endmacro %}
+
+{% macro eyebrow() -%}
+<span class="ml-eyebrow">{{ __('Mi cuenta · Motorlan', 'motorlan-portal')|e }}</span>
+{%- endmacro %}
+
+{% macro back(url, label) -%}
+{%- import 'components/icon.twig' as ui -%}
+<a href="{{ url|e('html_attr') }}" class="ml-auth-link flex items-center justify-center gap-1">{{ ui.icon('chevron-left', 'size-5') }}<span>{{ label|e }}</span></a>
+{%- endmacro %}
+
+{% macro requirements() -%}
+{%- import 'components/icon.twig' as ui -%}
+{%- set rules = [
+  ['length', __('Mínimo 8 caracteres', 'motorlan-portal')],
+  ['upper', __('Una letra mayúscula (A-Z)', 'motorlan-portal')],
+  ['lower', __('Una letra minúscula (a-z)', 'motorlan-portal')],
+  ['digit', __('Un número (0-9)', 'motorlan-portal')],
+  ['special', __('Un carácter especial (!@#$%…)', 'motorlan-portal')],
+] -%}
+<div class="ml-pw-rules">
+  <div class="ml-pw-meter" aria-hidden="true"><span :style="'width:' + (score * 20) + '%'" :class="'ml-c-' + color"></span></div>
+  <p class="mb-2 text-xs font-medium text-medium-emphasis">{{ __('La contraseña debe tener:', 'motorlan-portal')|e }}</p>
+  <ul class="flex flex-col gap-1">
+    {%- for r in rules %}
+    <li class="flex items-center gap-2 text-xs" :class="checks.{{ r[0] }} ? 'text-success' : 'text-medium-emphasis'">
+      <span x-show="checks.{{ r[0] }}" x-cloak>{{ ui.icon('circle-check', 'size-4') }}</span><span x-show="!checks.{{ r[0] }}">{{ ui.icon('circle', 'size-4') }}</span>
+      <span>{{ r[1]|e }}</span>
+    </li>
+    {%- endfor %}
+  </ul>
+  <p class="mt-2 text-xs text-medium-emphasis">{{ __('No uses tu nombre ni tu email en la contraseña.', 'motorlan-portal')|e }}</p>
+</div>
+{%- endmacro %}

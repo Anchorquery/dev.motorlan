@@ -581,7 +581,9 @@ function motorlan_get_store_publicacion_seo($post) {
     }
 
     $description_html = isset($acf['descripcion']) && is_string($acf['descripcion']) ? $acf['descripcion'] : '';
-    $description_text = trim(preg_replace('/\s+/', ' ', wp_strip_all_tags($description_html)));
+    // Espacio antes de cada etiqueta de bloque: sin él, "<li>Probado</li><li>Entrega</li>" quedaba
+    // "ProbadoEntrega" en la meta description y en el JSON-LD.
+    $description_text = trim(preg_replace('/\s+/', ' ', wp_strip_all_tags(preg_replace('#<(/?(?:p|div|li|ul|ol|br|h[1-6]|tr|td|th|table|blockquote)\b)#i', ' <$1', $description_html))));
     if ( '' === $description_text ) {
         $parts = [];
         foreach ( $specs as $spec ) {

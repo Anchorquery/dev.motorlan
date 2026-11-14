@@ -1,0 +1,104 @@
+{#
+  Registro en 3 pasos (register.vue): datos personales, credenciales y confirmación.
+  Un solo formulario: Alpine (mlAuth) muestra un paso cada vez y valida antes de avanzar
+  (necesita JS, como la SPA). POST -> motorlan/v1/register; si la API señala un campo
+  (`field`), el servidor vuelve al paso de ese campo con el error debajo.
+#}
+{%- import 'components/field.twig' as fld -%}
+{%- import 'components/alert.twig' as al -%}
+{%- import 'components/stepper.twig' as st -%}
+{%- import 'components/icon.twig' as ui -%}
+{%- import 'partials/acceso/_ui.twig' as auth -%}
+{%- set v = state.values -%}
+{%- set e = state.errors -%}
+{%- set cfg = {
+  step: (state.step|default(1)) - 1,
+  first_name: v.first_name|default(''), last_name: v.last_name|default(''), email: v.email|default(''),
+  i18n: {
+    required: __('Este campo es obligatorio', 'motorlan-portal'),
+    email: __('El email no es válido.', 'motorlan-portal'),
+    mismatch: __('Las contraseñas no coinciden.', 'motorlan-portal'),
+    rules: __('La contraseña debe tener:', 'motorlan-portal'),
+    personal: __('La contraseña no debe contener tu nombre ni tu email.', 'motorlan-portal'),
+    terms: __('Debes aceptar la política de privacidad y los términos.', 'motorlan-portal'),
+  },
+} -%}
+<div id="ml-auth-body" class="ml-auth-card ml-auth-card--wide" x-data="mlAuth({{ ml_json(cfg)|e('html_attr') }})">
+  {{ auth.eyebrow() }}
+  <h1 class="ml-auth-card__title">{{ __('Crea tu cuenta', 'motorlan-portal')|e }}</h1>
+  <p class="ml-auth-card__subtitle">{{ __('Únete a la plataforma líder en gestión de motores industriales.', 'motorlan-portal')|e }}</p>
+
+  {{ st.stepper([
+    { title: __('Datos personales', 'motorlan-portal'), icon: 'user' },
+    { title: __('Credenciales', 'motorlan-portal'), icon: 'lock' },
+    { title: __('Confirmación', 'motorlan-portal'), icon: 'circle-check' },
+  ], { class: 'mb-6' }) }}
+
+  <div class="ml-alert ml-c-error mb-4" role="alert" x-show="clientError" x-cloak>
+    <span class="ml-alert__icon">{{ ui.icon('alert-triangle') }}</span><div class="ml-alert__body"><div class="ml-alert__text" x-text="clientError"></div></div>
+  </div>
+  {%- if state.error|default(false) %}
+  <div x-show="!clientError">{{ al.alert({ color: 'error', icon: 'alert-triangle', text: state.error, class: 'mb-4' }) }}</div>
+  {%- endif %}
+
+  <form {{ auth.form_attrs(action) }} novalidate @submit="guard($event)" @htmx:confirm="guard($event)">
+    {{ auth.hidden(nonce) }}
+
+    {# ── Paso 1: datos personales ── #}
+    <fieldset class="ml-auth-step" x-show="step === 0" {% if (state.step|default(1)) != 1 %}x-cloak{% endif %}>
+      <legend class="sr-only">{{ __('Datos personales', 'motorlan-portal')|e }}</legend>
+      <div class="grid gap-5 md:grid-cols-2">
+        {{ fld.text({ name: 'first_name', label: __('Nombre', 'motorlan-portal'), placeholder: __('Juan', 'motorlan-portal'), value: v.first_name|default(''),
+                      required: true, autocomplete: 'given-name', error: e.first_name|default(false), attrs: 'x-model="first_name" x-ref="first_name"' }) }}
+        {{ fld.text({ name: 'last_name', label: __('Apellido', 'motorlan-portal'), placeholder: __('García', 'motorlan-portal'), value: v.last_name|default(''),
+                      required: true, autocomplete: 'family-name', error: e.last_name|default(false), attrs: 'x-model="last_name"' }) }}
+        <div class="md:col-span-2">
+          {{ fld.text({ name: 'email', type: 'email', label: __('Correo electrónico', 'motorlan-portal'), placeholder: 'johndoe@email.com', value: v.email|default(''),
+                        required: true, autocomplete: 'email', error: e.email|default(false), attrs: 'x-model="email"' }) }}
+        </div>
+      </div>
+      <p class="ml-hint ml-hint--error mt-2" x-show="fieldError" x-cloak x-text="fieldError"></p>
+      <button type="button" class="ml-btn ml-btn--filled ml-c-primary ml-btn--block ml-btn--lg mt-6 font-bold" @click="next()">{{ __('Continuar', 'motorlan-portal')|e }}</button>
+    </fieldset>
+
+    {# ── Paso 2: credenciales ── #}
+    <fieldset class="ml-auth-step" x-show="step === 1" {% if (state.step|default(1)) != 2 %}x-cloak{% endif %}>
+      <legend class="sr-only">{{ __('Credenciales', 'motorlan-portal')|e }}</legend>
+      <div class="flex flex-col gap-5">
+        <div>
+          {{ auth.password({ name: 'password', label: __('Contraseña', 'motorlan-portal'), autocomplete: 'new-password', model: 'password', error: e.password|default(false), client_error: 'passwordError' }) }}
+          <div class="mt-3">{{ auth.requirements() }}</div>
+        </div>
+        {{ auth.password({ name: 'password_confirm', id: 'password_confirm', label: __('Confirmar contraseña', 'motorlan-portal'), autocomplete: 'new-password', model: 'confirm', client_error: 'confirmError' }) }}
+      </div>
+      <div class="mt-6 grid grid-cols-2 gap-4">
+        <button type="button" class="ml-btn ml-btn--outlined ml-c-primary ml-btn--block ml-btn--lg" @click="back()">{{ __('Atrás', 'motorlan-portal')|e }}</button>
+        <button type="button" class="ml-btn ml-btn--filled ml-c-primary ml-btn--block ml-btn--lg font-bold" :disabled="!valid || !match" @click="next()">{{ __('Continuar', 'motorlan-portal')|e }}</button>
+      </div>
+    </fieldset>
+
+    {# ── Paso 3: confirmación ── #}
+    <fieldset class="ml-auth-step" x-show="step === 2" {% if (state.step|default(1)) != 3 %}x-cloak{% endif %}>
+      <legend class="sr-only">{{ __('Confirmación', 'motorlan-portal')|e }}</legend>
+      {{ al.alert({ color: 'primary', text: __('Revisa que los datos sean correctos antes de crear tu cuenta. Recibirás un email para activarla.', 'motorlan-portal'), class: 'mb-4' }) }}
+      <dl class="ml-auth-summary">
+        <div><span class="ml-auth-summary__icon">{{ ui.icon('user', 'size-5') }}</span><div><dt>{{ __('Nombre', 'motorlan-portal')|e }}</dt><dd x-text="(first_name + ' ' + last_name).trim()"></dd></div></div>
+        <div><span class="ml-auth-summary__icon">{{ ui.icon('mail', 'size-5') }}</span><div><dt>{{ __('Correo electrónico', 'motorlan-portal')|e }}</dt><dd x-text="email"></dd></div></div>
+      </dl>
+      <label class="ml-check mb-6 mt-4 text-sm" for="ml-privacy">
+        <input id="ml-privacy" type="checkbox" name="privacy" value="1" x-model="privacy" required>
+        <span><span class="text-medium-emphasis">{{ __('Acepto la', 'motorlan-portal')|e }}</span>
+          <a href="{{ links.privacy|e('html_attr') }}" target="_blank" rel="noopener" class="ml-auth-link font-medium">{{ __('política de privacidad y términos', 'motorlan-portal')|e }}</a></span>
+      </label>
+      <div class="grid grid-cols-2 gap-4">
+        <button type="button" class="ml-btn ml-btn--outlined ml-c-primary ml-btn--block ml-btn--lg" @click="back()">{{ __('Atrás', 'motorlan-portal')|e }}</button>
+        <button type="submit" class="ml-btn ml-btn--filled ml-c-primary ml-btn--block ml-btn--lg font-bold ml-auth-submit" :disabled="!privacy">{{ __('Crear cuenta', 'motorlan-portal')|e }}</button>
+      </div>
+    </fieldset>
+
+    <p class="pt-6 text-center text-sm">
+      <span class="text-medium-emphasis">{{ __('¿Ya tienes una cuenta?', 'motorlan-portal')|e }}</span>
+      <a href="{{ links.login|e('html_attr') }}" class="ml-auth-link ms-1 font-semibold">{{ __('Inicia sesión en su lugar', 'motorlan-portal')|e }}</a>
+    </p>
+  </form>
+</div>

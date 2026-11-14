@@ -11,7 +11,8 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
 <link rel="stylesheet" href="{{ assets.public_css|e('html_attr') }}">
 <script>window.motorlanPortal = {{ ml_json(config) }};</script>
-<div id="ml-portal" class="ml-public">
+{# #content del tema es flex (GeneratePress): sin esto el portal encoge al ancho de su contenido. #}
+<div id="ml-portal" class="ml-public" style="flex: 1 1 auto; width: 100%; min-width: 0">
   <div class="mx-auto w-full max-w-[1440px] px-4 py-6 sm:px-6 sm:py-8">
     {% block main %}{% endblock %}
   </div>

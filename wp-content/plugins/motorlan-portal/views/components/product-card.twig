@@ -1,0 +1,18 @@
+{#
+  Tarjeta de publicación de la tienda (PublicacionItems.vue): imagen 1.25, título en rojo,
+  botón "Ver detalle". Toda la tarjeta es el enlace.
+    {% include 'components/product-card.twig' with { item: card } only %}
+  item: Support\Store::card() {id, title, slug, url, image} · label (texto del botón)
+#}
+{%- import 'components/icon.twig' as ui -%}
+<a class="ml-pcard" href="{{ item.url|e('html_attr') }}">
+  <div class="ml-pcard__media">
+    {%- if item.image %}
+    <img src="{{ item.image|e('html_attr') }}" alt="{{ item.title|e('html_attr') }}" loading="lazy" decoding="async" width="768" height="614">
+    {%- else %}
+    {{ ui.icon('photo', 'size-12') }}
+    {%- endif %}
+  </div>
+  <h3 class="ml-pcard__title">{{ item.title|e }}</h3>
+  <div class="ml-pcard__foot"><span class="ml-pcard__btn">{{ label|default(__('Ver detalle', 'motorlan-portal'))|e }}</span></div>
+</a>

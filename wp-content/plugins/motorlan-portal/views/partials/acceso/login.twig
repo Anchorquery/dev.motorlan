@@ -1,0 +1,28 @@
+{# Login (login.vue). POST -> motorlan/v1/login (cookie de WordPress). Variables: ver pages/acceso.twig #}
+{%- import 'components/field.twig' as fld -%}
+{%- import 'components/alert.twig' as al -%}
+{%- import 'partials/acceso/_ui.twig' as auth -%}
+<div id="ml-auth-body" class="ml-auth-card">
+  {{ auth.eyebrow() }}
+  <h1 class="ml-auth-card__title">{{ __('Acceso a Motorlan', 'motorlan-portal')|e }}</h1>
+  <p class="ml-auth-card__subtitle">{{ __('Inicia sesión para gestionar tus motores y repuestos.', 'motorlan-portal')|e }}</p>
+
+  {%- if state.error|default(false) %}
+  {{ al.alert({ color: 'error', icon: 'alert-triangle', text: state.error, class: 'mb-6' }) }}
+  {%- endif %}
+
+  <form {{ auth.form_attrs(action) }} class="flex flex-col gap-6">
+    {{ auth.hidden(nonce) }}
+    {{ fld.text({ name: 'username', type: 'email', label: __('Correo electrónico', 'motorlan-portal'), placeholder: 'johndoe@email.com',
+                  value: state.values.username|default(''), required: true, autocomplete: 'username', attrs: 'autofocus' }) }}
+    <div>
+      {{ auth.password({ name: 'password', label: __('Contraseña', 'motorlan-portal'), autocomplete: 'current-password' }) }}
+      <a href="{{ links.forgot|e('html_attr') }}" class="ml-auth-link mt-2 inline-block text-sm">{{ __('¿Olvidaste tu contraseña?', 'motorlan-portal')|e }}</a>
+    </div>
+    <button type="submit" class="ml-btn ml-btn--filled ml-c-primary ml-btn--block ml-btn--lg ml-auth-submit">{{ __('Iniciar sesión', 'motorlan-portal')|e }}</button>
+    <p class="text-center text-sm">
+      <span class="text-medium-emphasis">{{ __('¿Nuevo en nuestra plataforma?', 'motorlan-portal')|e }}</span>
+      <a href="{{ links.register|e('html_attr') }}" class="ml-auth-link ms-1 font-semibold">{{ __('Crear una cuenta', 'motorlan-portal')|e }}</a>
+    </p>
+  </form>
+</div>

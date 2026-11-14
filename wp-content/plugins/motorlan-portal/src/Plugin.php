@@ -37,6 +37,10 @@ class Plugin
         (new Takeover())->register();
         (new Security\StaleNonce())->register();
         (new Rest\UiKitApi())->register();
+        (new Rest\TiendaApi())->register();
+        if (Sections::is_enabled('acceso')) {
+            Controllers\AccesoController::boot();
+        }
 
         add_filter('template_include', [self::class, 'template_include'], 1000);
         add_filter('redirect_canonical', function ($redirect) {

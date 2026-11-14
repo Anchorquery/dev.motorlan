@@ -1,0 +1,10 @@
+{% extends 'layout/public.twig' %}
+{# Ficha inexistente o no visible (EmptyState.vue): 404 real + noindex, dentro del tema. #}
+{% block main %}
+{%- import 'components/empty.twig' as em -%}
+<div class="ml-card ml-card--lg mx-auto max-w-2xl">
+  {{ em.empty({ icon: 'mood-empty', title: __('Publicación no encontrada', 'motorlan-portal'),
+                text: __('Lo sentimos, no hemos podido encontrar la publicación que buscas. Es posible que el enlace sea incorrecto o que la publicación haya sido eliminada.', 'motorlan-portal'),
+                action: { label: __('Ir a la tienda', 'motorlan-portal'), href: store_url, color: 'error', icon: 'building-store' } }) }}
+</div>
+{% endblock %}
