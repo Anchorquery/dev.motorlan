@@ -1,0 +1,86 @@
+{#
+  Tabla de Mis compras (filtros + filas + paginación). La pintan pages/comprador/compras.twig
+  y CompradorController en las peticiones HTMX. En móvil (< 960 px) cada fila es una
+  tarjeta como la de la SPA: producto, tres datos en columnas y botones a lo ancho.
+  Variables: table · urls.store
+#}
+{% embed 'components/table.twig' with {
+  id: 'ml-compras',
+  url: table.url,
+  columns: [
+    { label: __('Publicación', 'motorlan-portal') },
+    { label: __('Fecha de compra', 'motorlan-portal') },
+    { label: __('Tipo', 'motorlan-portal') },
+    { label: __('Estado', 'motorlan-portal') },
+    { label: __('Acciones', 'motorlan-portal'), class: 'text-end' },
+  ],
+  page: table.page, pages: table.pages, total: table.total,
+  filters_query: table.query,
+} %}
+  {% block filters %}
+    {%- import 'components/field.twig' as f -%}
+    {{ f.text({ name: 'q', id: 'ml-compras-q', type: 'search', placeholder: __('Buscar compra', 'motorlan-portal'), icon: 'search', value: table.filters.q, class: 'w-full md:flex-1 md:max-w-md' }) }}
+    {{ f.select({ name: 'orden', id: 'ml-compras-orden', options: table.orders, value: table.filters.orden, class: 'w-full md:w-52', attrs: 'aria-label="' ~ __('Ordenar', 'motorlan-portal')|e('html_attr') ~ '"' }) }}
+    {{ f.select({ name: 'per_page', id: 'ml-compras-per-page', options: table.per_page, value: table.filters.per_page, class: 'w-full md:w-44', attrs: 'aria-label="' ~ __('Mostrar', 'motorlan-portal')|e('html_attr') ~ '"' }) }}
+    <noscript><button type="submit" class="ml-btn ml-btn--tonal ml-c-primary">{{ __('Filtrar', 'motorlan-portal')|e }}</button></noscript>
+  {% endblock %}
+  {% block rows %}
+    {%- import 'components/chip.twig' as c -%}
+    {%- import 'components/avatar.twig' as a -%}
+    {%- import 'components/icon.twig' as ui -%}
+    {%- for r in table.rows %}
+    <tr class="max-md:!grid max-md:grid-cols-3" data-uuid="{{ r.uuid|e('html_attr') }}">
+      <td class="max-md:col-span-3 max-md:!block">
+        <div class="flex max-w-[300px] items-center gap-3 py-2 max-md:max-w-none max-md:items-start">
+          {%- if r.image %}{{ a.avatar({ image: r.image, rounded: true, class: '!size-10 shrink-0 border border-border max-md:!size-[52px]' }) }}{% else %}{{ a.avatar({ icon: 'photo-off', rounded: true, color: 'secondary', class: '!size-10 shrink-0 max-md:!size-[52px]' }) }}{% endif %}
+          <div class="min-w-0">
+            {%- if r.product_url %}
+            <a class="block truncate font-medium text-high-emphasis hover:text-primary max-md:whitespace-normal max-md:text-base max-md:font-semibold" href="{{ r.product_url|e('html_attr') }}" target="_blank" rel="noopener" title="{{ r.name|e('html_attr') }}">{{ r.name|e }}</a>
+            {%- else %}
+            <p class="truncate font-medium text-high-emphasis" title="{{ r.name|e('html_attr') }}">{{ r.name|e }}</p>
+            {%- endif %}
+            {%- if r.reference %}<p class="text-sm text-medium-emphasis">{{ __('Ref:', 'motorlan-portal')|e }} {{ r.reference|e }}</p>{% endif %}
+          </div>
+        </div>
+      </td>
+      <td data-label="{{ __('Fecha de compra', 'motorlan-portal')|e('html_attr') }}" class="text-high-emphasis max-md:!border-b-0">{{ r.date|e }}</td>
+      <td data-label="{{ __('Tipo', 'motorlan-portal')|e('html_attr') }}" class="max-md:!border-b-0 max-md:justify-items-start">{{ c.chip({ label: r.type.label, color: r.type.color, size: 'sm' }) }}</td>
+      <td data-label="{{ __('Estado', 'motorlan-portal')|e('html_attr') }}" class="max-md:!border-b-0 max-md:justify-items-start">{{ c.chip({ label: r.status.label, color: r.status.color, size: 'sm' }) }}</td>
+      <td class="text-end max-md:col-span-3 max-md:!block max-md:border-t max-md:border-border">
+        {#- Escritorio: iconos (como la SPA). Móvil: botones a lo ancho. #}
+        <div class="inline-flex justify-end gap-1 max-md:hidden">
+          <a class="ml-btn ml-btn--text ml-btn--icon ml-btn--sm ml-c-secondary" href="{{ r.detail_url|e('html_attr') }}" title="{{ __('Ver detalle', 'motorlan-portal')|e('html_attr') }}" aria-label="{{ __('Ver detalle', 'motorlan-portal')|e('html_attr') }}">{{ ui.icon('eye', 'size-5') }}</a>
+          {%- if r.product_url %}
+          <a class="ml-btn ml-btn--text ml-btn--icon ml-btn--sm ml-c-secondary" href="{{ r.product_url|e('html_attr') }}" target="_blank" rel="noopener" title="{{ __('Ver publicación', 'motorlan-portal')|e('html_attr') }}" aria-label="{{ __('Ver publicación', 'motorlan-portal')|e('html_attr') }}">{{ ui.icon('external-link', 'size-5') }}</a>
+          {%- else %}
+          <span class="ml-btn ml-btn--text ml-btn--icon ml-btn--sm ml-c-secondary" aria-disabled="true">{{ ui.icon('external-link', 'size-5') }}</span>
+          {%- endif %}
+          {%- if r.can_rate %}
+          <button type="button" class="ml-btn ml-btn--text ml-btn--icon ml-btn--sm ml-c-warning" title="{{ __('Valorar vendedor', 'motorlan-portal')|e('html_attr') }}" aria-label="{{ __('Valorar vendedor', 'motorlan-portal')|e('html_attr') }}"
+                  @click="$dispatch('ml-rate', {{ ml_json({ uuid: r.uuid, name: r.seller, target: 'seller' })|e('html_attr') }})">{{ ui.icon('star', 'size-5') }}</button>
+          {%- endif %}
+        </div>
+        <div class="flex flex-col gap-2 md:hidden">
+          <a class="ml-btn ml-btn--tonal ml-btn--block ml-c-primary" href="{{ r.detail_url|e('html_attr') }}">{{ ui.icon('eye', 'size-5') }}<span>{{ __('Ver detalle', 'motorlan-portal')|e }}</span></a>
+          {%- if r.product_url %}
+          <a class="ml-btn ml-btn--tonal ml-btn--block ml-c-secondary" href="{{ r.product_url|e('html_attr') }}" target="_blank" rel="noopener">{{ ui.icon('external-link', 'size-5') }}<span>{{ __('Ver publicación', 'motorlan-portal')|e }}</span></a>
+          {%- endif %}
+          {%- if r.can_rate %}
+          <button type="button" class="ml-btn ml-btn--tonal ml-btn--block ml-c-warning" @click="$dispatch('ml-rate', {{ ml_json({ uuid: r.uuid, name: r.seller, target: 'seller' })|e('html_attr') }})">{{ ui.icon('star', 'size-5') }}<span>{{ __('Valorar vendedor', 'motorlan-portal')|e }}</span></button>
+          {%- endif %}
+        </div>
+      </td>
+    </tr>
+    {%- endfor %}
+  {% endblock %}
+  {% block empty %}
+    {%- import 'components/empty.twig' as em -%}
+    {%- if table.error %}
+      {{ em.empty({ icon: 'alert-circle', title: __('No se pudieron cargar tus compras.', 'motorlan-portal'), text: __('Inténtalo de nuevo en unos segundos.', 'motorlan-portal') }) }}
+    {%- elseif table.filters.q %}
+      {{ em.empty({ icon: 'search', title: __('Sin resultados', 'motorlan-portal'), text: __('Prueba con otra búsqueda.', 'motorlan-portal') }) }}
+    {%- else %}
+      {{ em.empty({ icon: 'shopping-bag', title: __('Aún no tienes compras.', 'motorlan-portal'), text: __('Cuando compres en la tienda o el vendedor acepte tu oferta, la compra aparecerá aquí.', 'motorlan-portal'), action: { label: __('Ir a la tienda', 'motorlan-portal'), href: urls.store, icon: 'building-store' } }) }}
+    {%- endif %}
+  {% endblock %}
+{% endembed %}

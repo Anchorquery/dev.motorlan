@@ -151,6 +151,20 @@ function motorlan_offers_seconds_to_expire($offer) {
     return $diff > 0 ? $diff : 0;
 }
 
+/**
+ * Fecha de la tabla de ofertas (hora local del sitio, current_time('mysql')) en ISO 8601
+ * con desplazamiento: «2026-11-14T05:15:34+01:00». Antes salía «2026-11-14 05:15:34» sin
+ * zona y el navegador la leía en su hora local, mientras los mensajes del chat van en UTC.
+ * new Date() y mysql2date() la entienden igual.
+ */
+function motorlan_offers_iso_date($value) {
+    if ($value === null || $value === '' || $value === '0000-00-00 00:00:00') {
+        return null;
+    }
+    $date = date_create((string) $value, wp_timezone());
+    return $date ? $date->format('c') : $value;
+}
+
 function motorlan_offers_prepare_offer_item($offer) {
     if (!$offer) {
         return null;
@@ -176,12 +190,12 @@ function motorlan_offers_prepare_offer_item($offer) {
         'publication_id' => (int) $offer->publication_id,
         'user_id' => (int) $offer->user_id,
         'offer_amount' => (float) $offer->offer_amount,
-        'offer_date' => $offer->offer_date,
+        'offer_date' => motorlan_offers_iso_date($offer->offer_date),
         'status' => $offer->status,
         'justification' => $offer->justification,
-        'accepted_at' => $offer->accepted_at,
-        'expires_at' => $offer->expires_at,
-        'confirmed_at' => $offer->confirmed_at,
+        'accepted_at' => motorlan_offers_iso_date($offer->accepted_at),
+        'expires_at' => motorlan_offers_iso_date($offer->expires_at),
+        'confirmed_at' => motorlan_offers_iso_date($offer->confirmed_at),
         'time_to_expire' => motorlan_offers_seconds_to_expire($offer),
         'can_accept' => motorlan_offers_can_accept_offer($offer),
         'accept_disabled_reason' => null,
@@ -348,12 +362,15 @@ function motorlan_handle_create_offer($request) {
     if ($inserted === false) {
         return new WP_Error('db_error', 'No se pudo registrar la oferta en este momento.', array('status' => 500));
     }
+    // El id se lee justo después del INSERT: update_user_meta() de abajo inserta el meta
+    // offers_today la primera vez del día y pisaba $wpdb->insert_id, así que la primera
+    // oferta del día respondía data: null.
+    $offer_id = (int) $wpdb->insert_id;
 
     // Update user's offer count
     $offers_today['count']++;
     update_user_meta($user_id, 'offers_today', $offers_today);
 
-    $offer_id = (int) $wpdb->insert_id;
     $offer = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table_name WHERE id = %d", $offer_id));
     $offer_payload = motorlan_offers_prepare_offer_item($offer);
 

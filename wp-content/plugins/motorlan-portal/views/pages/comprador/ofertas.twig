@@ -1,0 +1,108 @@
+{% extends 'layout/app-shell.twig' %}
+{#
+  Ofertas enviadas: /mi-cuenta/dashboard/purchases/offers-sent (offers-sent.vue). CompradorController.
+  Ver detalle (diálogo), confirmar compra (POST action=confirm: la API crea la compra y se
+  navega a su detalle con HX-Redirect) y retirar (con confirmación; POST action=withdraw y
+  la tabla vuelve con los mismos filtros). Un único formulario oculto (#ml-offer-form) para
+  las dos acciones; mlOffers (assets/js/comprador.js) bloquea el doble envío y la API
+  bloquea la doble confirmación.
+  Variables: table · nonce
+#}
+{% block main %}
+{%- import 'components/icon.twig' as ui -%}
+<div x-data="mlOffers()">
+  <div class="ml-card overflow-visible">
+    <div class="flex flex-wrap items-center justify-between gap-4 px-6 pt-6">
+      <h1 class="ml-h5 font-semibold">{{ page_title|e }}</h1>
+    </div>
+    {% include 'partials/comprador/ofertas-tabla.twig' %}
+  </div>
+
+  <form id="ml-offer-form" x-ref="form" method="post" action="{{ table.url|e('html_attr') }}" class="hidden"
+        hx-post="{{ table.url|e('html_attr') }}" hx-target="#ml-ofertas" hx-swap="outerHTML" hx-include="#ml-ofertas-filters"
+        @htmx:after-request="after($event)">
+    <input type="hidden" name="_mlnonce" value="{{ nonce|e('html_attr') }}">
+    <input type="hidden" name="action" value="">
+    <input type="hidden" name="id" value="">
+  </form>
+
+  {#- Detalle de la oferta #}
+  {% embed 'components/dialog.twig' with { id: 'ml-offer-detail', max_width: '600px' } %}
+    {% block content %}
+    {%- import 'components/icon.twig' as ui -%}
+    <template x-if="sel">
+      <div>
+        <h3 class="ml-h6 -mx-6 -mt-6 mb-6 flex items-center gap-2 border-b border-border px-6 py-4 pe-14 font-bold">{{ ui.icon('file-description', 'size-5 text-primary') }}<span>{{ __('Detalles de la oferta', 'motorlan-portal')|e }}</span></h3>
+        <div class="mb-5 flex items-center gap-3 rounded-lg bg-[color-mix(in_srgb,var(--ml-primary)_6%,transparent)] p-4">
+          <span class="ml-avatar ml-avatar--rounded ml-c-primary !size-12">{{ ui.icon('engine', 'size-6') }}</span>
+          <div class="min-w-0">
+            <p class="text-xs font-bold uppercase tracking-wide text-medium-emphasis">{{ __('Publicación', 'motorlan-portal')|e }}</p>
+            <template x-if="sel.url"><a class="ml-h6 block font-bold text-high-emphasis hover:text-primary" :href="sel.url" target="_blank" rel="noopener" x-text="sel.title"></a></template>
+            <template x-if="!sel.url"><p class="ml-h6 font-bold text-high-emphasis" x-text="sel.title"></p></template>
+          </div>
+        </div>
+        <div class="grid gap-5 sm:grid-cols-2">
+          <div>
+            <p class="mb-1 flex items-center gap-2 text-xs font-bold uppercase text-medium-emphasis">{{ ui.icon('currency-euro', 'size-4 text-primary') }}{{ __('Monto ofertado', 'motorlan-portal')|e }}</p>
+            <p class="ml-h5 font-bold text-primary" x-text="sel.amount"></p>
+          </div>
+          <div>
+            <p class="mb-1 flex items-center gap-2 text-xs font-bold uppercase text-medium-emphasis">{{ ui.icon('calendar', 'size-4 text-primary') }}{{ __('Fecha de envío', 'motorlan-portal')|e }}</p>
+            <p class="font-medium" x-text="sel.date_full"></p>
+          </div>
+          <div class="border-t border-dashed border-border sm:col-span-2"></div>
+          <div>
+            <p class="mb-2 flex items-center gap-2 text-xs font-bold uppercase text-medium-emphasis">{{ ui.icon('info-circle', 'size-4 text-primary') }}{{ __('Estado actual', 'motorlan-portal')|e }}</p>
+            <span class="ml-chip ml-chip--sm" :class="'ml-c-' + sel.chip.color" x-text="sel.chip.label"></span>
+            <p class="mt-2 text-sm text-medium-emphasis" x-show="sel.status_text" x-text="sel.status_text"></p>
+          </div>
+          <template x-if="sel.can_confirm && sel.remaining">
+            <div class="ml-c-warning rounded-lg bg-[color-mix(in_srgb,var(--c)_10%,transparent)] p-3">
+              <p class="mb-1 flex items-center gap-2 text-xs font-bold uppercase text-[var(--c-dark)]">{{ ui.icon('hourglass-high', 'size-4') }}{{ __('Tiempo límite', 'motorlan-portal')|e }}</p>
+              <p class="text-sm font-bold text-[var(--c-dark)]"><span>{{ __('Expira en:', 'motorlan-portal')|e }}</span> <span x-text="sel.remaining"></span></p>
+            </div>
+          </template>
+          <template x-if="sel.accepted">
+            <div class="ml-c-success flex items-center gap-2 rounded-lg bg-[color-mix(in_srgb,var(--c)_10%,transparent)] p-3 sm:col-span-2">
+              <span class="text-[var(--c)]">{{ ui.icon('circle-check') }}</span>
+              <div>
+                <p class="text-xs font-bold uppercase text-[var(--c-dark)]">{{ __('Oferta aceptada el', 'motorlan-portal')|e }}</p>
+                <p class="text-sm font-medium" x-text="sel.accepted"></p>
+              </div>
+            </div>
+          </template>
+          <div class="rounded-lg border border-border p-4 sm:col-span-2">
+            <p class="mb-2 flex items-center gap-2 text-xs font-bold uppercase text-medium-emphasis">{{ ui.icon('message-2', 'size-4') }}{{ __('Comentario adicional', 'motorlan-portal')|e }}</p>
+            <p class="whitespace-pre-line italic text-high-emphasis" x-show="sel.comment" x-text="'«' + sel.comment + '»'"></p>
+            <p class="text-sm italic text-medium-emphasis" x-show="!sel.comment">{{ __('Sin comentarios adicionales para esta oferta.', 'motorlan-portal')|e }}</p>
+          </div>
+        </div>
+        <div class="-mx-6 -mb-6 mt-6 flex flex-wrap justify-end gap-2 border-t border-border px-6 py-4">
+          <button type="button" class="ml-btn ml-btn--text ml-c-secondary" @click="close()">{{ __('Cerrar', 'motorlan-portal')|e }}</button>
+          <template x-if="sel.can_confirm">
+            <button type="button" class="ml-btn ml-btn--filled ml-c-success" :disabled="busy" :data-loading="busy.toString()" @click="send('confirm', sel.id)" data-test="offer-confirm-dialog">{{ ui.icon('check', 'size-4') }}<span>{{ __('Confirmar compra', 'motorlan-portal')|e }}</span></button>
+          </template>
+          <template x-if="sel.can_withdraw">
+            <button type="button" class="ml-btn ml-btn--tonal ml-c-error" :disabled="busy" @click="askWithdraw(sel)">{{ ui.icon('arrow-back-up', 'size-4') }}<span>{{ __('Retirar oferta', 'motorlan-portal')|e }}</span></button>
+          </template>
+        </div>
+      </div>
+    </template>
+    {% endblock %}
+  {% endembed %}
+
+  {#- Confirmar retirada (la SPA retiraba sin preguntar) #}
+  {% embed 'components/dialog.twig' with { id: 'ml-offer-withdraw', max_width: '450px', persistent: true } %}
+    {% block content %}
+    {%- import 'components/icon.twig' as ui -%}
+    <h3 class="ml-h6 mb-4 flex items-center gap-2 font-semibold">{{ ui.icon('arrow-back-up', 'size-5 text-error') }}<span>{{ __('Retirar oferta', 'motorlan-portal')|e }}</span></h3>
+    <p>{{ __('¿Seguro que quieres retirar esta oferta? El vendedor ya no podrá aceptarla.', 'motorlan-portal')|e }}</p>
+    <p class="mt-2 text-sm font-medium text-medium-emphasis" x-show="sel" x-text="sel ? '«' + sel.title + '» · ' + sel.amount : ''"></p>
+    <div class="mt-6 flex justify-end gap-2">
+      <button type="button" class="ml-btn ml-btn--text ml-c-secondary" @click="close()" :disabled="busy">{{ __('Cancelar', 'motorlan-portal')|e }}</button>
+      <button type="button" class="ml-btn ml-btn--filled ml-c-error" :disabled="busy" :data-loading="busy.toString()" @click="send('withdraw', sel && sel.id)" data-test="offer-withdraw-confirm"><span>{{ __('Retirar', 'motorlan-portal')|e }}</span></button>
+    </div>
+    {% endblock %}
+  {% endembed %}
+</div>
+{% endblock %}

@@ -176,7 +176,7 @@ function motorlan_add_cors_headers() {
     header('Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS');
     header('Access-Control-Allow-Headers: Content-Type, X-Requested-With, X-WP-Nonce, Authorization');
     
-    if ('OPTIONS' === $_SERVER['REQUEST_METHOD']) {
+    if ('OPTIONS' === ($_SERVER['REQUEST_METHOD'] ?? '')) {
         status_header(200);
         exit();
     }
