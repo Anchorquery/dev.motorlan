@@ -1,0 +1,176 @@
+{% extends 'layout/app-shell.twig' %}
+{#
+  Alta (asistente) y edición (pestañas) de una publicación:
+    /mi-cuenta/dashboard/publications/publication/add       (publication/add/index.vue)
+    /mi-cuenta/dashboard/publications/publication/edit/{uuid} (publication/edit/[uuid].vue)
+  PublicacionesController::form(). Los dos modos pintan los mismos bloques
+  (partials/publicacion/paso-*.twig); cambia solo el envoltorio:
+    alta    → stepper de 6 pasos, validación por paso, «Publicar» al final.
+    edición → 4 pestañas (Básico = info básica + detalles; Especificaciones = tipo + specs;
+              Multimedia; Documentación), columna de resumen, «Guardar borrador» y «Actualizar».
+  Con JS (mlPubForm, assets/js/vendedor.js) el envío es un FormData por fetch a esta URL
+  (respuesta JSON); los archivos los gestiona el componente (previsualización, quitar,
+  reducir fotos grandes, límites). Sin JS: todos los pasos a la vista y campos de archivo
+  nativos (dentro de <noscript>), el servidor responde la página.
+#}
+{% block main %}
+{%- import 'components/icon.twig' as ui -%}
+{%- import 'components/alert.twig' as al -%}
+{%- import 'components/chip.twig' as c -%}
+{%- set is_add = mode == 'add' -%}
+{% include 'components/flash.twig' %}
+{%- if result and not result.ok and result.message|default('') %}
+  {{ al.alert({ color: 'error', text: result.message, class: 'mb-6' }) }}
+{%- endif %}
+{%- if read_only %}
+  {{ al.alert({ color: 'warning', text: __('Tu publicación está en revisión y no puede ser editada hasta que sea aprobada o rechazada por un administrador.', 'motorlan-portal'), class: 'mb-6' }) }}
+{%- endif %}
+
+<form class="ml-pubform" method="post" action="{{ action_url|e('html_attr') }}" enctype="multipart/form-data"
+      x-data="mlPubForm({{ ml_json(form_cfg)|e('html_attr') }})" @submit="submit($event)">
+  {# Sin JS se ven todos los pasos (los ocultos llevan x-cloak). #}
+  <noscript><style>.ml-pubform [x-cloak] { display: block !important; } .ml-pubform [data-js-only] { display: none !important; }</style></noscript>
+  <input type="hidden" name="_mlnonce" value="{{ nonce|e('html_attr') }}">
+  {%- if is_add %}
+  <input type="hidden" name="client_request_id" value="{{ request_id|e('html_attr') }}" x-ref="requestId">
+  {%- else %}
+  <input type="hidden" name="gallery_sent" value="1">
+  <input type="hidden" name="docs_sent" value="1">
+  {%- endif %}
+
+  <fieldset class="contents" {% if read_only %}disabled{% endif %}>
+  {%- if is_add %}
+  {# ── Alta: asistente ─────────────────────────────────────────────────────────────── #}
+  <div class="mx-auto max-w-[1100px]">
+    <div class="ml-card mb-6">
+      <div class="ml-card__body">
+        <div class="mb-1 flex flex-wrap items-center justify-between gap-2">
+          <h1 class="ml-h5 font-semibold">{{ page_title|e }}</h1>
+          <p class="text-sm text-medium-emphasis" data-js-only>
+            <span x-text="stepLabel()">{{ __('Paso %1$d de %2$d', 'motorlan-portal')|format(1, steps|length)|e }}</span>
+          </p>
+        </div>
+        <div class="my-4 h-1.5 overflow-hidden rounded-full bg-[color-mix(in_srgb,var(--ml-primary)_14%,transparent)]" data-js-only><span class="block h-full rounded-full bg-primary transition-[width] duration-300" :style="`width: ${(step + 1) / {{ steps|length }} * 100}%`" style="width: {{ (100 / steps|length)|round }}%"></span></div>
+        <div data-js-only>
+          {%- import 'components/stepper.twig' as st -%}
+          {{ st.stepper(steps) }}
+        </div>
+      </div>
+    </div>
+
+    <div class="ml-card">
+      <div class="ml-card__body">
+        <section x-show="step === 0" data-step="0">{% include 'partials/publicacion/paso-tipo.twig' %}</section>
+        <section x-show="step === 1" x-cloak data-step="1">{% include 'partials/publicacion/paso-basico.twig' %}</section>
+        <section x-show="step === 2" x-cloak data-step="2">{% include 'partials/publicacion/paso-specs.twig' %}</section>
+        <section x-show="step === 3" x-cloak data-step="3">{% include 'partials/publicacion/paso-media.twig' %}</section>
+        <section x-show="step === 4" x-cloak data-step="4">{% include 'partials/publicacion/paso-detalles.twig' %}</section>
+        <section x-show="step === 5" x-cloak data-step="5">{% include 'partials/publicacion/paso-docs.twig' %}</section>
+      </div>
+      <div class="ml-card__actions flex-wrap justify-between gap-2 border-t border-border">
+        <a class="ml-btn ml-btn--tonal ml-c-secondary" href="{{ list_url|e('html_attr') }}" @click="discard()">{{ __('Descartar', 'motorlan-portal')|e }}</a>
+        <div class="flex gap-2">
+          <button type="button" class="ml-btn ml-btn--tonal ml-c-secondary" x-show="step > 0" x-cloak data-js-only @click="prev()">{{ ui.icon('arrow-left', 'size-5') }}<span>{{ __('Atrás', 'motorlan-portal')|e }}</span></button>
+          <button type="button" class="ml-btn ml-btn--filled ml-c-primary" x-show="step < {{ steps|length - 1 }}" data-js-only @click="next()"><span>{{ __('Siguiente', 'motorlan-portal')|e }}</span>{{ ui.icon('arrow-right', 'size-5') }}</button>
+          <button type="submit" class="ml-btn ml-btn--filled ml-c-success" x-show="step === {{ steps|length - 1 }}" x-cloak :data-loading="busy" :disabled="busy">{{ ui.icon('send', 'size-5') }}<span>{{ __('Publicar', 'motorlan-portal')|e }}</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+  {%- else %}
+  {# ── Edición: pestañas + resumen ─────────────────────────────────────────────────── #}
+  <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
+    <div>
+      <h1 class="ml-h5 font-semibold">{{ page_title|e }}</h1>
+      <p class="text-xs text-medium-emphasis">{{ __('Los campos marcados con %s son obligatorios.', 'motorlan-portal')|format('*')|e }}</p>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      <a class="ml-btn ml-btn--tonal ml-btn--sm ml-c-secondary" href="{{ list_url|e('html_attr') }}" @click="discard()">{{ __('Descartar', 'motorlan-portal')|e }}</a>
+      <button type="submit" name="submit_status" value="draft" class="ml-btn ml-btn--tonal ml-btn--sm ml-c-secondary" :disabled="busy">{{ __('Guardar borrador', 'motorlan-portal')|e }}</button>
+      <button type="submit" name="submit_status" value="update" class="ml-btn ml-btn--filled ml-btn--sm ml-c-primary" :data-loading="busy" :disabled="busy">{{ __('Actualizar publicación', 'motorlan-portal')|e }}</button>
+    </div>
+  </div>
+
+  <div class="grid gap-6 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+    <div class="min-w-0">
+      {# Franja de estado en móvil (la columna de resumen se oculta). #}
+      <div class="mb-4 flex flex-wrap items-center gap-3 md:hidden">
+        {{ c.chip({ label: status_chip.label, color: status_chip.color, size: 'sm' }) }}
+        <span class="text-sm font-bold text-primary" x-show="v.precio_de_venta" x-text="v.precio_de_venta + '€'"></span>
+        <span class="ml-chip ml-chip--sm ml-c-success" x-text="(v.stock || 0) + ' u.'"></span>
+      </div>
+      <div class="ml-card">
+        {%- import 'components/tabs.twig' as tb -%}
+        <div data-js-only>
+          {{ tb.tabs([
+            { key: 'basic', label: __('Información básica', 'motorlan-portal'), icon: 'info-circle' },
+            { key: 'specs', label: __('Especificaciones', 'motorlan-portal'), icon: 'list-details' },
+            { key: 'media', label: __('Multimedia', 'motorlan-portal'), icon: 'photo' },
+            { key: 'docs', label: __('Documentación', 'motorlan-portal'), icon: 'file' },
+          ]) }}
+        </div>
+        <div class="ml-card__body">
+          <section x-show="isActive('basic')" data-tab="basic" class="space-y-8">
+            {% include 'partials/publicacion/paso-basico.twig' %}
+            {% include 'partials/publicacion/paso-detalles.twig' %}
+          </section>
+          <section x-show="isActive('specs')" x-cloak data-tab="specs">{% include 'partials/publicacion/paso-specs.twig' %}</section>
+          <section x-show="isActive('media')" x-cloak data-tab="media">{% include 'partials/publicacion/paso-media.twig' %}</section>
+          <section x-show="isActive('docs')" x-cloak data-tab="docs">{% include 'partials/publicacion/paso-docs.twig' %}</section>
+        </div>
+      </div>
+    </div>
+
+    <aside class="max-md:hidden">
+      <div class="ml-card">
+        <div class="ml-card__body flex items-start gap-4">
+          <div class="grid size-20 shrink-0 place-items-center overflow-hidden rounded-lg bg-[color-mix(in_srgb,var(--ml-primary)_12%,transparent)]">
+            <img x-show="mainThumb()" :src="mainThumb()" {% if values.image %}src="{{ values.image.thumb|e('html_attr') }}"{% endif %} alt="" class="size-full object-cover">
+            <span x-show="!mainThumb()" {% if values.image %}x-cloak{% endif %}>{{ ui.icon('photo', 'size-10 text-primary') }}</span>
+          </div>
+          <div class="min-w-0">
+            <p class="ml-h6 font-semibold break-words" x-text="preview() || {{ ml_json(pub.name|default(''))|e('html_attr') }}">{{ pub.name|default('')|e }}</p>
+            <p class="text-sm text-medium-emphasis">ID: #{{ pub.id|default(0) }}</p>
+          </div>
+        </div>
+        <hr class="ml-divider">
+        <div class="ml-card__body space-y-3 text-sm">
+          <div class="flex items-center justify-between gap-2">
+            <span class="text-medium-emphasis">{{ __('Precio de venta (€)', 'motorlan-portal')|e }}:</span>
+            <span class="text-base font-bold" :class="v.consultar && !v.precio_de_venta ? 'text-warning' : 'text-primary'"
+                  x-text="v.precio_de_venta ? v.precio_de_venta + '€' : {{ ml_json(__('Consultar precio', 'motorlan-portal'))|e('html_attr') }}">{{ values.precio_de_venta ? values.precio_de_venta ~ '€' : __('Consultar precio', 'motorlan-portal') }}</span>
+          </div>
+          <div class="flex items-center justify-between gap-2" x-show="v.consultar && v.precio_de_venta" {% if not (values.consultar and values.precio_de_venta) %}x-cloak{% endif %}>
+            <span class="text-medium-emphasis">{{ __('Visible al público', 'motorlan-portal')|e }}:</span>
+            {{ c.chip({ label: __('Consultar precio', 'motorlan-portal'), color: 'info', size: 'sm' }) }}
+          </div>
+          <div class="flex items-center justify-between gap-2">
+            <span class="text-medium-emphasis">{{ __('Stock', 'motorlan-portal')|e }}:</span>
+            <span class="ml-chip ml-chip--sm" :class="Number(v.stock) > 0 ? 'ml-c-success' : 'ml-c-error'" x-text="(v.stock || 0) + ' u.'">{{ values.stock|e }} u.</span>
+          </div>
+          <div class="flex items-center justify-between gap-2">
+            <span class="text-medium-emphasis">{{ __('Estado', 'motorlan-portal')|e }}:</span>
+            {{ c.chip({ label: status_chip.label, color: status_chip.color, size: 'sm' }) }}
+          </div>
+        </div>
+        <hr class="ml-divider">
+        <div class="ml-card__body space-y-2">
+          <div x-show="slugChanged()" x-cloak data-js-only>{{ al.alert({ color: 'info', text: __('La URL se actualizará al guardar', 'motorlan-portal'), class: '!py-2 text-sm' }) }}</div>
+          {%- if pub.url|default('') %}
+          <a class="ml-btn ml-btn--outlined ml-btn--block ml-c-primary" href="{{ pub.url|e('html_attr') }}" target="_blank" rel="noopener">{{ ui.icon('external-link', 'size-5') }}<span>{{ __('Ver en la web', 'motorlan-portal')|e }}</span></a>
+          {%- else %}
+          <span class="ml-btn ml-btn--outlined ml-btn--block ml-c-secondary" aria-disabled="true">{{ ui.icon('external-link', 'size-5') }}<span>{{ __('Ver en la web', 'motorlan-portal')|e }}</span></span>
+          {%- endif %}
+        </div>
+      </div>
+    </aside>
+  </div>
+  {%- endif %}
+  </fieldset>
+
+  {# Aviso de tamaño (antes de enviar). #}
+  <div x-show="sizeError" x-cloak class="mt-4" role="alert">
+    <div class="ml-alert ml-c-error"><span class="ml-alert__icon">{{ ui.icon('alert-circle', 'size-5') }}</span><div class="ml-alert__body"><div class="ml-alert__text" x-text="sizeError"></div></div></div>
+  </div>
+</form>
+{% endblock %}

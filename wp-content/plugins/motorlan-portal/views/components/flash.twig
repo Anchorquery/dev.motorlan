@@ -1,0 +1,12 @@
+{#
+  Aviso de la petición anterior (Support\Flash: alta → listado, duplicar → editor…).
+  Con JS sale como toast ($store.toast); sin JS, como alerta en la página.
+    {% include 'components/flash.twig' with { flash: flash } %}
+  Variables: flash ({text, color} o null)
+#}
+{%- if flash|default(false) and flash.text|default('') -%}
+{%- import 'components/alert.twig' as al -%}
+<div x-data x-init="$store.toast.show({{ ml_json(flash.text)|e('html_attr') }}, {{ ml_json(flash.color|default('success'))|e('html_attr') }}); $el.remove()" class="mb-4">
+  <noscript>{{ al.alert({ color: flash.color|default('success'), text: flash.text }) }}</noscript>
+</div>
+{%- endif -%}

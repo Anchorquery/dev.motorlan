@@ -1,0 +1,31 @@
+{#
+  Información básica (StepBasicInfo.vue): marca (o «Otros» + nombre de la marca nueva),
+  modelo/referencia y la vista previa del nombre estandarizado («MARCA REF 2 KW», el título
+  que se guarda). Variables: brands · values · mlPubForm (v, err, preview)
+#}
+{%- import 'components/field.twig' as f -%}
+{%- import 'components/icon.twig' as ui -%}
+<h2 class="ml-h6 mb-4 font-semibold">{{ __('Información básica', 'motorlan-portal')|e }}</h2>
+<div class="grid gap-x-6 gap-y-4 md:grid-cols-2">
+  <div>
+    {{ f.select({ name: 'acf[marca]', id: 'ml-pf-marca', label: __('Marca', 'motorlan-portal'), required: true, options: brands, value: values.marca,
+                  attrs: 'x-model="v.marca" :aria-invalid="!!err.marca"' }) }}
+    <p class="ml-hint ml-hint--error" x-show="err.marca" x-text="err.marca" x-cloak></p>
+  </div>
+  <div>
+    {{ f.text({ name: 'acf[tipo_o_referencia]', id: 'ml-pf-ref', label: __('Modelo', 'motorlan-portal'), placeholder: __('Referencia', 'motorlan-portal'), required: true, value: values.tipo_o_referencia,
+                attrs: 'x-model="v.tipo_o_referencia" :aria-invalid="!!err.tipo_o_referencia" maxlength="120"' }) }}
+    <p class="ml-hint ml-hint--error" x-show="err.tipo_o_referencia" x-text="err.tipo_o_referencia" x-cloak></p>
+  </div>
+  <div x-show="Number(v.marca) === -1" {% if values.marca != '-1' %}x-cloak{% endif %}>
+    {{ f.text({ name: 'marca_custom', id: 'ml-pf-marca-custom', label: __('Nueva marca', 'motorlan-portal'), placeholder: __('Nombre de la nueva marca', 'motorlan-portal'), value: values.marca_custom,
+                hint: __('Solo si eliges «Otros». La marca nueva la revisa un administrador.', 'motorlan-portal'),
+                attrs: 'x-model="v.marca_custom" @input="v.marca_custom = $event.target.value.toUpperCase()" :aria-invalid="!!err.marca_custom" maxlength="80"' }) }}
+    <p class="ml-hint ml-hint--error" x-show="err.marca_custom" x-text="err.marca_custom" x-cloak></p>
+  </div>
+</div>
+<div class="mt-4 flex items-center gap-2 rounded-lg border border-dashed border-border px-4 py-3" x-show="preview()" x-cloak data-js-only>
+  {{ ui.icon('tag', 'size-5 text-primary') }}
+  <span class="text-sm text-medium-emphasis">{{ __('Vista previa del nombre estandarizado:', 'motorlan-portal')|e }}</span>
+  <strong class="text-high-emphasis" x-text="preview()"></strong>
+</div>

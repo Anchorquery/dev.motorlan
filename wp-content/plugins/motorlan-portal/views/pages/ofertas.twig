@@ -1,0 +1,61 @@
+{% extends 'layout/app-shell.twig' %}
+{#
+  Ofertas recibidas: /mi-cuenta/dashboard/publications/offers-received (offers-received.vue).
+  OfertasController. Tabla con HTMX (partials/ofertas-tabla.twig); detalle en un diálogo
+  (mlOffers en vendedor.js) con Aceptar/Rechazar. ?offer_id=N abre ese detalle al cargar y
+  se quita de la URL. Sin JS: la tabla y sus botones Aceptar/Rechazar funcionan (el detalle no).
+#}
+{% block main %}
+{%- import 'components/icon.twig' as ui -%}
+{% include 'components/flash.twig' %}
+<div x-data="mlOffers({{ ml_json({ open: open_offer, missing: offer_missing|default(false), missingText: __('No se encontró esa oferta entre las que has recibido.', 'motorlan-portal') })|e('html_attr') }})" @ml-offer-open.window="show($event.detail)">
+  <div class="ml-card overflow-visible">
+    <div class="flex flex-wrap items-center justify-between gap-4 px-6 pt-6">
+      <h1 class="ml-h5 font-semibold">{{ page_title|e }}</h1>
+    </div>
+    {% include 'partials/ofertas-tabla.twig' %}
+  </div>
+
+  {% embed 'components/dialog.twig' with { id: 'ml-offer-detail', title: __('Detalle de la oferta', 'motorlan-portal'), max_width: '560px' } %}
+    {% block content %}
+    {%- import 'components/icon.twig' as ui -%}
+    <template x-if="o">
+      <div class="space-y-4">
+        <div class="flex items-start justify-between gap-3">
+          <div class="min-w-0">
+            <p class="text-xs font-bold uppercase text-medium-emphasis">{{ __('Publicación', 'motorlan-portal')|e }}</p>
+            <p class="font-semibold text-high-emphasis" x-text="o.title"></p>
+            <p class="text-xs text-medium-emphasis" x-show="o.reference">{{ __('Ref', 'motorlan-portal')|e }}: <span x-text="o.reference"></span></p>
+          </div>
+          <a class="ml-btn ml-btn--text ml-btn--sm ml-c-primary shrink-0" x-show="o.pub_url" :href="o.pub_url" target="_blank" rel="noopener">{{ __('Ver publicación', 'motorlan-portal')|e }}{{ ui.icon('external-link', 'size-4') }}</a>
+        </div>
+        <dl class="grid gap-4 rounded-xl border border-border p-4 sm:grid-cols-2">
+          <div><dt class="text-xs font-bold uppercase text-medium-emphasis">{{ __('Ofertante', 'motorlan-portal')|e }}</dt><dd class="font-medium" x-text="o.user"></dd></div>
+          <div><dt class="text-xs font-bold uppercase text-medium-emphasis">{{ __('Importe ofertado', 'motorlan-portal')|e }}</dt><dd class="ml-h6 font-bold text-primary" x-text="o.amount"></dd></div>
+          <div><dt class="text-xs font-bold uppercase text-medium-emphasis">{{ __('Fecha de recepción', 'motorlan-portal')|e }}</dt><dd class="font-medium" x-text="o.datetime"></dd></div>
+          <div><dt class="text-xs font-bold uppercase text-medium-emphasis">{{ __('Estado actual', 'motorlan-portal')|e }}</dt>
+            <dd><span class="ml-chip ml-chip--sm" :class="'ml-c-' + o.chip.color" x-text="o.chip.label"></span></dd></div>
+          <div class="sm:col-span-2" x-show="o.remaining"><dt class="text-xs font-bold uppercase text-medium-emphasis">{{ __('Tiempo para que el comprador confirme', 'motorlan-portal')|e }}</dt><dd class="font-medium" x-text="o.remaining"></dd></div>
+        </dl>
+        <div class="ml-alert ml-c-warning flex items-start gap-2 rounded-lg p-3 text-sm" x-show="o.blocked">{{ ui.icon('alert-triangle', 'size-5 shrink-0') }}<span x-text="o.blocked"></span></div>
+        <div>
+          <p class="mb-1 text-xs font-bold uppercase text-medium-emphasis">{{ __('Comentario del ofertante', 'motorlan-portal')|e }}</p>
+          <p class="whitespace-pre-line rounded-lg bg-[var(--ml-hover)] p-3 text-sm" x-text="o.message || {{ ml_json(__('El ofertante no incluyó comentarios adicionales.', 'motorlan-portal'))|e('html_attr') }}"></p>
+        </div>
+      </div>
+    </template>
+    {% endblock %}
+    {% block actions %}
+    <form method="post" action="{{ table.url|e('html_attr') }}" class="flex flex-wrap justify-end gap-2" x-show="o && (o.can_accept || o.can_reject)"
+          hx-post="{{ table.url|e('html_attr') }}" hx-target="#ml-offers" hx-swap="outerHTML" hx-include="#ml-offers-filters"
+          hx-disabled-elt="find button" x-init="window.htmx && window.htmx.process($el)" @htmx:after-request="close()">
+      <input type="hidden" name="_mlnonce" value="{{ nonce|e('html_attr') }}">
+      <input type="hidden" name="id" :value="o ? o.id : ''">
+      <input type="hidden" name="page" :value="o ? o.page : 1">
+      <button type="submit" name="action" value="reject" class="ml-btn ml-btn--tonal ml-c-error" x-show="o && o.can_reject">{{ ui.icon('x', 'size-5') }}<span>{{ __('Rechazar', 'motorlan-portal')|e }}</span></button>
+      <button type="submit" name="action" value="accept" class="ml-btn ml-btn--filled ml-c-success" x-show="o && o.can_accept">{{ ui.icon('check', 'size-5') }}<span>{{ __('Aceptar oferta', 'motorlan-portal')|e }}</span></button>
+    </form>
+    {% endblock %}
+  {% endembed %}
+</div>
+{% endblock %}

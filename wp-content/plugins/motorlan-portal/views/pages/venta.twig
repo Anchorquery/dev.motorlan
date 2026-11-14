@@ -1,0 +1,118 @@
+{% extends 'layout/app-shell.twig' %}
+{#
+  Detalle de una venta: /mi-cuenta/dashboard/publications/sales/{uuid} (sales/[uuid].vue).
+  VentasController::detail(). Resumen, oferta (si la venta vino de una), comprador y
+  publicación; chat de la compra (kit de chat) y «Valorar comprador» (kit de valoración).
+  Sin menú inferior en móvil (hide_mobile_nav), como la SPA.
+#}
+{% block main %}
+{%- import 'components/icon.twig' as ui -%}
+{%- import 'components/chip.twig' as c -%}
+{%- import 'components/avatar.twig' as a -%}
+{%- import 'components/empty.twig' as em -%}
+{% include 'components/flash.twig' %}
+<div class="ml-card overflow-visible">
+  <div class="flex flex-wrap items-center justify-between gap-4 border-b border-border px-6 py-5">
+    <div class="flex min-w-0 items-center gap-3">
+      <a class="ml-btn ml-btn--tonal ml-btn--icon ml-c-secondary shrink-0" href="{{ list_url|e('html_attr') }}" title="{{ __('Volver a ventas', 'motorlan-portal')|e('html_attr') }}" aria-label="{{ __('Volver a ventas', 'motorlan-portal')|e('html_attr') }}">{{ ui.icon('arrow-left', 'size-5') }}</a>
+      <div class="min-w-0">
+        <p class="text-xs font-bold uppercase tracking-wide text-medium-emphasis">{{ __('Detalle de venta', 'motorlan-portal')|e }}</p>
+        <h1 class="ml-h5 truncate font-semibold">{{ sale ? sale.title|e : __('Detalle de la venta', 'motorlan-portal')|e }}</h1>
+      </div>
+    </div>
+    {%- if sale %}
+    <div class="text-end">
+      <p class="text-xs font-bold uppercase text-medium-emphasis">{{ __('Estado actual', 'motorlan-portal')|e }}</p>
+      {{ c.chip({ label: sale.chip.label, color: sale.chip.color }) }}
+    </div>
+    {%- endif %}
+  </div>
+
+  <div class="ml-card__body">
+  {%- if not sale %}
+    {%- if error %}
+      {{ em.empty({ icon: 'alert-circle', title: __('No pudimos cargar el detalle de la venta.', 'motorlan-portal'), text: __('Inténtalo de nuevo en unos segundos.', 'motorlan-portal'), action: { label: __('Volver a ventas', 'motorlan-portal'), href: list_url, icon: 'arrow-left' } }) }}
+    {%- else %}
+      {{ em.empty({ icon: 'receipt-off', title: __('No se encontró la venta.', 'motorlan-portal'), action: { label: __('Volver a ventas', 'motorlan-portal'), href: list_url, icon: 'arrow-left' } }) }}
+    {%- endif %}
+  {%- else %}
+    <div class="grid gap-6 md:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
+      <div class="space-y-6">
+        <section class="rounded-xl border border-border">
+          <h2 class="flex items-center gap-2 border-b border-border px-5 py-3 font-semibold">{{ ui.icon('receipt', 'size-5 text-primary') }}<span>{{ __('Resumen', 'motorlan-portal')|e }}</span></h2>
+          <dl class="grid gap-4 p-5 sm:grid-cols-2">
+            <div><dt class="text-xs font-bold uppercase text-medium-emphasis">{{ __('Precio', 'motorlan-portal')|e }}</dt><dd class="ml-h5 font-bold text-primary">{{ sale.price|e }}</dd></div>
+            <div><dt class="text-xs font-bold uppercase text-medium-emphasis">{{ __('Fecha', 'motorlan-portal')|e }}</dt><dd class="font-medium">{{ sale.date|e }}</dd></div>
+            <div><dt class="text-xs font-bold uppercase text-medium-emphasis">{{ __('Modalidad', 'motorlan-portal')|e }}</dt><dd class="font-medium">{{ sale.mode|e }}</dd></div>
+            <div><dt class="text-xs font-bold uppercase text-medium-emphasis">{{ __('Estado', 'motorlan-portal')|e }}</dt><dd>{{ c.chip({ label: sale.chip.label, color: sale.chip.color, size: 'sm' }) }}</dd></div>
+          </dl>
+        </section>
+
+        {%- if sale.offer %}
+        <section class="rounded-xl border border-border">
+          <h2 class="flex items-center gap-2 border-b border-border px-5 py-3 font-semibold">{{ ui.icon('discount-2', 'size-5 text-primary') }}<span>{{ __('Detalles de la oferta', 'motorlan-portal')|e }}</span></h2>
+          <dl class="grid gap-4 p-5 sm:grid-cols-2">
+            <div><dt class="text-xs font-bold uppercase text-medium-emphasis">{{ __('Importe ofertado', 'motorlan-portal')|e }}</dt><dd class="ml-h6 font-bold text-primary">{{ sale.offer.amount|e }}</dd></div>
+            <div><dt class="text-xs font-bold uppercase text-medium-emphasis">{{ __('Estado', 'motorlan-portal')|e }}</dt><dd>{{ c.chip({ label: sale.offer.status.label, color: sale.offer.status.color, size: 'sm' }) }}</dd></div>
+            {%- if sale.offer.message %}
+            <div class="sm:col-span-2"><dt class="text-xs font-bold uppercase text-medium-emphasis">{{ __('Mensaje del comprador', 'motorlan-portal')|e }}</dt><dd class="mt-1 whitespace-pre-line rounded-lg bg-[var(--ml-hover)] p-3 text-sm italic">«{{ sale.offer.message|e }}»</dd></div>
+            {%- endif %}
+          </dl>
+        </section>
+        {%- endif %}
+      </div>
+
+      <section class="flex flex-col rounded-xl border border-border p-5">
+        <h2 class="ml-h6 mb-4 font-semibold">{{ __('Información del comprador', 'motorlan-portal')|e }}</h2>
+        <div class="mb-6 flex items-center gap-4">
+          {{ a.avatar({ text: sale.buyer_name ? sale.buyer_name|slice(0, 1)|upper : '?', color: 'primary', class: '!size-16 text-xl' }) }}
+          <div class="min-w-0">
+            <p class="ml-h6 truncate font-semibold">{{ sale.buyer_name ? sale.buyer_name|e : __('Sin comprador asignado', 'motorlan-portal')|e }}</p>
+            {%- if sale.buyer_email %}<p class="flex items-center gap-1 truncate text-sm text-medium-emphasis">{{ ui.icon('mail', 'size-3.5') }}<span class="truncate">{{ sale.buyer_email|e }}</span></p>{% endif %}
+            {%- if sale.buyer_phone %}<p class="flex items-center gap-1 text-sm text-medium-emphasis">{{ ui.icon('phone', 'size-3.5') }}<span>{{ sale.buyer_phone|e }}</span></p>{% endif %}
+          </div>
+        </div>
+        <hr class="ml-divider mb-6 border-dashed">
+        <div class="mb-6">
+          <div class="mb-3 flex items-center justify-between gap-2">
+            <h3 class="flex items-center gap-2 font-semibold">{{ ui.icon('box', 'size-5 text-primary') }}<span>{{ __('Información del producto', 'motorlan-portal')|e }}</span></h3>
+            {%- if sale.pub_url %}
+            <a class="inline-flex items-center gap-1 text-sm font-medium text-primary" href="{{ sale.pub_url|e('html_attr') }}" target="_blank" rel="noopener">{{ __('Ver publicación', 'motorlan-portal')|e }}{{ ui.icon('external-link', 'size-4') }}</a>
+            {%- endif %}
+          </div>
+          <div class="flex items-center gap-4">
+            {%- if sale.image_large %}<img src="{{ sale.image_large|e('html_attr') }}" alt="" class="size-[72px] shrink-0 rounded-lg border border-border object-cover">
+            {%- else %}<span class="grid size-[72px] shrink-0 place-items-center rounded-lg bg-[var(--ml-hover)]">{{ ui.icon('engine', 'size-7 text-medium-emphasis') }}</span>{% endif %}
+            <div class="min-w-0">
+              <p class="font-semibold">{{ sale.title|e }}</p>
+              {%- if sale.brand %}<p class="text-sm"><span class="text-medium-emphasis">{{ __('Marca', 'motorlan-portal')|e }}:</span> {{ sale.brand|e }}</p>{% endif %}
+              {%- if sale.power %}<p class="text-sm"><span class="text-medium-emphasis">{{ __('Potencia', 'motorlan-portal')|e }}:</span> {{ sale.power|e }}</p>{% endif %}
+            </div>
+          </div>
+        </div>
+        {%- if sale.notes %}
+        <hr class="ml-divider mb-6 border-dashed">
+        <div class="mb-6 flex items-start gap-3">
+          {{ ui.icon('notebook', 'size-5 text-medium-emphasis mt-0.5') }}
+          <div><p class="text-xs font-bold uppercase text-medium-emphasis">{{ __('Notas', 'motorlan-portal')|e }}</p><p class="whitespace-pre-line text-sm">{{ sale.notes|e }}</p></div>
+        </div>
+        {%- endif %}
+        <div class="mt-auto space-y-3">
+          {%- if sale.can_rate %}
+          <button type="button" class="ml-btn ml-btn--tonal ml-btn--block ml-c-warning" @click="window.dispatchEvent(new CustomEvent('ml-dialog', { detail: 'ml-rate' }))">{{ ui.icon('star', 'size-5') }}<span>{{ __('Valorar comprador', 'motorlan-portal')|e }}</span></button>
+          {%- endif %}
+          <button type="button" class="ml-btn ml-btn--filled ml-btn--lg ml-btn--block ml-c-primary" @click="$dispatch('ml-chat-open', { id: 'ml-sale-chat' })">{{ ui.icon('message-circle', 'size-5') }}<span>{{ __('Ver chat con el comprador', 'motorlan-portal')|e }}</span></button>
+        </div>
+      </section>
+    </div>
+  {%- endif %}
+  </div>
+</div>
+
+{%- if sale %}
+  {% include 'components/chat-dialog.twig' with { chat: chat } %}
+  {%- if sale.can_rate %}
+  {% include 'components/rating-dialog.twig' with { id: 'ml-rate', url: page_url, nonce: nonce, uuid: sale.uuid, role: 'buyer', name: sale.buyer_name } %}
+  {%- endif %}
+{%- endif %}
+{% endblock %}

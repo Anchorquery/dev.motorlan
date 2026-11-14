@@ -1,0 +1,75 @@
+{#
+  Tabla de Ventas realizadas (filtros + filas + paginación). La pinta pages/ventas.twig y la
+  devuelve VentasController en las peticiones HTMX. Variables: table (VentasController::list)
+#}
+{% embed 'components/table.twig' with {
+  id: 'ml-sales',
+  url: table.url,
+  columns: [
+    { label: __('Publicación', 'motorlan-portal') },
+    { label: __('Comprador', 'motorlan-portal') },
+    { label: __('Tipo', 'motorlan-portal') },
+    { label: __('Precio', 'motorlan-portal') },
+    { label: __('Fecha', 'motorlan-portal') },
+    { label: __('Estado', 'motorlan-portal') },
+    { label: __('Acciones', 'motorlan-portal'), class: 'text-end' },
+  ],
+  page: table.page, pages: table.pages, total: table.total,
+  filters_query: table.query,
+} %}
+  {% block filters %}
+    {%- import 'components/field.twig' as f -%}
+    {{ f.text({ name: 'q', id: 'ml-sales-q', type: 'search', placeholder: __('Buscar venta…', 'motorlan-portal'), icon: 'search', value: table.filters.q, class: 'w-full md:w-64' }) }}
+    {{ f.select({ name: 'tipo', id: 'ml-sales-tipo', options: table.types, value: table.filters.tipo, class: 'w-full md:w-36', attrs: 'aria-label="' ~ __('Tipo', 'motorlan-portal')|e('html_attr') ~ '"' }) }}
+    {{ f.select({ name: 'estado', id: 'ml-sales-estado', options: table.statuses, value: table.filters.estado, class: 'w-full md:w-48', attrs: 'aria-label="' ~ __('Estado', 'motorlan-portal')|e('html_attr') ~ '"' }) }}
+    {{ f.text({ name: 'desde', id: 'ml-sales-desde', type: 'date', label: __('Desde', 'motorlan-portal'), value: table.filters.desde, class: 'w-full md:w-40' }) }}
+    {{ f.text({ name: 'hasta', id: 'ml-sales-hasta', type: 'date', label: __('Hasta', 'motorlan-portal'), value: table.filters.hasta, class: 'w-full md:w-40' }) }}
+    {{ f.select({ name: 'orden', id: 'ml-sales-orden', options: table.orders, value: table.filters.orden, class: 'w-full md:w-48', attrs: 'aria-label="' ~ __('Ordenar por', 'motorlan-portal')|e('html_attr') ~ '"' }) }}
+    {{ f.select({ name: 'per_page', id: 'ml-sales-per-page', options: table.per_page, value: table.filters.per_page, class: 'w-full md:w-40', attrs: 'aria-label="' ~ __('Mostrar', 'motorlan-portal')|e('html_attr') ~ '"' }) }}
+    <noscript><button type="submit" class="ml-btn ml-btn--tonal ml-c-primary">{{ __('Filtrar', 'motorlan-portal')|e }}</button></noscript>
+    {%- if table.has_filters %}
+    <a class="ml-btn ml-btn--text ml-c-secondary" href="{{ table.url|e('html_attr') }}" hx-get="{{ table.url|e('html_attr') }}" hx-target="#ml-sales" hx-swap="outerHTML">{{ __('Limpiar filtros', 'motorlan-portal')|e }}</a>
+    {%- endif %}
+  {% endblock %}
+  {% block rows %}
+    {%- import 'components/chip.twig' as c -%}
+    {%- import 'components/avatar.twig' as a -%}
+    {%- import 'components/icon.twig' as ui -%}
+    {%- for r in table.rows %}
+    <tr>
+      <td data-label="{{ __('Publicación', 'motorlan-portal')|e('html_attr') }}">
+        <div class="flex max-w-[280px] items-center gap-3 py-2">
+          {%- if r.image %}{{ a.avatar({ image: r.image, rounded: true, class: '!size-12 shrink-0 border border-border' }) }}{% else %}{{ a.avatar({ icon: 'package', rounded: true, class: '!size-12 shrink-0' }) }}{% endif %}
+          <div class="min-w-0">
+            <a class="block truncate font-medium text-high-emphasis hover:text-primary" href="{{ r.detail_url|e('html_attr') }}" title="{{ r.title|e('html_attr') }}">{{ r.title|e }}</a>
+            {%- if r.reference %}<p class="text-xs text-medium-emphasis">{{ r.reference|e }}</p>{% endif %}
+          </div>
+        </div>
+      </td>
+      <td data-label="{{ __('Comprador', 'motorlan-portal')|e('html_attr') }}" class="font-medium text-high-emphasis">{{ r.buyer ? r.buyer|e : __('Sin comprador asignado', 'motorlan-portal')|e }}</td>
+      <td data-label="{{ __('Tipo', 'motorlan-portal')|e('html_attr') }}">{{ r.type|e }}</td>
+      <td data-label="{{ __('Precio', 'motorlan-portal')|e('html_attr') }}" class="font-bold text-primary">{{ r.price|e }}</td>
+      <td data-label="{{ __('Fecha', 'motorlan-portal')|e('html_attr') }}" class="whitespace-nowrap">{{ r.date|e }}</td>
+      <td data-label="{{ __('Estado', 'motorlan-portal')|e('html_attr') }}">{{ c.chip({ label: r.chip.label, color: r.chip.color, size: 'sm' }) }}</td>
+      <td data-label="{{ __('Acciones', 'motorlan-portal')|e('html_attr') }}" class="text-end">
+        <div class="inline-flex justify-end gap-2">
+          <a class="ml-btn ml-btn--tonal ml-btn--icon ml-btn--sm ml-c-primary" href="{{ r.detail_url|e('html_attr') }}" title="{{ __('Ver detalle', 'motorlan-portal')|e('html_attr') }}" aria-label="{{ __('Ver detalle', 'motorlan-portal')|e('html_attr') }}">{{ ui.icon('eye', 'size-[18px]') }}</a>
+          {%- if r.pub_url %}
+          <a class="ml-btn ml-btn--tonal ml-btn--icon ml-btn--sm ml-c-secondary" href="{{ r.pub_url|e('html_attr') }}" target="_blank" rel="noopener" title="{{ __('Ver publicación', 'motorlan-portal')|e('html_attr') }}" aria-label="{{ __('Ver publicación', 'motorlan-portal')|e('html_attr') }}">{{ ui.icon('external-link', 'size-[18px]') }}</a>
+          {%- endif %}
+        </div>
+      </td>
+    </tr>
+    {%- endfor %}
+  {% endblock %}
+  {% block empty %}
+    {%- import 'components/empty.twig' as em -%}
+    {%- if table.error %}
+      {{ em.empty({ icon: 'alert-circle', title: __('Error al cargar las ventas.', 'motorlan-portal'), text: __('Inténtalo de nuevo en unos segundos.', 'motorlan-portal') }) }}
+    {%- elseif table.has_filters %}
+      {{ em.empty({ icon: 'search', title: __('Sin resultados', 'motorlan-portal'), text: __('Prueba con otros filtros.', 'motorlan-portal') }) }}
+    {%- else %}
+      {{ em.empty({ icon: 'receipt', title: __('Aún no has realizado ninguna venta.', 'motorlan-portal'), text: __('Cuando vendas una publicación la verás aquí.', 'motorlan-portal') }) }}
+    {%- endif %}
+  {% endblock %}
+{% endembed %}

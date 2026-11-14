@@ -1,0 +1,50 @@
+{#
+  Kit: valoración (RatingModal.vue). Diálogo con estrellas 1-5 y comentario (obligatorio,
+  máx. 1000) que hace POST a `url` con action=review; el controlador llama a
+  Support\Reviews::submit() (→ POST /motorlan/v1/reviews) y redirige con el aviso.
+    {% include 'components/rating-dialog.twig' with {
+      id: 'ml-rate', url: page_url, nonce: nonce, uuid: venta.uuid, role: 'buyer', name: venta.buyer_name } %}
+  Abrir: window.dispatchEvent(new CustomEvent('ml-dialog', { detail: 'ml-rate' })).
+  Compra conocida al abrir (venta manual desde el chat): window.dispatchEvent(new CustomEvent('ml-rate-set',
+    { detail: { id: 'ml-rate', uuid, name } })) y luego abrirlo.
+  Necesita JS (los diálogos del kit se montan con Alpine); las estrellas son radios accesibles.
+  Variables: id · url · nonce · uuid · role (buyer | seller) · name (opcional)
+#}
+{%- import 'components/icon.twig' as ui -%}
+{%- set rid = id|default('ml-rate') -%}
+{%- set role = role|default('buyer') -%}
+{% embed 'components/dialog.twig' with { id: rid, max_width: '520px', persistent: true } %}
+  {% block content %}
+  {%- import 'components/icon.twig' as ui -%}
+  <form method="post" action="{{ url|e('html_attr') }}" x-data="{ rating: 0, hover: 0, comment: '', uuid: {{ ml_json(uuid|default(''))|e('html_attr') }}, name: {{ ml_json(name|default(''))|e('html_attr') }} }"
+        @ml-rate-set.window="if ($event.detail.id === {{ ml_json(rid)|e('html_attr') }}) { uuid = $event.detail.uuid || ''; name = $event.detail.name || ''; rating = 0; comment = '' }"
+        @submit="if (!rating || !comment.trim()) { $event.preventDefault(); $store.toast.show(!rating ? {{ ml_json(__('Elige de 1 a 5 estrellas.', 'motorlan-portal'))|e('html_attr') }} : {{ ml_json(__('El comentario es obligatorio', 'motorlan-portal'))|e('html_attr') }}, 'error') }">
+    <input type="hidden" name="_mlnonce" value="{{ nonce|e('html_attr') }}">
+    <input type="hidden" name="action" value="review">
+    <input type="hidden" name="target_role" value="{{ role|e('html_attr') }}">
+    <input type="hidden" name="purchase_uuid" value="{{ uuid|default('')|e('html_attr') }}" :value="uuid">
+    <h3 class="ml-h6 mb-4 flex items-center gap-2 font-semibold">{{ ui.icon('star', 'size-5 text-warning') }}<span>{{ role == 'seller' ? __('Valora al vendedor', 'motorlan-portal')|e : __('Valora al comprador', 'motorlan-portal')|e }}</span></h3>
+    <p class="mb-2 text-center" x-text="name ? {{ ml_json(__('¿Cómo fue tu experiencia con %s?', 'motorlan-portal'))|e('html_attr') }}.replace('%s', name) : {{ ml_json(__('¿Cómo fue tu experiencia?', 'motorlan-portal'))|e('html_attr') }}">{{ name|default(false) ? __('¿Cómo fue tu experiencia con %s?', 'motorlan-portal')|format(name)|e : __('¿Cómo fue tu experiencia?', 'motorlan-portal')|e }}</p>
+    <fieldset class="flex justify-center gap-1" @mouseleave="hover = 0">
+      <legend class="sr-only">{{ __('Valoración', 'motorlan-portal')|e }}</legend>
+      {%- for n in 1..5 %}
+      <label class="cursor-pointer p-1" @mouseenter="hover = {{ n }}" title="{{ _n('%d estrella', '%d estrellas', n, 'motorlan-portal')|format(n)|e('html_attr') }}">
+        <input type="radio" name="rating" value="{{ n }}" class="peer sr-only" x-model.number="rating" required>
+        <span class="block text-disabled peer-focus-visible:outline-2 peer-focus-visible:outline-primary" :class="(hover || rating) >= {{ n }} && '!text-warning'">{{ ui.icon('star-filled', 'size-9') }}</span>
+        <span class="sr-only">{{ _n('%d estrella', '%d estrellas', n, 'motorlan-portal')|format(n)|e }}</span>
+      </label>
+      {%- endfor %}
+    </fieldset>
+    <p class="mb-4 text-center text-sm text-medium-emphasis" x-show="rating" x-cloak x-text="rating + ' ' + {{ ml_json(__('estrellas', 'motorlan-portal'))|e('html_attr') }}"></p>
+    <div class="ml-field">
+      <label class="ml-label" for="{{ rid|e('html_attr') }}-comment">{{ __('Comentario', 'motorlan-portal')|e }} <span class="ml-required">*</span></label>
+      <textarea class="ml-input" id="{{ rid|e('html_attr') }}-comment" name="comment" rows="4" maxlength="1000" required x-model="comment" placeholder="{{ __('Cuéntanos tu experiencia', 'motorlan-portal')|e('html_attr') }}"></textarea>
+      <span class="ml-hint text-end" x-text="comment.length + ' / 1000'">0 / 1000</span>
+    </div>
+    <div class="mt-6 flex justify-end gap-2">
+      <button type="button" class="ml-btn ml-btn--tonal ml-c-secondary" @click="close()">{{ __('Cancelar', 'motorlan-portal')|e }}</button>
+      <button type="submit" class="ml-btn ml-btn--filled ml-c-primary">{{ ui.icon('send', 'size-5') }}<span>{{ __('Enviar', 'motorlan-portal')|e }}</span></button>
+    </div>
+  </form>
+  {% endblock %}
+{% endembed %}

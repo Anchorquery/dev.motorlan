@@ -96,11 +96,38 @@ class Sections
                 'controller' => null,
                 'spa_paths'  => [],
             ],
-            'vendedor' => [
-                'label'      => 'Panel del vendedor',
+            // Panel del vendedor (fase 4): una sección por bloque de pantallas.
+            'publicaciones' => [
+                'label'      => 'Panel del vendedor: mis publicaciones (listado, alta y edición)',
                 'auth'       => 'user',
-                'controller' => null,
-                'spa_paths'  => [],
+                'controller' => Controllers\PublicacionesController::class,
+                'spa_paths'  => function () {
+                    return Support\SpaPages::panel_patterns(['publications/publication/(?:list|add|edit/[A-Za-z0-9-]+)']);
+                },
+            ],
+            'ventas' => [
+                'label'      => 'Panel del vendedor: ventas y detalle de venta',
+                'auth'       => 'user',
+                'controller' => Controllers\VentasController::class,
+                'spa_paths'  => function () {
+                    return Support\SpaPages::panel_patterns(['publications/sales(?:/[A-Za-z0-9-]+)?']);
+                },
+            ],
+            'ofertas' => [
+                'label'      => 'Panel del vendedor: ofertas recibidas',
+                'auth'       => 'user',
+                'controller' => Controllers\OfertasController::class,
+                'spa_paths'  => function () {
+                    return Support\SpaPages::panel_patterns(['publications/offers-received']);
+                },
+            ],
+            'interesados' => [
+                'label'      => 'Panel del vendedor: interesados (consultas recibidas y venta manual)',
+                'auth'       => 'user',
+                'controller' => Controllers\InteresadosController::class,
+                'spa_paths'  => function () {
+                    return Support\SpaPages::panel_patterns(['inquiries']);
+                },
             ],
             'admin' => [
                 'label'      => 'Administración',

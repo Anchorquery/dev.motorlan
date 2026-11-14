@@ -1,0 +1,125 @@
+{#
+  Tabla de Mis publicaciones (filtros + filas + paginación). La pinta pages/publicaciones.twig
+  y la devuelve PublicacionesController en las peticiones HTMX (filtrar, ordenar, paginar,
+  acciones). Variables: table (PublicacionesController::list_context) · nonce
+  Ordenar: la SPA ordenaba pinchando en la cabecera; aquí es el selector «Ordenar por»
+  (mismos campos que acepta /my-publications).
+  Selección múltiple: las casillas pertenecen al formulario #ml-pub-bulk (atributo form=),
+  así «Eliminar seleccionadas» funciona también sin JS.
+  Acciones por fila: cada una es un formulario POST (sin JS se envía directamente); con JS
+  el clic abre la confirmación de pages/publicaciones.twig.
+#}
+{% embed 'components/table.twig' with {
+  id: 'ml-pubs',
+  url: table.url,
+  columns: [
+    { label: '', class: 'w-10' },
+    { label: __('Publicación', 'motorlan-portal') },
+    { label: __('Referencia', 'motorlan-portal') },
+    { label: __('Precio', 'motorlan-portal') },
+    { label: __('Estado', 'motorlan-portal') },
+    { label: __('Acciones', 'motorlan-portal'), class: 'text-end' },
+  ],
+  page: table.page, pages: table.pages, total: table.total,
+  filters_query: table.query,
+} %}
+  {% block filters %}
+    {%- import 'components/field.twig' as f -%}
+    {%- import 'components/icon.twig' as ui -%}
+    {{ f.text({ name: 'q', id: 'ml-pubs-q', type: 'search', placeholder: __('Buscar publicación', 'motorlan-portal'), icon: 'search', value: table.filters.q, class: 'w-full md:w-72' }) }}
+    {{ f.select({ name: 'estado', id: 'ml-pubs-estado', options: table.statuses, value: table.filters.estado, class: 'w-full md:w-44', attrs: 'aria-label="' ~ __('Estado', 'motorlan-portal')|e('html_attr') ~ '"' }) }}
+    {{ f.select({ name: 'tipo', id: 'ml-pubs-tipo', options: table.tipos, value: table.filters.tipo, class: 'w-full md:w-40', attrs: 'aria-label="' ~ __('Tipo', 'motorlan-portal')|e('html_attr') ~ '"' }) }}
+    {{ f.select({ name: 'orden', id: 'ml-pubs-orden', options: table.orders, value: table.filters.orden, class: 'w-full md:w-52', attrs: 'aria-label="' ~ __('Ordenar por', 'motorlan-portal')|e('html_attr') ~ '"' }) }}
+    {{ f.select({ name: 'per_page', id: 'ml-pubs-per-page', options: table.per_page, value: table.filters.per_page, class: 'w-full md:w-40', attrs: 'aria-label="' ~ __('Mostrar', 'motorlan-portal')|e('html_attr') ~ '"' }) }}
+    <noscript><button type="submit" class="ml-btn ml-btn--tonal ml-c-primary">{{ __('Filtrar', 'motorlan-portal')|e }}</button></noscript>
+    {%- if table.rows %}
+    <div class="flex w-full flex-wrap items-center gap-3">
+      <label class="ml-check" for="ml-pubs-all">
+        <input type="checkbox" id="ml-pubs-all" @change="toggleAll($event.target.checked)" :checked="count > 0 && count === allCount()">
+        <span>{{ __('Seleccionar todas', 'motorlan-portal')|e }}</span>
+      </label>
+      <button type="submit" form="ml-pub-bulk" class="ml-btn ml-btn--filled ml-btn--sm ml-c-error" x-show="count > 0" x-cloak
+              @click.prevent="askBulk()">{{ ui.icon('trash', 'size-[18px]') }}<span>{{ __('Eliminar seleccionadas', 'motorlan-portal')|e }} (<span x-text="count"></span>)</span></button>
+      <noscript><button type="submit" form="ml-pub-bulk" class="ml-btn ml-btn--tonal ml-btn--sm ml-c-error">{{ __('Eliminar seleccionadas', 'motorlan-portal')|e }}</button></noscript>
+    </div>
+    {%- endif %}
+  {% endblock %}
+  {% block rows %}
+    {%- import 'components/chip.twig' as c -%}
+    {%- import 'components/avatar.twig' as a -%}
+    {%- import 'components/icon.twig' as ui -%}
+    {%- set act = {
+      publish: { label: __('Publicar', 'motorlan-portal'), icon: 'player-play', color: 'text-success' },
+      paused:  { label: __('Pausar', 'motorlan-portal'), icon: 'player-pause', color: 'text-warning' },
+      draft:   { label: __('Mover a borrador', 'motorlan-portal'), icon: 'file-text', color: '' },
+    } -%}
+    {%- for r in table.rows %}
+    <tr>
+      <td data-label="{{ __('Seleccionar', 'motorlan-portal')|e('html_attr') }}">
+        {%- if r.can_edit %}
+        <input type="checkbox" class="size-[18px] accent-[var(--ml-primary)]" name="ids[]" value="{{ r.id }}" form="ml-pub-bulk" data-ml-pub-check aria-label="{{ __('Seleccionar', 'motorlan-portal')|e('html_attr') }}: {{ r.name|e('html_attr') }}">
+        {%- endif %}
+      </td>
+      <td data-label="{{ __('Publicación', 'motorlan-portal')|e('html_attr') }}">
+        <div class="flex max-w-[280px] items-center gap-3 py-2">
+          {%- if r.image %}{{ a.avatar({ image: r.image, rounded: true, class: '!size-12 shrink-0 border border-border' }) }}{% endif %}
+          <div class="min-w-0">
+            <p class="truncate font-medium text-high-emphasis" title="{{ r.name|e('html_attr') }}">{{ r.name|e }}</p>
+            {%- if r.brand %}<p class="text-xs text-medium-emphasis">{{ r.brand|e }}</p>{% endif %}
+          </div>
+        </div>
+      </td>
+      <td data-label="{{ __('Referencia', 'motorlan-portal')|e('html_attr') }}" class="font-medium text-high-emphasis">{{ r.reference ? r.reference|e : '—' }}</td>
+      <td data-label="{{ __('Precio', 'motorlan-portal')|e('html_attr') }}">
+        {%- if r.consult %}<span class="font-bold text-warning">{{ __('Consultar precio', 'motorlan-portal')|e }}</span>
+        {%- elseif r.price %}<span class="font-bold text-primary">{{ r.price|e }}</span>
+        {%- else %}<span class="text-medium-emphasis">—</span>{% endif %}
+      </td>
+      <td data-label="{{ __('Estado', 'motorlan-portal')|e('html_attr') }}">{{ c.chip({ label: r.chip.label, color: r.chip.color, size: 'sm' }) }}</td>
+      <td data-label="{{ __('Acciones', 'motorlan-portal')|e('html_attr') }}" class="text-end">
+        <div class="inline-flex items-center justify-end gap-2">
+          {%- if r.status == 'publish' %}
+          <a class="ml-btn ml-btn--tonal ml-btn--icon ml-btn--sm ml-c-success" href="{{ r.url|e('html_attr') }}" target="_blank" rel="noopener" title="{{ __('Ver publicación', 'motorlan-portal')|e('html_attr') }}" aria-label="{{ __('Ver publicación', 'motorlan-portal')|e('html_attr') }}">{{ ui.icon('eye', 'size-[18px]') }}</a>
+          {%- endif %}
+          {%- if r.can_edit %}
+          <a class="ml-btn ml-btn--tonal ml-btn--icon ml-btn--sm ml-c-primary" href="{{ r.edit_url|e('html_attr') }}" title="{{ __('Editar', 'motorlan-portal')|e('html_attr') }}" aria-label="{{ __('Editar', 'motorlan-portal')|e('html_attr') }}">{{ ui.icon('pencil', 'size-[18px]') }}</a>
+          <details class="ml-row-menu relative" x-data="mlRowMenu()" @toggle="place()" @click.outside="close()" @keydown.escape="close()">
+            <summary class="ml-btn ml-btn--tonal ml-btn--icon ml-btn--sm ml-c-secondary" title="{{ __('Más acciones', 'motorlan-portal')|e('html_attr') }}" aria-label="{{ __('Más acciones', 'motorlan-portal')|e('html_attr') }}">{{ ui.icon('dots-vertical', 'size-[18px]') }}</summary>
+            <div class="ml-menu end-0 top-[calc(100%+6px)] w-56 text-start" role="menu" x-ref="menu">
+              {%- set base = { id: r.id, name: r.name, page: table.page } -%}
+              <form method="post" action="{{ table.url|e('html_attr') }}">
+                <input type="hidden" name="_mlnonce" value="{{ nonce|e('html_attr') }}"><input type="hidden" name="action" value="duplicate"><input type="hidden" name="id" value="{{ r.id }}">
+                <button type="submit" class="ml-list-item w-full" role="menuitem" @click.prevent="close(); $dispatch('ml-pub-action', {{ ml_json(base|merge({ action: 'duplicate' }))|e('html_attr') }})">{{ ui.icon('copy', 'size-[18px]') }}<span>{{ __('Duplicar', 'motorlan-portal')|e }}</span></button>
+              </form>
+              {%- for s in r.actions %}
+              <form method="post" action="{{ table.url|e('html_attr') }}">
+                <input type="hidden" name="_mlnonce" value="{{ nonce|e('html_attr') }}"><input type="hidden" name="action" value="status"><input type="hidden" name="id" value="{{ r.id }}"><input type="hidden" name="status" value="{{ s|e('html_attr') }}">
+                <button type="submit" class="ml-list-item w-full" role="menuitem" @click.prevent="close(); $dispatch('ml-pub-action', {{ ml_json(base|merge({ action: 'status', status: s }))|e('html_attr') }})">{{ ui.icon(act[s].icon, 'size-[18px] ' ~ act[s].color) }}<span>{{ act[s].label|e }}</span></button>
+              </form>
+              {%- endfor %}
+              <hr class="ml-divider my-1">
+              <form method="post" action="{{ table.url|e('html_attr') }}">
+                <input type="hidden" name="_mlnonce" value="{{ nonce|e('html_attr') }}"><input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="{{ r.id }}">
+                <button type="submit" class="ml-list-item w-full !text-error" role="menuitem" @click.prevent="close(); $dispatch('ml-pub-action', {{ ml_json(base|merge({ action: 'delete' }))|e('html_attr') }})">{{ ui.icon('trash', 'size-[18px]') }}<span>{{ __('Eliminar', 'motorlan-portal')|e }}</span></button>
+              </form>
+            </div>
+          </details>
+          {%- else %}
+          <span class="ml-btn ml-btn--tonal ml-btn--icon ml-btn--sm ml-c-warning" title="{{ __('En revisión: no se puede editar hasta que un administrador la apruebe.', 'motorlan-portal')|e('html_attr') }}" aria-label="{{ __('En revisión: no se puede editar hasta que un administrador la apruebe.', 'motorlan-portal')|e('html_attr') }}">{{ ui.icon('lock', 'size-[18px]') }}</span>
+          {%- endif %}
+        </div>
+      </td>
+    </tr>
+    {%- endfor %}
+  {% endblock %}
+  {% block empty %}
+    {%- import 'components/empty.twig' as em -%}
+    {%- if table.error %}
+      {{ em.empty({ icon: 'alert-circle', title: __('No se pudieron cargar tus publicaciones.', 'motorlan-portal'), text: __('Inténtalo de nuevo en unos segundos.', 'motorlan-portal') }) }}
+    {%- elseif table.filters.q or table.filters.estado or table.filters.tipo %}
+      {{ em.empty({ icon: 'search', title: __('Sin resultados', 'motorlan-portal'), text: __('Prueba con otros filtros.', 'motorlan-portal') }) }}
+    {%- else %}
+      {{ em.empty({ icon: 'package', title: __('Aún no tienes publicaciones', 'motorlan-portal'), text: __('Publica tu primer motor, regulador o repuesto.', 'motorlan-portal'), action: { label: __('Añadir publicación', 'motorlan-portal'), href: table.add_url, icon: 'plus' } }) }}
+    {%- endif %}
+  {% endblock %}
+{% endembed %}

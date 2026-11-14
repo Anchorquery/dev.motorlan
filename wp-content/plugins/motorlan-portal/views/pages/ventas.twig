@@ -1,0 +1,13 @@
+{% extends 'layout/app-shell.twig' %}
+{#
+  Ventas realizadas: /mi-cuenta/dashboard/publications/sales (sales/index.vue).
+  VentasController. Filtros, orden y paginación con HTMX (partials/ventas-tabla.twig).
+#}
+{% block main %}
+<div class="ml-card overflow-visible">
+  <div class="flex flex-wrap items-center justify-between gap-4 px-6 pt-6">
+    <h1 class="ml-h5 font-semibold">{{ page_title|e }}</h1>
+  </div>
+  {% include 'partials/ventas-tabla.twig' %}
+</div>
+{% endblock %}

@@ -9,6 +9,8 @@ import { mlChat } from './chat.js'
 import mlNotifications from './notifications.js'
 import { mlAvatar, mlChangePassword, mlEmailConfirm } from './cuenta.js'
 import { mlAuth, mlPassword, mlAuthToken } from './auth.js'
+// Panel del vendedor (fase 4): sus componentes se registran solos en alpine:init.
+import './vendedor.js'
 
 const cfg = window.motorlanPortal || {}
 const t = (key, fallback) => (cfg.i18n && cfg.i18n[key]) || fallback

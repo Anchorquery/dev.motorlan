@@ -116,6 +116,10 @@ Llama a los endpoints de `motorlan-api-vue` dentro del mismo proceso
 | `panel` | `/mi-cuenta/` y `/mi-cuenta/dashboard` → Mis compras; URLs antiguas del panel (`purchases/favorites`, `user/company`, `chat`, `questions/list`…) → su pantalla actual | `PanelController` |
 | `cuenta` | `/mi-cuenta/dashboard/user/account` (y `user/profile`, que redirige aquí) | `CuentaController` |
 | `favoritos` | `/mi-cuenta/dashboard/favorites/list` | `FavoritosController` |
+| `publicaciones` | `/mi-cuenta/dashboard/publications/publication/{list,add,edit/{uuid}}` | `PublicacionesController` |
+| `ventas` | `/mi-cuenta/dashboard/publications/sales` y `…/sales/{uuid}` | `VentasController` |
+| `ofertas` | `/mi-cuenta/dashboard/publications/offers-received` | `OfertasController` |
+| `interesados` | `/mi-cuenta/dashboard/inquiries` | `InteresadosController` |
 
 Las URLs son las de la SPA (`Support\SpaPages`: slugs por idioma y rutas que siguen siendo de
 la SPA, p. ej. `/marketplace-motorlan/dashboard/…`). La consulta principal sigue siendo la
@@ -163,6 +167,40 @@ pantalla aún sin migrar sigue en la SPA sin tocar el menú.
   por email; después se renueva el nonce (la API emite cookie nueva).
 - *Favoritos*: tabla con búsqueda, estado, elementos por página y paginación por HTMX;
   quitar pide confirmación y hace POST a la propia URL (`action=remove`) con los filtros.
+
+**Vendedor** (fase 4; Alpine de estas pantallas en `assets/js/vendedor.js`).
+
+- *Mis publicaciones*: tabla HTMX con búsqueda, estado, tipo, «Ordenar por» (sustituye al
+  orden por cabecera de la SPA), por página y selección múltiple. Publicar/pausar/borrador,
+  duplicar (→ editor de la copia), eliminar y eliminar seleccionadas piden confirmación y
+  hacen POST a la propia URL con los filtros (PRG sin JS). «Exportar» descarga CSV (`;`, BOM,
+  todas las páginas, protegido contra fórmulas) con los filtros de la pantalla.
+- *Alta y edición*: un formulario (`pages/publicacion-form.twig` + bloques
+  `partials/publicacion/paso-*.twig`): asistente de 6 pasos en el alta y pestañas en la
+  edición. Validación por paso en el navegador (`mlPubForm`) y siempre en la API; borrador
+  local en `sessionStorage`; fotos > 1 MB se reducen a 2000 px antes de subir; aviso si el
+  total supera `post_max_size` o un archivo `upload_max_filesize`. El alta termina «en
+  revisión» (o publicada si el usuario ya tiene publicaciones aprobadas: lo decide la API) y
+  repite `client_request_id` para no duplicar al reenviar. **Multipart:** el navegador envía
+  `FormData` a la URL de la pantalla; el controlador pasa campos y `$_FILES` a
+  `Support\Api::multipart()` (`set_body_params` + `set_file_params`) y la API los recibe con
+  `get_file_params()`; `media_handle_upload()` lee el `$_FILES` global de la misma petición,
+  así que no hace falta copiar archivos ni una petición HTTP interna. Con
+  `Accept: application/json` responde `{ok, redirect | message, step}`; sin JS, 303 + aviso.
+  **Sin JS** se ven todos los pasos a la vez y los selectores de archivo son `<input type=file>`
+  normales (`<noscript>`).
+- *Ventas*: tabla con búsqueda, tipo, estado, fechas y orden; detalle con resumen, oferta,
+  comprador, chat de la compra y «Valorar comprador».
+- *Ofertas recibidas*: tabla con estado y fechas; aceptar/rechazar por POST (las reglas de
+  stock y plazo son de la API: aceptar solo `pending`/`expired` con `can_accept`, rechazar salvo
+  confirmadas). Detalle en un diálogo; `?offer_id=` lo abre aunque la oferta no esté en la
+  página cargada y se quita de la URL.
+- *Interesados*: bandeja (la API no pagina: búsqueda y paginación en el servidor), refresco
+  cada 60 s con la pestaña visible y sin diálogos abiertos, `?room_key=` abre la conversación.
+  En el chat, «Vender» registra la venta manual (`POST /user/sales/manual`, importe opcional
+  en formato español) y abre la valoración del comprador.
+- Sin JS no hay diálogos: las acciones de las tablas se envían sin confirmación; chat,
+  valoración y venta manual necesitan JS.
 
 ## Panel: añadir una sección
 
@@ -229,6 +267,24 @@ y, al abrir y al llegar mensajes, `POST /products/{id}/rooms` (marcar leído). E
 emite `ml-chat-read` y `ml-chat-message` en `window` para que la lista actualice contadores.
 Varios chats en una página: un `dialogId` distinto por cada uno. Tiempo real = sondeo (la
 SPA quitó pusher-js).
+
+Botones propios en la cabecera del diálogo: `chat_actions: 'partials/….twig'` en el include
+(ámbito de `mlChat`: `productId`, `roomKey`, `title`, `otherName`). Ejemplo:
+`partials/interesados-chat-acciones.twig` («Vender»).
+
+## Kit: valoración
+
+`views/components/rating-dialog.twig` (RatingModal.vue) + `Support\Reviews`: estrellas 1-5 y
+comentario (obligatorio, máx. 1000) que hacen POST a la pantalla con `action=review`; el
+controlador llama a `Reviews::submit($_POST)` (→ `POST /motorlan/v1/reviews`) y redirige con el
+aviso. Necesita JS.
+
+```twig
+{% include 'components/rating-dialog.twig' with { id: 'ml-rate', url: page_url, nonce: nonce, uuid: venta.uuid, role: 'buyer', name: venta.buyer_name } %}
+```
+
+Abrir: evento `ml-dialog` con el id; si la compra se conoce después (venta manual), antes
+`ml-rate-set` con `{ id, uuid, name }`.
 
 ## Migrar una pantalla
 
@@ -312,6 +368,13 @@ favoritos (HTMX, quitar con confirmación y volver a añadirlo), Mi perfil (redi
 `user/profile`, guardar, validación, diálogo de contraseña para el email, primer paso del
 cambio de contraseña) y el chat de la ficha con sesión. Con `ML_PANEL_SPA=1` y las
 secciones apagadas captura las referencias de la SPA (`cuenta.png`, `favoritos.png`).
+
+`tests/visual/portal-vendedor.spec.js` (vendedor de la BD local, con `ML_PORTAL_USER` /
+`ML_PORTAL_PASS` o `ML_PORTAL_COOKIES`, un JSON de cookies de sesión): Mis publicaciones
+(HTMX, menú de fila, CSV), alta completa con fotos y PDF + edición + borrado, ventas
+(detalle y chat), ofertas (`?offer_id`, rechazar con `ML_F4_OFFER_PUB`) e interesados
+(`?room_key` con `ML_F4_ROOM`, vender y valorar). Las escrituras solo en escritorio. Con
+`ML_VENDOR_SPA=1` captura la SPA (`publicaciones.png`, `ventas.png`…).
 
 ## Despliegue
 
