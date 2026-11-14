@@ -117,6 +117,7 @@ Llama a los endpoints de `motorlan-api-vue` dentro del mismo proceso
 | `cuenta` | `/mi-cuenta/dashboard/user/account` (y `user/profile`, que redirige aquí) | `CuentaController` |
 | `favoritos` | `/mi-cuenta/dashboard/favorites/list` | `FavoritosController` |
 | `admin` | `/mi-cuenta/dashboard/admin/publications`, `…/admin/approvals` y `…/admin/approvals/preview/{uuid}` (solo `manage_options`) | `AdminController` |
+| `comprador` | `/mi-cuenta/dashboard/purchases/{purchases,inquiries,offers-sent,opinions}` y `purchases/{uuid}` (detalle de compra, también para el vendedor); URLs antiguas del comprador (`purchases`, `purchases/list`, `purchases/chat/{uuid}`, `purchases/questions`) | `CompradorController` |
 
 Las URLs son las de la SPA (`Support\SpaPages`: slugs por idioma y rutas que siguen siendo de
 la SPA, p. ej. `/marketplace-motorlan/dashboard/…`). La consulta principal sigue siendo la
@@ -187,11 +188,64 @@ al encender la sección pasan al portal sin tocar `Support\Nav`.
   vuelven al listado con `?ok=approved|rejected` (aviso con `partials/admin-flash.twig`);
   corregir la marca propuesta (`POST /admin/update-pending-brand/{id}`) recarga la página.
 
+**Comprador** (`CompradorController`, vistas en `views/{pages,partials}/comprador/`, JS en
+`assets/js/comprador.js`). Todo con `Support\Api` sobre `motorlan/v1`; formularios con POST a
+la propia URL y respuesta parcial por HTMX (sin JS, la página o 303).
+
+- *Mis compras* (`GET /purchases/purchases`): tabla con búsqueda, orden y paginación; en
+  móvil, tarjetas. «Valorar vendedor» abre `partials/comprador/valorar.twig` (RatingModal):
+  POST `action=review` → `POST /reviews`, sin swap; el resultado llega en `HX-Trigger`
+  (`ml:review`) y la tabla se recarga con sus filtros. Botón a *Mis valoraciones*.
+- *Detalle* (`GET /purchases/{uuid}`): producto, la otra parte, estado, oferta y resumen; chat
+  del kit (`Chat::purchase`, `?openChat=true` lo abre). La API decide quién lo ve (403/404 →
+  página de error con ese código). Solo el comprador valora desde aquí (como la SPA).
+- *Consultas enviadas* (`GET /buyer/inquiries`): al entrar hace `POST /buyer/claim-guest-chats`;
+  «Ver chat» cambia de conversación el diálogo del kit (`?room_key=` lo abre al cargar). La
+  tabla se refresca cada 60 s y al leer o enviar mensajes (contador de no leídos).
+- *Ofertas enviadas* (`GET /offers/sent`): búsqueda, estado, fechas; detalle en diálogo;
+  confirmar (`POST /offers/{id}/confirm` con cuerpo JSON → `HX-Redirect` al detalle de la
+  compra) y retirar con confirmación (`DELETE /offers/{id}`). Un solo formulario oculto;
+  `mlOffers` no deja enviar dos veces y la API bloquea la doble confirmación (#155):
+  probado con tres confirmaciones simultáneas → una compra y una unidad de stock.
+- *Mis valoraciones* (`GET /purchases/opinions`): era una ruta huérfana en la SPA; se migra y
+  se enlaza desde Mis compras y desde el menú (filtro `motorlan_portal_nav_vertical`, tras
+  Favoritos; en la barra móvil cae en «Compras»).
+- `GET /marcas` de `purchases.vue` no se migra: era código muerto (`resolveBrandName` no se usaba).
+
+Bugs de la SPA que se corrigen aquí (la SPA no se toca):
+
+- `offers-sent.vue` no importa `assertApiOk`: confirmar creaba la compra pero mostraba
+  «assertApiOk is not defined» y no navegaba; retirar tampoco cerraba ni recargaba.
+- El título de Ofertas enviadas era la clave «offers.sent» (en `es.json` está dentro de `inquiries`).
+- Retirar una oferta no pedía confirmación.
+- Mis compras dejaba valorar compras canceladas (la API lo rechazaba); ahora, la regla del detalle.
+- El diálogo de valorar decía «Vendedor»: ahora el nombre.
+- En el detalle, `acf.marca` es un id y la marca no salía en el nombre (se resuelve con `get_term`);
+  visto por el vendedor ponía «Comprador» en vez del nombre y la miga volvía a Mis compras
+  (ahora a Ventas); el tipo de compra salía «Consultar precio» en ventas directas con precio
+  negociable (ahora «Compra directa»).
+- `product_title` de `/buyer/inquiries` es título + referencia + potencia + velocidad sin
+  unidades: se usa el título de la publicación.
+
+Corregidos en la API (`motorlan-api-vue`) en la misma rama:
+
+- La primera oferta del día respondía `data: null`: `update_user_meta()` pisaba
+  `$wpdb->insert_id` antes de leerlo.
+- `motorlan_validate_json_content_type()` daba 415 a peticiones **sin cuerpo** (p. ej.
+  `POST /offers/{id}/confirm` sin `Content-Type`); ahora solo exige JSON si hay cuerpo.
+- `author.name` de una publicación era el `display_name` (casi siempre el email) para dueño,
+  admin y participantes, y nombre y apellidos para el resto; ahora siempre el nombre público
+  (`motorlan_public_author_name`), con el email aparte en `email`. `/buyer/inquiries`
+  (`user_name` del vendedor), igual.
+- Las fechas de las ofertas (`offer_date`, `accepted_at`, `expires_at`, `confirmed_at`) salían
+  en hora local sin zona; ahora en ISO 8601 con desplazamiento (`2026-11-14T05:15:34+01:00`).
+  `new Date()` en la SPA y `mysql2date()` en el portal las leen bien.
+
 ## Panel: añadir una sección
 
 Todo desde el registro, sin tocar el layout ni el menú:
 
-1. **Registro** (`Sections::registry()`), una entrada nueva:
+1. **Registro** (`Sections::registry()`), una entrada nueva (ejemplo real: `comprador`):
    ```php
    'compras' => ['label' => 'Panel: mis compras', 'auth' => 'user',
        'controller' => Controllers\ComprasController::class,
@@ -345,6 +399,18 @@ una con `_pending_brand_name`, y otra con «prueba fase 5 borrar» que el test d
 de verdad (hay que volver a crearla); el resto de cambios se deshacen (no aprueban: crearía
 la marca). Con `ML_ADMIN_SPA=1` y la sección apagada captura las
 referencias de la SPA (`admin-*.png`).
+
+`tests/visual/portal-comprador.spec.js` (sección `comprador`): Mis compras (búsqueda HTMX,
+diálogo de valorar sin enviar), detalle (resumen, chat, `?openChat=true`, 404), consultas
+(chat del producto, `?room_key=`), ofertas (filtro, detalle, retirar cancelado), Mis
+valoraciones desde el menú y URLs antiguas. Sesión con `ML_PORTAL_USER`/`ML_PORTAL_PASS` o
+`ML_PORTAL_COOKIES` (JSON `[{name, value}]` con las cookies de un usuario de la BD local; el
+nombre de la cookie depende de `WP_HOME`); `ML_COMPRA_UUID` = una compra por oferta sin
+valorar. `ML_COMPRADOR_CONFIRM=1` prueba confirmar con doble clic (crea **una** compra: hay que
+devolver la oferta a «aceptada» después). Con `ML_COMPRADOR_SPA=1` y la sección apagada
+captura `compras.png`, `compra.png`, `consultas.png` y `ofertas.png` de la SPA. Datos que
+espera el usuario de prueba: compras (una por oferta y una directa), consultas con
+respuesta del vendedor y ofertas en cada estado.
 
 ## Despliegue
 

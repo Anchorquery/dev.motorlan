@@ -1,45 +1,38 @@
 <?php
-// Arguments available: $args['title'], $args['message'], $args['data'], $args['user']
-$data = $args['data'] ?? [];
-$product_image = $data['product_image'] ?? '';
-$product_title = $data['product_title'] ?? 'Producto'; // Fallback if data missing (usually listener provides it, but sometimes it might be just title)
-// Listener for offer_created puts title in message, but let's see. 
-// Ah, listener passes 'publication_title' in data? No, in listener I passed 'product_image' but title is not explicitly in 'on_offer_created' data array, I just used it in subject string.
-// Let me double check on_offer_created in listener.
-// I see I didn't add 'product_title' to data in on_offer_created, only used it for subject. I should fix that if I want to use it here independently. 
-// For now, I will extract it from the message if needed or just rely on 'Has recibido una oferta...'
+/**
+ * Email — el vendedor recibe una oferta.
+ *
+ * @var array $args title, message, data (offer_amount, product_*, url), user.
+ */
 
-// Actually, I can update the listener again to be sure, or just proceed. 
-// Let's assume for now I'll use what's available. Listener has 'offer_amount'.
-$offer_amount = $data['offer_amount'] ?? '---';
-$url = get_site_url() . $data['url'];
-?>
+if ( ! defined( 'WPINC' ) ) {
+    die;
+}
 
-<h1><?php esc_html_e( '¡Nueva Oferta Recibida!', 'motorlan-api-vue' ); ?></h1>
+$data          = Motorlan_Email::data( $args );
+$product_title = Motorlan_Email::text( $data, 'product_title', __( 'Producto', 'motorlan-api-vue' ) );
+$offer_amount  = Motorlan_Email::price( isset( $data['offer_amount'] ) ? $data['offer_amount'] : '' );
+$orig_price    = Motorlan_Email::price( isset( $data['product_price'] ) ? $data['product_price'] : '', false );
+$message       = trim( (string) ( isset( $args['message'] ) ? $args['message'] : '' ) );
+$url           = Motorlan_Email::link( $data, $args, 'dashboard/publications/offers-received' );
 
-<p><?php printf( esc_html__( 'Hola %s,', 'motorlan-api-vue' ), esc_html( $args['user']->display_name ) ); ?></p>
+echo Motorlan_Email::h1( __( '¡Nueva Oferta Recibida!', 'motorlan-api-vue' ) );
+echo Motorlan_Email::greeting( isset( $args['user'] ) ? $args['user'] : null );
+if ( '' !== $message ) {
+    echo Motorlan_Email::p( esc_html( $message ) );
+}
 
-<p><?php echo wp_kses_post( $args['message'] ); ?></p>
+// La tarjeta sale siempre (antes sin imagen se perdía también el importe ofertado).
+$lines = array();
+if ( '' !== $offer_amount ) {
+    $lines[] = esc_html__( 'Oferta de:', 'motorlan-api-vue' ) . ' ' . Motorlan_Email::amount( $offer_amount );
+}
+if ( '' !== $orig_price ) {
+    /* translators: %s: precio original (número) */
+    $lines[] = esc_html( sprintf( __( 'Precio original: %s€', 'motorlan-api-vue' ), $orig_price ) );
+}
+echo Motorlan_Email::product_card( $product_title, Motorlan_Email::text( $data, 'product_image' ), $lines );
 
-<?php if ( ! empty( $product_image ) ) : ?>
-<div class="product-card">
-    <img src="<?php echo esc_url($product_image); ?>" alt="<?php esc_attr_e( 'Producto', 'motorlan-api-vue' ); ?>" class="product-img">
-    <div class="product-info">
-        <div class="product-title"><?php esc_html_e( 'Oferta de:', 'motorlan-api-vue' ); ?> <?php echo esc_html($offer_amount); ?>€</div>
-        <?php if (!empty($data['product_price'])): ?>
-            <div style="font-size: 14px; color: #888;"><?php printf( esc_html__( 'Precio original: %s€', 'motorlan-api-vue' ), esc_html( $data['product_price'] ) ); ?></div>
-        <?php endif; ?>
-    </div>
-</div>
-<?php endif; ?>
-
-<p><?php esc_html_e( 'Comprueba los detalles de la oferta y decide si aceptarla o rechazarla.', 'motorlan-api-vue' ); ?></p>
-
-<div style="text-align: center;">
-    <a href="<?php echo esc_url($url); ?>" class="button"><?php esc_html_e( 'Ver Oferta', 'motorlan-api-vue' ); ?></a>
-</div>
-
-<p style="margin-top: 30px; font-size: 14px; color: #666;">
-    <?php esc_html_e( 'Si no puedes hacer clic en el botón, copia y pega este enlace:', 'motorlan-api-vue' ); ?><br>
-    <?php echo esc_url($url); ?>
-</p>
+echo Motorlan_Email::p( esc_html__( 'Comprueba los detalles de la oferta y decide si aceptarla o rechazarla.', 'motorlan-api-vue' ) );
+echo Motorlan_Email::button( __( 'Ver Oferta', 'motorlan-api-vue' ), $url );
+echo Motorlan_Email::link_fallback( $url, __( 'Si no puedes hacer clic en el botón, copia y pega este enlace:', 'motorlan-api-vue' ) );

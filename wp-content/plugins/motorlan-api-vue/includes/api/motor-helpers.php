@@ -136,6 +136,13 @@ if ( ! function_exists( 'motorlan_validate_json_content_type' ) ) {
      * @return true|WP_Error
      */
     function motorlan_validate_json_content_type( $request ) {
+        // Sin cuerpo no hay nada que validar: acciones como POST /offers/{id}/confirm o
+        // marcar leídas no llevan datos y antes daban 415 si el cliente no mandaba
+        // Content-Type (fetch sin body no lo pone). La autenticación por cookie sigue
+        // exigiendo el nonce de la REST.
+        if ( '' === trim( (string) $request->get_body() ) ) {
+            return true;
+        }
         $content_type = $request->get_header( 'content-type' );
         if ( empty( $content_type ) || false === strpos( $content_type, 'application/json' ) ) {
             return new WP_Error( 'invalid_content_type', 'Content-Type must be application/json', array( 'status' => 415 ) );

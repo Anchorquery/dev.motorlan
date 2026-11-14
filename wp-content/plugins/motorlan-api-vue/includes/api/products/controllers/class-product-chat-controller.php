@@ -1208,7 +1208,10 @@ if ( ! class_exists( 'Motorlan_Product_Chat_Controller' ) ) {
                 if ( $seller_id ) {
                     $user = get_userdata( $seller_id ); // Uses cache
                     if ( $user ) {
-                        $seller_name = $user->display_name;
+                        // Nombre público (nombre y apellidos), como en la ficha y Mis compras;
+                        // display_name suele ser el email.
+                        $public = function_exists( 'motorlan_public_author_name' ) ? motorlan_public_author_name( $user ) : '';
+                        $seller_name = '' !== $public ? $public : $seller_name;
                         $seller_avatar = get_avatar_url( $seller_id );
                     }
                 }

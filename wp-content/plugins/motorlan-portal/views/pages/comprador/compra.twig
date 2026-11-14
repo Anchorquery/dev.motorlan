@@ -1,0 +1,201 @@
+{% extends 'layout/app-shell.twig' %}
+{#
+  Detalle de una compra: /mi-cuenta/dashboard/purchases/{uuid} ([uuid].vue). CompradorController::detail.
+  Lo abren comprador y vendedor (la API valida el acceso). Chat de la compra (kit de la fase 2,
+  ?openChat=true lo abre al cargar) y, si mira el comprador, «Valorar vendedor».
+  Variables: error (sin compra) · uuid · role · date · status · raw_status · mode · product ·
+             price · offer · party · can_rate · back · chat · review
+#}
+{% block main %}
+{%- import 'components/icon.twig' as ui -%}
+{%- import 'components/chip.twig' as c -%}
+{%- import 'components/avatar.twig' as a -%}
+{%- import 'components/empty.twig' as em -%}
+
+{%- if error is defined and error %}
+<div class="ml-card mx-auto max-w-xl p-8 text-center">
+  {{ em.empty({ icon: 'receipt-off', title: error, text: __('Revisa el enlace o vuelve a la tienda para continuar navegando.', 'motorlan-portal'), action: { label: __('Ir a la tienda', 'motorlan-portal'), href: urls.store, icon: 'building-store' } }) }}
+</div>
+{%- else %}
+
+{#- Miga (la SPA siempre volvía a Compras; el vendedor vuelve a Ventas). #}
+<nav class="ml-card mb-6 flex items-center gap-2 px-6 py-4" aria-label="{{ __('Miga de pan', 'motorlan-portal')|e('html_attr') }}">
+  <a class="ml-btn ml-btn--text ml-btn--sm ml-c-secondary" href="{{ back.url|e('html_attr') }}">{{ ui.icon(back.icon, 'size-4') }}<span>{{ back.label|e }}</span></a>
+  {{ ui.icon('chevron-right', 'size-3.5 text-medium-emphasis') }}
+  <span class="min-w-0 truncate text-xs font-bold uppercase tracking-wide text-high-emphasis" aria-current="page">{{ product.name|e }}</span>
+</nav>
+
+<div class="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_320px] xl:grid-cols-[minmax(0,1fr)_340px]">
+  <div class="flex min-w-0 flex-col gap-6">
+
+    {#- Producto #}
+    <section class="ml-card flex flex-col gap-6 p-6 md:flex-row" data-test="purchase-product">
+      <div class="shrink-0">
+        {%- if product.image %}
+        <img src="{{ product.image|e('html_attr') }}" alt="" class="size-[120px] rounded-lg object-cover shadow-md">
+        {%- else %}
+        <span class="flex size-[120px] items-center justify-center rounded-lg bg-[var(--ml-surface-variant,#f1f0f2)] text-medium-emphasis shadow-md">{{ ui.icon('photo-off', 'size-12') }}</span>
+        {%- endif %}
+      </div>
+      <div class="flex min-w-0 flex-1 flex-col">
+        <div class="mb-2 flex flex-wrap gap-2">
+          {{ c.chip({ label: status.label, color: status.color, size: 'sm', class: 'font-bold uppercase' }) }}
+          {{ c.chip({ label: mode, color: 'secondary', size: 'sm', class: 'font-bold uppercase' }) }}
+        </div>
+        <h1 class="ml-h5 mb-2 line-clamp-2 font-bold text-high-emphasis">
+          {%- if product.url %}<a class="text-high-emphasis hover:text-primary" href="{{ product.url|e('html_attr') }}" target="_blank" rel="noopener">{{ product.name|e }}</a>{% else %}{{ product.name|e }}{% endif -%}
+        </h1>
+        {%- if product.location %}
+        <p class="mb-4 flex items-center gap-1 text-sm text-medium-emphasis">{{ ui.icon('map-pin', 'size-4') }}<span>{{ product.location|e }}</span></p>
+        {%- endif %}
+        <div class="mt-auto flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p class="mb-1 text-xs font-bold uppercase text-medium-emphasis">{{ __('Total a pagar', 'motorlan-portal')|e }}</p>
+            <p class="ml-h4 font-bold text-primary" data-test="purchase-total">{{ price.total|e }}</p>
+            {%- if price.notes %}<p class="mt-1 text-xs text-medium-emphasis">{{ price.notes|join(', ')|e }}</p>{% endif %}
+          </div>
+          {%- if product.url %}
+          <a class="ml-btn ml-btn--tonal ml-c-primary" href="{{ product.url|e('html_attr') }}" target="_blank" rel="noopener"><span>{{ __('Ver producto', 'motorlan-portal')|e }}</span>{{ ui.icon('external-link', 'size-4') }}</a>
+          {%- endif %}
+        </div>
+      </div>
+    </section>
+
+    {#- La otra parte + chat #}
+    <section class="ml-card overflow-hidden" data-test="purchase-party">
+      <header class="flex items-center gap-2 border-b border-border px-6 py-4">
+        <span class="text-primary">{{ ui.icon('user-circle') }}</span>
+        <h2 class="font-bold text-high-emphasis">{{ party.title|e }}</h2>
+      </header>
+      <div class="flex flex-col p-6">
+        <div class="mb-6 flex items-center gap-4">
+          {%- if party.avatar %}{{ a.avatar({ image: party.avatar, alt: party.name, class: '!size-16 shadow-md' }) }}{% else %}<span class="ml-avatar ml-c-primary !size-16 text-xl font-bold shadow-md">{{ party.initials|e }}</span>{% endif %}
+          <div class="min-w-0">
+            <p class="ml-h6 mb-1 truncate font-bold text-high-emphasis">{{ party.name|e }}</p>
+            {%- if party.company %}<p class="mb-1 flex items-center gap-1 text-sm text-medium-emphasis">{{ ui.icon('building-skyscraper', 'size-3.5') }}<span>{{ party.company|e }}</span></p>{% endif %}
+            {%- if product.location %}<p class="flex items-center gap-1 text-sm text-medium-emphasis">{{ ui.icon('map-pin', 'size-3.5') }}<span>{{ product.location|e }}</span></p>{% endif %}
+          </div>
+        </div>
+        {%- if party.rating is not null or party.sales is not null %}
+        <div class="mb-6 flex flex-wrap gap-3">
+          {%- if party.rating is not null %}
+          <span class="flex items-center gap-1.5 rounded-full bg-[color-mix(in_srgb,var(--ml-high-emphasis)_6%,transparent)] px-3 py-1" title="{{ party.rating|number_format(1, ',')|e('html_attr') }} / 5">
+            <span class="flex text-warning" aria-hidden="true">
+              {%- for s in 1..5 %}<span class="{{ party.rating >= s - 0.25 ? '[&_svg]:fill-current' : 'opacity-50' }}">{{ ui.icon('star', 'size-4') }}</span>{% endfor -%}
+            </span>
+            <span class="text-xs font-bold">{{ party.rating|number_format(1, ',')|e }}</span>
+          </span>
+          {%- endif %}
+          {%- if party.sales is not null %}
+          <span class="flex items-center gap-1 rounded-full bg-[color-mix(in_srgb,var(--ml-high-emphasis)_6%,transparent)] px-3 py-1 text-xs font-bold">{{ ui.icon('shopping-bag', 'size-3.5 text-medium-emphasis') }}{{ __('Ventas: %s', 'motorlan-portal')|format(party.sales|number_format(0, ',', '.'))|e }}</span>
+          {%- endif %}
+        </div>
+        {%- endif %}
+        {%- if party.email %}
+        <a class="mb-6 flex items-center gap-2 rounded px-3 py-2 text-sm text-high-emphasis hover:bg-[color-mix(in_srgb,var(--ml-high-emphasis)_4%,transparent)]" href="mailto:{{ party.email|e('html_attr') }}">
+          <span class="ml-avatar ml-avatar--rounded ml-avatar--sm ml-c-primary">{{ ui.icon('mail', 'size-4') }}</span><span class="truncate">{{ party.email|e }}</span>
+        </a>
+        {%- endif %}
+        <div class="flex gap-3 border-t border-border pt-4">
+          <button type="button" class="ml-btn ml-btn--filled ml-btn--lg ml-c-primary flex-1 font-bold" data-test="open-chat"
+                  @click="$dispatch('ml-chat-open', { id: {{ ml_json(chat.dialogId|default('ml-chat'))|e('html_attr') }} })">{{ ui.icon('message-circle', 'size-5') }}<span>{{ __('Abrir chat', 'motorlan-portal')|e }}</span></button>
+          {%- if product.url %}
+          <a class="ml-btn ml-btn--tonal ml-btn--icon ml-btn--lg ml-c-secondary" href="{{ product.url|e('html_attr') }}" target="_blank" rel="noopener" title="{{ __('Ver producto', 'motorlan-portal')|e('html_attr') }}" aria-label="{{ __('Ver producto', 'motorlan-portal')|e('html_attr') }}">{{ ui.icon('external-link', 'size-5') }}</a>
+          {%- endif %}
+        </div>
+      </div>
+    </section>
+
+    {#- Estado #}
+    <section class="ml-card ml-c-{{ status.color|e('html_attr') }} bg-[color-mix(in_srgb,var(--c)_6%,var(--ml-surface,#fff))] p-6 text-center" data-test="purchase-status">
+      <span class="ml-avatar ml-c-{{ status.color|e('html_attr') }} mx-auto mb-4 !size-16">{{ ui.icon('info-circle', 'size-8') }}</span>
+      <h2 class="ml-h5 mb-2 font-bold text-high-emphasis">{{ status.title|e }}</h2>
+      <div class="mb-4 flex justify-center">{{ c.chip({ label: status.label, color: status.color, class: 'font-bold' }) }}</div>
+      <p class="mx-auto max-w-sm text-medium-emphasis">{{ status.text|e }}</p>
+      {%- if raw_status %}<p class="mt-2 text-xs text-disabled">{{ __('Estado técnico', 'motorlan-portal')|e }}: {{ raw_status|e }}</p>{% endif %}
+    </section>
+
+    {#- Oferta #}
+    {%- if offer %}
+    <section class="ml-card p-6" data-test="purchase-offer">
+      <h2 class="ml-card__title mb-4">{{ __('Oferta de precio', 'motorlan-portal')|e }}</h2>
+      <div class="mb-2 flex flex-wrap items-center gap-3">
+        <span class="ml-h4 font-bold text-high-emphasis">{{ (price.offer ?: price.total)|e }}</span>
+        {{ c.chip({ label: offer.chip.label, color: offer.chip.color, size: 'sm' }) }}
+      </div>
+      {%- if offer.status_text %}<p class="mb-4 text-medium-emphasis">{{ offer.status_text|e }}</p>{% endif %}
+      <dl class="grid gap-3 sm:grid-cols-2">
+        {%- for item in [
+          { label: __('Enviada', 'motorlan-portal'), value: offer.date_full },
+          { label: __('Aceptada', 'motorlan-portal'), value: offer.accepted },
+          { label: __('Confirmada', 'motorlan-portal'), value: offer.confirmed },
+          { label: __('Vence', 'motorlan-portal'), value: offer.confirmed ? '' : offer.expires },
+        ]|filter(i => i.value) %}
+        <div><dt class="text-xs font-semibold uppercase text-medium-emphasis">{{ item.label|e }}</dt><dd class="text-high-emphasis">{{ item.value|e }}</dd></div>
+        {%- endfor %}
+      </dl>
+      {%- if offer.comment %}
+      <div class="mt-4 rounded-lg bg-[color-mix(in_srgb,var(--ml-high-emphasis)_4%,transparent)] p-4">
+        <p class="mb-1 text-xs font-semibold uppercase text-medium-emphasis">{{ __('Mensaje enviado', 'motorlan-portal')|e }}</p>
+        <p class="whitespace-pre-line text-high-emphasis">{{ offer.comment|e }}</p>
+      </div>
+      {%- endif %}
+    </section>
+    {%- endif %}
+
+    {#- Valorar (solo comprador; se oculta al enviar) #}
+    {%- if can_rate %}
+    <section class="ml-card" x-data="{ done: false }" x-show="!done" @ml-review-done.window="done = true" data-test="purchase-rate">
+      <div class="flex flex-col items-center justify-between gap-4 p-6 sm:flex-row">
+        <div>
+          <h2 class="ml-h6 mb-1 font-bold">{{ __('¿Qué tal tu experiencia?', 'motorlan-portal')|e }}</h2>
+          <p class="text-sm text-medium-emphasis">{{ __('Ayuda a otros usuarios calificando al vendedor', 'motorlan-portal')|e }}</p>
+        </div>
+        <button type="button" class="ml-btn ml-btn--filled ml-c-warning"
+                @click="$dispatch('ml-rate', {{ ml_json({ uuid: uuid, name: party.name, target: 'seller' })|e('html_attr') }})">{{ ui.icon('star', 'size-5') }}<span>{{ __('Valorar vendedor', 'motorlan-portal')|e }}</span></button>
+      </div>
+    </section>
+    {%- endif %}
+  </div>
+
+  {#- Resumen #}
+  <aside class="ml-card p-6 lg:sticky lg:top-24" data-test="purchase-summary">
+    <h2 class="ml-h6 mb-4 font-bold">{{ __('Detalle de la compra', 'motorlan-portal')|e }}</h2>
+    <p class="text-sm text-high-emphasis">{{ date|e }}</p>
+    <p class="mb-4 break-all text-xs text-medium-emphasis"># {{ uuid|e }}</p>
+    <dl class="divide-y divide-border text-sm">
+      {%- set rows = [
+        { label: __('Estado', 'motorlan-portal'), value: status.label },
+        { label: __('Tipo de compra', 'motorlan-portal'), value: mode },
+        { label: __('Producto', 'motorlan-portal'), value: product.name, stack: true },
+        { label: __('Tipo', 'motorlan-portal'), value: product.type, stack: true },
+        { label: __('Cantidad', 'motorlan-portal'), value: price.qty },
+        { label: __('Precio unitario', 'motorlan-portal'), value: price.unit },
+        { label: __('Precio publicado', 'motorlan-portal'), value: price.published },
+        { label: __('Oferta aceptada', 'motorlan-portal'), value: price.offer },
+      ] -%}
+      {%- for r in rows|filter(r => r.value) %}
+      <div class="{{ r.stack|default(false) ? 'flex flex-col gap-0.5' : 'flex justify-between gap-4' }} py-2.5">
+        <dt class="text-medium-emphasis">{{ r.label|e }}</dt>
+        <dd class="{{ r.stack|default(false) ? 'font-medium' : 'text-end font-medium' }} text-high-emphasis">{{ r.value|e }}</dd>
+      </div>
+      {%- endfor %}
+      <div class="flex justify-between gap-4 py-3 text-base font-bold">
+        <dt>{{ __('Total pagado', 'motorlan-portal')|e }}</dt>
+        <dd class="text-primary">{{ price.total|e }}</dd>
+      </div>
+    </dl>
+    <details class="group mt-2 rounded-lg border border-border">
+      <summary class="flex cursor-pointer list-none items-center justify-between gap-2 px-4 py-3 text-sm font-medium">
+        {{ __('Detalles de pago y entrega', 'motorlan-portal')|e }}
+        <span class="transition-transform group-open:rotate-180">{{ ui.icon('chevron-down', 'size-4') }}</span>
+      </summary>
+      <p class="px-4 pb-4 text-sm text-medium-emphasis">{{ __('Coordina directamente con el vendedor la fecha y el lugar de entrega.', 'motorlan-portal')|e }}</p>
+    </details>
+  </aside>
+</div>
+
+{% include 'components/chat-dialog.twig' with { chat: chat } %}
+{%- if can_rate %}{% include 'partials/comprador/valorar.twig' with { review: review } %}{% endif %}
+{%- endif %}
+{% endblock %}
