@@ -533,7 +533,10 @@ function motorlan_get_publicacion_data($post_id, $include_sensitive = false, $in
             'id' => $author_id,
             // display_name y nickname son el email en la mayoría de cuentas (registro con
             // email como login): solo se envían tal cual a dueño/admin/participantes.
-            'name' => $show_author_private ? $user->display_name : motorlan_public_author_name($user),
+            // Nombre y apellidos para todos (antes dueño/admin/participantes recibían el
+            // display_name, normalmente el email, y el mismo vendedor salía con nombre en
+            // Mis compras y con el email en el detalle). El email va aparte en `email`.
+            'name' => motorlan_public_author_name($user) ?: ($show_author_private ? $user->display_name : ''),
             'first_name' => $user->first_name,
             'last_name' => $user->last_name,
             'nickname' => $show_author_private ? $user->nickname : null,

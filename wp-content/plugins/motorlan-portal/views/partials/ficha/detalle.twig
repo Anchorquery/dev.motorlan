@@ -1,0 +1,34 @@
+{#
+  Tarjeta de detalle de la ficha (ProductDetails.vue): precio, tipo, marca, ubicación,
+  vendedor, stock, ventas, garantía. Variables: p (Support\Store::product); p.reference
+  (opcional) fuerza el chip «Referencia» junto al precio (vista previa del admin).
+  La usan pages/ficha.twig y pages/admin-vista-previa.twig.
+#}
+{%- import 'components/icon.twig' as ui -%}
+<div class="ml-card ml-card--lg ml-detail">
+  <h2 class="ml-detail__title">{{ p.title|upper|e }}</h2>
+  <div class="ml-detail__grid">
+    <div class="ml-detail__price">
+      {%- if p.show_price %}
+        <span class="text-premium-price text-xl font-bold">{{ p.price_label|e }}</span>
+        {%- if p.consult and (p.reference ?? p.owner) %}<span class="ml-chip ml-chip--sm ml-c-info">{{ __('Referencia', 'motorlan-portal')|e }}</span>{% endif %}
+      {%- else %}
+        {{ ui.icon('currency-euro') }}
+        <span class="{{ p.consult ? 'text-base font-bold text-warning' : 'font-medium' }}">{{ __('Consultar precio', 'motorlan-portal')|e }}</span>
+      {%- endif %}
+    </div>
+    {%- if p.tipo_label %}<div class="ml-detail__item">{{ ui.icon('category') }}<span>{{ p.tipo_label|e }}</span></div>{% endif %}
+    <div class="ml-detail__item">{{ ui.icon('tag') }}<span>{{ p.brand|e }}</span></div>
+    <div class="ml-detail__item">{{ ui.icon('map-pin') }}<span>{{ p.location|e }}</span></div>
+    <div class="ml-detail__item">{{ ui.icon('user') }}<span title="{{ p.seller.name|e('html_attr') }}">{{ p.seller.name|e }}</span>
+      {%- if p.seller.rating is not null %}
+      <span class="ml-rating ms-1" role="img" aria-label="{{ __('Valoración: %s de 5', 'motorlan-portal')|format(p.seller.rating|number_format(1, ',', '.'))|e('html_attr') }}">
+        {%- for s in 1..5 %}{{ ui.icon('star', s <= p.seller.rating|round ? 'fill-current' : '') }}{% endfor -%}
+      </span>
+      {%- endif %}
+    </div>
+    <div class="ml-detail__item">{{ ui.icon('box') }}<span>{{ __('Stock', 'motorlan-portal')|e }}: {{ p.stock is null ? __('N/A', 'motorlan-portal')|e : p.stock }}</span></div>
+    {%- if p.seller.sales is not null %}<div class="ml-detail__item">{{ ui.icon('chart-bar') }}<span>{{ __('Ventas', 'motorlan-portal')|e }}: {{ p.seller.sales }}</span></div>{% endif %}
+    {%- if p.warranty %}<div class="ml-detail__item !text-success">{{ ui.icon('shield-check') }}<span>{{ __('Garantía Motorlan', 'motorlan-portal')|e }}</span></div>{% endif %}
+  </div>
+</div>

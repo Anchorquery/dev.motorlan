@@ -1,0 +1,19 @@
+{#
+  Información de la publicación (PublicacionInfo.vue): tabla de especificaciones.
+  Variables: p (Support\Store::product). La usan pages/ficha.twig y pages/admin-vista-previa.twig.
+#}
+{%- import 'components/icon.twig' as ui -%}
+<section class="ml-card">
+  <div class="ml-card__header"><h2 class="ml-card__title flex items-center gap-2 uppercase">{{ ui.icon('info-circle', 'size-5 text-error') }}{{ __('Información de la publicación', 'motorlan-portal')|e }}</h2></div>
+  <div class="ml-card__body">
+    <table class="ml-info-table">
+      <tbody>
+      {%- for label, value in p.specs %}
+        <tr><th scope="row">{{ label|e }}</th><td>{{ value|e }}</td></tr>
+      {%- else %}
+        <tr><td class="text-medium-emphasis">-</td></tr>
+      {%- endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>

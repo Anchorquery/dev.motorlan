@@ -1,0 +1,90 @@
+{% extends 'layout/app-shell.twig' %}
+{#
+  Administrar publicaciones: /mi-cuenta/dashboard/admin/publications
+  (admin/publications/index.vue + ContactPublisherModal.vue). AdminController.
+  La tabla (partials/admin-publicaciones-tabla.twig) se filtra y pagina con HTMX. Cada
+  acción abre su diálogo (evento ml-admin-pub con { dialog, pub }) y hace POST a esta URL
+  con `action`, el id y los filtros actuales; el servidor devuelve la tabla y un aviso.
+  El diálogo se cierra solo si la respuesta trae X-Ml-Done (si falla, se queda abierto
+  con lo escrito).
+#}
+{% block main %}
+{%- import 'components/icon.twig' as ui -%}
+{%- import 'components/field.twig' as f -%}
+{% include 'partials/admin-flash.twig' %}
+<div x-data="{ sel: { id: 0, name: '', status: '' }, newStatus: '', subject: '', message: '' }"
+     @ml-admin-pub.window="sel = $event.detail.pub; newStatus = sel.status; subject = {{ ml_json(default_subject)|e('html_attr') }}; message = ''; window.dispatchEvent(new CustomEvent('ml-dialog', { detail: $event.detail.dialog }))">
+  <div class="ml-card overflow-visible">
+    <div class="flex flex-wrap items-center justify-between gap-4 px-6 pt-6">
+      <h1 class="ml-h5 font-semibold">{{ page_title|e }}</h1>
+    </div>
+    {% include 'partials/admin-publicaciones-tabla.twig' %}
+  </div>
+
+  {#- Formularios de los diálogos: mismo destino, mismos filtros (hx-include). #}
+  {%- set hx_form = 'method="post" action="' ~ table.url|e('html_attr') ~ '" hx-post="' ~ table.url|e('html_attr') ~ '" hx-target="#ml-admin-pubs" hx-swap="outerHTML" hx-include="#ml-admin-pubs-filters" hx-disabled-elt="find button" x-init="window.htmx && window.htmx.process($el)" @htmx:after-request="$event.detail.xhr && $event.detail.xhr.getResponseHeader(\'X-Ml-Done\') && close()"' -%}
+
+  {# ── Cambiar estado ── #}
+  {% embed 'components/dialog.twig' with { id: 'ml-admin-status', max_width: '420px' } %}
+    {% block content %}
+    {%- import 'components/icon.twig' as ui -%}
+    {%- import 'components/field.twig' as f -%}
+    <h3 class="ml-h6 mb-1 flex items-center gap-2 font-semibold">{{ ui.icon('refresh', 'size-5 text-primary') }}<span>{{ __('Cambiar estado', 'motorlan-portal')|e }}</span></h3>
+    <p class="mb-4 text-sm text-medium-emphasis" x-text="sel.name"></p>
+    <form {{ hx_form|raw }}>
+      <input type="hidden" name="_mlnonce" value="{{ nonce|e('html_attr') }}">
+      <input type="hidden" name="action" value="status">
+      <input type="hidden" name="id" :value="sel.id">
+      {{ f.select({ name: 'status', id: 'ml-admin-new-status', label: __('Nuevo estado', 'motorlan-portal'), options: status_options, attrs: 'x-model="newStatus"' }) }}
+      <div class="mt-6 flex justify-end gap-2">
+        <button type="button" class="ml-btn ml-btn--text ml-c-secondary" @click="close()">{{ __('Cancelar', 'motorlan-portal')|e }}</button>
+        <button type="submit" class="ml-btn ml-btn--filled ml-c-primary" :disabled="newStatus === sel.status">{{ __('Guardar', 'motorlan-portal')|e }}</button>
+      </div>
+    </form>
+    {% endblock %}
+  {% endembed %}
+
+  {# ── Eliminar: DELETE /admin/publications/{id} borra definitivamente (wp_delete_post sin
+       force solo manda a la papelera entradas y páginas, no el CPT publicacion). ── #}
+  {% embed 'components/dialog.twig' with { id: 'ml-admin-delete', max_width: '440px', persistent: true } %}
+    {% block content %}
+    {%- import 'components/icon.twig' as ui -%}
+    <h3 class="ml-h6 mb-4 flex items-center gap-2 font-semibold">{{ ui.icon('trash', 'size-5 text-error') }}<span>{{ __('¿Eliminar esta publicación?', 'motorlan-portal')|e }}</span></h3>
+    <p class="text-sm font-medium text-high-emphasis">«<span x-text="sel.name"></span>»</p>
+    <p class="mt-3 font-medium text-error">{{ __('Se eliminará definitivamente, con todos sus datos. No se puede deshacer.', 'motorlan-portal')|e }}</p>
+    <p class="mt-2 text-sm text-medium-emphasis" x-show="sel.status !== 'trash'">{{ __('Para retirarla de la tienda sin borrarla, cambia su estado a «Papelera».', 'motorlan-portal')|e }}</p>
+    <form {{ hx_form|raw }}>
+      <input type="hidden" name="_mlnonce" value="{{ nonce|e('html_attr') }}">
+      <input type="hidden" name="action" value="delete">
+      <input type="hidden" name="id" :value="sel.id">
+      <div class="mt-6 flex justify-end gap-2">
+        <button type="button" class="ml-btn ml-btn--text ml-c-secondary" @click="close()">{{ __('Cancelar', 'motorlan-portal')|e }}</button>
+        <button type="submit" class="ml-btn ml-btn--filled ml-c-error">{{ ui.icon('trash', 'size-[18px]') }}<span>{{ __('Eliminar', 'motorlan-portal')|e }}</span></button>
+      </div>
+    </form>
+    {% endblock %}
+  {% endembed %}
+
+  {# ── Contactar al anunciante (ContactPublisherModal.vue) ── #}
+  {% embed 'components/dialog.twig' with { id: 'ml-admin-contact', max_width: '600px' } %}
+    {% block content %}
+    {%- import 'components/icon.twig' as ui -%}
+    {%- import 'components/field.twig' as f -%}
+    <h3 class="ml-h6 mb-1 flex items-center gap-2 font-semibold">{{ ui.icon('mail', 'size-5 text-info') }}<span>{{ __('Contactar al anunciante', 'motorlan-portal')|e }}</span></h3>
+    <p class="mb-4 text-sm text-medium-emphasis">{{ __('Publicación:', 'motorlan-portal')|e }} <span class="font-medium text-high-emphasis" x-text="sel.name"></span></p>
+    <form class="grid gap-4" {{ hx_form|raw }}>
+      <input type="hidden" name="_mlnonce" value="{{ nonce|e('html_attr') }}">
+      <input type="hidden" name="action" value="contact">
+      <input type="hidden" name="id" :value="sel.id">
+      {{ f.text({ name: 'subject', id: 'ml-admin-subject', label: __('Asunto', 'motorlan-portal'), attrs: 'x-model="subject" maxlength="200"' }) }}
+      {{ f.textarea({ name: 'message', id: 'ml-admin-message', label: __('Mensaje', 'motorlan-portal'), rows: 5, required: true, placeholder: __('Escribe tu mensaje aquí…', 'motorlan-portal'), attrs: 'x-model="message" maxlength="5000"' }) }}
+      <p class="text-xs text-medium-emphasis">{{ __('Se envía por email al anunciante y le llega también como notificación en su panel.', 'motorlan-portal')|e }}</p>
+      <div class="flex justify-end gap-2">
+        <button type="button" class="ml-btn ml-btn--text ml-c-secondary" @click="close()">{{ __('Cancelar', 'motorlan-portal')|e }}</button>
+        <button type="submit" class="ml-btn ml-btn--filled ml-c-primary" :disabled="!message.trim()">{{ ui.icon('send', 'size-[18px]') }}<span>{{ __('Enviar', 'motorlan-portal')|e }}</span></button>
+      </div>
+    </form>
+    {% endblock %}
+  {% endembed %}
+</div>
+{% endblock %}

@@ -98,7 +98,10 @@ class Motorlan_Notification_Listener {
         
         try {
             $subject = __( 'Bienvenido a Motorlan', 'motorlan-api-vue' );
-            $message = sprintf( __( 'Hola %s, gracias por registrarte en Motorlan. Tu cuenta ha sido verificada con éxito.', 'motorlan-api-vue' ), $user->display_name );
+            $name    = Motorlan_Email::user_name( $user );
+            $message = '' !== $name
+                ? sprintf( __( 'Hola %s, gracias por registrarte en Motorlan. Tu cuenta ha sido verificada con éxito.', 'motorlan-api-vue' ), $name )
+                : __( 'Gracias por registrarte en Motorlan. Tu cuenta ha sido verificada con éxito.', 'motorlan-api-vue' );
 
             $this->notification_manager->create_notification(
                 $user_id,
@@ -121,20 +124,24 @@ class Motorlan_Notification_Listener {
 
         try {
             $subject = __( 'Verifica tu cuenta en Motorlan', 'motorlan-api-vue' );
-            $message = sprintf( __( 'Hola %s, por favor verifica tu cuenta haciendo clic en el siguiente enlace.', 'motorlan-api-vue' ), $user->display_name );
+            $name    = Motorlan_Email::user_name( $user );
+            $message = '' !== $name
+                ? sprintf( __( 'Hola %s, por favor verifica tu cuenta haciendo clic en el siguiente enlace.', 'motorlan-api-vue' ), $name )
+                : __( 'Por favor, verifica tu cuenta haciendo clic en el siguiente enlace.', 'motorlan-api-vue' );
             $data = [
                 'token' => $token,
                 'url' => motorlan_account_url( 'verify-email?token=' . $token, $user_id ),
                 'vue_path' => '/verify-email?token=' . $token,
             ];
 
-            // Try to create DB notification but always send email regardless of DB result
+            // La notificación web NO lleva el token ni la URL de verificación: solo debe
+            // viajar por el correo del usuario. Se guarda el aviso, sin esos datos.
             $created = $this->notification_manager->create_notification(
                 $user_id,
                 'verify_email',
                 $subject,
                 $message,
-                $data,
+                [],
                 ['web']
             );
 
@@ -240,7 +247,7 @@ class Motorlan_Notification_Listener {
 
         $seller_id = get_post_field( 'post_author', $offer->publication_id );
         $buyer = get_userdata( $offer->user_id );
-        $buyer_name = $buyer ? $buyer->display_name : 'Usuario';
+        $buyer_name = Motorlan_Email::party_name( $buyer, __( 'Un usuario', 'motorlan-api-vue' ) );
         $publication_title = motorlan_format_motor_name( $offer->publication_id );
 
         $image = get_the_post_thumbnail_url( $offer->publication_id, 'medium' );
@@ -331,7 +338,7 @@ class Motorlan_Notification_Listener {
         try {
             $this->notification_manager->create_notification(
                 $buyer_id,
-                'offer_accepted', // Using offer_accepted template as fallback
+                'offer_accepted', // Tipo de la notificación web; el email usa la plantilla manual_sale
                 __( '¡Compra registrada!', 'motorlan-api-vue' ),
                 sprintf( __( 'El vendedor ha registrado tu compra de "%s".', 'motorlan-api-vue' ), $title ),
                 array(
@@ -342,6 +349,8 @@ class Motorlan_Notification_Listener {
                     'product_title'  => $title,
                     'product_image'  => $image,
                     'product_price'  => $price,
+                    // Se guarda como 'offer_accepted' (icono de la web) pero el email es otro
+                    'email_template' => 'manual_sale',
                 ),
                 array( 'web', 'email' )
             );
@@ -373,7 +382,7 @@ class Motorlan_Notification_Listener {
         $buyer_id  = $to_id( $buyer_id );
 
         $buyer = get_userdata( $buyer_id );
-        $buyer_name = $buyer ? $buyer->display_name : 'Usuario';
+        $buyer_name = Motorlan_Email::party_name( $buyer, __( 'Un usuario', 'motorlan-api-vue' ) );
 
         // Fetch Publication Title
         // The purchase title usually contains it, or we can get it from related publication
@@ -416,16 +425,28 @@ class Motorlan_Notification_Listener {
         // Solo por email: create_notification() también lo guardaba en la tabla de
         // notificaciones y se mostraba en la web, así que con una sesión robada se
         // podía leer el código sin acceso al correo.
-        $this->notification_manager->send_email_notification_direct(
-            $user_id,
-            'password_reset_code',
-            'Código de restablecimiento de contraseña',
-            'Tu código es: ' . $code,
-            [ 'code' => $code ]
-        );
+        $user     = get_userdata( $user_id );
+        $switched = $user ? switch_to_locale( get_user_locale( $user_id ) ) : false;
+        try {
+            $this->notification_manager->send_email_notification_direct(
+                $user_id,
+                'password_reset_code',
+                __( 'Código de restablecimiento de contraseña', 'motorlan-api-vue' ),
+                // Sin el código: lo usa el preheader (vista previa de la bandeja de entrada)
+                __( 'Tu código para confirmar el cambio de contraseña', 'motorlan-api-vue' ),
+                [
+                    'code'               => $code,
+                    'expires_in_minutes' => max( 1, (int) ceil( ( (int) $expiry - time() ) / 60 ) ),
+                ]
+            );
+        } finally {
+            if ( $switched ) restore_previous_locale();
+        }
     }
 
     public function on_new_chat_message( $recipient_id, $message_data, $sender_name, $product_id ) {
+        // En el chat el nombre visible puede ser el email de la cuenta: nunca se muestra al otro lado
+        $sender_name = Motorlan_Email::sender_label( $sender_name );
         // $message_data is object row from get_row
         $room_key = is_object($message_data) ? $message_data->room_key : (isset($message_data['room_key']) ? $message_data['room_key'] : '');
         $message_text = is_object($message_data) ? $message_data->message : (isset($message_data['message']) ? $message_data['message'] : '');
@@ -463,6 +484,8 @@ class Motorlan_Notification_Listener {
     }
     
     public function on_new_purchase_message( $recipient_id, $sender_name, $message_text, $purchase_id, $uuid ) {
+        // En el chat el nombre visible puede ser el email de la cuenta: nunca se muestra al otro lado
+        $sender_name = Motorlan_Email::sender_label( $sender_name );
         // Compra sin comprador registrado (venta manual a invitado): nadie a quien avisar
         if ( ! $recipient_id ) return;
 
@@ -505,7 +528,7 @@ class Motorlan_Notification_Listener {
         if ( $author_id == $user_id ) return; // Don't notify self
         
         $user = get_userdata( $user_id );
-        $name = $user ? $user->display_name : 'Alguien';
+        $name = Motorlan_Email::party_name( $user, __( 'Alguien', 'motorlan-api-vue' ) );
         $title = motorlan_format_motor_name( $post_id );
 
         $image = get_the_post_thumbnail_url( $post_id, 'medium' );
@@ -556,8 +579,8 @@ class Motorlan_Notification_Listener {
         $this->notification_manager->create_notification(
             $author_id,
             'publication_sold',
-            "Publicación marcada como vendida",
-            "Has marcado \"{$title}\" como vendida.",
+            __( 'Publicación marcada como vendida', 'motorlan-api-vue' ),
+            sprintf( __( 'Has marcado "%s" como vendida.', 'motorlan-api-vue' ), $title ),
             [
                 'post_id' => $post_id,
                 'url' => motorlan_account_url( 'dashboard/publications/publication/list', $author_id ),
@@ -569,13 +592,13 @@ class Motorlan_Notification_Listener {
 
     public function on_new_review( $reviewer_id, $reviewed_id, $purchase_id ) {
         $reviewer = get_userdata( $reviewer_id );
-        $reviewer_name = $reviewer ? $reviewer->display_name : 'Usuario';
+        $reviewer_name = Motorlan_Email::party_name( $reviewer, __( 'Un usuario', 'motorlan-api-vue' ) );
 
         $this->notification_manager->create_notification(
             $reviewed_id,
             'new_review',
-            "Nueva valoración de {$reviewer_name}",
-            "{$reviewer_name} te ha dejado una valoración por una compra reciente.",
+            sprintf( __( 'Nueva valoración de %s', 'motorlan-api-vue' ), $reviewer_name ),
+            sprintf( __( '%s te ha dejado una valoración por una compra reciente.', 'motorlan-api-vue' ), $reviewer_name ),
             [
                 'purchase_id' => $purchase_id,
                 'reviewer_id' => $reviewer_id,
@@ -592,15 +615,23 @@ class Motorlan_Notification_Listener {
         $admins = get_users(['role' => 'administrator']);
         $author_id = get_post_field( 'post_author', $post_id );
         $author = get_userdata( $author_id );
-        $author_name = $author ? $author->display_name : 'Usuario';
+        $author_name = Motorlan_Email::party_name( $author, __( 'Un usuario', 'motorlan-api-vue' ) );
         $title = motorlan_format_motor_name( $post_id );
 
         foreach ($admins as $admin) {
+            // No avisar al propio autor cuando es administrador: es quien acaba de enviarla
+            if ( (int) $admin->ID === (int) $author_id ) {
+                continue;
+            }
+
+            // Cada administrador en su idioma
+            $switched = switch_to_locale( get_user_locale( $admin->ID ) );
+            try {
             $this->notification_manager->create_notification(
                 $admin->ID,
                 'pending_approval',
-                'Solicitud de publicación',
-                "El usuario {$author_name} ha solicitado publicar \"{$title}\".",
+                __( 'Solicitud de publicación', 'motorlan-api-vue' ),
+                sprintf( __( 'El usuario %1$s ha solicitado publicar "%2$s".', 'motorlan-api-vue' ), $author_name, $title ),
                 [
                     'post_id' => $post_id,
                     'product_title' => $title,
@@ -609,10 +640,15 @@ class Motorlan_Notification_Listener {
                 ],
                 ['web', 'email']
             );
+            } finally {
+                if ( $switched ) restore_previous_locale();
+            }
         }
     }
 
     public function on_seller_reply( $buyer_id, $buyer_email, $message_data, $sender_name, $product_id ) {
+        // En el chat el nombre visible puede ser el email de la cuenta: nunca se muestra al otro lado
+        $sender_name = Motorlan_Email::sender_label( $sender_name );
         $room_key = is_object($message_data) ? $message_data->room_key : (isset($message_data['room_key']) ? $message_data['room_key'] : '');
         $message_text = is_object($message_data) ? $message_data->message : (isset($message_data['message']) ? $message_data['message'] : '');
 

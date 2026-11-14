@@ -81,7 +81,7 @@ test.describe('Referencias de la SPA (vendedor)', () => {
 
   test('capturas de la SPA', async ({ page }) => {
     await auth(page)
-    for (const [url, name] of [[LIST, 'publicaciones'], [ADD, 'publicacion-alta'], [SALES, 'ventas'], [OFFERS, 'ofertas'], [INQ, 'interesados']]) {
+    for (const [url, name] of [[LIST, 'publicaciones'], [ADD, 'publicacion-alta'], [SALES, 'ventas'], [OFFERS, 'ofertas-recibidas'], [INQ, 'interesados']]) {
       await page.goto(url)
       await page.waitForSelector('.v-card, .v-data-table, .v-stepper, main', { timeout: 30_000 })
       await settle(page)
@@ -257,7 +257,7 @@ test.describe('Panel del vendedor en el portal', () => {
   test('ofertas recibidas: ?offer_id abre el detalle y rechazar', async ({ page, isMobile }) => {
     await page.goto(OFFERS)
     await settle(page)
-    await expect(page).toHaveScreenshot('portal-ofertas.png', { fullPage: true, mask: volatile(page) })
+    await expect(page).toHaveScreenshot('portal-ofertas-recibidas.png', { fullPage: true, mask: volatile(page) })
     const eye = page.locator('#ml-offers tbody tr button[aria-label="Ver detalle"]').first()
     test.skip(!(await eye.count()), 'Sin ofertas de prueba')
     const id = JSON.parse(await eye.getAttribute('@click').then((s) => s.slice(s.indexOf('{'), s.lastIndexOf('}') + 1))).id

@@ -1,0 +1,80 @@
+{#
+  Tabla de Consultas enviadas (inquiries.vue): vendedor, publicación, fecha y «Ver chat» con
+  los no leídos. La pintan pages/comprador/consultas.twig y CompradorController (HTMX).
+  «Ver chat» cambia de conversación el diálogo del kit (ml-chat-open con productId/roomKey).
+  Variables: table · urls.store
+#}
+{% embed 'components/table.twig' with {
+  id: 'ml-inq',
+  url: table.url,
+  columns: [
+    { label: __('Vendedor', 'motorlan-portal') },
+    { label: __('Publicación', 'motorlan-portal') },
+    { label: __('Fecha', 'motorlan-portal') },
+    { label: __('Acciones', 'motorlan-portal'), class: 'text-end' },
+  ],
+  page: table.page, pages: table.pages, total: table.total,
+  filters_query: table.query,
+} %}
+  {% block filters %}
+    {%- import 'components/field.twig' as f -%}
+    {{ f.text({ name: 'q', id: 'ml-inq-q', type: 'search', placeholder: __('Buscar por vendedor o motor...', 'motorlan-portal'), icon: 'search', value: table.filters.q, class: 'w-full md:flex-1 md:max-w-md' }) }}
+    {{ f.select({ name: 'per_page', id: 'ml-inq-per-page', options: table.per_page, value: table.filters.per_page, class: 'w-full md:w-44', attrs: 'aria-label="' ~ __('Mostrar', 'motorlan-portal')|e('html_attr') ~ '"' }) }}
+    {#- Página actual para el refresco periódico (pertenece a #ml-inq-refresh, no a este formulario). #}
+    <input type="hidden" name="page" value="{{ table.page|e('html_attr') }}" form="ml-inq-refresh">
+    <noscript><button type="submit" class="ml-btn ml-btn--tonal ml-c-primary">{{ __('Filtrar', 'motorlan-portal')|e }}</button></noscript>
+  {% endblock %}
+  {% block rows %}
+    {%- import 'components/avatar.twig' as a -%}
+    {%- import 'components/badge.twig' as bd -%}
+    {%- import 'components/icon.twig' as ui -%}
+    {%- for r in table.rows %}
+    {%- set open = { id: 'ml-chat', kind: 'product', productId: r.product_id, roomKey: r.room_key, title: r.name, image: r.image, otherName: r.seller } %}
+    <tr data-room="{{ r.room_key|e('html_attr') }}">
+      <td data-label="{{ __('Vendedor', 'motorlan-portal')|e('html_attr') }}">
+        <div class="flex items-center gap-3 py-2">
+          {%- if r.avatar %}{{ a.avatar({ image: r.avatar, alt: r.seller, class: '!size-11 border border-border' }) }}{% else %}{{ a.avatar({ text: r.initials, class: '!size-11 border border-border font-bold' }) }}{% endif %}
+          <div class="min-w-0">
+            <p class="truncate font-medium text-high-emphasis">{{ r.seller|e }}</p>
+            <p class="text-xs text-medium-emphasis">{{ __('Vendedor del equipo', 'motorlan-portal')|e }}</p>
+          </div>
+        </div>
+      </td>
+      <td data-label="{{ __('Publicación', 'motorlan-portal')|e('html_attr') }}">
+        <div class="flex max-w-[350px] items-center gap-3 py-2 max-md:max-w-none">
+          {%- if r.image %}{{ a.avatar({ image: r.image, rounded: true, class: '!size-12 shrink-0 border border-border' }) }}{% else %}{{ a.avatar({ icon: 'photo-off', rounded: true, color: 'secondary', class: '!size-12 shrink-0' }) }}{% endif %}
+          <div class="min-w-0">
+            <p class="truncate font-medium text-high-emphasis max-md:whitespace-normal" title="{{ r.name|e('html_attr') }}">{{ r.name|e }}</p>
+            <p class="text-xs text-medium-emphasis">ID: {{ r.product_id|e }}</p>
+          </div>
+        </div>
+      </td>
+      <td data-label="{{ __('Fecha', 'motorlan-portal')|e('html_attr') }}">
+        <span class="font-medium text-high-emphasis" title="{{ r.date_full|e('html_attr') }}">{{ r.date|e }}</span>
+      </td>
+      <td class="text-end max-md:!block">
+        <div class="inline-flex items-center justify-end gap-2 max-md:flex max-md:w-full">
+          <button type="button" class="ml-btn ml-btn--tonal ml-btn--sm ml-c-primary relative rounded-full max-md:flex-1" data-test="inq-chat"
+                  @click="$dispatch('ml-chat-open', {{ ml_json(open)|e('html_attr') }})">
+            {{ ui.icon('message-circle', 'size-4') }}<span>{{ __('Ver chat', 'motorlan-portal')|e }}</span>
+            {%- if r.unread > 0 %}{{ bd.badge({ count: r.unread, color: 'error', class: '-end-1.5 -top-1.5' }) }}<span class="sr-only">{{ _n('%d mensaje sin leer', '%d mensajes sin leer', r.unread, 'motorlan-portal')|format(r.unread)|e }}</span>{% endif %}
+          </button>
+          {%- if r.url %}
+          <a class="ml-btn ml-btn--tonal ml-btn--icon ml-btn--sm ml-c-secondary" href="{{ r.url|e('html_attr') }}" target="_blank" rel="noopener" title="{{ __('Ir a la publicación', 'motorlan-portal')|e('html_attr') }}" aria-label="{{ __('Ir a la publicación', 'motorlan-portal')|e('html_attr') }}">{{ ui.icon('external-link', 'size-4') }}</a>
+          {%- endif %}
+        </div>
+      </td>
+    </tr>
+    {%- endfor %}
+  {% endblock %}
+  {% block empty %}
+    {%- import 'components/empty.twig' as em -%}
+    {%- if table.error %}
+      {{ em.empty({ icon: 'alert-circle', title: __('No se pudieron cargar tus consultas.', 'motorlan-portal'), text: __('Inténtalo de nuevo en unos segundos.', 'motorlan-portal') }) }}
+    {%- elseif table.filters.q %}
+      {{ em.empty({ icon: 'search', title: __('Sin resultados', 'motorlan-portal'), text: __('Prueba con otra búsqueda.', 'motorlan-portal') }) }}
+    {%- else %}
+      {{ em.empty({ icon: 'message-circle-question', title: __('No has realizado ninguna consulta todavía.', 'motorlan-portal'), text: __('Pregunta al vendedor desde la ficha de cualquier publicación y la conversación aparecerá aquí.', 'motorlan-portal'), action: { label: __('Ir a la tienda', 'motorlan-portal'), href: urls.store, icon: 'building-store' } }) }}
+    {%- endif %}
+  {% endblock %}
+{% endembed %}

@@ -1,0 +1,25 @@
+{% extends 'layout/app-shell.twig' %}
+{#
+  Consultas enviadas: /mi-cuenta/dashboard/purchases/inquiries (inquiries.vue). CompradorController.
+  Al entrar el servidor reclama los chats hechos como invitado (POST /buyer/claim-guest-chats).
+  «Ver chat» abre el diálogo del kit (components/chat-dialog.twig) con esa conversación;
+  ?room_key=… lo abre al cargar. La tabla se refresca cada 60 s (con la pestaña visible) y al
+  leer o enviar mensajes, para que el contador de no leídos esté al día.
+#}
+{% block main %}
+<div class="ml-card overflow-visible">
+  <div class="flex flex-wrap items-center justify-between gap-4 px-6 pt-6">
+    <h1 class="ml-h5 font-semibold">{{ page_title|e }}</h1>
+  </div>
+  {% include 'partials/comprador/consultas-tabla.twig' %}
+</div>
+
+{#- Refresco: incluye los filtros y la página actual (input con form="ml-inq-refresh" en la tabla). #}
+<form id="ml-inq-refresh" class="hidden" aria-hidden="true"
+      hx-get="{{ table.url|e('html_attr') }}" hx-target="#ml-inq" hx-swap="outerHTML" hx-include="#ml-inq-filters"
+      hx-trigger="every 60s [document.visibilityState === 'visible'], ml-chat-read from:window, ml-chat-message from:window delay:500ms"></form>
+
+{%- if chat %}
+{% include 'components/chat-dialog.twig' with { chat: chat } %}
+{%- endif %}
+{% endblock %}

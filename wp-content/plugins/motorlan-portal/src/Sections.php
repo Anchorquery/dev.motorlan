@@ -91,10 +91,11 @@ class Sections
             ],
             // Pendientes (fases siguientes). Cada bloque de pantallas, su sección.
             'comprador' => [
-                'label'      => 'Panel del comprador',
+                'label'      => 'Panel del comprador: mis compras (y su detalle), consultas enviadas, ofertas enviadas y mis valoraciones',
                 'auth'       => 'user',
-                'controller' => null,
-                'spa_paths'  => [],
+                'controller' => Controllers\CompradorController::class,
+                'spa_paths'  => [Controllers\CompradorController::class, 'patterns'],
+                'boot'       => [Controllers\CompradorController::class, 'boot'],
             ],
             // Panel del vendedor (fase 4): una sección por bloque de pantallas.
             'publicaciones' => [
@@ -130,10 +131,13 @@ class Sections
                 },
             ],
             'admin' => [
-                'label'      => 'Administración',
+                'label'      => 'Panel: administración (publicaciones, aprobaciones y vista previa)',
+                // manage_options; sin sesión al login, con sesión y sin permiso 403 (Router).
                 'auth'       => 'admin',
-                'controller' => null,
-                'spa_paths'  => [],
+                'controller' => Controllers\AdminController::class,
+                'spa_paths'  => function () {
+                    return Support\SpaPages::panel_patterns(['admin/publications', 'admin/approvals', 'admin/approvals/preview/[A-Za-z0-9-]+']);
+                },
             ],
             'ia' => [
                 'label'      => 'Asistente IA',

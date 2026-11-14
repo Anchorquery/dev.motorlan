@@ -1,0 +1,16 @@
+{% extends 'layout/app-shell.twig' %}
+{#
+  Mis valoraciones: /mi-cuenta/dashboard/purchases/opinions (opinions.vue). CompradorController.
+  En la SPA la ruta existía pero nada enlazaba a ella; aquí se llega desde Mis compras y
+  desde el menú lateral (Gestión de Compras).
+#}
+{% block main %}
+{%- import 'components/icon.twig' as ui -%}
+<div class="ml-card overflow-visible">
+  <div class="flex flex-wrap items-center justify-between gap-4 px-6 pt-6">
+    <h1 class="ml-h5 font-semibold">{{ page_title|e }}</h1>
+    <a class="ml-btn ml-btn--text ml-btn--sm ml-c-secondary" href="{{ purchases_url|e('html_attr') }}">{{ ui.icon('shopping-cart', 'size-4') }}<span>{{ __('Mis compras', 'motorlan-portal')|e }}</span></a>
+  </div>
+  {% include 'partials/comprador/valoraciones-tabla.twig' %}
+</div>
+{% endblock %}

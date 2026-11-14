@@ -369,7 +369,10 @@ function motorlan_admin_contact_publisher_callback($request) {
 
     $params = $request->get_json_params();
     $message = isset($params['message']) ? sanitize_textarea_field($params['message']) : '';
-    $subject = isset($params['subject']) ? sanitize_text_field($params['subject']) : 'Mensaje del Administrador - Motorlan';
+    $subject = isset($params['subject']) ? sanitize_text_field($params['subject']) : '';
+    if ($subject === '') {
+        $subject = __('Mensaje del Administrador', 'motorlan-api-vue');
+    }
 
     if (empty($message)) {
         return new WP_Error('missing_message', 'El mensaje es obligatorio', ['status' => 400]);
@@ -382,8 +385,33 @@ function motorlan_admin_contact_publisher_callback($request) {
         return new WP_Error('author_not_found', 'Autor no encontrado', ['status' => 404]);
     }
 
-    // Send Email
-    $sent = wp_mail($author->user_email, $subject, $message);
+    // Email con la plantilla base de Motorlan (antes: texto plano sin marca ni cabeceras HTML),
+    // en el idioma del anunciante y con la publicación como contexto.
+    $switched = switch_to_locale(get_user_locale($author_id));
+    try {
+        $content  = Motorlan_Email::h1($subject);
+        $content .= Motorlan_Email::greeting($author);
+        $content .= Motorlan_Email::quote($message);
+        $content .= Motorlan_Email::product_card(
+            function_exists('motorlan_format_motor_name') ? (string) motorlan_format_motor_name($post_id) : get_the_title($post_id),
+            (string) get_the_post_thumbnail_url($post_id, 'medium'),
+            array(esc_html__('Sobre la publicación', 'motorlan-api-vue'))
+        );
+        $content .= Motorlan_Email::button(
+            __('Ver mis publicaciones', 'motorlan-api-vue'),
+            Motorlan_Email::account_url('dashboard/publications/publication/list', $author)
+        );
+
+        $sent = Motorlan_Notification_Manager::send_custom_email($author->user_email, $subject, $content, array(
+            'user'      => $author,
+            'preheader' => $message,
+            'automatic' => false,
+        ));
+    } finally {
+        if ($switched) {
+            restore_previous_locale();
+        }
+    }
 
     // Optional: Create an internal notification if system exists
     // Optional: Create an internal notification

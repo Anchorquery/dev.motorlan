@@ -1,27 +1,27 @@
 <?php
-// Welcome Email
-$recipient_user_id = isset($args['user']) && is_object($args['user']) ? (int) $args['user']->ID : null;
-$url = function_exists('motorlan_localized_page_url_absolute')
-    ? motorlan_localized_page_url_absolute('login', '', $recipient_user_id)
-    : get_site_url() . '/login';
-?>
+/**
+ * Email — bienvenida tras verificar la cuenta.
+ *
+ * @var array $args title, message, data, user.
+ */
 
-<h1><?php esc_html_e( '¡Bienvenido/a a Motorlan!', 'motorlan-api-vue' ); ?></h1>
+if ( ! defined( 'WPINC' ) ) {
+    die;
+}
 
-<p><?php printf( esc_html__( 'Hola %s,', 'motorlan-api-vue' ), esc_html( $args['user']->display_name ) ); ?></p>
+$user    = isset( $args['user'] ) ? $args['user'] : null;
+$user_id = ( is_object( $user ) && ! empty( $user->ID ) ) ? (int) $user->ID : null;
+$login   = function_exists( 'motorlan_localized_page_url' ) ? motorlan_localized_page_url( 'login', '', $user_id ) : '/login/';
+$url     = Motorlan_Email::abs_url( $login, 'login' );
 
-<p><?php esc_html_e( 'Gracias por unirte a la mayor comunidad de compra-venta de recambios industriales y robótica.', 'motorlan-api-vue' ); ?></p>
-
-<p><?php esc_html_e( 'Tu cuenta ha sido creada correctamente. Ahora puedes:', 'motorlan-api-vue' ); ?></p>
-
-<ul>
-    <li><?php esc_html_e( 'Publicar tus productos y llegar a miles de compradores.', 'motorlan-api-vue' ); ?></li>
-    <li><?php esc_html_e( 'Guardar tus búsquedas y productos favoritos.', 'motorlan-api-vue' ); ?></li>
-    <li><?php esc_html_e( 'Contactar directamente con vendedores profesionales.', 'motorlan-api-vue' ); ?></li>
-</ul>
-
-<div style="text-align: center;">
-    <a href="<?php echo esc_url($url); ?>" class="button"><?php esc_html_e( 'Acceder a mi Cuenta', 'motorlan-api-vue' ); ?></a>
-</div>
-
-<p><?php esc_html_e( 'Si tienes alguna pregunta, nuestro equipo de soporte está aquí para ayudarte.', 'motorlan-api-vue' ); ?></p>
+echo Motorlan_Email::h1( __( '¡Bienvenido/a a Motorlan!', 'motorlan-api-vue' ) );
+echo Motorlan_Email::greeting( $user );
+echo Motorlan_Email::p( esc_html__( 'Gracias por unirte a la mayor comunidad de compra-venta de recambios industriales y robótica.', 'motorlan-api-vue' ) );
+echo Motorlan_Email::p( esc_html__( 'Tu cuenta ha sido creada correctamente. Ahora puedes:', 'motorlan-api-vue' ) );
+echo Motorlan_Email::bullets( array(
+    __( 'Publicar tus productos y llegar a miles de compradores.', 'motorlan-api-vue' ),
+    __( 'Guardar tus búsquedas y productos favoritos.', 'motorlan-api-vue' ),
+    __( 'Contactar directamente con vendedores profesionales.', 'motorlan-api-vue' ),
+) );
+echo Motorlan_Email::button( __( 'Acceder a mi Cuenta', 'motorlan-api-vue' ), $url );
+echo Motorlan_Email::p( esc_html__( 'Si tienes alguna pregunta, nuestro equipo de soporte está aquí para ayudarte.', 'motorlan-api-vue' ), true );

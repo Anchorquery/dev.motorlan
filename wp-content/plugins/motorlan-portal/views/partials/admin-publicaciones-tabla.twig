@@ -1,0 +1,85 @@
+{#
+  Tabla de administrar publicaciones (filtros + filas + paginación). La pinta
+  pages/admin-publicaciones.twig y la devuelve AdminController en las peticiones HTMX
+  (filtrar, ordenar, paginar, cambiar estado, eliminar, contactar).
+  Variables: table (AdminController::publications_context)
+  Las acciones lanzan ml-admin-pub con { dialog, pub } (lo escucha la página). Cambiar estado y
+  eliminar van como botones (en la SPA, en un menú «⋮»): .ml-table-shell tiene overflow-x y
+  recortaría el menú desplegable en las últimas filas.
+#}
+{% embed 'components/table.twig' with {
+  id: 'ml-admin-pubs',
+  url: table.url,
+  columns: [
+    { label: __('Imagen', 'motorlan-portal'), class: 'w-16' },
+    { label: __('Título', 'motorlan-portal') },
+    { label: __('Autor', 'motorlan-portal') },
+    { label: __('Precio', 'motorlan-portal') },
+    { label: __('Estado', 'motorlan-portal') },
+    { label: __('Fecha', 'motorlan-portal') },
+    { label: __('Acciones', 'motorlan-portal'), class: 'text-end' },
+  ],
+  page: table.page, pages: table.pages, total: table.total,
+  filters_query: table.query,
+} %}
+  {% block filters %}
+    {%- import 'components/field.twig' as f -%}
+    {{ f.text({ name: 'q', id: 'ml-admin-pubs-q', type: 'search', placeholder: __('Buscar publicación...', 'motorlan-portal'), icon: 'search', value: table.filters.q, class: 'w-full md:w-80' }) }}
+    {{ f.select({ name: 'estado', id: 'ml-admin-pubs-estado', options: table.statuses, value: table.filters.estado, class: 'w-full md:w-52', attrs: 'aria-label="' ~ __('Filtrar por estado', 'motorlan-portal')|e('html_attr') ~ '"' }) }}
+    {{ f.select({ name: 'orden', id: 'ml-admin-pubs-orden', options: table.sorts, value: table.filters.orden, class: 'w-full md:w-56', attrs: 'aria-label="' ~ __('Ordenar por', 'motorlan-portal')|e('html_attr') ~ '"' }) }}
+    {{ f.select({ name: 'per_page', id: 'ml-admin-pubs-per-page', options: table.per_page, value: table.filters.per_page, class: 'w-full md:w-44', attrs: 'aria-label="' ~ __('Mostrar', 'motorlan-portal')|e('html_attr') ~ '"' }) }}
+    <noscript><button type="submit" class="ml-btn ml-btn--tonal ml-c-primary">{{ __('Filtrar', 'motorlan-portal')|e }}</button></noscript>
+  {% endblock %}
+  {% block rows %}
+    {%- import 'components/chip.twig' as c -%}
+    {%- import 'components/avatar.twig' as a -%}
+    {%- import 'components/icon.twig' as ui -%}
+    {%- for r in table.rows %}
+    {%- set pub = ml_json({ id: r.id, name: r.name, status: r.status })|e('html_attr') %}
+    <tr data-id="{{ r.id }}">
+      <td data-label="{{ __('Imagen', 'motorlan-portal')|e('html_attr') }}">
+        {%- if r.image %}{{ a.avatar({ image: r.image, rounded: true, class: '!size-10 shrink-0 border border-border' }) }}
+        {%- else %}<span class="ml-avatar ml-avatar--rounded ml-c-secondary !size-10">{{ ui.icon('photo', 'size-5') }}</span>{% endif %}
+      </td>
+      <td data-label="{{ __('Título', 'motorlan-portal')|e('html_attr') }}">
+        <p class="max-w-[250px] truncate font-medium text-high-emphasis" title="{{ r.name|e('html_attr') }}">{{ r.name|e }}</p>
+      </td>
+      <td data-label="{{ __('Autor', 'motorlan-portal')|e('html_attr') }}">
+        <p class="text-sm font-medium">{{ r.author.name|e }}</p>
+        {%- if r.author.email %}<p class="text-xs text-disabled">{{ r.author.email|e }}</p>{% endif %}
+      </td>
+      <td data-label="{{ __('Precio', 'motorlan-portal')|e('html_attr') }}">
+        {%- if r.price %}<span class="font-bold text-primary">{{ r.price|e }}</span>{% else %}<span class="text-disabled">—</span>{% endif %}
+      </td>
+      <td data-label="{{ __('Estado', 'motorlan-portal')|e('html_attr') }}">{{ c.chip({ label: r.chip.label, color: r.chip.color, size: 'sm' }) }}</td>
+      <td data-label="{{ __('Fecha', 'motorlan-portal')|e('html_attr') }}" class="text-sm">{{ r.date|e }}</td>
+      <td data-label="{{ __('Acciones', 'motorlan-portal')|e('html_attr') }}" class="text-end">
+        <div class="inline-flex justify-end gap-2">
+          {%- if r.url %}
+          <a class="ml-btn ml-btn--tonal ml-btn--icon ml-btn--sm ml-c-success" href="{{ r.url|e('html_attr') }}" target="_blank" rel="noopener noreferrer" title="{{ __('Ver publicación', 'motorlan-portal')|e('html_attr') }}" aria-label="{{ __('Ver publicación', 'motorlan-portal')|e('html_attr') }}">{{ ui.icon('eye', 'size-[18px]') }}</a>
+          {%- endif %}
+          <button type="button" class="ml-btn ml-btn--tonal ml-btn--icon ml-btn--sm ml-c-info" title="{{ __('Contactar', 'motorlan-portal')|e('html_attr') }}" aria-label="{{ __('Contactar', 'motorlan-portal')|e('html_attr') }}"
+                  @click="$dispatch('ml-admin-pub', { dialog: 'ml-admin-contact', pub: {{ pub }} })">{{ ui.icon('mail', 'size-[18px]') }}</button>
+          {%- if r.edit %}
+          <a class="ml-btn ml-btn--tonal ml-btn--icon ml-btn--sm ml-c-primary" href="{{ r.edit|e('html_attr') }}" title="{{ __('Editar', 'motorlan-portal')|e('html_attr') }}" aria-label="{{ __('Editar', 'motorlan-portal')|e('html_attr') }}">{{ ui.icon('pencil', 'size-[18px]') }}</a>
+          {%- endif %}
+          <button type="button" class="ml-btn ml-btn--tonal ml-btn--icon ml-btn--sm ml-c-warning" title="{{ __('Cambiar estado', 'motorlan-portal')|e('html_attr') }}" aria-label="{{ __('Cambiar estado', 'motorlan-portal')|e('html_attr') }}"
+                  @click="$dispatch('ml-admin-pub', { dialog: 'ml-admin-status', pub: {{ pub }} })">{{ ui.icon('refresh', 'size-[18px]') }}</button>
+          <button type="button" class="ml-btn ml-btn--tonal ml-btn--icon ml-btn--sm ml-c-error" title="{{ __('Eliminar', 'motorlan-portal')|e('html_attr') }}" aria-label="{{ __('Eliminar', 'motorlan-portal')|e('html_attr') }}"
+                  @click="$dispatch('ml-admin-pub', { dialog: 'ml-admin-delete', pub: {{ pub }} })">{{ ui.icon('trash', 'size-[18px]') }}</button>
+        </div>
+      </td>
+    </tr>
+    {%- endfor %}
+  {% endblock %}
+  {% block empty %}
+    {%- import 'components/empty.twig' as em -%}
+    {%- if table.error %}
+      {{ em.empty({ icon: 'alert-circle', title: __('No se pudieron cargar las publicaciones.', 'motorlan-portal'), text: __('Inténtalo de nuevo en unos segundos.', 'motorlan-portal') }) }}
+    {%- elseif table.filters.q or table.filters.estado %}
+      {{ em.empty({ icon: 'search', title: __('Sin resultados', 'motorlan-portal'), text: __('Prueba con otros filtros.', 'motorlan-portal') }) }}
+    {%- else %}
+      {{ em.empty({ icon: 'list', title: __('No hay publicaciones', 'motorlan-portal'), text: __('Aquí aparecerán las publicaciones del resto de usuarios.', 'motorlan-portal') }) }}
+    {%- endif %}
+  {% endblock %}
+{% endembed %}
