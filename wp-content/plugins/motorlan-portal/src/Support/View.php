@@ -63,11 +63,14 @@ class View
                 'vertical' => Nav::vertical(),
                 'mobile'   => Nav::mobile(),
                 'user'     => Nav::user_menu(),
+                'languages' => Nav::languages(),
             ],
             'urls'   => [
                 'home'      => home_url('/'),
                 'store'     => Urls::screen('tienda', '', '', 'marketplace-motorlan'),
-                'dashboard' => Urls::spa('dashboard/publications/publication/list'),
+                // /mi-cuenta/dashboard lleva a Mis compras (sección panel; la SPA igual).
+                'dashboard' => Urls::spa('dashboard/purchases/purchases'),
+                'account'   => Urls::spa('dashboard/user/account'),
                 'logout'    => Urls::logout(),
                 'login'     => Urls::login(Urls::current()),
             ],
@@ -100,10 +103,19 @@ class View
             'name'     => $u->display_name !== '' ? $u->display_name : $u->user_login,
             'email'    => $u->user_email,
             'is_admin' => current_user_can('manage_options'),
-            // Campana: de momento solo visual (sin consulta). La sección que la active leerá
-            // /motorlan/v1/notifications/unread-count.
-            'unread'   => 0,
+            'avatar'   => self::avatar_url((int) $u->ID),
         ];
+    }
+
+    /**
+     * Avatar subido en Mi perfil (meta avatar_attachment_id de motorlan-api-vue,
+     * profile-routes.php); sin él, null = icono (no el Gravatar genérico).
+     */
+    protected static function avatar_url(int $user_id): ?string
+    {
+        $id = (int) get_user_meta($user_id, 'avatar_attachment_id', true);
+        $url = $id ? wp_get_attachment_image_url($id, 'thumbnail') : false;
+        return $url ? (string) $url : null;
     }
 
     /** Funciones y filtros propios en Twig (prefijo ml_). */
@@ -111,6 +123,7 @@ class View
     {
         $functions = [
             '__'          => '__',
+            '_n'          => '_n',
             'ml_icon'     => [Icons::class, 'svg'],
             'ml_json'     => [self::class, 'json'],
             'ml_url'      => [Urls::class, 'portal'],

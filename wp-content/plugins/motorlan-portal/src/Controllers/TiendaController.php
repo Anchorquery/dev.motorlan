@@ -3,6 +3,7 @@
 namespace MotorlanPortal\Controllers;
 
 use MotorlanPortal\Support\Api;
+use MotorlanPortal\Support\Chat;
 use MotorlanPortal\Support\Seo;
 use MotorlanPortal\Support\SpaPages;
 use MotorlanPortal\Support\Store;
@@ -126,14 +127,7 @@ class TiendaController extends Controller
             'image'      => $product['images'][0]['thumb'] ?? '',
             'privacyUrl' => (string) (get_privacy_policy_url() ?: home_url('/politica-de-privacidad/')),
             'registerUrl' => SpaPages::page_url(SpaPages::ACCOUNT, 'register'),
-            'i18n'       => [
-                'defaultMessage' => __('Hola, me interesa saber el precio de la publicación', 'motorlan-portal'),
-                'forbiddenView'  => __('No tienes permisos para ver estos mensajes.', 'motorlan-portal'),
-                'forbiddenSend'  => __('No tienes permisos para enviar mensajes en este chat.', 'motorlan-portal'),
-                'notFound'       => __('No pudimos encontrar este chat.', 'motorlan-portal'),
-                'loadError'      => __('No se pudieron cargar los mensajes.', 'motorlan-portal'),
-                'sendError'      => __('No se pudo enviar el mensaje.', 'motorlan-portal'),
-            ],
+            'i18n'       => ['defaultMessage' => __('Hola, me interesa saber el precio de la publicación', 'motorlan-portal')] + Chat::i18n(),
         ];
     }
 
@@ -147,7 +141,7 @@ class TiendaController extends Controller
             'logged'    => true,
             'dashboard' => Urls::spa('dashboard/purchases/purchases'),
             'publish'   => Urls::spa('dashboard/publications/publication/add'),
-            'profile'   => Urls::spa('dashboard/user/profile'),
+            'profile'   => Urls::spa('dashboard/user/account'),
         ];
     }
 

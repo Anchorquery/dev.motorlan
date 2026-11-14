@@ -22,15 +22,15 @@
   {%- endif -%}
 {%- endfor -%}
 
-<nav class="ml-pagination" aria-label="Paginación">
-  {%- if page > 1 %}<a class="ml-page" {{ _self._attrs(o, page - 1) }} aria-label="Anterior">{{ ui.icon('chevron-left') }}</a>
+<nav class="ml-pagination" aria-label="{{ __('Paginación', 'motorlan-portal')|e('html_attr') }}">
+  {%- if page > 1 %}<a class="ml-page" {{ _self._attrs(o, page - 1) }} aria-label="{{ __('Anterior', 'motorlan-portal')|e('html_attr') }}">{{ ui.icon('chevron-left') }}</a>
   {%- else %}<span class="ml-page" aria-disabled="true">{{ ui.icon('chevron-left') }}</span>{% endif %}
   {%- for p in items -%}
     {%- if p == '…' %}<span class="ml-page ml-page--gap">…</span>
     {%- elseif p == page %}<span class="ml-page" aria-current="page">{{ p }}</span>
     {%- else %}<a class="ml-page" {{ _self._attrs(o, p) }}>{{ p }}</a>{% endif -%}
   {%- endfor -%}
-  {%- if page < pages %}<a class="ml-page" {{ _self._attrs(o, page + 1) }} aria-label="Siguiente">{{ ui.icon('chevron-right') }}</a>
+  {%- if page < pages %}<a class="ml-page" {{ _self._attrs(o, page + 1) }} aria-label="{{ __('Siguiente', 'motorlan-portal')|e('html_attr') }}">{{ ui.icon('chevron-right') }}</a>
   {%- else %}<span class="ml-page" aria-disabled="true">{{ ui.icon('chevron-right') }}</span>{% endif %}
 </nav>
 {%- endif -%}

@@ -5,6 +5,7 @@
     {{ a.avatar({ text: 'DH', color: 'info', size: 'lg' }) }}
     {{ a.avatar({ image: url, alt: 'Daniel', dot: 'success' }) }}   ← punto de "conectado"
   size: sm (30) | md (38, def.) | lg (50) · rounded (cuadrado 6 px) · filled · count (badge numérico)
+  · attrs (atributos extra, YA escapados)
 #}
 {% macro avatar(o) -%}
 {%- import 'components/icon.twig' as ui -%}
@@ -13,7 +14,7 @@
   ~ (o.rounded|default(false) ? ' ml-avatar--rounded' : '')
   ~ (o.filled|default(false) ? ' ml-avatar--filled' : '')
   ~ (o.class|default('') ? ' ' ~ o.class : '') -%}
-<span class="{{ cls }}">
+<span class="{{ cls }}"{% if o.attrs|default(false) %} {{ o.attrs|raw }}{% endif %}>
   {%- if o.image|default(false) -%}<img src="{{ o.image|e('html_attr') }}" alt="{{ o.alt|default('')|e('html_attr') }}" loading="lazy">
   {%- elseif o.text|default(false) -%}{{ o.text|e }}
   {%- else -%}{{ ui.icon(o.icon|default('user')) }}{%- endif -%}

@@ -20,7 +20,7 @@
       <div class="ml-dialog-wrap"{% if not persistent|default(false) %} @click.self="close()"{% endif %}>
         <div class="ml-dialog" role="dialog" aria-modal="true"{% if title|default(false) %} aria-label="{{ title|e('html_attr') }}"{% endif %} style="max-width: {{ max_width|default('600px')|e('html_attr') }}"
              x-trap.noscroll="open">
-          <button type="button" class="ml-dialog__close" @click="close()" aria-label="Cerrar">{{ ui.icon('x') }}</button>
+          <button type="button" class="ml-dialog__close" @click="close()" aria-label="{{ __('Cerrar', 'motorlan-portal')|e('html_attr') }}">{{ ui.icon('x') }}</button>
           <div class="ml-card">
             {%- if title|default(false) %}
             <div class="ml-card__header">

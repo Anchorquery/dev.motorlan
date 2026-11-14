@@ -453,6 +453,58 @@
   .ml-list-item:hover { background: var(--ml-hover); color: var(--ml-high-emphasis); }
   .ml-list-item .ml-icon { width: 1.375rem; height: 1.375rem; }
 
+  .ml-list-item.is-active { color: var(--ml-primary); background: color-mix(in srgb, var(--ml-primary) 8%, transparent); }
+
+  /* ── Mi perfil (UserProfile.vue): avatar de 120 px montado sobre el borde de la tarjeta ── */
+  .ml-profile { margin-top: 4rem; overflow: visible; }
+  .ml-profile__avatar { position: relative; width: 120px; height: 120px; margin-top: -60px; }
+  .ml-profile__img {
+    display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; overflow: hidden;
+    border: 4px solid #fff; border-radius: 9999px; box-shadow: 0 4px 8px rgb(0 0 0 / 0.1);
+    background: color-mix(in srgb, var(--ml-primary) 16%, var(--ml-surface)); color: var(--ml-primary);
+  }
+  .ml-profile__img > img { width: 100%; height: 100%; object-fit: cover; }
+  .ml-profile__img .ml-icon { width: 56px; height: 56px; }
+  .ml-profile__pick { position: absolute; inset: 0; z-index: 1; border: 0; border-radius: 9999px; background: transparent; cursor: pointer; }
+  .ml-profile__pick:focus-visible { outline: 3px solid var(--ml-primary); outline-offset: 2px; }
+  .ml-profile__cam {
+    position: absolute; inset-inline-end: 0; bottom: 6px; z-index: 2; display: inline-flex; align-items: center; justify-content: center;
+    width: 34px; height: 34px; border-radius: 9999px; background: #fff; color: var(--ml-primary); box-shadow: var(--ml-shadow-menu); pointer-events: none;
+  }
+  .ml-profile__cam .ml-icon { width: 18px; height: 18px; }
+  .ml-profile__busy { position: absolute; inset: 0; z-index: 3; display: flex; align-items: center; justify-content: center; border-radius: 9999px; background: rgb(0 0 0 / 0.5); }
+  .ml-profile__avatar.is-drag .ml-profile__img { outline: 3px dashed var(--ml-primary); outline-offset: 3px; }
+  @media (max-width: 959px) {
+    .ml-profile { margin-top: 3.25rem; }
+    .ml-profile__avatar { width: 96px; height: 96px; margin-top: -48px; }
+    .ml-profile__img .ml-icon { width: 44px; height: 44px; }
+  }
+
+  /* ── Notificaciones (campana) ─────────────────────────────────────────── */
+  .ml-notif__list { max-height: 23.75rem; overflow-y: auto; overscroll-behavior: contain; }
+  .ml-notif__item {
+    display: flex; align-items: flex-start; gap: 0.75rem; min-height: 66px; padding: 1rem;
+    cursor: pointer; transition: background-color 0.2s ease; outline: none;
+  }
+  .ml-notif__item + .ml-notif__item { border-top: 1px solid var(--ml-border); }
+  .ml-notif__item:hover, .ml-notif__item:focus-visible { background: var(--ml-hover); }
+  .ml-notif__item .ml-avatar > img { object-fit: cover; }
+  .ml-notif__dot {
+    width: 18px; height: 18px; padding: 4px; border: 0; border-radius: 9999px; background: transparent; cursor: pointer;
+  }
+  .ml-notif__dot::before { content: ''; display: block; width: 10px; height: 10px; border-radius: 9999px; background: var(--ml-primary); }
+  .ml-notif__dot.is-read::before { background: #a8aaae; }
+  .ml-notif__remove {
+    display: inline-flex; padding: 0; border: 0; background: transparent; color: var(--ml-medium-emphasis); cursor: pointer;
+  }
+  .ml-notif__remove:hover { color: var(--ml-high-emphasis); }
+  /* Como la SPA: el punto de «leída» y la X solo al pasar el ratón (en táctil, siempre). */
+  @media (hover: hover) {
+    .ml-notif__item .ml-notif__dot.is-read, .ml-notif__item .ml-notif__remove { visibility: hidden; }
+    .ml-notif__item:hover .ml-notif__dot.is-read, .ml-notif__item:hover .ml-notif__remove,
+    .ml-notif__item:focus-within .ml-notif__dot.is-read, .ml-notif__item:focus-within .ml-notif__remove { visibility: visible; }
+  }
+
   /* ── Tabla (VDataTable) ───────────────────────────────────────────────── */
   .ml-table-shell { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
   .ml-table { width: 100%; border-collapse: collapse; font-size: 0.9375rem; }
@@ -783,6 +835,12 @@
   .ml-chat__day { align-self: center; margin-block: 0.5rem; padding: 0.125rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; background: var(--ml-track); color: var(--ml-medium-emphasis); }
   .ml-chat__msg { max-width: 80%; padding: 0.5rem 0.75rem; border-radius: 12px; background: var(--ml-track); white-space: pre-wrap; overflow-wrap: anywhere; }
   .ml-chat__msg.is-mine { align-self: flex-end; background: var(--ml-primary); color: #fff; }
+  /* Fila (mensaje + avatar en el panel): la fila se alinea; la burbuja ocupa lo que necesita. */
+  .ml-chat__row { display: flex; align-items: flex-end; gap: 0.5rem; max-width: 85%; }
+  .ml-chat__row.is-mine { align-self: flex-end; flex-direction: row-reverse; }
+  .ml-chat__row > .ml-chat__msg { max-width: 100%; }
+  .ml-chat__avatar { display: inline-flex; flex: none; align-items: center; justify-content: center; width: 30px; height: 30px; overflow: hidden; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; background: color-mix(in srgb, var(--ml-primary) 16%, transparent); color: var(--ml-primary); }
+  .ml-chat__avatar > img { width: 100%; height: 100%; object-fit: cover; }
   .ml-chat__meta { display: block; margin-top: 0.25rem; font-size: 0.6875rem; opacity: 0.75; }
   .ml-chat__form { display: flex; align-items: flex-end; gap: 0.5rem; padding-top: 0.75rem; border-top: 1px solid var(--ml-border); }
   .ml-chat__form .ml-input { min-height: 44px; resize: none; }

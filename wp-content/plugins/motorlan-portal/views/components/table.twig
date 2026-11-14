@@ -42,7 +42,7 @@
         {%- else -%}
           <tr><td colspan="{{ columns|length }}" class="!border-0">{% block empty %}
             {%- import 'components/empty.twig' as em -%}
-            {{ em.empty({ icon: 'search', title: 'Sin resultados', text: 'Prueba con otros filtros.' }) }}
+            {{ em.empty({ icon: 'search', title: __('Sin resultados', 'motorlan-portal'), text: __('Prueba con otros filtros.', 'motorlan-portal') }) }}
           {% endblock %}</td></tr>
         {%- endif -%}
       </tbody>
@@ -50,7 +50,7 @@
   </div>
   {%- if total|default(0) > 0 %}
   <div class="ml-table__footer">
-    <p class="text-sm text-medium-emphasis">{{ total }} {{ total == 1 ? 'resultado' : 'resultados' }}</p>
+    <p class="text-sm text-medium-emphasis">{{ _n('%d resultado', '%d resultados', total, 'motorlan-portal')|format(total)|e }}</p>
     {%- set filters_qs = filters_query|default('') -%}
     {{ pg.pagination({ page: page|default(1), pages: pages|default(1), url: url ~ sep ~ 'page=%d',
                        href_url: '?page=%d' ~ (filters_qs ? '&' ~ filters_qs : ''),

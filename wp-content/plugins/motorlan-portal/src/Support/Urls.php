@@ -24,14 +24,10 @@ class Urls
      */
     public static function spa(string $path = '', string $page = 'mi-cuenta'): string
     {
-        $base = '/' . $page . '/';
-        if (function_exists('motorlan_get_vue_page_urls_current_lang')) {
-            $urls = motorlan_get_vue_page_urls_current_lang();
-            if (!empty($urls[$page])) {
-                return home_url(rtrim($urls[$page], '/') . '/' . ltrim($path, '/'));
-            }
-        }
-        return home_url($base . ltrim($path, '/'));
+        // Permalink de la página traducida (ya con el prefijo de idioma). Antes se pasaba
+        // la ruta de motorlan_get_vue_page_urls_current_lang() por home_url(), que añade el
+        // prefijo otra vez (/en/en/my-account/…).
+        return SpaPages::page_url($page, $path);
     }
 
     /**

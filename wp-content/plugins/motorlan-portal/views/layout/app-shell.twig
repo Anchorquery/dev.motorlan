@@ -7,6 +7,9 @@
    - Contenido centrado (máx. 1440 px) y pie.
    - Barra inferior en < 960 px con 5 accesos (Publicar en el centro). hide_mobile_nav: true
      la oculta (pantallas de detalle con sus propios botones, como en la SPA).
+   - Barra: campana (components/notifications.twig), idioma si WPML tiene varios y menú
+     del avatar con «Cerrar sesión» (POST /logout). Solo tema claro.
+   - Al volver atrás (bfcache) se comprueba la sesión (app.js → GET /session).
   Bloques: main · navbar_start (junto a la hamburguesa) · navbar_end (antes de la campana).
 #}
 {% block body %}
@@ -50,6 +53,17 @@
         <div class="flex-1"></div>
         {% block navbar_end %}{% endblock %}
         {% include 'components/notifications.twig' %}
+        {#- Idioma (I18n.vue): solo con WPML y más de un idioma. Tema: solo claro (sin selector). #}
+        {%- if nav.languages|default([])|length > 1 %}
+        <div class="relative" x-data="{ open: false }" @keydown.escape.window="open = false" @click.outside="open = false">
+          <button type="button" class="ml-icon-btn" @click="open = !open" :aria-expanded="open.toString()" aria-haspopup="menu" aria-label="{{ __('Idioma', 'motorlan-portal')|e('html_attr') }}">{{ ui.icon('language') }}</button>
+          <div class="ml-menu end-0 top-[calc(100%+12px)] w-44" role="menu" x-show="open" x-cloak>
+            {%- for lang in nav.languages %}
+            <a class="ml-list-item{{ lang.active ? ' is-active' : '' }}" role="menuitem" href="{{ lang.url|e('html_attr') }}" hreflang="{{ lang.code|e('html_attr') }}" lang="{{ lang.code|e('html_attr') }}"{% if lang.active %} aria-current="true"{% endif %}>{{ lang.label|e }}</a>
+            {%- endfor %}
+          </div>
+        </div>
+        {%- endif %}
         {% include 'components/user-menu.twig' %}
       </div>
     </header>

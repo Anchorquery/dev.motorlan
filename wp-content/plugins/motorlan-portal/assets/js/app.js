@@ -5,6 +5,9 @@ import focus from '@alpinejs/focus'
 import { fetchRest, renewNonce, isStaleText, STALE_HEADER } from './nonce.js'
 import mlStore from './store.js'
 import mlProductChat from './product-chat.js'
+import { mlChat } from './chat.js'
+import mlNotifications from './notifications.js'
+import { mlAvatar, mlChangePassword, mlEmailConfirm } from './cuenta.js'
 import { mlAuth, mlPassword, mlAuthToken } from './auth.js'
 
 const cfg = window.motorlanPortal || {}
@@ -52,6 +55,31 @@ document.body.addEventListener('htmx:sendError', () => Alpine.store('toast').sho
 // El servidor puede lanzar un aviso con la cabecera HX-Trigger: {"ml:toast": {"text": "…", "color": "success"}}
 document.body.addEventListener('ml:toast', (e) => Alpine.store('toast').show(e.detail.text || e.detail.value, e.detail.color))
 document.addEventListener('ml:session-expired', () => Alpine.store('toast').show(t('expired', 'Tu sesión ha caducado.'), 'warning'))
+
+// ── Sesión ──────────────────────────────────────────────────────────────────────────────
+const api = String(cfg.apiBase || '/wp-json/motorlan/v1/').replace(/\/$/, '')
+const loginWithReturn = () => {
+  const login = cfg.loginUrl || '/mi-cuenta/login'
+  return `${login}${login.includes('?') ? '&' : '?'}to=${encodeURIComponent(window.location.pathname + window.location.search)}`
+}
+
+// Cerrar sesión (UserProfile.vue): POST /logout con nonce (sin él WordPress no destruye el
+// token de sesión) y al acceso con recarga completa.
+window.mlLogout = async () => {
+  try { await fetchRest(`${api}/logout`, { method: 'POST', headers: { Accept: 'application/json' } }) } catch (e) { /* se sale igualmente */ }
+  window.location.href = cfg.loginUrl || '/'
+}
+
+// Atrás/adelante con la página en bfcache: si la sesión ya no vale (se cerró en otra
+// pestaña), al acceso en vez de enseñar datos de la sesión anterior (App.vue de la SPA).
+window.addEventListener('pageshow', async (e) => {
+  if (!e.persisted || !cfg.isLogged) return
+  try {
+    const res = await fetchRest(`${api}/session`, { headers: { Accept: 'application/json' } })
+    const data = await res.json()
+    if (!data || !data.is_logged_in) window.location.href = loginWithReturn()
+  } catch (err) { /* sin red: se mantiene la página */ }
+})
 
 // ── Alpine ──────────────────────────────────────────────────────────────────────────────
 
@@ -132,6 +160,13 @@ Alpine.data('mlProductChat', mlProductChat)
 Alpine.data('mlAuth', mlAuth)
 Alpine.data('mlPassword', mlPassword)
 Alpine.data('mlAuthToken', mlAuthToken)
+
+// Panel (fase 2): campana, chat del kit y Mi perfil.
+Alpine.data('mlNotifications', mlNotifications)
+Alpine.data('mlChat', mlChat)
+Alpine.data('mlAvatar', mlAvatar)
+Alpine.data('mlChangePassword', mlChangePassword)
+Alpine.data('mlEmailConfirm', mlEmailConfirm)
 
 Alpine.plugin(focus) // x-trap: foco dentro de los diálogos
 window.Alpine = Alpine

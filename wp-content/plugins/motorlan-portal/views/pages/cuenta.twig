@@ -1,0 +1,72 @@
+{% extends 'layout/app-shell.twig' %}
+{#
+  Mi perfil: /mi-cuenta/dashboard/user/account (UserProfile.vue). CuentaController.
+  Tarjeta con el avatar (subida en el navegador: mlAvatar), y debajo los datos (parcial
+  partials/cuenta-form.twig, que HTMX sustituye al guardar). Diálogo de cambio de
+  contraseña (mlChangePassword) fuera del parcial para que no se reinicie al guardar.
+#}
+{% block main %}
+{%- import 'components/icon.twig' as ui -%}
+{%- import 'partials/acceso/_ui.twig' as auth -%}
+<h1 class="sr-only">{{ page_title|e }}</h1>
+<div class="ml-card ml-profile">
+  {# ── Avatar ── #}
+  <div class="flex flex-col items-center px-6 pt-0" x-data="mlAvatar({{ ml_json({ avatar: profile.avatar, apiBase: account_js.apiBase, i18n: account_js.i18n })|e('html_attr') }})">
+    <div class="ml-profile__avatar" :class="{ 'is-busy': busy, 'is-drag': drag }"
+         @dragover.prevent="drag = true" @dragleave.prevent="drag = false" @drop.prevent="onDrop($event)">
+      <span class="ml-profile__img">
+        <template x-if="url"><img :src="url" alt=""></template>
+        <template x-if="!url"><span class="contents">{{ ui.icon('user') }}</span></template>
+      </span>
+      <button type="button" class="ml-profile__pick" @click="pickFile()" :disabled="busy" aria-label="{{ __('Cambiar foto de perfil', 'motorlan-portal')|e('html_attr') }}"></button>
+      <span class="ml-profile__cam" aria-hidden="true">{{ ui.icon('camera') }}</span>
+      <span class="ml-profile__busy" x-show="busy" x-cloak aria-hidden="true"><span class="ml-btn ml-btn--text !text-white" data-loading="true"></span></span>
+      <input type="file" accept="image/*" class="sr-only" x-ref="input" tabindex="-1" @change="onChange($event)">
+    </div>
+  </div>
+
+  <div id="ml-cuenta-body">
+    {% include 'partials/cuenta-form.twig' %}
+  </div>
+</div>
+
+{# ── Cambiar contraseña (ChangePasswordDialog.vue) ── #}
+<div x-data="mlChangePassword({{ ml_json({ email: profile.email, apiBase: account_js.apiBase, i18n: account_js.i18n })|e('html_attr') }})" class="contents" @ml-password-open.window="open()">
+  {% embed 'components/dialog.twig' with { id: 'ml-password', title: __('Cambiar contraseña', 'motorlan-portal'), max_width: '500px' } %}
+    {% block content %}
+    {%- import 'components/icon.twig' as ui -%}
+    {%- import 'partials/acceso/_ui.twig' as auth -%}
+    <div class="ml-alert ml-c-error mb-4" role="alert" x-show="error" x-cloak><span class="ml-alert__icon">{{ ui.icon('alert-circle') }}</span><div class="ml-alert__body"><div class="ml-alert__text" x-text="error"></div></div></div>
+
+    <form x-show="step === 1" class="flex flex-col gap-4" @submit.prevent="request()" novalidate>
+      <p class="text-sm text-medium-emphasis">{{ __('Elige tu nueva contraseña. Te enviaremos un código de verificación a tu email para confirmar el cambio.', 'motorlan-portal')|e }}</p>
+      {{ auth.password({ name: 'new_password', id: 'ml-password-new', label: __('Nueva contraseña', 'motorlan-portal'), autocomplete: 'new-password', model: 'password' }) }}
+      {{ auth.requirements() }}
+      {{ auth.password({ name: 'confirm_password', id: 'ml-password-confirm', label: __('Confirmar nueva contraseña', 'motorlan-portal'), autocomplete: 'new-password', model: 'confirm' }) }}
+      <div class="flex justify-end gap-3">
+        <button type="button" class="ml-btn ml-btn--tonal ml-c-secondary ml-btn--rounded" @click="close()">{{ __('Cancelar', 'motorlan-portal')|e }}</button>
+        <button type="submit" class="ml-btn ml-btn--filled ml-c-primary ml-btn--rounded" :disabled="loading" :data-loading="loading">{{ __('Enviar código', 'motorlan-portal')|e }}</button>
+      </div>
+    </form>
+
+    <form x-show="step === 2" x-cloak class="flex flex-col gap-4" @submit.prevent="verify()" novalidate>
+      <p class="text-sm text-medium-emphasis">{{ __('Te hemos enviado un código de 6 cifras a tu email. Escríbelo para confirmar el cambio.', 'motorlan-portal')|e }}</p>
+      <div class="ml-field">
+        <label class="ml-label" for="ml-password-code">{{ __('Código de verificación', 'motorlan-portal')|e }}</label>
+        <input id="ml-password-code" class="ml-input text-center tracking-[0.5em]" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" x-model="code" placeholder="······">
+      </div>
+      <div class="flex flex-wrap justify-between gap-3">
+        <button type="button" class="ml-btn ml-btn--text ml-c-secondary" @click="step = 1; error = ''">{{ ui.icon('chevron-left') }}<span>{{ __('Volver', 'motorlan-portal')|e }}</span></button>
+        <button type="submit" class="ml-btn ml-btn--filled ml-c-primary ml-btn--rounded" :disabled="loading || code.length < 6" :data-loading="loading">{{ __('Cambiar contraseña', 'motorlan-portal')|e }}</button>
+      </div>
+    </form>
+
+    <div x-show="step === 3" x-cloak class="flex flex-col items-center gap-3 py-4 text-center">
+      <span class="ml-empty__icon">{{ ui.icon('circle-check') }}</span>
+      <p class="ml-h6">{{ __('Contraseña cambiada con éxito.', 'motorlan-portal')|e }}</p>
+      <button type="button" class="ml-btn ml-btn--filled ml-c-primary ml-btn--rounded" @click="close()">{{ __('Cerrar', 'motorlan-portal')|e }}</button>
+    </div>
+    {% endblock %}
+  {% endembed %}
+</div>
+{% endblock %}
