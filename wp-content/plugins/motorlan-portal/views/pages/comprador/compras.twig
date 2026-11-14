@@ -1,0 +1,17 @@
+{% extends 'layout/app-shell.twig' %}
+{#
+  Mis compras: /mi-cuenta/dashboard/purchases/purchases (purchases.vue). CompradorController.
+  Tabla (partials/comprador/compras-tabla.twig) con búsqueda, orden y paginación por HTMX;
+  en móvil cada compra es una tarjeta. «Valorar» abre partials/comprador/valorar.twig.
+#}
+{% block main %}
+{%- import 'components/icon.twig' as ui -%}
+<div class="ml-card overflow-visible">
+  <div class="flex flex-wrap items-center justify-between gap-4 px-6 pt-6">
+    <h1 class="ml-h5 font-semibold">{{ page_title|e }}</h1>
+    <a class="ml-btn ml-btn--tonal ml-btn--sm ml-c-warning" href="{{ opinions_url|e('html_attr') }}">{{ ui.icon('star', 'size-4') }}<span>{{ __('Mis valoraciones', 'motorlan-portal')|e }}</span></a>
+  </div>
+  {% include 'partials/comprador/compras-tabla.twig' %}
+</div>
+{% include 'partials/comprador/valorar.twig' with { review: review, refresh: '#ml-compras-filters' } %}
+{% endblock %}

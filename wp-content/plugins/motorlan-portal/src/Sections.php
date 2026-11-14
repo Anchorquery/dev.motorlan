@@ -91,10 +91,11 @@ class Sections
             ],
             // Pendientes (fases siguientes). Cada bloque de pantallas, su sección.
             'comprador' => [
-                'label'      => 'Panel del comprador',
+                'label'      => 'Panel del comprador: mis compras (y su detalle), consultas enviadas, ofertas enviadas y mis valoraciones',
                 'auth'       => 'user',
-                'controller' => null,
-                'spa_paths'  => [],
+                'controller' => Controllers\CompradorController::class,
+                'spa_paths'  => [Controllers\CompradorController::class, 'patterns'],
+                'boot'       => [Controllers\CompradorController::class, 'boot'],
             ],
             'vendedor' => [
                 'label'      => 'Panel del vendedor',

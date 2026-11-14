@@ -116,6 +116,7 @@ Llama a los endpoints de `motorlan-api-vue` dentro del mismo proceso
 | `panel` | `/mi-cuenta/` y `/mi-cuenta/dashboard` → Mis compras; URLs antiguas del panel (`purchases/favorites`, `user/company`, `chat`, `questions/list`…) → su pantalla actual | `PanelController` |
 | `cuenta` | `/mi-cuenta/dashboard/user/account` (y `user/profile`, que redirige aquí) | `CuentaController` |
 | `favoritos` | `/mi-cuenta/dashboard/favorites/list` | `FavoritosController` |
+| `comprador` | `/mi-cuenta/dashboard/purchases/{purchases,inquiries,offers-sent,opinions}` y `purchases/{uuid}` (detalle de compra, también para el vendedor); URLs antiguas del comprador (`purchases`, `purchases/list`, `purchases/chat/{uuid}`, `purchases/questions`) | `CompradorController` |
 
 Las URLs son las de la SPA (`Support\SpaPages`: slugs por idioma y rutas que siguen siendo de
 la SPA, p. ej. `/marketplace-motorlan/dashboard/…`). La consulta principal sigue siendo la
@@ -164,11 +165,56 @@ pantalla aún sin migrar sigue en la SPA sin tocar el menú.
 - *Favoritos*: tabla con búsqueda, estado, elementos por página y paginación por HTMX;
   quitar pide confirmación y hace POST a la propia URL (`action=remove`) con los filtros.
 
+**Comprador** (`CompradorController`, vistas en `views/{pages,partials}/comprador/`, JS en
+`assets/js/comprador.js`). Todo con `Support\Api` sobre `motorlan/v1`; formularios con POST a
+la propia URL y respuesta parcial por HTMX (sin JS, la página o 303).
+
+- *Mis compras* (`GET /purchases/purchases`): tabla con búsqueda, orden y paginación; en
+  móvil, tarjetas. «Valorar vendedor» abre `partials/comprador/valorar.twig` (RatingModal):
+  POST `action=review` → `POST /reviews`, sin swap; el resultado llega en `HX-Trigger`
+  (`ml:review`) y la tabla se recarga con sus filtros. Botón a *Mis valoraciones*.
+- *Detalle* (`GET /purchases/{uuid}`): producto, la otra parte, estado, oferta y resumen; chat
+  del kit (`Chat::purchase`, `?openChat=true` lo abre). La API decide quién lo ve (403/404 →
+  página de error con ese código). Solo el comprador valora desde aquí (como la SPA).
+- *Consultas enviadas* (`GET /buyer/inquiries`): al entrar hace `POST /buyer/claim-guest-chats`;
+  «Ver chat» cambia de conversación el diálogo del kit (`?room_key=` lo abre al cargar). La
+  tabla se refresca cada 60 s y al leer o enviar mensajes (contador de no leídos).
+- *Ofertas enviadas* (`GET /offers/sent`): búsqueda, estado, fechas; detalle en diálogo;
+  confirmar (`POST /offers/{id}/confirm` con cuerpo JSON → `HX-Redirect` al detalle de la
+  compra) y retirar con confirmación (`DELETE /offers/{id}`). Un solo formulario oculto;
+  `mlOffers` no deja enviar dos veces y la API bloquea la doble confirmación (#155):
+  probado con tres confirmaciones simultáneas → una compra y una unidad de stock.
+- *Mis valoraciones* (`GET /purchases/opinions`): era una ruta huérfana en la SPA; se migra y
+  se enlaza desde Mis compras y desde el menú (filtro `motorlan_portal_nav_vertical`, tras
+  Favoritos; en la barra móvil cae en «Compras»).
+- `GET /marcas` de `purchases.vue` no se migra: era código muerto (`resolveBrandName` no se usaba).
+
+Bugs de la SPA que se corrigen aquí (la SPA no se toca):
+
+- `offers-sent.vue` no importa `assertApiOk`: confirmar creaba la compra pero mostraba
+  «assertApiOk is not defined» y no navegaba; retirar tampoco cerraba ni recargaba.
+- El título de Ofertas enviadas era la clave «offers.sent» (en `es.json` está dentro de `inquiries`).
+- Retirar una oferta no pedía confirmación.
+- Mis compras dejaba valorar compras canceladas (la API lo rechazaba); ahora, la regla del detalle.
+- El diálogo de valorar decía «Vendedor»: ahora el nombre.
+- En el detalle, `acf.marca` es un id y la marca no salía en el nombre (se resuelve con `get_term`);
+  visto por el vendedor ponía «Comprador» en vez del nombre y la miga volvía a Mis compras
+  (ahora a Ventas); el tipo de compra salía «Consultar precio» en ventas directas con precio
+  negociable (ahora «Compra directa»).
+- `product_title` de `/buyer/inquiries` es título + referencia + potencia + velocidad sin
+  unidades: se usa el título de la publicación.
+
+Anotados en la API (sin cambiar): el primer `POST /publicaciones/{id}/offers` respondió
+`data: null`; `/offers/{id}/confirm` da 415 sin `Content-Type: application/json` aunque no
+lleve cuerpo; el nombre del vendedor es nombre y apellidos en la lista y `display_name` en el
+detalle y en consultas (con frecuencia el email); `offer_date` va en hora local y los
+mensajes en UTC.
+
 ## Panel: añadir una sección
 
 Todo desde el registro, sin tocar el layout ni el menú:
 
-1. **Registro** (`Sections::registry()`), una entrada nueva:
+1. **Registro** (`Sections::registry()`), una entrada nueva (ejemplo real: `comprador`):
    ```php
    'compras' => ['label' => 'Panel: mis compras', 'auth' => 'user',
        'controller' => Controllers\ComprasController::class,
@@ -312,6 +358,18 @@ favoritos (HTMX, quitar con confirmación y volver a añadirlo), Mi perfil (redi
 `user/profile`, guardar, validación, diálogo de contraseña para el email, primer paso del
 cambio de contraseña) y el chat de la ficha con sesión. Con `ML_PANEL_SPA=1` y las
 secciones apagadas captura las referencias de la SPA (`cuenta.png`, `favoritos.png`).
+
+`tests/visual/portal-comprador.spec.js` (sección `comprador`): Mis compras (búsqueda HTMX,
+diálogo de valorar sin enviar), detalle (resumen, chat, `?openChat=true`, 404), consultas
+(chat del producto, `?room_key=`), ofertas (filtro, detalle, retirar cancelado), Mis
+valoraciones desde el menú y URLs antiguas. Sesión con `ML_PORTAL_USER`/`ML_PORTAL_PASS` o
+`ML_PORTAL_COOKIES` (JSON `[{name, value}]` con las cookies de un usuario de la BD local; el
+nombre de la cookie depende de `WP_HOME`); `ML_COMPRA_UUID` = una compra por oferta sin
+valorar. `ML_COMPRADOR_CONFIRM=1` prueba confirmar con doble clic (crea **una** compra: hay que
+devolver la oferta a «aceptada» después). Con `ML_COMPRADOR_SPA=1` y la sección apagada
+captura `compras.png`, `compra.png`, `consultas.png` y `ofertas.png` de la SPA. Datos que
+espera el usuario de prueba: compras (una por oferta y una directa), consultas con
+respuesta del vendedor y ofertas en cada estado.
 
 ## Despliegue
 
