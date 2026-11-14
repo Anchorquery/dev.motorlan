@@ -1,0 +1,39 @@
+{% extends 'layout/app-shell.twig' %}
+{#
+  Mis favoritos: /mi-cuenta/dashboard/favorites/list (favorites/list/index.vue).
+  FavoritosController. La tabla (partials/favoritos-tabla.twig) se filtra y pagina con
+  HTMX; quitar un favorito pide confirmación y hace POST a esta URL (action=remove) con
+  los filtros actuales, y el servidor devuelve la tabla de nuevo.
+#}
+{% block main %}
+{%- import 'components/icon.twig' as ui -%}
+<div x-data="{ sel: { id: 0, name: '', page: 1 } }" @ml-fav-remove.window="sel = $event.detail; window.dispatchEvent(new CustomEvent('ml-dialog', { detail: 'ml-fav-confirm' }))">
+  <div class="ml-card overflow-visible">
+    <div class="flex flex-wrap items-center justify-between gap-4 px-6 pt-6">
+      <h1 class="ml-h5 font-semibold">{{ page_title|e }}</h1>
+    </div>
+    {% include 'partials/favoritos-tabla.twig' %}
+  </div>
+
+  {% embed 'components/dialog.twig' with { id: 'ml-fav-confirm', max_width: '450px', persistent: true } %}
+    {% block content %}
+    {%- import 'components/icon.twig' as ui -%}
+    <h3 class="ml-h6 mb-4 flex items-center gap-2 font-semibold">{{ ui.icon('heart-off', 'size-5 text-error') }}<span>{{ __('Eliminar de favoritos', 'motorlan-portal')|e }}</span></h3>
+    <p>{{ __('¿Seguro que quieres quitar esta publicación de tus favoritos?', 'motorlan-portal')|e }}</p>
+    <p class="mt-2 text-sm font-medium text-medium-emphasis" x-show="sel.name">«<span x-text="sel.name"></span>»</p>
+    <form id="ml-fav-remove-form" method="post" action="{{ table.url|e('html_attr') }}"
+          hx-post="{{ table.url|e('html_attr') }}" hx-target="#ml-favs" hx-swap="outerHTML" hx-include="#ml-favs-filters"
+          hx-disabled-elt="find button" x-init="window.htmx && window.htmx.process($el)" @htmx:after-request="close()">
+      <input type="hidden" name="_mlnonce" value="{{ nonce|e('html_attr') }}">
+      <input type="hidden" name="action" value="remove">
+      <input type="hidden" name="id" :value="sel.id">
+      <input type="hidden" name="page" :value="sel.page">
+      <div class="mt-6 flex justify-end gap-2">
+        <button type="button" class="ml-btn ml-btn--tonal ml-c-secondary" @click="close()">{{ __('Cancelar', 'motorlan-portal')|e }}</button>
+        <button type="submit" class="ml-btn ml-btn--filled ml-c-error">{{ ui.icon('heart-off') }}<span>{{ __('Eliminar', 'motorlan-portal')|e }}</span></button>
+      </div>
+    </form>
+    {% endblock %}
+  {% endembed %}
+</div>
+{% endblock %}

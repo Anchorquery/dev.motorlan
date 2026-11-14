@@ -27,7 +27,7 @@
   {# Aviso flotante (VSnackbar) — Alpine.store('toast') #}
   <div x-data x-show="$store.toast.open" x-cloak x-transition.opacity class="ml-toast" :class="'ml-c-' + $store.toast.color" :style="$store.toast.color !== 'secondary' && 'background: var(--c)'" role="status" aria-live="polite">
     <span x-text="$store.toast.text"></span>
-    <button type="button" class="ml-icon-btn !size-7 !text-white" @click="$store.toast.open = false" aria-label="Cerrar">{{ ml_icon('x', 'size-4') }}</button>
+    <button type="button" class="ml-icon-btn !size-7 !text-white" @click="$store.toast.open = false" aria-label="{{ __('Cerrar', 'motorlan-portal')|e('html_attr') }}">{{ ml_icon('x', 'size-4') }}</button>
   </div>
   {% block scripts %}{% endblock %}
 </body>

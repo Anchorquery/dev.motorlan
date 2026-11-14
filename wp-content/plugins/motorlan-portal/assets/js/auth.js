@@ -13,7 +13,7 @@ export const passwordChecks = (p = '') => ({
   special: /[^A-Za-z0-9]/.test(p),
 })
 
-const passwordState = (cfg = {}) => ({
+export const passwordState = (cfg = {}) => ({
   password: '',
   confirm: '',
   touched: false,

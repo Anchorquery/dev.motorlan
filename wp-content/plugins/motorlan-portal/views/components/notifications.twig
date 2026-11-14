@@ -1,32 +1,72 @@
 {#
-  Campana de notificaciones (NavBarNotifications.vue). DE MOMENTO SOLO VISUAL: el
-  contador sale de user.unread (0) y el panel muestra el estado vacío. Para activarla:
-  user.unread desde /motorlan/v1/notifications/unread-count y la lista por HTMX
-  (hx-get a un parcial que lea /motorlan/v1/notifications al abrir el panel).
+  Campana de notificaciones (NavBarNotifications.vue + Notifications.vue). Lógica en
+  mlNotifications (assets/js/notifications.js) contra /motorlan/v1/notifications: lista,
+  contador, leída / no leída (una o todas), eliminar y navegar a vue_path / url.
+  Otra pantalla puede pedir refresco: window.dispatchEvent(new Event('ml-notifications-refresh')).
 #}
 {%- import 'components/icon.twig' as ui -%}
-{%- import 'components/badge.twig' as bd -%}
 {%- if user -%}
-<div class="relative" x-data="{ open: false }" @keydown.escape.window="open = false" @click.outside="open = false">
-  <button type="button" class="ml-icon-btn relative" @click="open = !open" :aria-expanded="open.toString()" aria-label="{{ __('Notificaciones', 'motorlan-portal')|e('html_attr') }}">
+{%- set notif_cfg = { accountUrl: ml_spa(''), i18n: { error: __('Ha ocurrido un error', 'motorlan-portal') } } -%}
+<div class="relative" x-data="mlNotifications({{ ml_json(notif_cfg)|e('html_attr') }})" @keydown.escape.window="open = false" @click.outside="open = false">
+  <button type="button" class="ml-icon-btn relative" @click="toggle()" :aria-expanded="open.toString()" aria-haspopup="true" aria-label="{{ __('Notificaciones', 'motorlan-portal')|e('html_attr') }}">
     {{ ui.icon('bell') }}
-    {%- if user.unread > 0 %}{{ bd.badge({ dot: true }) }}{% endif %}
+    <span class="ml-badge ml-badge--dot ml-badge--top ml-c-error" x-show="anyUnread" x-cloak aria-hidden="true"></span>
+    <span class="sr-only" x-show="anyUnread" x-text="unread + ' ' + {{ ml_json(__('sin leer', 'motorlan-portal'))|e('html_attr') }}"></span>
   </button>
-  <div class="ml-menu end-0 top-[calc(100%+12px)] w-[380px] max-w-[calc(100vw-1.5rem)] !py-0 max-sm:fixed max-sm:inset-x-3 max-sm:top-[4.5rem] max-sm:w-auto" x-show="open" x-cloak
+  <div class="ml-menu ml-notif end-0 top-[calc(100%+12px)] w-[380px] max-w-[calc(100vw-1.5rem)] !py-0 max-sm:fixed max-sm:inset-x-3 max-sm:top-[4.5rem] max-sm:w-auto" x-show="open" x-cloak
        x-transition:enter="transition duration-150 ease-out" x-transition:enter-start="opacity-0 -translate-y-1" x-transition:enter-end="opacity-100 translate-y-0">
     <div class="flex items-center justify-between gap-2 px-4 py-3">
-      <h6 class="ml-h5">{{ __('Notificaciones', 'motorlan-portal') }}</h6>
-      {%- if user.unread > 0 %}<span class="ml-chip ml-chip--sm ml-c-primary">{{ user.unread }} {{ __('nuevas', 'motorlan-portal') }}</span>{% endif %}
+      <h6 class="ml-h5">{{ __('Notificaciones', 'motorlan-portal')|e }}</h6>
+      <div class="flex items-center gap-2">
+        <span class="ml-chip ml-chip--sm ml-c-primary" x-show="unseenInList" x-cloak><span x-text="unread || unseenInList"></span>&nbsp;{{ __('nuevas', 'motorlan-portal')|e }}</span>
+        <button type="button" class="ml-icon-btn !size-[34px]" x-show="items.length" x-cloak @click="markAll()"
+                :title="items.some(n => !n.isSeen) ? {{ ml_json(__('Marcar todas como leídas', 'motorlan-portal'))|e('html_attr') }} : {{ ml_json(__('Marcar todas como no leídas', 'motorlan-portal'))|e('html_attr') }}"
+                :aria-label="items.some(n => !n.isSeen) ? {{ ml_json(__('Marcar todas como leídas', 'motorlan-portal'))|e('html_attr') }} : {{ ml_json(__('Marcar todas como no leídas', 'motorlan-portal'))|e('html_attr') }}">
+          <span x-show="items.some(n => !n.isSeen)">{{ ui.icon('mail-opened', 'size-5') }}</span>
+          <span x-show="!items.some(n => !n.isSeen)">{{ ui.icon('mail', 'size-5') }}</span>
+        </button>
+      </div>
     </div>
     <hr class="ml-divider">
-    <div class="ml-empty !py-8">
-      <span class="ml-empty__icon">{{ ui.icon('bell-off') }}</span>
-      <p class="text-medium-emphasis">{{ __('No hay notificaciones', 'motorlan-portal') }}</p>
+    <div class="ml-notif__list">
+      <template x-if="!loaded">
+        <div class="flex flex-col gap-3 p-4" aria-hidden="true">
+          <div class="flex gap-3"><span class="ml-skeleton size-[38px] rounded-full"></span><div class="flex-1 space-y-2"><span class="ml-skeleton block h-3 w-2/3"></span><span class="ml-skeleton block h-3 w-full"></span></div></div>
+          <div class="flex gap-3"><span class="ml-skeleton size-[38px] rounded-full"></span><div class="flex-1 space-y-2"><span class="ml-skeleton block h-3 w-1/2"></span><span class="ml-skeleton block h-3 w-5/6"></span></div></div>
+        </div>
+      </template>
+      <template x-for="(n, i) in items" :key="n.id">
+        <div class="ml-notif__item" :class="!n.isSeen && 'is-unread'" role="button" tabindex="0" @click="go(n)" @keydown.enter.prevent="go(n)">
+          <span class="ml-avatar shrink-0" :class="'ml-c-' + n.color">
+            <template x-if="n.image"><img :src="n.image" alt="" loading="lazy"></template>
+            <template x-if="!n.image"><span class="contents">{{ ui.icon('bell') }}</span></template>
+          </span>
+          <div class="min-w-0 flex-1">
+            <p class="mb-1 text-sm font-medium text-high-emphasis" x-text="n.title"></p>
+            <p class="mb-2 text-sm leading-[18px] text-medium-emphasis" x-text="n.subtitle"></p>
+            <p class="text-sm leading-[18px] text-disabled" x-text="relative(n)"></p>
+          </div>
+          <div class="flex flex-col items-end gap-2">
+            <button type="button" class="ml-notif__dot" :class="n.isSeen && 'is-read'" @click.stop="toggleRead(n)"
+                    :aria-label="n.isSeen ? {{ ml_json(__('Marcar como no leída', 'motorlan-portal'))|e('html_attr') }} : {{ ml_json(__('Marcar como leída', 'motorlan-portal'))|e('html_attr') }}"></button>
+            <button type="button" class="ml-notif__remove" @click.stop="remove(n)" aria-label="{{ __('Eliminar notificación', 'motorlan-portal')|e('html_attr') }}">{{ ui.icon('x', 'size-5') }}</button>
+          </div>
+        </div>
+      </template>
+      <div class="ml-empty !py-8" x-show="loaded && !items.length" x-cloak>
+        <span class="ml-empty__icon">{{ ui.icon('bell-off') }}</span>
+        <p class="text-medium-emphasis" x-show="!error">{{ __('No hay notificaciones', 'motorlan-portal')|e }}</p>
+        <p class="text-medium-emphasis" x-show="error">{{ __('No se pudieron cargar las notificaciones.', 'motorlan-portal')|e }}</p>
+      </div>
     </div>
-    <hr class="ml-divider">
-    <div class="p-4">
-      <a class="ml-btn ml-btn--filled ml-c-primary ml-btn--block ml-btn--sm" href="{{ ml_spa('dashboard/user/notifications')|e('html_attr') }}">{{ __('Ver todas', 'motorlan-portal') }}</a>
-    </div>
+    <template x-if="hasMore">
+      <div>
+        <hr class="ml-divider">
+        <div class="p-4">
+          <button type="button" class="ml-btn ml-btn--tonal ml-c-primary ml-btn--block ml-btn--sm" @click="loadMore()" :data-loading="loading">{{ __('Cargar más', 'motorlan-portal')|e }}</button>
+        </div>
+      </div>
+    </template>
   </div>
 </div>
 {%- endif -%}

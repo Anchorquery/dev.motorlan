@@ -1,11 +1,12 @@
 // Chat de la ficha de producto ("Consultar precio"): port de ChatModal.vue + useProductChat.
 //
-// Mismos endpoints (motorlan/v1) y mismas claves de localStorage que la SPA, así que un
-// invitado que consultó desde la SPA conserva su sala al pasar al portal y viceversa:
+// La conversación (leer, sondear, enviar, agrupar) es el núcleo común de chat.js; aquí
+// solo va lo propio de la ficha: invitados, enlace del email (?ct=) y "precio pedido".
+// Mismas claves de localStorage que la SPA, así que un invitado que consultó desde la SPA
+// conserva su sala al pasar al portal y viceversa:
 //   ml_guest_rooms, ml_guest_room_tokens, ml_guest_name, ml_guest_email, motorlan_requested_prices
-//
-// El transporte (leer/enviar/sondear) está aislado en createChatTransport(): en la fase de
-// chat se cambia el sondeo por pusher-js sin tocar el componente.
+
+import { chatCore, mix } from './chat.js'
 
 const LS = {
   get(key) { try { return window.localStorage.getItem(key) } catch (e) { return null } },
@@ -85,88 +86,6 @@ const requested = {
   },
 }
 
-// "2026-11-10 10:00:00" (UTC sin zona) → ISO
-const isoTime = (value) => {
-  let v = String(value || '').trim()
-  if (!v) return new Date().toISOString()
-  if (v.includes(' ')) v = v.replace(' ', 'T')
-  if (!/Z$|[+-]\d{2}:\d{2}$/.test(v)) v += 'Z'
-  const t = Date.parse(v)
-  return Number.isNaN(t) ? new Date().toISOString() : new Date(t).toISOString()
-}
-
-/**
- * Lectura, envío y sondeo de los mensajes de una publicación.
- * Sondeo adaptativo como usePolling: 3 s → ×1.5 sin novedades → máx. 10 s; 429 espera
- * Retry-After; 403/404 lo detienen; con la pestaña oculta no consulta.
- */
-export function createChatTransport({ apiBase, productId, fetcher }) {
-  const base = `${apiBase.replace(/\/$/, '')}/products/${productId}/messages`
-  const qs = (params) => {
-    const p = new URLSearchParams()
-    Object.entries(params).forEach(([k, v]) => { if (v) p.set(k, v) })
-    const s = p.toString()
-    return s ? `${base}?${s}` : base
-  }
-  const json = async (res) => res.json().catch(() => ({}))
-
-  let timer = null
-  let running = false
-  let interval = 3000
-  let since = null
-
-  return {
-    async list(room) {
-      const res = await fetcher(qs({ room_key: room.key, room_token: room.token }), { headers: { Accept: 'application/json' } })
-      return { status: res.status, ok: res.ok, body: await json(res) }
-    },
-    async send(payload) {
-      const res = await fetcher(base, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(payload) })
-      return { status: res.status, ok: res.ok, body: await json(res) }
-    },
-    sync(ts) { since = ts || null },
-    start(room, { onData, onStop, isVisible }) {
-      if (running) return
-      running = true
-      interval = 3000
-      const tick = async () => {
-        timer = null
-        if (!running) return
-        if (document.visibilityState === 'hidden' || (isVisible && !isVisible())) {
-          if (isVisible && !isVisible()) { running = false; return }
-          timer = setTimeout(tick, interval)
-          return
-        }
-        try {
-          const res = await fetcher(qs({ room_key: room.key, room_token: room.token(), since_timestamp: since }), { headers: { Accept: 'application/json' } })
-          if (res.status === 429) {
-            const ra = Number(res.headers.get('Retry-After') || 0)
-            interval = ra > 0 ? Math.min(ra * 1000 + 1000, 300000) : 60000
-          } else if (res.status === 403 || res.status === 404) {
-            running = false
-            onStop(res.status)
-            return
-          } else if (res.ok) {
-            const body = await json(res)
-            const items = Array.isArray(body.data) ? body.data : []
-            interval = items.length ? 3000 : Math.min(interval * 1.5, 10000)
-            onData(items, body.meta || null)
-            if (body.meta && body.meta.server_timestamp) since = body.meta.server_timestamp
-          }
-        } catch (e) { /* red: reintento en el siguiente ciclo */ }
-        if (running) timer = setTimeout(tick, interval)
-      }
-      timer = setTimeout(tick, interval)
-    },
-    stop() {
-      running = false
-      if (timer) clearTimeout(timer)
-      timer = null
-    },
-    get running() { return running },
-  }
-}
-
 /**
  * Alpine: x-data="mlProductChat({ productId, userId, userName, i18n, … })".
  * Abre el diálogo #ml-chat (components/dialog.twig) con openChat().
@@ -175,34 +94,31 @@ export default (cfg = {}) => {
   const app = window.motorlanPortal || {}
   const t = (k, fallback) => (cfg.i18n && cfg.i18n[k]) || fallback
   const fetcher = window.mlFetch || ((url, opts) => fetch(url, { credentials: 'same-origin', ...opts }))
+  const api = () => String(app.apiBase || '/wp-json/motorlan/v1/').replace(/\/$/, '')
 
-  return {
+  return mix(chatCore(cfg.i18n || {}), {
     productId: Number(cfg.productId),
     isLogged: Number(cfg.userId) > 0,
     started: false,
     tokenExpired: false,
     requested: false,
     success: false,
-    loading: false,
-    loaded: false,
-    locked: false,
-    sending: false,
-    loadError: '',
-    lastStatus: null,
-    sendError: '',
-    messages: [],
-    text: '',
     form: { name: '', email: '', message: t('defaultMessage', 'Hola, me interesa saber el precio de la publicación'), website: '', agreed: false },
     providedRoomKey: null,
     roomKey: null,
     roomToken: null,
-    currentUserId: null,
     viewerName: null,
-    transport: null,
+    panelId: 'ml-chat-messages',
+
+    chatEndpoint() { return `${api()}/products/${this.productId}/messages` },
+    chatParams() { return { room_key: this.roomKey, room_token: this.roomToken } },
+    onRoomToken(token) {
+      this.roomToken = token
+      guest.setToken(this.roomKey, token)
+    },
 
     init() {
       this.requested = requested.has(this.productId)
-      this.transport = createChatTransport({ apiBase: app.apiBase || '/wp-json/motorlan/v1/', productId: this.productId, fetcher })
       const q = new URLSearchParams(window.location.search)
       const roomKey = (q.get('room_key') || '').trim()
       if (roomKey) this.providedRoomKey = roomKey
@@ -217,7 +133,7 @@ export default (cfg = {}) => {
     // Enlace del email (?ct=): token de un solo uso → sala y token de invitado.
     async exchangeToken(ct) {
       try {
-        const res = await fetcher(`${(app.apiBase || '/wp-json/motorlan/v1/').replace(/\/$/, '')}/chat-tokens/${encodeURIComponent(ct)}`, { headers: { Accept: 'application/json' } })
+        const res = await fetcher(`${api()}/chat-tokens/${encodeURIComponent(ct)}`, { headers: { Accept: 'application/json' } })
         const body = await res.json().catch(() => ({}))
         if (res.status === 410 || res.status === 404 || (body && body.code === 'invalid_token')) {
           this.tokenExpired = true
@@ -243,7 +159,8 @@ export default (cfg = {}) => {
         this.started = true
         this.start()
       } else if (this.messages.length && !this.locked) {
-        this.poll()
+        this.$nextTick(() => this.poll())
+        this.markRead()
       }
     },
 
@@ -257,24 +174,7 @@ export default (cfg = {}) => {
       const f = this.form
       return f.name.trim() && /.+@.+\..+/.test(f.email.trim()) && f.message.trim() && f.agreed
     },
-    get canSend() { return !this.locked && !this.sending && this.text.trim().length > 0 },
 
-    get groups() {
-      const fmt = new Intl.DateTimeFormat(document.documentElement.lang || 'es', { day: 'numeric', month: 'long' })
-      const buckets = new Map()
-      for (const m of this.messages) {
-        const key = new Date(m.created_at).toLocaleDateString('sv-SE')
-        if (!buckets.has(key)) buckets.set(key, [])
-        buckets.get(key).push(m)
-      }
-      return [...buckets.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([key, items]) => {
-        const label = fmt.format(new Date(items[0].created_at))
-        return { key, label: label.charAt(0).toUpperCase() + label.slice(1), items }
-      })
-    },
-    time(iso) {
-      return new Intl.DateTimeFormat(document.documentElement.lang || 'es', { hour: '2-digit', minute: '2-digit' }).format(new Date(iso))
-    },
     isMine(m) {
       if (this.currentUserId) return Number(m.user_id) === Number(this.currentUserId)
       const email = guest.email()
@@ -303,7 +203,10 @@ export default (cfg = {}) => {
         this.locked = false
         await this.load()
       }
-      if (this.messages.length) this.poll()
+      if (this.messages.length) {
+        this.$nextTick(() => this.poll())
+        this.markRead()
+      }
     },
 
     setRoom(key) {
@@ -312,124 +215,38 @@ export default (cfg = {}) => {
     },
 
     async findExistingUserRoom() {
-      const api = (app.apiBase || '/wp-json/motorlan/v1/').replace(/\/$/, '')
       try {
-        await fetcher(`${api}/buyer/claim-guest-chats`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
-        const res = await fetcher(`${api}/buyer/inquiries`, { headers: { Accept: 'application/json' } })
+        await fetcher(`${api()}/buyer/claim-guest-chats`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
+        const res = await fetcher(`${api()}/buyer/inquiries`, { headers: { Accept: 'application/json' } })
         const body = await res.json().catch(() => ({}))
         const match = Array.isArray(body.data) ? body.data.find((it) => Number(it && it.product_id) === this.productId) : null
         return match && match.room_key ? String(match.room_key) : null
       } catch (e) { return null }
     },
 
-    apply(items, replace = false) {
-      const map = new Map(replace ? [] : this.messages.map((m) => [m.id, m]))
-      ;(items || []).forEach((it, i) => {
-        const m = {
-          id: String(it.id ?? `msg-${i}`),
-          message: String(it.message ?? ''),
-          created_at: isoTime(it.created_at),
-          user_id: Number(it.user_id) || 0,
-          display_name: String(it.display_name || ''),
-          is_current_user: Boolean(it.is_current_user),
-          guest_email: typeof it.guest_email === 'string' ? it.guest_email : null,
-        }
-        map.set(m.id, m)
-      })
-      this.messages = [...map.values()].sort((a, b) => Date.parse(a.created_at) - Date.parse(b.created_at))
-      this.$nextTick(() => { const el = document.getElementById('ml-chat-messages'); if (el) el.scrollTop = el.scrollHeight })
-    },
-
-    meta(meta, moveCursor = true) {
-      if (!meta) return
-      if (typeof meta.current_user_id === 'number') this.currentUserId = meta.current_user_id
-      if (typeof meta.room_token === 'string' && meta.room_token) {
-        this.roomToken = meta.room_token
-        guest.setToken(this.roomKey, meta.room_token)
-      }
-      if (moveCursor && meta.server_timestamp) this.transport.sync(meta.server_timestamp)
-    },
-
-    async load() {
-      this.loading = true
-      this.loadError = ''
-      this.lastStatus = null
-      this.transport.sync(null)
+    // Con sesión, leer la conversación en la ficha también la marca como leída (antes solo
+    // en «Consultas enviadas»: el aviso de no leído seguía aunque ya se hubiera leído aquí).
+    async markRead() {
+      if (!this.isLogged || !this.roomKey || this.locked || !this.messages.length) return
       try {
-        const r = await this.transport.list({ key: this.roomKey, token: this.roomToken })
-        if (!r.ok) {
-          this.lastStatus = r.status
-          if (r.status === 403 && r.body.code !== 'rest_cookie_invalid_nonce') {
-            this.loadError = t('forbiddenView', 'No tienes permisos para ver estos mensajes.')
-            this.locked = true
-          } else if (r.status === 404) {
-            this.loadError = t('notFound', 'No pudimos encontrar este chat.')
-            this.locked = true
-          } else {
-            this.loadError = t('loadError', 'No se pudieron cargar los mensajes.')
-          }
-          return
-        }
-        this.apply(Array.isArray(r.body.data) ? r.body.data : [], true)
-        this.meta(r.body.meta)
-        this.locked = false
-      } catch (e) {
-        this.loadError = t('loadError', 'No se pudieron cargar los mensajes.')
-      } finally {
-        this.loaded = true
-        this.loading = false
-      }
+        await fetcher(`${api()}/products/${this.productId}/rooms`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify({ room_key: this.roomKey }),
+        })
+      } catch (e) { /* se marcará en la siguiente apertura */ }
     },
+    onIncoming() { if (this.panelVisible()) this.markRead() },
 
-    poll() {
-      if (this.locked || this.transport.running) return
-      const panel = () => document.getElementById('ml-chat-messages')
-      this.transport.start({ key: this.roomKey, token: () => this.roomToken }, {
-        onData: (items, meta) => { this.meta(meta); if (items.length) this.apply(items) },
-        onStop: (status) => {
-          this.locked = true
-          this.loadError = status === 404 ? t('notFound', 'No pudimos encontrar este chat.') : t('forbiddenView', 'No tienes permisos para ver estos mensajes.')
-        },
-        // Diálogo cerrado = sin sondeo; se reanuda al volver a abrirlo.
-        isVisible: () => { const el = panel(); return !!(el && el.offsetParent !== null) },
-      })
-    },
-
-    async send(text, extra = {}) {
-      const message = String(text || '').trim()
-      if (!message || this.sending || this.locked) return false
-      this.sending = true
-      this.sendError = ''
-      try {
-        const payload = { message, room_key: this.roomKey }
-        const name = extra.name || this.viewerName
-        if (name) payload.viewer_name = name
-        if (extra.email) payload.guest_email = extra.email
-        if (this.roomToken) payload.room_token = this.roomToken
-        if (extra.website) payload.website = extra.website
-        const r = await this.transport.send(payload)
-        if (!r.ok) {
-          if (r.status === 403 && r.body.code !== 'rest_cookie_invalid_nonce') {
-            this.sendError = t('forbiddenSend', 'No tienes permisos para enviar mensajes en este chat.')
-            this.locked = true
-            this.transport.stop()
-          } else {
-            this.sendError = (r.body && r.body.message) || t('sendError', 'No se pudo enviar el mensaje.')
-          }
-          return false
-        }
-        if (r.body.data) this.apply([r.body.data])
-        // No mover el cursor del sondeo con la respuesta del POST (se perderían mensajes).
-        this.meta(r.body.meta, false)
-        this.locked = false
-        if (this.messages.length) this.poll()
-        return true
-      } catch (e) {
-        this.sendError = t('sendError', 'No se pudo enviar el mensaje.')
-        return false
-      } finally {
-        this.sending = false
-      }
+    async sendAs(text, extra = {}) {
+      const payload = {}
+      const name = extra.name || this.viewerName
+      if (name) payload.viewer_name = name
+      if (extra.email) payload.guest_email = extra.email
+      if (extra.website) payload.website = extra.website
+      const ok = await this.send(text, payload)
+      if (ok && this.messages.length) this.poll()
+      return ok
     },
 
     async submitGuest() {
@@ -439,7 +256,7 @@ export default (cfg = {}) => {
       guest.setEmail(f.email)
       this.viewerName = f.name.trim()
       this.setRoom(this.roomKey)
-      const ok = await this.send(f.message, { email: f.email.trim(), name: f.name.trim(), website: f.website })
+      const ok = await this.sendAs(f.message, { email: f.email.trim(), name: f.name.trim(), website: f.website })
       if (!ok || this.locked || !this.messages.length) return
       requested.add(this.productId)
       this.requested = true
@@ -448,12 +265,12 @@ export default (cfg = {}) => {
 
     async submitMessage() {
       if (!this.canSend) return
-      if (await this.send(this.text)) this.text = ''
+      if (await this.sendAs(this.text)) this.text = ''
     },
 
     close() {
-      this.transport.stop()
+      this.stopPoll()
       window.dispatchEvent(new CustomEvent('ml-dialog-close', { detail: 'ml-chat' }))
     },
-  }
+  })
 }

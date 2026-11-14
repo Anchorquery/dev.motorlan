@@ -88,12 +88,69 @@ class SpaPages
         return self::store_url($slug !== '' ? $slug . '/' : '');
     }
 
-    /** URL absoluta de una página de la SPA en el idioma actual (+ subruta). */
-    public static function page_url(string $page, string $sub = ''): string
+    /**
+     * spa_paths de una sección del panel: rutas bajo /{cuenta|tienda}/dashboard/ (la SPA
+     * monta el panel en las dos páginas). $routes = rutas relativas a dashboard/ (regex
+     * permitidas: 'user/(?:account|profile)'); el grupo `param` recibe la ruta casada.
+     *   SpaPages::panel_patterns(['favorites/list']) → /mi-cuenta/dashboard/favorites/list/
+     */
+    public static function panel_patterns(array $routes): array
     {
-        if (function_exists('motorlan_localized_page_url_absolute')) {
-            return (string) motorlan_localized_page_url_absolute($page, ltrim($sub, '/'));
+        $bases = implode('|', array_map(function ($s) { return preg_quote($s, '#'); }, array_unique(array_merge(self::account_slugs(), self::store_slugs()))));
+        return ['#^/(?:' . $bases . ')/dashboard/(?<param>' . implode('|', $routes) . ')/?$#'];
+    }
+
+    /**
+     * Ruta del panel de la petición actual relativa a la página de la SPA
+     * (/en/my-account/dashboard/user/account/ → dashboard/user/account), '' si no es del
+     * panel. La usa Support\Nav para marcar el elemento activo.
+     */
+    public static function current_route(): string
+    {
+        $path = trim(Urls::request_path(), '/');
+        foreach (array_unique(array_merge(self::account_slugs(), self::store_slugs())) as $base) {
+            if ($path === $base || strpos($path, $base . '/') === 0) {
+                return trim(substr($path, strlen($base)), '/');
+            }
         }
-        return home_url('/' . $page . '/' . ltrim($sub, '/'));
+        return '';
+    }
+
+    /**
+     * URL absoluta de una página de la SPA en el idioma actual (+ subruta).
+     *
+     * Se parte del permalink de la página traducida, que ya lleva el prefijo de idioma de
+     * WPML. Antes se pasaba su ruta por home_url(), que vuelve a añadir el prefijo: en
+     * inglés salía /en/en/my-account/… (motorlan_localized_page_url_absolute tiene el mismo
+     * fallo en motorlan-api-vue; no se usa aquí).
+     */
+    public static function page_url(string $page, string $sub = '', ?string $lang = null): string
+    {
+        $sub = ltrim($sub, '/');
+        $base = self::page_base_url($page, $lang);
+        return $base !== '' ? trailingslashit($base) . $sub : home_url('/' . $page . '/' . $sub);
+    }
+
+    /** Permalink de la página de la SPA ($slug en español) en el idioma pedido o el actual. */
+    public static function page_base_url(string $slug, ?string $lang = null): string
+    {
+        static $cache = [];
+        $lang = $lang ?: (string) apply_filters('wpml_current_language', null);
+        $key = $slug . '|' . $lang;
+        if (isset($cache[$key])) {
+            return $cache[$key];
+        }
+        $page = get_page_by_path($slug);
+        if (!$page) {
+            return $cache[$key] = '';
+        }
+        $id = $lang !== '' ? (int) apply_filters('wpml_object_id', $page->ID, 'page', true, $lang) : (int) $page->ID;
+        if ($lang !== '' && $lang !== (string) apply_filters('wpml_current_language', null)) {
+            // El permalink de otro idioma: WPML lo convierte si se le pide en ese idioma.
+            $url = (string) apply_filters('wpml_permalink', get_permalink($id ?: $page->ID), $lang, true);
+        } else {
+            $url = (string) get_permalink($id ?: $page->ID);
+        }
+        return $cache[$key] = $url;
     }
 }

@@ -11,7 +11,7 @@ namespace MotorlanPortal;
  *
  * Fuentes del interruptor, por orden:
  *  1. Constante MOTORLAN_PORTAL_SECTIONS en wp-config.php ('ui-kit,tienda'): para probar en
- *     local sin escribir en la base de datos (el WordPress local usa la de producción).
+ *     local sin escribir en la base de datos.
  *  2. Opción motorlan_portal_sections (array de claves), editable en Ajustes › Motorlan Portal.
  *
  * Las etiquetas van sin __(): el registro se lee antes de init (textdomain aún sin cargar).
@@ -27,6 +27,15 @@ namespace MotorlanPortal;
  *                bajo /{Rewrites::BASE}/{clave}/. También vale un callable que devuelva la
  *                lista: se evalúa en parse_request (con WPML ya cargado), útil cuando la
  *                ruta depende del slug traducido de la página de la SPA.
+ *  - boot        Callable opcional que Plugin::boot() ejecuta solo con la sección encendida
+ *                (endpoints REST propios, filtros, neutralizar hooks de la SPA). Así una
+ *                sección nueva solo añade su entrada aquí, sin tocar Plugin.php.
+ *
+ * Panel (/mi-cuenta/dashboard/…): cada bloque de pantallas es su propia sección y toma sus
+ * rutas con SpaPages::panel_patterns(). El menú (Support\Nav) ya enlaza a esas URLs de la
+ * SPA: apagada la sección, las sirve la SPA; encendida, el portal. El layout del panel
+ * (layout/app-shell.twig), la campana y el chat son piezas comunes, no secciones. Ver
+ * README.md, «Añadir una sección del panel».
  */
 class Sections
 {
@@ -55,6 +64,32 @@ class Sections
                 // /mi-cuenta/{login|register|…}/ (también bajo /marketplace-motorlan/, como la SPA).
                 'spa_paths'  => [Support\SpaPages::class, 'auth_patterns'],
             ],
+            // ── Panel (/mi-cuenta/dashboard/…) ──────────────────────────────────────────
+            'panel' => [
+                'label'      => 'Panel: /mi-cuenta/ y /dashboard (van a Mis compras) y URLs antiguas del panel',
+                // Solo redirige: el destino decide si hace falta sesión (como la SPA).
+                'auth'       => 'public',
+                'controller' => Controllers\PanelController::class,
+                'spa_paths'  => [Controllers\PanelController::class, 'patterns'],
+            ],
+            'cuenta' => [
+                'label'      => 'Panel: mi cuenta (datos personales y de empresa, avatar, email, contraseña)',
+                'auth'       => 'user',
+                'controller' => Controllers\CuentaController::class,
+                // account y profile eran la misma pantalla: profile redirige a account.
+                'spa_paths'  => function () {
+                    return Support\SpaPages::panel_patterns(['user/account', 'user/profile']);
+                },
+            ],
+            'favoritos' => [
+                'label'      => 'Panel: favoritos',
+                'auth'       => 'user',
+                'controller' => Controllers\FavoritosController::class,
+                'spa_paths'  => function () {
+                    return Support\SpaPages::panel_patterns(['favorites/list']);
+                },
+            ],
+            // Pendientes (fases siguientes). Cada bloque de pantallas, su sección.
             'comprador' => [
                 'label'      => 'Panel del comprador',
                 'auth'       => 'user',
@@ -63,12 +98,6 @@ class Sections
             ],
             'vendedor' => [
                 'label'      => 'Panel del vendedor',
-                'auth'       => 'user',
-                'controller' => null,
-                'spa_paths'  => [],
-            ],
-            'chat' => [
-                'label'      => 'Chat',
                 'auth'       => 'user',
                 'controller' => null,
                 'spa_paths'  => [],

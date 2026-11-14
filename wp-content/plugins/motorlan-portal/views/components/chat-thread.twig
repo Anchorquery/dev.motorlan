@@ -1,0 +1,69 @@
+{#
+  Conversación del kit de chat: mensajes agrupados por día + caja de escribir. Va dentro de
+  un x-data con chatCore (mlChat del panel o mlProductChat de la ficha; assets/js/chat.js),
+  que aporta messages, groups, loading, loaded, loadError, sendError, locked, sending, text,
+  canSend, isMine(), time(), initials(), load() y submitMessage().
+    {% include 'components/chat-thread.twig' with { panel_id: 'ml-chat-messages' } %}
+  Variables:
+    panel_id    id del contenedor de mensajes (= panelId del componente; scroll y sondeo)
+    empty_hint  texto bajo «Aún no hay mensajes.» (def.: iniciar con la otra parte)
+    guest       {registerUrl} → aviso «Estás chateando como …» (invitados de la ficha)
+    avatars     true → iniciales/avatar junto a los mensajes recibidos (panel)
+#}
+{%- import 'components/icon.twig' as ui -%}
+{%- set panel_id = panel_id|default('ml-chat-messages') -%}
+<div class="ml-chat">
+  <div class="ml-chat__messages" id="{{ panel_id|e('html_attr') }}">
+    <div x-show="loading && !loaded" class="flex flex-1 flex-col items-center justify-center gap-2 text-sm text-medium-emphasis">
+      <span class="ml-btn ml-btn--text" data-loading="true" aria-hidden="true"></span>
+      <span>{{ __('Cargando conversación...', 'motorlan-portal')|e }}</span>
+    </div>
+    {%- if guest|default(false) %}
+    <div class="ml-alert ml-c-info mb-2" x-data="{ show: true }" x-show="show">
+      <span class="ml-alert__icon">{{ ui.icon('info-circle') }}</span>
+      <div class="ml-alert__body text-xs">{{ __('Estás chateando como', 'motorlan-portal')|e }} <strong x-text="viewerName || {{ ml_json(__('Invitado', 'motorlan-portal'))|e('html_attr') }}"></strong>. <a href="{{ guest.registerUrl|e('html_attr') }}">{{ __('Regístrate', 'motorlan-portal')|e }}</a> {{ __('para guardar tu historial.', 'motorlan-portal')|e }}</div>
+      <button type="button" class="ml-icon-btn !size-7 shrink-0" @click="show = false" aria-label="{{ __('Cerrar', 'motorlan-portal')|e('html_attr') }}">{{ ui.icon('x', 'size-4') }}</button>
+    </div>
+    {%- endif %}
+    <div class="ml-alert ml-c-error" role="alert" x-show="loadError" x-cloak>
+      <span class="ml-alert__icon">{{ ui.icon('alert-circle') }}</span>
+      <div class="ml-alert__body text-xs" x-text="loadError"></div>
+      <button type="button" class="ml-btn ml-btn--text ml-btn--sm ml-c-error" x-show="!locked" @click="load()">{{ __('Reintentar', 'motorlan-portal')|e }}</button>
+    </div>
+    <div x-show="loaded && !loadError && !messages.length" class="flex flex-1 flex-col items-center justify-center gap-1 text-center text-sm text-medium-emphasis">
+      <span class="ml-empty__icon !mb-1">{{ ui.icon('message-circle') }}</span>
+      <p class="font-medium text-high-emphasis">{{ __('Aún no hay mensajes.', 'motorlan-portal')|e }}</p>
+      <p class="text-xs">{{ empty_hint|default(__('Inicia la conversación con el vendedor.', 'motorlan-portal'))|e }}</p>
+    </div>
+    <template x-for="group in groups" :key="group.key">
+      <div class="flex flex-col gap-2">
+        <span class="ml-chat__day" x-text="group.label"></span>
+        <template x-for="m in group.items" :key="m.id">
+          <div class="ml-chat__row" :class="isMine(m) && 'is-mine'">
+            {%- if avatars|default(false) %}
+            <template x-if="!isMine(m)">
+              <span class="ml-chat__avatar" aria-hidden="true">
+                <template x-if="m.avatar"><img :src="m.avatar" alt=""></template>
+                <template x-if="!m.avatar"><span x-text="initials(m.display_name)"></span></template>
+              </span>
+            </template>
+            {%- endif %}
+            <div class="ml-chat__msg" :class="isMine(m) && 'is-mine'">
+              <span x-text="m.message"></span>
+              <span class="ml-chat__meta"><span x-text="isMine(m) ? '' : (m.display_name ? m.display_name + ' · ' : '')"></span><span x-text="time(m.created_at)"></span></span>
+            </div>
+          </div>
+        </template>
+      </div>
+    </template>
+  </div>
+  <p class="mb-1 text-xs text-error" x-show="sendError" x-cloak x-text="sendError"></p>
+  <form class="ml-chat__form" @submit.prevent="submitMessage()">
+    <label for="{{ panel_id|e('html_attr') }}-text" class="sr-only">{{ __('Escribe tu mensaje...', 'motorlan-portal')|e }}</label>
+    <textarea id="{{ panel_id|e('html_attr') }}-text" class="ml-input" rows="1" maxlength="2000" x-model="text" :disabled="locked"
+              placeholder="{{ __('Escribe tu mensaje...', 'motorlan-portal')|e('html_attr') }}"
+              @keydown.enter="if (!$event.shiftKey) { $event.preventDefault(); submitMessage() }"></textarea>
+    <button type="submit" class="ml-btn ml-btn--filled ml-btn--icon ml-c-primary" :disabled="!canSend" :data-loading="sending" aria-label="{{ __('Enviar', 'motorlan-portal')|e('html_attr') }}">{{ ui.icon('send') }}</button>
+  </form>
+  <p class="mt-2 text-xs text-disabled">{{ __('Tu mensaje será visible para la otra parte y quedará registrado en la conversación.', 'motorlan-portal')|e }}</p>
+</div>

@@ -25,6 +25,10 @@ class Config
             'lang'     => $lang ? $lang : substr(get_locale(), 0, 2),
             'isLogged' => is_user_logged_in(),
             'isAdmin'  => current_user_can('manage_options'),
+            // Panel: base de las rutas vue_path de las notificaciones, acceso (tras cerrar
+            // sesión o si la sesión caducó al volver atrás) y salida de la sesión.
+            'accountUrl' => SpaPages::page_url(SpaPages::ACCOUNT),
+            'loginUrl'   => SpaPages::page_url(SpaPages::ACCOUNT, 'login'),
             'i18n'     => [
                 'error'   => __('Ha ocurrido un error', 'motorlan-portal'),
                 'network' => __('Error de red. Revisa tu conexión.', 'motorlan-portal'),

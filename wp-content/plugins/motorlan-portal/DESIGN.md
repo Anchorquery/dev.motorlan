@@ -61,7 +61,9 @@ cálido y texto oscuro (el rojo pleno queda para errores); los secundarios, cont
 | `layout/public.twig` | tienda, ficha | dentro del tema (`get_header`/`get_footer`); estilos acotados a `#ml-portal` (`dist/css/public.css`) para no chocar con el tema ni dejar que el tema los pise |
 
 Los menús salen de `Support\Nav` (copia de `navigation/vertical/apps-and-pages.ts` y de la
-barra inferior); `mark_active()` marca el elemento de la URL actual.
+barra inferior); `mark_active()` marca el elemento de la URL actual. En la barra del panel:
+campana, selector de idioma (solo con varios idiomas en WPML) y menú del usuario con su foto
+de Mi perfil. Sin selector de tema: solo claro.
 
 ## Componentes
 
@@ -81,14 +83,20 @@ barra inferior); `mark_active()` marca el elemento de la URL actual.
 | `table.twig` (embed) | VDataTable | filtros y paginación por HTMX; en móvil cada fila es una tarjeta (`data-label`) |
 | `pagination.twig` | VPagination | enlaces reales + `hx` opcional |
 | `empty.twig`, `skeleton.twig` | estados vacíos, VSkeletonLoader | |
-| `user-menu.twig`, `notifications.twig` | UserProfile, NavBarNotifications | la campana es solo visual en esta fase |
+| `user-menu.twig`, `notifications.twig` | UserProfile, NavBarNotifications | cerrar sesión por `POST /logout`; campana con datos (`mlNotifications`) |
+| `chat-thread.twig`, `chat-dialog.twig` | ChatModal, BuyerChatModal, SellerChatModal | kit de chat: burbujas (propias en rojo a la derecha), separador por día, avatar o iniciales del otro en el panel; configuración con `Support\Chat` |
 
 ### Diferencias conocidas con la SPA
 
 - El login de producción vive dentro del tema (cabecera y pie de la web) con campos de
   etiqueta flotante y botón en mayúsculas; `auth-shell` es el layout de acceso de Vuexy. Al
   migrar el login, decidir si va en `public` (como ahora) o en `auth-shell`.
-- La campana de notificaciones no consulta datos todavía.
+- Campana: «Ver todas» (no hacía nada) es «Cargar más»; en táctil el punto de leída y la X
+  se ven siempre (en la SPA, solo al pasar el ratón).
+- Mi perfil: una sola pantalla para `user/account` y `user/profile`; el email nuevo pide la
+  contraseña antes de enviar.
+- Favoritos: el filtro de estado incluye «En revisión» (`pending`), que la SPA mostraba como
+  «Desconocido».
 
 ## Convenciones de Twig
 

@@ -1,0 +1,34 @@
+{#
+  Chat del panel en un diálogo (componente del kit). Compras y consultas:
+    {% include 'components/chat-dialog.twig' with { chat: chat } %}
+  chat = Support\Chat::purchase($uuid, [...]) o Support\Chat::product($id, $room_key, [...]).
+  Abrir:
+    - botón dentro del mismo include: no hace falta (usa el evento);
+    - desde cualquier sitio:  $dispatch('ml-chat-open', { id: 'ml-chat' })
+    - cambiando de conversación (bandejas): $dispatch('ml-chat-open', { id, kind, uuid | productId + roomKey, title, image, otherName })
+  Emite en window ml-chat-read {roomKey, productId} y ml-chat-message {count, roomKey, uuid}
+  para que la lista que lo abre actualice sus contadores.
+  Lógica: mlChat (assets/js/chat.js). Varios chats en una página: un dialogId distinto cada uno.
+#}
+{%- import 'components/icon.twig' as ui -%}
+{%- set dialog_id = chat.dialogId|default('ml-chat') -%}
+<div x-data="mlChat({{ ml_json(chat)|e('html_attr') }})" class="contents" @ml-chat-open.window="open($event.detail)">
+  {% embed 'components/dialog.twig' with { id: dialog_id, max_width: '640px', chat: chat } %}
+    {% block content %}
+    {%- import 'components/icon.twig' as ui -%}
+    <div class="-mx-6 -mt-6 mb-4 border-b border-border">
+      <div class="flex items-center gap-4 py-3 pe-14 ps-6">
+        <template x-if="image"><img :src="image" alt="" class="size-12 rounded-lg object-cover shadow-sm"></template>
+        <template x-if="!image"><span class="ml-avatar ml-avatar--rounded ml-c-primary !size-12">{{ ui.icon('message-circle') }}</span></template>
+        <div class="min-w-0 flex-1">
+          <h3 class="ml-card__title truncate" x-text="heading"></h3>
+          <p class="truncate text-sm font-medium" x-show="title" x-text="title"></p>
+          <p class="flex items-center gap-1 text-xs text-medium-emphasis" x-show="otherName">{{ ui.icon('user', 'size-3.5') }}<span class="truncate" x-text="otherName"></span></p>
+        </div>
+      </div>
+      <p class="flex items-center gap-3 bg-[color-mix(in_srgb,var(--ml-primary)_6%,transparent)] px-6 py-2 text-xs text-primary">{{ ui.icon('shield-lock', 'size-4') }}<span>{{ __('Por tu seguridad, no compartas datos de contacto directo.', 'motorlan-portal')|e }}</span></p>
+    </div>
+    {% include 'components/chat-thread.twig' with { panel_id: chat.dialogId|default('ml-chat') ~ '-messages', avatars: true, empty_hint: chat.emptyHint|default(null) } %}
+    {% endblock %}
+  {% endembed %}
+</div>

@@ -1,0 +1,99 @@
+{#
+  Datos de Mi perfil (UserProfile.vue): nombre y email, datos personales, empresa (con
+  interruptor), cambio de email pendiente y diálogo de la contraseña para cambiar el email.
+  Lo pinta pages/cuenta.twig y lo devuelve CuentaController en las respuestas HTMX.
+  Variables: profile · values{personal, company, is_company} · state{errors, error,
+  email_dialog, email_error, saved} · action · nonce · account_js.i18n
+#}
+{%- import 'components/icon.twig' as ui -%}
+{%- import 'components/field.twig' as f -%}
+{%- import 'partials/acceso/_ui.twig' as auth -%}
+{%- set p = values.personal -%}
+{%- set c = values.company -%}
+{%- set err = state.errors -%}
+<div class="px-6 pb-6 pt-4 text-center">
+  <h2 class="ml-h4 mb-1 font-semibold">{{ profile.nombre|e }} {{ profile.apellidos|e }}</h2>
+  <p class="flex items-center justify-center gap-2 text-medium-emphasis">{{ ui.icon('mail', 'size-4') }}<span>{{ profile.email|e }}</span></p>
+</div>
+<hr class="ml-divider">
+
+{%- if state.error %}
+<div class="px-6 pt-6"><div class="ml-alert ml-c-error" role="alert"><span class="ml-alert__icon">{{ ui.icon('alert-circle') }}</span><div class="ml-alert__body"><div class="ml-alert__text">{{ state.error|e }}</div></div></div></div>
+{%- endif %}
+
+{%- set email_cfg = { original: profile.email, email: p.email|default(''), open: state.email_dialog, error: state.email_error, isCompany: values.is_company, i18n: { passwordRequired: account_js.i18n.passwordRequired } } %}
+<form method="post" action="{{ action|e('html_attr') }}" hx-post="{{ action|e('html_attr') }}" hx-target="#ml-cuenta-body" hx-swap="innerHTML" hx-disabled-elt="find button[type='submit']"
+      x-data="mlEmailConfirm({{ ml_json(email_cfg)|e('html_attr') }})" x-ref="form" novalidate @submit="guard($event)" @htmx:confirm="guard($event)">
+  <input type="hidden" name="_mlnonce" value="{{ nonce|e('html_attr') }}">
+  <input type="hidden" name="current_password" :value="password">
+
+  {# ── Datos personales ── #}
+  <section class="p-6">
+    <h3 class="mb-6 flex items-center gap-2 text-lg font-bold">{{ ui.icon('user', 'size-6 shrink-0 text-primary') }}<span>{{ __('Información personal', 'motorlan-portal')|e }}</span></h3>
+    <div class="grid gap-x-6 gap-y-4 md:grid-cols-2">
+      {{ f.text({ name: 'nombre', label: __('Nombre', 'motorlan-portal'), value: p.nombre|default(''), placeholder: __('Tu nombre', 'motorlan-portal'), required: true, autocomplete: 'given-name', error: err.nombre|default(false) }) }}
+      {{ f.text({ name: 'apellidos', label: __('Apellidos', 'motorlan-portal'), value: p.apellidos|default(''), placeholder: __('Tus apellidos', 'motorlan-portal'), required: true, autocomplete: 'family-name', error: err.apellidos|default(false) }) }}
+      {{ f.text({ name: 'email', label: __('Email', 'motorlan-portal'), type: 'email', value: p.email|default(''), placeholder: 'tu@email.com', required: true, autocomplete: 'email', error: err.email|default(false), hint: __('Si lo cambias, te pediremos tu contraseña y tendrás que confirmarlo desde el nuevo email.', 'motorlan-portal'), attrs: 'x-model="email"' }) }}
+      {%- if profile.pending_email %}
+      <div class="md:col-span-2">
+        <div class="ml-alert ml-c-warning" role="status">
+          <span class="ml-alert__icon">{{ ui.icon('mail-forward') }}</span>
+          <div class="ml-alert__body flex flex-wrap items-center justify-between gap-2">
+            <span class="ml-alert__text">{{ __('Cambio de email pendiente: confirma el enlace que hemos enviado a %s.', 'motorlan-portal')|format(profile.pending_email)|e }}</span>
+            <button type="submit" name="action" value="cancel_email" formnovalidate class="ml-btn ml-btn--text ml-btn--sm ml-c-warning" @click="password = ''; email = original">{{ __('Cancelar cambio', 'motorlan-portal')|e }}</button>
+          </div>
+        </div>
+      </div>
+      {%- endif %}
+      {{ f.text({ name: 'telefono', label: __('Teléfono', 'motorlan-portal'), type: 'tel', value: p.telefono|default(''), placeholder: '+34 000 000 000', required: true, autocomplete: 'tel', error: err.telefono|default(false) }) }}
+    </div>
+  </section>
+  <hr class="ml-divider">
+
+  {# ── Empresa ── #}
+  <section class="p-6">
+    <div class="mb-4 flex flex-wrap items-center justify-between gap-4">
+      <h3 class="flex items-center gap-2 text-lg font-bold">{{ ui.icon('building', 'size-6 shrink-0 text-primary') }}<span>{{ __('Información de la empresa', 'motorlan-portal')|e }}</span></h3>
+      {{ f.switch({ name: 'is_company', id: 'ml-is-company', label: __('Soy una empresa', 'motorlan-portal'), checked: values.is_company, attrs: 'x-model="isCompany"' }) }}
+    </div>
+    <div x-show="isCompany" x-transition.opacity.duration.200ms{% if not values.is_company %} x-cloak{% endif %}>
+      <p class="mb-6 text-sm text-medium-emphasis">{{ __('Completa los datos de tu empresa para facturación y contacto comercial. Los campos con * son obligatorios.', 'motorlan-portal')|e }}</p>
+      <div class="grid gap-x-6 gap-y-4 md:grid-cols-2">
+        {{ f.text({ name: 'company_nombre', label: __('Nombre de la empresa', 'motorlan-portal'), value: c.nombre|default(''), placeholder: __('Nombre comercial o razón social', 'motorlan-portal'), required: true, autocomplete: 'organization', error: err.company_nombre|default(false) }) }}
+        {{ f.text({ name: 'company_cif_nif', label: __('CIF / NIF', 'motorlan-portal'), value: c.cif_nif|default(''), placeholder: 'B12345678', required: true, error: err.company_cif_nif|default(false) }) }}
+        {{ f.text({ name: 'company_direccion', label: __('Dirección', 'motorlan-portal'), value: c.direccion|default(''), placeholder: __('Calle, número, ciudad', 'motorlan-portal'), required: true, autocomplete: 'street-address', class: 'md:col-span-2', error: err.company_direccion|default(false) }) }}
+        {{ f.text({ name: 'company_cp', label: __('Código postal', 'motorlan-portal'), value: c.cp|default(''), placeholder: '00000', required: true, autocomplete: 'postal-code', error: err.company_cp|default(false) }) }}
+        {{ f.text({ name: 'company_persona_contacto', label: __('Persona de contacto', 'motorlan-portal'), value: c.persona_contacto|default(''), placeholder: __('Nombre y apellidos', 'motorlan-portal'), required: true, error: err.company_persona_contacto|default(false) }) }}
+        {{ f.text({ name: 'company_email_contacto', label: __('Email de contacto', 'motorlan-portal'), type: 'email', value: c.email_contacto|default(''), placeholder: 'empresa@email.com', required: true, error: err.company_email_contacto|default(false) }) }}
+        {{ f.text({ name: 'company_tel_contacto', label: __('Teléfono de contacto', 'motorlan-portal'), type: 'tel', value: c.tel_contacto|default(''), placeholder: '+34 000 000 000', required: true, error: err.company_tel_contacto|default(false) }) }}
+      </div>
+    </div>
+  </section>
+
+  <div class="flex flex-wrap gap-3 px-6 pb-6">
+    <button type="submit" class="ml-btn ml-btn--filled ml-c-primary ml-btn--rounded px-8">{{ __('Guardar cambios', 'motorlan-portal')|e }}</button>
+    <button type="button" class="ml-btn ml-btn--tonal ml-c-secondary ml-btn--rounded" @click="window.dispatchEvent(new CustomEvent('ml-password-open'))">{{ ui.icon('lock') }}<span>{{ __('Cambiar contraseña', 'motorlan-portal')|e }}</span></button>
+  </div>
+
+  {# ── Contraseña para cambiar el email (diálogo persistente) ── #}
+  {% embed 'components/dialog.twig' with { id: 'ml-email-password', title: __('Cambiar email', 'motorlan-portal'), max_width: '460px', persistent: true } %}
+    {% block content %}
+    {%- import 'partials/acceso/_ui.twig' as auth -%}
+    <p class="mb-4 text-sm">{{ __('Para usar el nuevo email introduce tu contraseña actual. Te enviaremos un enlace a ese email y el cambio no se aplicará hasta que lo confirmes.', 'motorlan-portal')|e }} <strong x-text="email"></strong></p>
+    <div class="ml-field" x-data="{ show: false }">
+      <label class="ml-label" for="ml-email-current-password">{{ __('Contraseña actual', 'motorlan-portal')|e }}</label>
+      <div class="relative">
+        <input id="ml-email-current-password" class="ml-input pe-11" type="password" :type="show ? 'text' : 'password'" autocomplete="current-password" x-model="password" :aria-invalid="error ? 'true' : null" @keydown.enter.prevent="confirm()">
+        <button type="button" class="ml-icon-btn absolute end-1 top-1/2 !size-8 -translate-y-1/2" @click="show = !show" :aria-pressed="show.toString()" aria-label="{{ __('Mostrar contraseña', 'motorlan-portal')|e('html_attr') }}">
+          <span x-show="!show">{{ ml_icon('eye', 'size-5') }}</span><span x-show="show" x-cloak>{{ ml_icon('eye-off', 'size-5') }}</span>
+        </button>
+      </div>
+      <span class="ml-hint ml-hint--error" x-show="error" x-cloak x-text="error"></span>
+    </div>
+    {% endblock %}
+    {% block actions %}
+    <button type="button" class="ml-btn ml-btn--tonal ml-c-secondary ml-btn--rounded" @click="cancel()">{{ __('Cancelar', 'motorlan-portal')|e }}</button>
+    <button type="button" class="ml-btn ml-btn--filled ml-c-primary ml-btn--rounded px-6" @click="confirm()">{{ __('Confirmar', 'motorlan-portal')|e }}</button>
+    {% endblock %}
+  {% endembed %}
+</form>

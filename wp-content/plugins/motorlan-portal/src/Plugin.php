@@ -41,6 +41,12 @@ class Plugin
         if (Sections::is_enabled('acceso')) {
             Controllers\AccesoController::boot();
         }
+        // Arranque propio de cada sección encendida (clave `boot` del registro).
+        foreach (Sections::enabled() as $section) {
+            if (!empty($section['boot']) && is_callable($section['boot'])) {
+                call_user_func($section['boot']);
+            }
+        }
 
         add_filter('template_include', [self::class, 'template_include'], 1000);
         add_filter('redirect_canonical', function ($redirect) {

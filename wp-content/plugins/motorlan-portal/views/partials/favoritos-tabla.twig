@@ -1,0 +1,62 @@
+{#
+  Tabla de favoritos (filtros + filas + paginación). La pinta pages/favoritos.twig y la
+  devuelve FavoritosController en las peticiones HTMX (filtrar, paginar, quitar).
+  Variables: table (FavoritosController::context) · urls.store
+#}
+{% embed 'components/table.twig' with {
+  id: 'ml-favs',
+  url: table.url,
+  columns: [
+    { label: __('Publicación', 'motorlan-portal') },
+    { label: __('Referencia', 'motorlan-portal') },
+    { label: __('Estado', 'motorlan-portal') },
+    { label: __('Acciones', 'motorlan-portal'), class: 'text-end' },
+  ],
+  page: table.page, pages: table.pages, total: table.total,
+  filters_query: table.query,
+} %}
+  {% block filters %}
+    {%- import 'components/field.twig' as f -%}
+    {{ f.text({ name: 'q', id: 'ml-favs-q', type: 'search', placeholder: __('Buscar publicación', 'motorlan-portal'), icon: 'search', value: table.filters.q, class: 'w-full md:w-80' }) }}
+    {{ f.select({ name: 'estado', id: 'ml-favs-estado', options: table.statuses, value: table.filters.estado, class: 'w-full md:w-56', attrs: 'aria-label="' ~ __('Estado', 'motorlan-portal')|e('html_attr') ~ '"' }) }}
+    {{ f.select({ name: 'per_page', id: 'ml-favs-per-page', options: table.per_page, value: table.filters.per_page, class: 'w-full md:w-44', attrs: 'aria-label="' ~ __('Mostrar', 'motorlan-portal')|e('html_attr') ~ '"' }) }}
+    <noscript><button type="submit" class="ml-btn ml-btn--tonal ml-c-primary">{{ __('Filtrar', 'motorlan-portal')|e }}</button></noscript>
+  {% endblock %}
+  {% block rows %}
+    {%- import 'components/chip.twig' as c -%}
+    {%- import 'components/avatar.twig' as a -%}
+    {%- import 'components/icon.twig' as ui -%}
+    {%- for r in table.rows %}
+    <tr>
+      <td data-label="{{ __('Publicación', 'motorlan-portal')|e('html_attr') }}">
+        <div class="flex max-w-[280px] items-center gap-3 py-2">
+          {%- if r.image %}{{ a.avatar({ image: r.image, rounded: true, class: '!size-12 shrink-0 border border-border' }) }}{% endif %}
+          <div class="min-w-0">
+            <p class="truncate font-medium text-high-emphasis" title="{{ r.name|e('html_attr') }}">{{ r.name|e }}</p>
+            {%- if r.brand %}<p class="text-xs text-medium-emphasis">{{ r.brand|e }}</p>{% endif %}
+          </div>
+        </div>
+      </td>
+      <td data-label="{{ __('Referencia', 'motorlan-portal')|e('html_attr') }}" class="font-medium text-high-emphasis">{{ r.reference ? r.reference|e : '—' }}</td>
+      <td data-label="{{ __('Estado', 'motorlan-portal')|e('html_attr') }}">{{ c.chip({ label: r.chip.label, color: r.chip.color, size: 'sm' }) }}</td>
+      <td data-label="{{ __('Acciones', 'motorlan-portal')|e('html_attr') }}" class="text-end">
+        <div class="inline-flex justify-end gap-2">
+          <a class="ml-btn ml-btn--tonal ml-btn--icon ml-btn--sm ml-c-success" href="{{ r.url|e('html_attr') }}" target="_blank" rel="noopener" title="{{ __('Ver publicación', 'motorlan-portal')|e('html_attr') }}" aria-label="{{ __('Ver publicación', 'motorlan-portal')|e('html_attr') }}">{{ ui.icon('eye', 'size-[18px]') }}</a>
+          <button type="button" class="ml-btn ml-btn--tonal ml-btn--icon ml-btn--sm ml-c-error" title="{{ __('Eliminar de favoritos', 'motorlan-portal')|e('html_attr') }}" aria-label="{{ __('Eliminar de favoritos', 'motorlan-portal')|e('html_attr') }}"
+                  @click="$dispatch('ml-fav-remove', {{ ml_json({ id: r.id, name: r.name, page: table.page })|e('html_attr') }})">{{ ui.icon('heart-off', 'size-[18px]') }}</button>
+        </div>
+      </td>
+    </tr>
+    {%- endfor %}
+  {% endblock %}
+  {% block empty %}
+    {%- import 'components/empty.twig' as em -%}
+    {%- if table.error %}
+      {{ em.empty({ icon: 'alert-circle', title: __('No se pudieron cargar tus favoritos.', 'motorlan-portal'), text: __('Inténtalo de nuevo en unos segundos.', 'motorlan-portal') }) }}
+    {%- elseif table.filters.q or table.filters.estado %}
+      {{ em.empty({ icon: 'search', title: __('Sin resultados', 'motorlan-portal'), text: __('Prueba con otros filtros.', 'motorlan-portal') }) }}
+    {%- else %}
+      {{ em.empty({ icon: 'heart', title: __('Aún no tienes favoritos', 'motorlan-portal'), text: __('Guarda las publicaciones que te interesen con el corazón de la tienda.', 'motorlan-portal'), action: { label: __('Ir a la tienda', 'motorlan-portal'), href: urls.store, icon: 'building-store' } }) }}
+    {%- endif %}
+  {% endblock %}
+{% endembed %}

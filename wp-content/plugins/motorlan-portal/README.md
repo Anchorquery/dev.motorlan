@@ -56,7 +56,8 @@ src/
   Controllers/             un controlador por sección (handle(string $param))
   Rest/                    endpoints propios motorlan-portal/v1 (parciales HTMX)
   Security/StaleNonce.php  nonce caducado en GET → respuesta de invitado + cabecera de aviso
-  Support/                 Api, View, Urls, Nav, Config, Assets, Icons, Seo, SpaPages, Store, AuthMessages
+  Support/                 Api, View, Urls, Nav, Config, Assets, Icons, Seo, SpaPages, Store, AuthMessages,
+                           Chat (kit de chat), Publicacion (filas de publicación del panel)
   Admin/Settings.php       Ajustes › Motorlan Portal (casillas por sección)
 templates/template-portal.php   plantilla que carga template_include
 views/{layout,components,pages,partials}/
@@ -112,6 +113,9 @@ Llama a los endpoints de `motorlan-api-vue` dentro del mismo proceso
 |---|---|---|
 | `tienda` | `/marketplace-motorlan/` (listado) y `/marketplace-motorlan/{slug}/` (ficha), en cada idioma de WPML | `TiendaController` |
 | `acceso` | `/mi-cuenta/{login,register,register-success,forgot-password,reset-password,verify-email}` (también bajo la página de la tienda, como la SPA) | `AccesoController` |
+| `panel` | `/mi-cuenta/` y `/mi-cuenta/dashboard` → Mis compras; URLs antiguas del panel (`purchases/favorites`, `user/company`, `chat`, `questions/list`…) → su pantalla actual | `PanelController` |
+| `cuenta` | `/mi-cuenta/dashboard/user/account` (y `user/profile`, que redirige aquí) | `CuentaController` |
+| `favoritos` | `/mi-cuenta/dashboard/favorites/list` | `FavoritosController` |
 
 Las URLs son las de la SPA (`Support\SpaPages`: slugs por idioma y rutas que siguen siendo de
 la SPA, p. ej. `/marketplace-motorlan/dashboard/…`). La consulta principal sigue siendo la
@@ -136,6 +140,95 @@ slugs antiguos); `Seo::product()` solo actúa si esa función no existe. Favorit
 de los emails llevan el token en el fragmento (`#token=…`): `mlAuthToken` (`assets/js/auth.js`)
 lo copia al formulario. Con la sección encendida, `Urls::login()` apunta a esta pantalla.
 El registro necesita JS (asistente de 3 pasos, como la SPA).
+
+**Panel** (`layout/app-shell.twig`, layout `default` de la SPA). Menú lateral (Ventas /
+Compras / Administración, esta solo con `manage_options`), barra con campana, idioma (solo
+si WPML tiene más de uno) y menú del usuario; barra inferior en móvil como
+`DashboardMobileNav.vue`. Solo tema claro. Cerrar sesión hace `POST motorlan/v1/logout` con
+nonce y va al login; al volver atrás desde la caché del navegador (bfcache) se comprueba
+`GET /session` y, si ya no hay sesión, al login con `?to=`. El menú enlaza **siempre** a las
+URLs de la SPA: cada sección del panel toma su URL al encenderla (`spa_paths`), así que una
+pantalla aún sin migrar sigue en la SPA sin tocar el menú.
+
+- *Campana* (`components/notifications.twig` + `assets/js/notifications.js`): lista, contador
+  real (`/notifications/unread-count`), leída/no leída (una o todas), eliminar, refresco cada
+  60 s con la pestaña visible. Al pulsar: `data.vue_path` (relativo a `/mi-cuenta/`, en el
+  idioma actual) o `data.url`, con `offer_id` en la query. «Ver todas» de la SPA no hacía
+  nada: aquí es «Cargar más» (hasta 50).
+- *Mi perfil*: una pantalla (en la SPA `account` y `profile` eran dos rutas con el mismo
+  componente). Datos personales y de empresa con POST a la propia URL; si el email cambia,
+  la contraseña actual se pide en un diálogo **antes** de enviar y el cambio queda pendiente
+  hasta confirmarlo (con aviso y «Cancelar cambio»). Avatar: se reduce en el navegador
+  (800 px, JPEG 0,8) y se sube multipart a `POST /profile`. Contraseña: dos pasos con código
+  por email; después se renueva el nonce (la API emite cookie nueva).
+- *Favoritos*: tabla con búsqueda, estado, elementos por página y paginación por HTMX;
+  quitar pide confirmación y hace POST a la propia URL (`action=remove`) con los filtros.
+
+## Panel: añadir una sección
+
+Todo desde el registro, sin tocar el layout ni el menú:
+
+1. **Registro** (`Sections::registry()`), una entrada nueva:
+   ```php
+   'compras' => ['label' => 'Panel: mis compras', 'auth' => 'user',
+       'controller' => Controllers\ComprasController::class,
+       // Rutas de la SPA bajo /mi-cuenta/dashboard/ (en todos los idiomas y también bajo la
+       // página de la tienda): el grupo `param` llega a handle() (p. ej. "purchases/purchases").
+       'spa_paths' => function () { return Support\SpaPages::panel_patterns(['purchases/purchases', 'purchases/[0-9a-f-]{36}']); },
+       // Opcional: se ejecuta en Plugin::boot() solo si la sección está encendida.
+       'boot' => [Controllers\ComprasController::class, 'boot']],
+   ```
+2. **Menú**: los elementos de Ventas / Compras / Administración ya existen en `Support\Nav`
+   y apuntan a la URL de la SPA, que la sección toma al encenderse: normalmente no hay que
+   tocar nada. Si la pantalla es nueva, añade el elemento desde `boot` con los filtros
+   `motorlan_portal_nav_vertical`, `motorlan_portal_nav_mobile` o `motorlan_portal_nav_user`:
+   ```php
+   add_filter('motorlan_portal_nav_vertical', function ($items) {
+       $items[] = Support\Nav::item(__('Mis facturas', 'motorlan-portal'), 'file-invoice', 'dashboard/invoices', ['dashboard/invoices']);
+       return $items;
+   });
+   ```
+   `Nav::item(título, icono, ruta, prefijos_activos)` construye la URL con `Urls::spa()`
+   (idioma incluido) y `mark_active()` lo marca por prefijo de ruta.
+3. **Vista** sobre `layout/app-shell.twig` (bloque `main`; `hide_mobile_nav: true` en el
+   contexto para pantallas de detalle con botones propios, como la SPA).
+4. **Formularios**: POST a la propia URL. `Controller` trae `is_post()`, `valid_nonce()`
+   (cabecera `X-WP-Nonce` de HTMX o campo `_mlnonce` con `Controller::PANEL_NONCE`),
+   `field()`, `query()`, `redirect()` (`HX-Redirect` con HTMX, 302/303 sin JS) y
+   `toast_header()` (aviso en `HX-Trigger`). Con HTMX responde el parcial; sin JS, la página.
+   Ejemplos: `CuentaController`, `FavoritosController`.
+5. Filas de publicación (nombre como la SPA, estado con color, miniatura):
+   `Support\Publicacion::row()`.
+
+## Kit: chat
+
+Una conversación es siempre el mismo componente; lo monta la ficha (fase 1) y lo montarán
+compras, ventas, consultas y administración:
+
+- `assets/js/chat.js` → `chatCore()` (leer, sondear, enviar, agrupar por día; sondeo 3 s ×1,5
+  hasta 10 s, respeta `Retry-After` en 429, se para con 403/404, con la pestaña oculta o con
+  el diálogo cerrado) y `mlChat(cfg)` (diálogo del panel).
+- `views/components/chat-thread.twig`: mensajes + caja de escribir (lo usan los dos).
+- `views/components/chat-dialog.twig` + `Support\Chat`: el diálogo del panel.
+
+```php
+// Controlador
+'chat' => Chat::purchase($uuid, ['title' => $nombre, 'image' => $img, 'otherName' => $vendedor,
+                                 'autoOpen' => isset($_GET['openChat'])]),
+'chat' => Chat::product($product_id, $room_key, ['title' => $nombre, 'otherName' => $comprador]),
+```
+```twig
+{% include 'components/chat-dialog.twig' with { chat: chat } %}
+<button @click="$dispatch('ml-chat-open', { id: 'ml-chat' })">Abrir chat</button>
+{# Bandeja: una sola instancia; se cambia de conversación con el evento #}
+<button @click="$dispatch('ml-chat-open', { id: 'ml-chat', kind: 'product', productId: 12, roomKey: 'pub-12-viewer-5', title: '…', otherName: '…' })">…</button>
+```
+
+Compras → `/purchases/{uuid}/messages`; consultas → `/products/{id}/messages` con `room_key`
+y, al abrir y al llegar mensajes, `POST /products/{id}/rooms` (marcar leído). El componente
+emite `ml-chat-read` y `ml-chat-message` en `window` para que la lista actualice contadores.
+Varios chats en una página: un `dialogId` distinto por cada uno. Tiempo real = sondeo (la
+SPA quitó pusher-js).
 
 ## Migrar una pantalla
 
@@ -182,6 +275,11 @@ la configuración por defecto: antes de escribir nada por CLI comprueba que
 `DB_NAME === 'motorlandev'`. Para encender secciones sin tocar la BD, usa la constante
 `MOTORLAN_PORTAL_SECTIONS`.
 
+Para el panel hace falta un usuario de prueba **en la BD local** (nunca uno real) con algún
+favorito (user meta `motorlan_favorites`) y notificaciones
+(`Motorlan_Notification_Manager::create_notification()`); sus credenciales van en
+`ML_PORTAL_USER` / `ML_PORTAL_PASS` al lanzar las pruebas, no en el repositorio.
+
 Para revisar vistas sin WordPress:
 
 ```bash
@@ -207,6 +305,13 @@ pantallas migradas en un sitio con las secciones encendidas (`ML_PORTAL_BASE`, p
 credenciales falsas, pasos del registro y enlaces sin token; guarda `portal-*.png` junto a
 las capturas de la SPA (`tienda.png` ↔ `portal-tienda.png`…). Usa el Chrome instalado
 (`ML_E2E_CHANNEL`).
+
+`tests/visual/portal-panel.spec.js` (con `ML_PORTAL_USER`/`ML_PORTAL_PASS` de un usuario de
+la BD local): layout y menú, campana (marcar todas, navegar con `vue_path` + `offer_id`),
+favoritos (HTMX, quitar con confirmación y volver a añadirlo), Mi perfil (redirección de
+`user/profile`, guardar, validación, diálogo de contraseña para el email, primer paso del
+cambio de contraseña) y el chat de la ficha con sesión. Con `ML_PANEL_SPA=1` y las
+secciones apagadas captura las referencias de la SPA (`cuenta.png`, `favoritos.png`).
 
 ## Despliegue
 
