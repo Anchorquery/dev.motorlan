@@ -204,11 +204,19 @@ Bugs de la SPA que se corrigen aquí (la SPA no se toca):
 - `product_title` de `/buyer/inquiries` es título + referencia + potencia + velocidad sin
   unidades: se usa el título de la publicación.
 
-Anotados en la API (sin cambiar): el primer `POST /publicaciones/{id}/offers` respondió
-`data: null`; `/offers/{id}/confirm` da 415 sin `Content-Type: application/json` aunque no
-lleve cuerpo; el nombre del vendedor es nombre y apellidos en la lista y `display_name` en el
-detalle y en consultas (con frecuencia el email); `offer_date` va en hora local y los
-mensajes en UTC.
+Corregidos en la API (`motorlan-api-vue`) en la misma rama:
+
+- La primera oferta del día respondía `data: null`: `update_user_meta()` pisaba
+  `$wpdb->insert_id` antes de leerlo.
+- `motorlan_validate_json_content_type()` daba 415 a peticiones **sin cuerpo** (p. ej.
+  `POST /offers/{id}/confirm` sin `Content-Type`); ahora solo exige JSON si hay cuerpo.
+- `author.name` de una publicación era el `display_name` (casi siempre el email) para dueño,
+  admin y participantes, y nombre y apellidos para el resto; ahora siempre el nombre público
+  (`motorlan_public_author_name`), con el email aparte en `email`. `/buyer/inquiries`
+  (`user_name` del vendedor), igual.
+- Las fechas de las ofertas (`offer_date`, `accepted_at`, `expires_at`, `confirmed_at`) salían
+  en hora local sin zona; ahora en ISO 8601 con desplazamiento (`2026-11-14T05:15:34+01:00`).
+  `new Date()` en la SPA y `mysql2date()` en el portal las leen bien.
 
 ## Panel: añadir una sección
 
