@@ -59,7 +59,9 @@ class Urls
     public static function current(): string
     {
         $uri = isset($_SERVER['REQUEST_URI']) ? (string) wp_unslash($_SERVER['REQUEST_URI']) : '/';
-        return set_url_scheme('http://' . wp_parse_url(home_url(), PHP_URL_HOST) . $uri);
+        // Con el puerto de home_url (sin él, un sitio en :8080 perdía el puerto en los formularios).
+        $port = wp_parse_url(home_url(), PHP_URL_PORT);
+        return set_url_scheme('http://' . wp_parse_url(home_url(), PHP_URL_HOST) . ($port ? ':' . $port : '') . $uri);
     }
 
     /**

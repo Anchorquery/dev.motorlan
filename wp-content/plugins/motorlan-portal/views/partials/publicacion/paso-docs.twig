@@ -1,0 +1,69 @@
+{#
+  Documentación adicional (StepDocumentation.vue): hasta 5 documentos PDF, JPG o PNG con
+  nombre. Con JS: lista con «Añadir documento» (los archivos los añade mlPubForm al
+  FormData como documentacion_adicional_archivos[] + doc_nombre_nuevo[]). Edición: los que
+  ya están viajan como doc_keep_id[i] + doc_keep_nombre[i] (renombrar o quitar).
+  Sin JS: los actuales con casilla «Conservar» y huecos para documentos nuevos.
+  Variables: mode · values · form_cfg.maxDocs · mlPubForm (docs, err)
+#}
+{%- import 'components/icon.twig' as ui -%}
+{%- set max = form_cfg.maxDocs -%}
+<div class="mb-4">
+  <h2 class="ml-h6 font-semibold">{{ __('Documentación adicional', 'motorlan-portal')|e }}</h2>
+  <p class="text-sm text-medium-emphasis">{{ __('Adjunta fichas técnicas, planos o manuales (PDF, JPG o PNG). Máximo %d.', 'motorlan-portal')|format(max)|e }}</p>
+</div>
+
+<div data-js-only>
+  <p class="rounded-lg border border-dashed border-border px-4 py-6 text-center text-sm text-medium-emphasis" x-show="!docs.length">{{ __('No hay documentos añadidos.', 'motorlan-portal')|e }}</p>
+  <div class="space-y-3">
+    <template x-for="(d, i) in docs" :key="d.key">
+      <div class="flex flex-wrap items-end gap-3 rounded-lg border border-border p-3 max-sm:flex-col max-sm:items-stretch">
+        <template x-if="d.id">
+          <span><input type="hidden" :name="`doc_keep_id[${i}]`" :value="d.id"></span>
+        </template>
+        <div class="ml-field min-w-0 flex-1">
+          <label class="ml-label" :for="`ml-pf-doc-${d.key}`">{{ __('Nombre del documento', 'motorlan-portal')|e }}</label>
+          <input class="ml-input" type="text" maxlength="120" :id="`ml-pf-doc-${d.key}`" x-model="d.nombre" :name="d.id ? `doc_keep_nombre[${i}]` : null" placeholder="{{ __('Manual de usuario', 'motorlan-portal')|e('html_attr') }}">
+        </div>
+        <div class="min-w-0 flex-1">
+          <template x-if="d.id">
+            <a class="flex items-center gap-2 truncate text-sm text-primary" :href="d.url" target="_blank" rel="noopener">{{ ui.icon('file', 'size-5 shrink-0') }}<span class="truncate" x-text="d.filename"></span></a>
+          </template>
+          <template x-if="!d.id">
+            <label class="ml-input ml-file cursor-pointer" :class="{ '!border-error': d.error }">
+              <input type="file" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" class="sr-only" @change="pickDoc(d, $event.target.files)">
+              {{ ui.icon('paperclip', 'size-5 text-medium-emphasis') }}
+              <span class="ml-file__name" :class="d.file && 'is-set'" x-text="d.file ? d.file.name : {{ ml_json(__('Subir archivo', 'motorlan-portal'))|e('html_attr') }}"></span>
+              <span x-show="d.file" class="ml-chip ml-chip--sm ml-c-success shrink-0">{{ __('Listo', 'motorlan-portal')|e }}</span>
+            </label>
+          </template>
+          <p class="ml-hint ml-hint--error" x-show="d.error" x-text="d.error"></p>
+        </div>
+        <button type="button" class="ml-btn ml-btn--tonal ml-btn--icon ml-c-error" @click="removeDoc(i)" aria-label="{{ __('Quitar documento', 'motorlan-portal')|e('html_attr') }}">{{ ui.icon('trash', 'size-[18px]') }}</button>
+      </div>
+    </template>
+  </div>
+  <button type="button" class="ml-btn ml-btn--tonal ml-c-primary mt-4" x-show="docs.length < {{ max }}" @click="addDoc()">{{ ui.icon('plus', 'size-5') }}<span>{{ __('Añadir documento', 'motorlan-portal')|e }}</span></button>
+  <p class="ml-hint ml-hint--error mt-1" x-show="err.docs" x-text="err.docs" x-cloak></p>
+</div>
+
+<noscript>
+  <div class="space-y-3">
+    {%- for d in values.docs %}
+    <div class="flex flex-wrap items-center gap-3 rounded-lg border border-border p-3">
+      <label class="text-sm"><input type="checkbox" name="doc_keep_id[{{ loop.index0 }}]" value="{{ d.id }}" checked> {{ __('Conservar', 'motorlan-portal')|e }}</label>
+      <input class="ml-input flex-1" type="text" name="doc_keep_nombre[{{ loop.index0 }}]" value="{{ d.nombre|e('html_attr') }}" aria-label="{{ __('Nombre del documento', 'motorlan-portal')|e('html_attr') }}">
+      <a class="text-sm text-primary" href="{{ d.url|e('html_attr') }}" target="_blank" rel="noopener">{{ d.filename|e }}</a>
+    </div>
+    {%- endfor %}
+    {%- set free = max - values.docs|length -%}
+    {%- if free > 0 %}
+    {%- for i in 0..(free - 1) %}
+    <div class="flex flex-wrap items-center gap-3 rounded-lg border border-dashed border-border p-3">
+      <input class="ml-input flex-1" type="text" name="doc_nombre_nuevo[{{ i }}]" placeholder="{{ __('Nombre del documento', 'motorlan-portal')|e('html_attr') }}" aria-label="{{ __('Nombre del documento', 'motorlan-portal')|e('html_attr') }}">
+      <input class="ml-input flex-1" type="file" name="documentacion_adicional_archivos[{{ i }}]" accept=".pdf,.jpg,.jpeg,.png">
+    </div>
+    {%- endfor %}
+    {%- endif %}
+  </div>
+</noscript>

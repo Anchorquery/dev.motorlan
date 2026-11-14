@@ -1,0 +1,71 @@
+{#
+  Tabla de Ofertas recibidas. La pinta pages/ofertas.twig y la devuelve OfertasController
+  en las peticiones HTMX (filtrar, paginar, aceptar, rechazar).
+  Variables: table (OfertasController::context) · nonce
+  Aceptar/rechazar: formularios POST (con HTMX se queda en la tabla; sin JS, recarga).
+#}
+{% embed 'components/table.twig' with {
+  id: 'ml-offers',
+  url: table.url,
+  columns: [
+    { label: __('Publicación', 'motorlan-portal') },
+    { label: __('Ofertante', 'motorlan-portal') },
+    { label: __('Importe', 'motorlan-portal') },
+    { label: __('Fecha', 'motorlan-portal') },
+    { label: __('Estado', 'motorlan-portal') },
+    { label: __('Acciones', 'motorlan-portal'), class: 'text-end' },
+  ],
+  page: table.page, pages: table.pages, total: table.total,
+  filters_query: table.query,
+} %}
+  {% block filters %}
+    {%- import 'components/field.twig' as f -%}
+    {{ f.text({ name: 'q', id: 'ml-offers-q', type: 'search', placeholder: __('Buscar oferta…', 'motorlan-portal'), icon: 'search', value: table.filters.q, class: 'w-full md:w-64' }) }}
+    {{ f.select({ name: 'estado', id: 'ml-offers-estado', options: table.statuses, value: table.filters.estado, class: 'w-full md:w-56', attrs: 'aria-label="' ~ __('Estado', 'motorlan-portal')|e('html_attr') ~ '"' }) }}
+    {{ f.text({ name: 'desde', id: 'ml-offers-desde', type: 'date', label: __('Desde', 'motorlan-portal'), value: table.filters.desde, class: 'w-full md:w-40' }) }}
+    {{ f.text({ name: 'hasta', id: 'ml-offers-hasta', type: 'date', label: __('Hasta', 'motorlan-portal'), value: table.filters.hasta, class: 'w-full md:w-40' }) }}
+    {{ f.select({ name: 'per_page', id: 'ml-offers-per-page', options: table.per_page, value: table.filters.per_page, class: 'w-full md:w-40', attrs: 'aria-label="' ~ __('Mostrar', 'motorlan-portal')|e('html_attr') ~ '"' }) }}
+    <noscript><button type="submit" class="ml-btn ml-btn--tonal ml-c-primary">{{ __('Filtrar', 'motorlan-portal')|e }}</button></noscript>
+  {% endblock %}
+  {% block rows %}
+    {%- import 'components/chip.twig' as c -%}
+    {%- import 'components/avatar.twig' as a -%}
+    {%- import 'components/icon.twig' as ui -%}
+    {%- import 'partials/ofertas-macros.twig' as om -%}
+    {%- for r in table.rows %}
+    <tr>
+      <td data-label="{{ __('Publicación', 'motorlan-portal')|e('html_attr') }}">
+        <div class="flex max-w-[280px] items-center gap-3 py-2">
+          {{ a.avatar({ icon: 'discount-2', rounded: true, class: '!size-10 shrink-0' }) }}
+          <div class="min-w-0">
+            <p class="truncate font-medium text-high-emphasis" title="{{ r.title|e('html_attr') }}">{{ r.title|e }}</p>
+            {%- if r.reference %}<p class="text-xs text-medium-emphasis">{{ __('Ref', 'motorlan-portal')|e }}: {{ r.reference|e }}</p>{% endif %}
+          </div>
+        </div>
+      </td>
+      <td data-label="{{ __('Ofertante', 'motorlan-portal')|e('html_attr') }}" class="font-medium">{{ r.user|e }}</td>
+      <td data-label="{{ __('Importe', 'motorlan-portal')|e('html_attr') }}" class="font-bold text-high-emphasis">{{ r.amount|e }}</td>
+      <td data-label="{{ __('Fecha', 'motorlan-portal')|e('html_attr') }}" class="whitespace-nowrap text-medium-emphasis">{{ r.date|e }}</td>
+      <td data-label="{{ __('Estado', 'motorlan-portal')|e('html_attr') }}">{{ c.chip({ label: r.chip.label, color: r.chip.color, size: 'sm' }) }}</td>
+      <td data-label="{{ __('Acciones', 'motorlan-portal')|e('html_attr') }}" class="text-end">
+        <div class="inline-flex justify-end gap-2 [&_.ml-offer-btn-label]:sr-only">
+          <button type="button" class="ml-btn ml-btn--tonal ml-btn--icon ml-btn--sm ml-c-primary" title="{{ __('Ver detalle', 'motorlan-portal')|e('html_attr') }}" aria-label="{{ __('Ver detalle', 'motorlan-portal')|e('html_attr') }}"
+                  @click="$dispatch('ml-offer-open', {{ ml_json(r|merge({ page: table.page }))|e('html_attr') }})">{{ ui.icon('eye', 'size-[18px]') }}</button>
+          {%- if r.can_accept %}{{ om.offer_form(r, 'accept', table, nonce, 'ml-btn ml-btn--tonal ml-btn--icon ml-btn--sm ml-c-success', __('Aceptar', 'motorlan-portal'), 'check') }}{% endif %}
+          {%- if r.can_reject %}{{ om.offer_form(r, 'reject', table, nonce, 'ml-btn ml-btn--tonal ml-btn--icon ml-btn--sm ml-c-error', __('Rechazar', 'motorlan-portal'), 'x') }}{% endif %}
+        </div>
+      </td>
+    </tr>
+    {%- endfor %}
+  {% endblock %}
+  {% block empty %}
+    {%- import 'components/empty.twig' as em -%}
+    {%- if table.error %}
+      {{ em.empty({ icon: 'alert-circle', title: __('No se pudieron cargar las ofertas.', 'motorlan-portal'), text: __('Inténtalo de nuevo en unos segundos.', 'motorlan-portal') }) }}
+    {%- elseif table.has_filters %}
+      {{ em.empty({ icon: 'search', title: __('Sin resultados', 'motorlan-portal'), text: __('Prueba con otros filtros.', 'motorlan-portal') }) }}
+    {%- else %}
+      {{ em.empty({ icon: 'discount-2', title: __('Aún no has recibido ofertas', 'motorlan-portal'), text: __('Las ofertas que te hagan los compradores aparecerán aquí.', 'motorlan-portal') }) }}
+    {%- endif %}
+  {% endblock %}
+{% endembed %}

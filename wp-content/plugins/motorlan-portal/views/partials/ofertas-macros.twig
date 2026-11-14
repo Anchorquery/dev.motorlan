@@ -1,0 +1,9 @@
+{# Macros de partials/ofertas-tabla.twig (un embed no ve las macros de _self). #}
+{%- macro offer_form(r, act, table, nonce, cls, label, icon) -%}
+{%- import 'components/icon.twig' as ui -%}
+<form method="post" action="{{ table.url|e('html_attr') }}" class="contents"
+      hx-post="{{ table.url|e('html_attr') }}" hx-target="#ml-offers" hx-swap="outerHTML" hx-include="#ml-offers-filters" hx-disabled-elt="find button">
+  <input type="hidden" name="_mlnonce" value="{{ nonce|e('html_attr') }}"><input type="hidden" name="action" value="{{ act }}"><input type="hidden" name="id" value="{{ r.id }}"><input type="hidden" name="page" value="{{ table.page }}">
+  <button type="submit" class="{{ cls }}" title="{{ label|e('html_attr') }}" aria-label="{{ label|e('html_attr') }}" @click="window.dispatchEvent(new CustomEvent('ml-dialog-close', { detail: 'ml-offer-detail' }))">{{ ui.icon(icon, 'size-[18px]') }}<span class="ml-offer-btn-label">{{ label|e }}</span></button>
+</form>
+{%- endmacro -%}

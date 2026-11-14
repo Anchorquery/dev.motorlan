@@ -25,6 +25,8 @@
           <p class="truncate text-sm font-medium" x-show="title" x-text="title"></p>
           <p class="flex items-center gap-1 text-xs text-medium-emphasis" x-show="otherName">{{ ui.icon('user', 'size-3.5') }}<span class="truncate" x-text="otherName"></span></p>
         </div>
+        {#- Acciones de la pantalla (opcional): include con chat_actions: 'plantilla.twig'; ámbito mlChat. -#}
+        {%- if chat_actions|default(false) %}{% include chat_actions %}{% endif %}
       </div>
       <p class="flex items-center gap-3 bg-[color-mix(in_srgb,var(--ml-primary)_6%,transparent)] px-6 py-2 text-xs text-primary">{{ ui.icon('shield-lock', 'size-4') }}<span>{{ __('Por tu seguridad, no compartas datos de contacto directo.', 'motorlan-portal')|e }}</span></p>
     </div>

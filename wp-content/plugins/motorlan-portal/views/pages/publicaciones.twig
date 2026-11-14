@@ -1,0 +1,73 @@
+{% extends 'layout/app-shell.twig' %}
+{#
+  Mis publicaciones: /mi-cuenta/dashboard/publications/publication/list
+  (publication/list/index.vue). PublicacionesController.
+  La tabla (partials/publicaciones-tabla.twig) se filtra, ordena y pagina con HTMX. Las
+  acciones (estado, duplicar, borrar, borrar seleccionadas) piden confirmación y hacen
+  POST a esta URL con los filtros actuales; el servidor devuelve la tabla de nuevo (o
+  redirige al editor de la copia al duplicar). Sin JS, cada acción es un formulario normal.
+#}
+{% block main %}
+{%- import 'components/icon.twig' as ui -%}
+{% include 'components/flash.twig' %}
+{%- set tone_p = 'bg-[color-mix(in_srgb,var(--ml-primary)_14%,transparent)] text-primary' -%}
+{%- set tone_i = 'bg-[color-mix(in_srgb,var(--ml-info)_14%,transparent)] text-info' -%}
+{%- set tone_e = 'bg-[color-mix(in_srgb,var(--ml-error)_14%,transparent)] text-error' -%}
+{%- set pub_i18n = {
+  duplicate: { title: __('Duplicar publicación', 'motorlan-portal'), text: __('¿Seguro que quieres duplicar esta publicación? La copia se crea como borrador.', 'motorlan-portal'), confirm: __('Duplicar', 'motorlan-portal'), btn: 'ml-c-primary', tone: tone_p },
+  status_publish: { title: __('Cambiar estado', 'motorlan-portal'), text: __('¿Publicar esta publicación? Si aún no se ha aprobado, pasará a revisión.', 'motorlan-portal'), confirm: __('Publicar', 'motorlan-portal'), btn: 'ml-c-success', tone: tone_i },
+  status_paused: { title: __('Cambiar estado', 'motorlan-portal'), text: __('¿Pausar esta publicación? Dejará de poder comprarse hasta que la reactives.', 'motorlan-portal'), confirm: __('Pausar', 'motorlan-portal'), btn: 'ml-c-warning', tone: tone_i },
+  status_draft: { title: __('Cambiar estado', 'motorlan-portal'), text: __('¿Mover esta publicación a borradores? Dejará de verse en la tienda.', 'motorlan-portal'), confirm: __('Mover a borrador', 'motorlan-portal'), btn: 'ml-c-secondary', tone: tone_i },
+  delete: { title: __('Eliminar publicación', 'motorlan-portal'), text: __('¿Seguro que quieres eliminar esta publicación?', 'motorlan-portal'), confirm: __('Eliminar', 'motorlan-portal'), btn: 'ml-c-error', tone: tone_e },
+  'bulk-delete': { title: __('Eliminar publicaciones', 'motorlan-portal'), text: __('¿Seguro que quieres eliminar las %d publicaciones seleccionadas?', 'motorlan-portal'), confirm: __('Eliminar', 'motorlan-portal'), btn: 'ml-c-error', tone: tone_e },
+} -%}
+<div x-data="mlPubList({{ ml_json(pub_i18n)|e('html_attr') }})" @ml-pub-action.window="ask($event.detail)">
+  <div class="ml-card overflow-visible">
+    <div class="flex flex-wrap items-center justify-between gap-4 px-6 pt-6">
+      <h1 class="ml-h5 font-semibold">{{ page_title|e }}</h1>
+      <div class="flex flex-wrap items-center gap-2 max-sm:w-full max-sm:flex-col max-sm:items-stretch">
+        <a class="ml-btn ml-btn--tonal ml-c-secondary" data-ml-export href="{{ urls_vendor.export|e('html_attr') }}" @click="$el.href = exportUrl()">{{ ui.icon('upload', 'size-5') }}<span>{{ __('Exportar', 'motorlan-portal')|e }}</span></a>
+        <a class="ml-btn ml-btn--filled ml-c-primary" href="{{ urls_vendor.add|e('html_attr') }}">{{ ui.icon('plus', 'size-5') }}<span>{{ __('Añadir publicación', 'motorlan-portal')|e }}</span></a>
+      </div>
+    </div>
+    {% include 'partials/publicaciones-tabla.twig' %}
+  </div>
+  {# Selección múltiple: las casillas de la tabla apuntan aquí (form=); fuera del formulario
+     de filtros porque los formularios no se anidan. #}
+  <form id="ml-pub-bulk" method="post" action="{{ table.url|e('html_attr') }}" hidden>
+    <input type="hidden" name="_mlnonce" value="{{ nonce|e('html_attr') }}">
+    <input type="hidden" name="action" value="bulk-delete">
+  </form>
+
+  {# Confirmación única para todas las acciones (estado, duplicar, borrar, borrar seleccionadas). #}
+  {% embed 'components/dialog.twig' with { id: 'ml-pub-confirm', max_width: '500px', persistent: true } %}
+    {% block content %}
+    {%- import 'components/icon.twig' as ui -%}
+    <div class="flex flex-col items-center text-center">
+      <span class="mb-4 grid size-[72px] place-items-center rounded-full" :class="sel.tone">
+        <template x-if="sel.action === 'duplicate'"><span>{{ ui.icon('copy', 'size-10') }}</span></template>
+        <template x-if="sel.action === 'status'"><span>{{ ui.icon('refresh', 'size-10') }}</span></template>
+        <template x-if="sel.action === 'delete' || sel.action === 'bulk-delete'"><span>{{ ui.icon('trash-x', 'size-10') }}</span></template>
+      </span>
+      <h3 class="ml-h6 mb-2 font-semibold" x-text="sel.title"></h3>
+      <p class="text-high-emphasis" x-text="sel.text"></p>
+      <p class="mt-2 text-sm font-medium text-medium-emphasis" x-show="sel.name">«<span x-text="sel.name"></span>»</p>
+    </div>
+    <form id="ml-pub-action-form" method="post" action="{{ table.url|e('html_attr') }}"
+          hx-post="{{ table.url|e('html_attr') }}" hx-target="#ml-pubs" hx-swap="outerHTML" hx-include="#ml-pubs-filters"
+          hx-disabled-elt="find button" x-init="window.htmx && window.htmx.process($el)" @htmx:after-request="close(); $dispatch('ml-pub-done')">
+      <input type="hidden" name="_mlnonce" value="{{ nonce|e('html_attr') }}">
+      <input type="hidden" name="action" :value="sel.action">
+      <input type="hidden" name="id" :value="sel.id">
+      <input type="hidden" name="status" :value="sel.status">
+      <input type="hidden" name="page" :value="sel.page">
+      <template x-for="id in sel.ids" :key="id"><input type="hidden" name="ids[]" :value="id"></template>
+      <div class="mt-6 flex justify-end gap-2">
+        <button type="button" class="ml-btn ml-btn--tonal ml-c-secondary" @click="close()">{{ __('Cancelar', 'motorlan-portal')|e }}</button>
+        <button type="submit" class="ml-btn ml-btn--filled" :class="sel.btn" x-text="sel.confirm"></button>
+      </div>
+    </form>
+    {% endblock %}
+  {% endembed %}
+</div>
+{% endblock %}

@@ -108,6 +108,43 @@ class Api
         return $data;
     }
 
+    /**
+     * POST multipart (alta y edición de publicaciones) reenviando los archivos de ESTA
+     * petición. El navegador envía el FormData a la URL de la pantalla del portal; aquí se
+     * pasa a la API tal cual: campos con set_body_params() y archivos con set_file_params().
+     *
+     * rest_do_request() no lee $_FILES por sí mismo (eso lo hace WP_REST_Server::serve_request
+     * en una petición HTTP a /wp-json), por eso hay que pasárselos. Los callbacks de la API
+     * usan get_file_params() para validar y media_handle_upload('motor_image'), que lee el
+     * $_FILES global: funciona porque los archivos llegaron en esta misma petición con los
+     * mismos nombres de campo (motor_image, motor_gallery[], documentacion_adicional_archivos[]).
+     * Sin duplicar nada de la lógica de la API (validación, idempotencia, subida, estado).
+     *
+     * @param array $fields Campos de texto ya sin barras (wp_unslash($_POST)).
+     * @param array $files  $_FILES de la petición.
+     */
+    public static function multipart(string $route, array $fields, array $files): array
+    {
+        if (!function_exists('rest_do_request')) {
+            return self::fail(500, 'rest_unavailable', 'REST API no disponible');
+        }
+        $request = new \WP_REST_Request('POST', '/' . ltrim($route, '/'));
+        $request->set_header('Content-Type', 'multipart/form-data');
+        $request->set_body_params($fields);
+        $request->set_file_params($files);
+
+        $response = rest_do_request($request);
+        $status   = (int) $response->get_status();
+        $data     = self::normalize(rest_get_server()->response_to_data($response, false));
+        if ($response->is_error() || $status >= 400) {
+            $code = is_array($data) && isset($data['code']) ? (string) $data['code'] : 'rest_error';
+            $msg  = is_array($data) && isset($data['message']) ? (string) $data['message'] : '';
+            return self::fail($status ?: 500, $code, $msg, $data);
+        }
+        self::$last_error = null;
+        return ['ok' => true, 'status' => $status, 'data' => $data, 'headers' => $response->get_headers(), 'error' => null];
+    }
+
     protected static function data(array $result)
     {
         return $result['ok'] ? $result['data'] : null;

@@ -1,0 +1,47 @@
+{#
+  Descripción, estado y ubicación, precio y stock (StepLocationCondition.vue).
+  «Consultar precio» → acf[precio_negociable]=yes (el público ve «Consultar precio»; el
+  precio queda como referencia para el vendedor).
+  Variables: values · conditions · countries · mlPubForm (v, err)
+#}
+{%- import 'components/field.twig' as f -%}
+<h2 class="ml-h6 mb-4 font-semibold">{{ __('Descripción', 'motorlan-portal')|e }}</h2>
+<div>
+  {{ f.textarea({ name: 'acf[descripcion]', id: 'ml-pf-desc', label: __('Descripción', 'motorlan-portal'), placeholder: __('Descripción del producto', 'motorlan-portal'), required: true, rows: 5, value: values.descripcion,
+                  attrs: 'x-model="v.descripcion" :aria-invalid="!!err.descripcion" maxlength="5000"' }) }}
+  <p class="ml-hint ml-hint--error" x-show="err.descripcion" x-text="err.descripcion" x-cloak></p>
+</div>
+
+<h2 class="ml-h6 mb-4 mt-8 font-semibold">{{ __('Ubicación y estado', 'motorlan-portal')|e }}</h2>
+<div class="grid gap-x-6 gap-y-4 md:grid-cols-3">
+  <div>
+    {{ f.select({ name: 'acf[estado_del_articulo]', id: 'ml-pf-estado', label: __('Estado del artículo', 'motorlan-portal'), required: true, options: conditions, value: values.estado_del_articulo,
+                  attrs: 'x-model="v.estado_del_articulo" :aria-invalid="!!err.estado_del_articulo"' }) }}
+    <p class="ml-hint ml-hint--error" x-show="err.estado_del_articulo" x-text="err.estado_del_articulo" x-cloak></p>
+  </div>
+  <div>
+    {{ f.select({ name: 'acf[pais]', id: 'ml-pf-pais', label: __('País (localización)', 'motorlan-portal'), required: true, options: countries, value: values.pais,
+                  attrs: 'x-model="v.pais" :aria-invalid="!!err.pais" autocomplete="country"' }) }}
+    <p class="ml-hint ml-hint--error" x-show="err.pais" x-text="err.pais" x-cloak></p>
+  </div>
+  <div>
+    {{ f.text({ name: 'acf[provincia]', id: 'ml-pf-provincia', label: __('Provincia', 'motorlan-portal'), placeholder: 'Madrid', required: true, value: values.provincia,
+                attrs: 'x-model="v.provincia" :aria-invalid="!!err.provincia" maxlength="80" autocomplete="address-level1"' }) }}
+    <p class="ml-hint ml-hint--error" x-show="err.provincia" x-text="err.provincia" x-cloak></p>
+  </div>
+  <div>
+    {{ f.text({ name: 'acf[precio_de_venta]', id: 'ml-pf-precio', type: 'number', label: __('Precio de venta (€)', 'motorlan-portal'), placeholder: '1000', value: values.precio_de_venta,
+                attrs: 'x-model="v.precio_de_venta" step="0.01" min="0" inputmode="decimal" :aria-invalid="!!err.precio_de_venta"' }) }}
+    <p class="ml-hint ml-hint--error" x-show="err.precio_de_venta" x-text="err.precio_de_venta" x-cloak></p>
+  </div>
+  <div class="md:pt-7">
+    {{ f.checkbox({ name: 'acf[precio_negociable]', id: 'ml-pf-consultar', value: 'yes', label: __('Consultar precio', 'motorlan-portal'), checked: values.consultar,
+                    attrs: 'x-model="v.consultar"' }) }}
+    <p class="ml-hint">{{ __('Si se marca, el público verá «Consultar precio». Tú seguirás viendo el precio como referencia.', 'motorlan-portal')|e }}</p>
+  </div>
+  <div>
+    {{ f.text({ name: 'acf[stock]', id: 'ml-pf-stock', type: 'number', label: __('Stock', 'motorlan-portal'), placeholder: '1', required: true, value: values.stock,
+                attrs: 'x-model="v.stock" step="1" min="1" inputmode="numeric" :aria-invalid="!!err.stock"' }) }}
+    <p class="ml-hint ml-hint--error" x-show="err.stock" x-text="err.stock" x-cloak></p>
+  </div>
+</div>

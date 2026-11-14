@@ -1,0 +1,79 @@
+{#
+  Bandeja de Interesados (conversaciones sobre las publicaciones del vendedor). La pinta
+  pages/interesados.twig y la devuelve InteresadosController en las peticiones HTMX
+  (buscar, paginar y el refresco periódico de mlInquiries). Variables: table
+  «Responder» abre el chat de esa conversación (kit de chat, necesita JS).
+#}
+{% embed 'components/table.twig' with {
+  id: 'ml-inq',
+  url: table.url,
+  columns: [
+    { label: __('Usuario', 'motorlan-portal') },
+    { label: __('Publicación', 'motorlan-portal') },
+    { label: __('Último mensaje', 'motorlan-portal') },
+    { label: __('Acciones', 'motorlan-portal'), class: 'text-end' },
+  ],
+  page: table.page, pages: table.pages, total: table.total,
+  filters_query: table.query,
+} %}
+  {% block filters %}
+    {%- import 'components/field.twig' as f -%}
+    {{ f.text({ name: 'q', id: 'ml-inq-q', type: 'search', placeholder: __('Buscar por usuario o publicación…', 'motorlan-portal'), icon: 'search', value: table.filters.q, class: 'w-full md:w-80' }) }}
+    {{ f.select({ name: 'per_page', id: 'ml-inq-per-page', options: table.per_page, value: table.filters.per_page, class: 'w-full md:w-40', attrs: 'aria-label="' ~ __('Mostrar', 'motorlan-portal')|e('html_attr') ~ '"' }) }}
+    <span hidden data-ml-inq-page="{{ table.page }}"></span>
+    <noscript><button type="submit" class="ml-btn ml-btn--tonal ml-c-primary">{{ __('Buscar', 'motorlan-portal')|e }}</button></noscript>
+  {% endblock %}
+  {% block rows %}
+    {%- import 'components/avatar.twig' as a -%}
+    {%- import 'components/icon.twig' as ui -%}
+    {%- for r in table.rows %}
+    <tr>
+      <td data-label="{{ __('Usuario', 'motorlan-portal')|e('html_attr') }}">
+        <div class="flex items-center gap-3 py-2">
+          {%- if r.avatar %}{{ a.avatar({ image: r.avatar, color: 'primary', class: '!size-11 shrink-0 border border-border' }) }}{% else %}{{ a.avatar({ text: r.initials, color: 'primary', class: '!size-11 shrink-0 font-bold' }) }}{% endif %}
+          <div class="min-w-0">
+            <p class="truncate font-medium text-high-emphasis">{{ r.user|e }}</p>
+            <p class="text-xs text-medium-emphasis">{{ __('Comprador interesado', 'motorlan-portal')|e }}</p>
+          </div>
+        </div>
+      </td>
+      <td data-label="{{ __('Publicación', 'motorlan-portal')|e('html_attr') }}">
+        <div class="flex max-w-[350px] items-center gap-3 py-2">
+          {%- if r.image %}{{ a.avatar({ image: r.image, rounded: true, class: '!size-12 shrink-0 border border-border' }) }}{% else %}{{ a.avatar({ icon: 'package', rounded: true, class: '!size-12 shrink-0' }) }}{% endif %}
+          <div class="min-w-0">
+            <p class="truncate font-medium text-high-emphasis" title="{{ r.title|e('html_attr') }}">{{ r.title|e }}</p>
+            <p class="text-xs text-medium-emphasis">ID: {{ r.product_id }}</p>
+          </div>
+        </div>
+      </td>
+      <td data-label="{{ __('Último mensaje', 'motorlan-portal')|e('html_attr') }}" class="whitespace-nowrap">
+        <time class="font-medium text-high-emphasis" title="{{ r.datetime|e('html_attr') }}">{{ r.date|e }}</time>
+      </td>
+      <td data-label="{{ __('Acciones', 'motorlan-portal')|e('html_attr') }}" class="text-end">
+        <div class="inline-flex items-center justify-end gap-2">
+          <button type="button" class="ml-btn ml-btn--tonal ml-btn--sm ml-c-primary relative rounded-full"
+                  @click="openRoom({{ ml_json(r)|e('html_attr') }})">
+            {{ ui.icon('message-circle', 'size-[18px]') }}<span>{{ __('Responder', 'motorlan-portal')|e }}</span>
+            {%- if r.unread > 0 %}
+            <span class="absolute -end-2 -top-2 grid min-w-5 place-items-center rounded-full bg-error px-1.5 text-[11px] font-bold leading-5 text-white" aria-label="{{ _n('%d mensaje sin leer', '%d mensajes sin leer', r.unread, 'motorlan-portal')|format(r.unread)|e('html_attr') }}">{{ r.unread }}</span>
+            {%- endif %}
+          </button>
+          {%- if r.pub_url %}
+          <a class="ml-btn ml-btn--tonal ml-btn--icon ml-btn--sm ml-c-secondary" href="{{ r.pub_url|e('html_attr') }}" target="_blank" rel="noopener" title="{{ __('Ver publicación', 'motorlan-portal')|e('html_attr') }}" aria-label="{{ __('Ver publicación', 'motorlan-portal')|e('html_attr') }}">{{ ui.icon('external-link', 'size-[18px]') }}</a>
+          {%- endif %}
+        </div>
+      </td>
+    </tr>
+    {%- endfor %}
+  {% endblock %}
+  {% block empty %}
+    {%- import 'components/empty.twig' as em -%}
+    {%- if table.error %}
+      {{ em.empty({ icon: 'alert-circle', title: __('No se pudieron cargar las consultas.', 'motorlan-portal'), text: __('Inténtalo de nuevo en unos segundos.', 'motorlan-portal') }) }}
+    {%- elseif table.has_filters %}
+      {{ em.empty({ icon: 'search', title: __('Sin resultados', 'motorlan-portal'), text: __('Prueba con otra búsqueda.', 'motorlan-portal') }) }}
+    {%- else %}
+      {{ em.empty({ icon: 'messages', title: __('Aún no tienes interesados', 'motorlan-portal'), text: __('Cuando un comprador te escriba sobre una publicación, la conversación aparecerá aquí.', 'motorlan-portal') }) }}
+    {%- endif %}
+  {% endblock %}
+{% endembed %}

@@ -1,0 +1,7 @@
+{#
+  Acción en la cabecera del chat de Interesados (chat-dialog.twig, variable chat_actions).
+  Ámbito: mlChat (productId, roomKey, title, otherName). Lo recoge mlInquiries.
+#}
+{%- import 'components/icon.twig' as ui -%}
+<button type="button" class="ml-btn ml-btn--tonal ml-btn--sm ml-c-success shrink-0" x-show="kind === 'product' && roomKey"
+        @click="$dispatch('ml-manual-sale', { productId, roomKey, title, name: otherName })">{{ ui.icon('currency-euro', 'size-[18px]') }}<span>{{ __('Vender', 'motorlan-portal')|e }}</span></button>

@@ -1,0 +1,55 @@
+{% extends 'layout/app-shell.twig' %}
+{#
+  Interesados: /mi-cuenta/dashboard/inquiries (inquiries/index.vue + SellerChatModal.vue).
+  InteresadosController. Bandeja con HTMX (partials/interesados-tabla.twig) que se refresca
+  cada 60 s con la pestaña visible y sin diálogos abiertos (mlInquiries en vendedor.js).
+  «Responder» abre el chat de la conversación (kit de chat); en su cabecera, «Vender»
+  (partials/interesados-chat-acciones.twig) registra la venta manual y abre la valoración
+  del comprador (kit de valoración). ?room_key= abre esa conversación al cargar.
+  Sin JS: la bandeja se ve, busca y pagina; el chat y la venta necesitan JS.
+#}
+{% block main %}
+{%- import 'components/icon.twig' as ui -%}
+{% include 'components/flash.twig' %}
+{%- set inq_cfg = {
+  open: open_room,
+  missing: room_missing,
+  url: page_url,
+  nonce: nonce,
+  i18n: {
+    roomMissing: __('Esa conversación ya no está en tu bandeja.', 'motorlan-portal'),
+    amountInvalid: __('Importe no válido', 'motorlan-portal'),
+    saleError: __('No se pudo registrar la venta.', 'motorlan-portal'),
+    network: __('Sin conexión. Inténtalo de nuevo.', 'motorlan-portal'),
+  },
+} -%}
+<div x-data="mlInquiries({{ ml_json(inq_cfg)|e('html_attr') }})" @ml-manual-sale.window="askSale($event.detail)" @ml-chat-read.window="refresh()">
+  <div class="ml-card overflow-visible">
+    <div class="flex flex-wrap items-center justify-between gap-4 px-6 pt-6">
+      <h1 class="ml-h5 font-semibold">{{ page_title|e }}</h1>
+    </div>
+    {% include 'partials/interesados-tabla.twig' %}
+  </div>
+
+  {% include 'components/chat-dialog.twig' with { chat: chat, chat_actions: 'partials/interesados-chat-acciones.twig' } %}
+
+  {# Venta manual: confirmación + importe acordado (opcional). SPA: confirm() + prompt(). #}
+  {% embed 'components/dialog.twig' with { id: 'ml-inq-sale', title: __('Registrar venta', 'motorlan-portal'), max_width: '480px', persistent: true } %}
+    {% block content %}
+    {%- import 'components/field.twig' as f -%}
+    <form id="ml-inq-sale-form" @submit.prevent="sell()" novalidate>
+      <p class="mb-1">{{ __('¿Confirmas que has vendido esta publicación a este comprador? Se descontará una unidad del stock.', 'motorlan-portal')|e }}</p>
+      <p class="mb-4 text-sm font-medium text-medium-emphasis" x-show="sale.title">«<span x-text="sale.title"></span>»<template x-if="sale.name"><span> · <span x-text="sale.name"></span></span></template></p>
+      {{ f.text({ name: 'amount', id: 'ml-inq-amount', label: __('Importe acordado en € (opcional)', 'motorlan-portal'), placeholder: __('Vacío = precio publicado', 'motorlan-portal'), attrs: 'inputmode="decimal" autocomplete="off" x-model="sale.amount"' }) }}
+      <p class="ml-hint ml-hint--error mt-1" x-show="sale.error" x-text="sale.error"></p>
+    </form>
+    {% endblock %}
+    {% block actions %}
+    <button type="button" class="ml-btn ml-btn--tonal ml-c-secondary" @click="close()" :disabled="sale.busy">{{ __('Cancelar', 'motorlan-portal')|e }}</button>
+    <button type="submit" form="ml-inq-sale-form" class="ml-btn ml-btn--filled ml-c-success" :disabled="sale.busy">{{ ui.icon('currency-euro', 'size-5') }}<span>{{ __('Registrar venta', 'motorlan-portal')|e }}</span></button>
+    {% endblock %}
+  {% endembed %}
+
+  {% include 'components/rating-dialog.twig' with { id: 'ml-inq-rate', url: page_url, nonce: nonce, uuid: '', role: 'buyer' } %}
+</div>
+{% endblock %}

@@ -1,0 +1,54 @@
+{#
+  Especificaciones (StepTechSpecs.vue). En la edición incluye el selector de tipo. Solo los
+  motores tienen especificaciones: AC exige potencia y velocidad; DC, velocidad y potencia o
+  par nominal. Para regulador/otros el servidor no guarda estos campos.
+  Sin JS se ven todos los campos (y la validación la hace la API).
+  Variables: mode · types · values · mlPubForm (v, err, isMotor, isAC)
+#}
+{%- import 'components/field.twig' as f -%}
+{%- import 'components/alert.twig' as al -%}
+{%- set is_motor = values.tipo_ui in ['motor-ac', 'motor-dc'] -%}
+<h2 class="ml-h6 mb-4 font-semibold">{{ __('Especificaciones técnicas', 'motorlan-portal')|e }}</h2>
+{%- if mode == 'edit' %}
+  {%- set type_options = {} -%}
+  {%- for key, t in types %}{% set type_options = type_options|merge({ (key): t.title }) %}{% endfor -%}
+  <div class="mb-4 md:max-w-sm">
+    {{ f.select({ name: 'tipo_ui', id: 'ml-pf-tipo', label: __('Tipo de publicación', 'motorlan-portal'), required: true, options: type_options, value: values.tipo_ui,
+                  attrs: 'x-model="v.tipo_ui" :aria-invalid="!!err.tipo_ui"' }) }}
+    <p class="ml-hint ml-hint--error" x-show="err.tipo_ui" x-text="err.tipo_ui" x-cloak></p>
+  </div>
+{%- endif %}
+<div x-show="isMotor()" {% if not is_motor %}x-cloak{% endif %}>
+  <div class="grid gap-x-6 gap-y-4 md:grid-cols-3">
+    <div>
+      {{ f.text({ name: 'acf[potencia]', id: 'ml-pf-potencia', type: 'number', label: __('Potencia (kW)', 'motorlan-portal'), placeholder: '100', value: values.potencia,
+                  attrs: 'x-model="v.potencia" step="any" min="0" inputmode="decimal" :aria-invalid="!!err.potencia"' }) }}
+      <p class="ml-hint ml-hint--error" x-show="err.potencia" x-text="err.potencia" x-cloak></p>
+    </div>
+    <div>
+      {{ f.text({ name: 'acf[velocidad]', id: 'ml-pf-velocidad', type: 'number', label: __('Velocidad (rpm)', 'motorlan-portal'), placeholder: '3000', value: values.velocidad,
+                  attrs: 'x-model="v.velocidad" step="any" min="0" inputmode="decimal" :aria-invalid="!!err.velocidad"' }) }}
+      <p class="ml-hint ml-hint--error" x-show="err.velocidad" x-text="err.velocidad" x-cloak></p>
+    </div>
+    <div x-show="!isAC()" {% if values.tipo_ui != 'motor-dc' %}x-cloak{% endif %}>
+      {{ f.text({ name: 'acf[par_nominal]', id: 'ml-pf-par', type: 'number', label: __('PAR nominal (Nm)', 'motorlan-portal'), placeholder: '50', value: values.par_nominal,
+                  attrs: 'x-model="v.par_nominal" step="any" min="0" inputmode="decimal" :aria-invalid="!!err.par_nominal"' }) }}
+      <p class="ml-hint ml-hint--error" x-show="err.par_nominal" x-text="err.par_nominal" x-cloak></p>
+    </div>
+    <div>
+      {{ f.text({ name: 'acf[voltaje]', id: 'ml-pf-voltaje', type: 'number', label: __('Voltaje (V)', 'motorlan-portal'), placeholder: '220', value: values.voltaje,
+                  attrs: 'x-model="v.voltaje" step="any" min="0" inputmode="decimal" :aria-invalid="!!err.voltaje"' }) }}
+      <p class="ml-hint ml-hint--error" x-show="err.voltaje" x-text="err.voltaje" x-cloak></p>
+    </div>
+    <div>
+      {{ f.text({ name: 'acf[intensidad]', id: 'ml-pf-intensidad', type: 'number', label: __('Intensidad (A)', 'motorlan-portal'), placeholder: '10', value: values.intensidad,
+                  attrs: 'x-model="v.intensidad" step="any" min="0" inputmode="decimal" :aria-invalid="!!err.intensidad"' }) }}
+      <p class="ml-hint ml-hint--error" x-show="err.intensidad" x-text="err.intensidad" x-cloak></p>
+    </div>
+  </div>
+  <p class="mt-4 text-sm text-medium-emphasis" x-show="!isAC()" {% if values.tipo_ui != 'motor-dc' %}x-cloak{% endif %}>{{ __('En motores DC indica al menos la potencia o el par nominal.', 'motorlan-portal')|e }}</p>
+  <noscript><p class="mt-4 text-sm text-medium-emphasis">{{ __('Motores AC: potencia y velocidad obligatorias. Motores DC: velocidad y potencia o par nominal. Reguladores y otros repuestos no llevan especificaciones (se ignoran).', 'motorlan-portal')|e }}</p></noscript>
+</div>
+<div x-show="!isMotor()" x-cloak data-js-only>
+  {{ al.alert({ color: 'info', text: __('Las especificaciones técnicas solo aplican a motores.', 'motorlan-portal') }) }}
+</div>
