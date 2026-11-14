@@ -3,6 +3,9 @@ import htmx from 'htmx.org'
 import Alpine from 'alpinejs'
 import focus from '@alpinejs/focus'
 import { fetchRest, renewNonce, isStaleText, STALE_HEADER } from './nonce.js'
+import mlStore from './store.js'
+import mlProductChat from './product-chat.js'
+import { mlAuth, mlPassword, mlAuthToken } from './auth.js'
 
 const cfg = window.motorlanPortal || {}
 const t = (key, fallback) => (cfg.i18n && cfg.i18n[key]) || fallback
@@ -122,6 +125,13 @@ Alpine.data('mlStepper', (count, initial = 0) => ({
   prev() { if (this.step > 0) this.step-- },
   go(i) { this.step = i },
 }))
+
+// Pantallas públicas (fase 1): tienda, chat de la ficha y acceso.
+Alpine.data('mlStore', mlStore)
+Alpine.data('mlProductChat', mlProductChat)
+Alpine.data('mlAuth', mlAuth)
+Alpine.data('mlPassword', mlPassword)
+Alpine.data('mlAuthToken', mlAuthToken)
 
 Alpine.plugin(focus) // x-trap: foco dentro de los diálogos
 window.Alpine = Alpine

@@ -32,11 +32,16 @@ class Takeover
         }
         $path = Urls::request_path();
         foreach (Sections::enabled() as $key => $section) {
-            foreach ((array) ($section['spa_paths'] ?? []) as $pattern) {
+            foreach (self::patterns($section) as $pattern) {
                 if (!preg_match($pattern, $path, $m)) {
                     continue;
                 }
-                $wp->query_vars = [
+                // Se conservan las query vars que resolvió la SPA (pagename = su página de
+                // WordPress): la consulta principal sigue siendo esa página, así que el tema
+                // (cabecera de página), Rank Math y WPML (hreflang) la reconocen igual que hoy.
+                // Sin página detrás (URL que la SPA no resolvió) quedan solo las del portal.
+                $keep = array_intersect_key($wp->query_vars, array_flip(['pagename', 'page_id', 'lang']));
+                $wp->query_vars = $keep + [
                     Rewrites::QV_SECTION => $key,
                     Rewrites::QV_PARAM   => isset($m['param']) ? (string) $m['param'] : '',
                 ];
@@ -46,5 +51,15 @@ class Takeover
                 return;
             }
         }
+    }
+
+    /** spa_paths de una sección: lista de regex o callable que la devuelve. */
+    public static function patterns(array $section): array
+    {
+        $paths = $section['spa_paths'] ?? [];
+        if (is_callable($paths)) {
+            $paths = call_user_func($paths);
+        }
+        return array_values(array_filter((array) $paths, 'is_string'));
     }
 }

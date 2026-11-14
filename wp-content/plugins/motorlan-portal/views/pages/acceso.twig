@@ -1,0 +1,13 @@
+{% extends 'layout/public.twig' %}
+{#
+  Acceso (AccesoController): login, registro, registro completado, recuperar y restablecer
+  contraseña y verificar email. Dentro de la página "Mi cuenta" del tema, como la SPA.
+  Toda la tarjeta es el parcial de la pantalla (partials/acceso/{screen}.twig): los
+  formularios hacen hx-post a esta misma URL y el servidor devuelve solo ese parcial.
+  Variables: screen · title · state · action · nonce · links · logged_in
+#}
+{% block main %}
+<div class="ml-auth-page">
+  {% include 'partials/acceso/' ~ screen ~ '.twig' %}
+</div>
+{% endblock %}

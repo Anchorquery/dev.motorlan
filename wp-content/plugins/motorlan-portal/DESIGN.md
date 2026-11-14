@@ -40,7 +40,17 @@ redefinir las `--ml-*` bajo `[data-theme="dark"]` (el `<html>` ya lleva `data-th
 
 Todos los componentes con color usan la clase `ml-c-{color}`, que fija `--c` y `--c-dark`;
 las variantes (`--filled`, `--tonal`, `--outlined`, `--text`) se construyen con `--c`. Para un
-color nuevo basta con añadir la variable y su `ml-c-*`.
+color nuevo basta con añadir la variable y su `ml-c-*`. Las reglas `.ml-c-*` van al **final**
+de la capa `components`: así ganan a los `--c` por defecto de `.ml-btn`, `.ml-chip`,
+`.ml-alert`… (antes estaban al principio y `ml-c-error` no coloreaba ningún botón).
+
+### Marca en las pantallas públicas
+
+Fondo y tarjetas con el rojo de marca en tonos suaves, no grises neutros: el hero de la
+tienda y la página de acceso comparten degradado (brillo rojo sobre blanco cálido, borde
+`rgb(218 41 28 / .12)`); la tarjeta de acceso lleva franja superior roja y antetítulo
+(`.ml-eyebrow`). Los avisos informativos dentro del acceso usan `ml-c-primary` con fondo
+cálido y texto oscuro (el rojo pleno queda para errores); los secundarios, contorno rojo.
 
 ## Layouts
 
@@ -98,6 +108,8 @@ barra inferior); `mark_active()` marca el elemento de la URL actual.
   nombre se calcula, añade los posibles a la lista de algún literal (p. ej. un array en `src/`).
 - Alpine en las plantillas solo para estado de interfaz (abrir, pestaña, paso); los datos
   vienen del servidor. Componentes Alpine reutilizables en `assets/js/app.js`
-  (`appShell`, `mlDialog`, `mlTabs`, `mlFile`, `mlStepper`, `$store.toast`).
+  (`appShell`, `mlDialog`, `mlTabs`, `mlFile`, `mlStepper`, `$store.toast`); los de
+  pantalla en su propio módulo (`store.js`, `product-chat.js`, `auth.js`). Para cerrar un
+  diálogo desde fuera: `$dispatch('ml-dialog-close', 'id')`.
 - HTMX: el servidor devuelve HTML; los parciales se reutilizan entre la página completa y el
   endpoint. Avisos desde el servidor con la cabecera `HX-Trigger: {"ml:toast": {"text": "…", "color": "success"}}`.

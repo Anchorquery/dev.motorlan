@@ -24,7 +24,9 @@ namespace MotorlanPortal;
  *  - controller  Clase con método handle(string $param): void, o null si no está migrada.
  *  - spa_paths   Regex sobre la ruta sin idioma (p. ej. '#^/store(?:/(?<param>.*))?/?$#')
  *                que la sección le quita a la SPA cuando está encendida. Vacío = solo vive
- *                bajo /{Rewrites::BASE}/{clave}/.
+ *                bajo /{Rewrites::BASE}/{clave}/. También vale un callable que devuelva la
+ *                lista: se evalúa en parse_request (con WPML ya cargado), útil cuando la
+ *                ruta depende del slug traducido de la página de la SPA.
  */
 class Sections
 {
@@ -42,8 +44,16 @@ class Sections
             'tienda' => [
                 'label'      => 'Tienda y ficha de producto',
                 'auth'       => 'public',
-                'controller' => null,
-                'spa_paths'  => [],
+                'controller' => Controllers\TiendaController::class,
+                // /marketplace-motorlan/ y /marketplace-motorlan/{slug}/ (y sus traducciones).
+                'spa_paths'  => [Support\SpaPages::class, 'store_patterns'],
+            ],
+            'acceso' => [
+                'label'      => 'Acceso: login, registro y recuperar contraseña',
+                'auth'       => 'public',
+                'controller' => Controllers\AccesoController::class,
+                // /mi-cuenta/{login|register|…}/ (también bajo /marketplace-motorlan/, como la SPA).
+                'spa_paths'  => [Support\SpaPages::class, 'auth_patterns'],
             ],
             'comprador' => [
                 'label'      => 'Panel del comprador',

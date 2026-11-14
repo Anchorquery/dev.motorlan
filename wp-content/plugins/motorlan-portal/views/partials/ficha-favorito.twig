@@ -1,0 +1,13 @@
+{#
+  Botón de favorito de la ficha. POST a motorlan-portal/v1/tienda/favorito/{id} (Rest\TiendaApi):
+  el servidor cambia el estado con /motorlan/v1/favorites y responde este mismo parcial.
+  Variables: product_id · favorite (bool)
+#}
+{%- import 'components/icon.twig' as ui -%}
+<button type="button" class="ml-ficha__link" id="ml-fav-{{ product_id }}"
+        hx-post="{{ function('rest_url', 'motorlan-portal/v1/tienda/favorito/' ~ product_id)|e('html_attr') }}"
+        hx-vals='{"state": "{{ favorite ? '1' : '0' }}"}'
+        hx-swap="outerHTML" hx-disabled-elt="this"
+        aria-pressed="{{ favorite ? 'true' : 'false' }}">
+  {{ ui.icon('heart', favorite ? 'size-5 fill-current' : 'size-5') }}<span>{{ __('Favorito', 'motorlan-portal')|e }}</span>
+</button>

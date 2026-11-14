@@ -1,0 +1,83 @@
+{#
+  Verificación de email (verify-email.vue). Atiende dos enlaces:
+    #token=…         activar la cuenta tras el registro  -> motorlan/v1/verify-email
+    #email_change=…  confirmar el cambio de email         -> motorlan/v1/profile/confirm-email-change
+  El token va en el fragmento (no llega al servidor): mlAuthToken lo copia al formulario
+  oculto y lo envía solo; el servidor responde este mismo parcial con el resultado.
+  state.status: verifying | verified | already_verified | email_changed | resent | error
+#}
+{%- import 'components/icon.twig' as ui -%}
+{%- import 'partials/acceso/_ui.twig' as auth -%}
+{%- set status = state.status|default('verifying') -%}
+{%- set mode = state.mode|default('verify') -%}
+<div id="ml-auth-body" class="ml-auth-card text-center">
+  {{ auth.eyebrow() }}
+  <h1 class="ml-auth-card__title mb-4">{{ mode == 'email_change' ? __('Confirmación de email', 'motorlan-portal')|e : __('Verificación de email', 'motorlan-portal')|e }}</h1>
+
+  {%- if status == 'verifying' %}
+  <div class="py-10" x-data="mlAuthToken({ params: ['token', 'email_change'], submit: true })">
+    <span class="ml-auth-spinner" aria-hidden="true"></span>
+    <p class="mt-4 text-medium-emphasis">{{ __('Comprobando el enlace, por favor espera...', 'motorlan-portal')|e }}</p>
+    <form {{ auth.form_attrs(action, true) }} class="hidden">
+      {{ auth.hidden(nonce) }}
+      <input type="hidden" name="token" data-token="token email_change">
+      <input type="hidden" name="mode" data-token-mode value="verify">
+    </form>
+    <noscript><p class="mt-4 text-error">{{ __('Activa JavaScript para verificar el enlace.', 'motorlan-portal')|e }}</p></noscript>
+  </div>
+
+  {%- elseif status == 'verified' or status == 'already_verified' %}
+  <div{% if status == 'verified' and not logged_in %} x-data="{ n: 5 }" x-init="const t = setInterval(() => { if (--n <= 0) { clearInterval(t); location.href = {{ ml_json(links.login)|e('html_attr') }} } }, 1000)"{% endif %}>
+    <span class="ml-auth-card__icon ml-c-success">{{ ui.icon('circle-check') }}</span>
+    <h2 class="ml-h5 mb-2 font-medium">{{ __('¡Email verificado!', 'motorlan-portal')|e }}</h2>
+    <p class="mb-2 text-medium-emphasis">{{ status == 'already_verified'
+      ? __('Tu cuenta ya estaba verificada. Ya puedes iniciar sesión.', 'motorlan-portal')|e
+      : __('Tu cuenta ha sido activada con éxito. Ya puedes acceder a todas las funcionalidades de Motorlan.', 'motorlan-portal')|e }}</p>
+    {%- if status == 'verified' and not logged_in %}
+    {%- set countdown = __('Serás redirigido al login en %s segundos. Usa tus credenciales para entrar.', 'motorlan-portal') -%}
+    <p class="mb-6 font-bold" x-text="{{ ml_json(countdown)|e('html_attr') }}.replace('%s', n)">{{ countdown|format(5)|e }}</p>
+    {%- endif %}
+    <a href="{{ links.login|e('html_attr') }}" class="ml-btn ml-btn--filled ml-c-primary mt-4">{{ logged_in ? __('Continuar', 'motorlan-portal')|e : __('Ir al login ahora', 'motorlan-portal')|e }}</a>
+  </div>
+
+  {%- elseif status == 'email_changed' %}
+  <span class="ml-auth-card__icon ml-c-success">{{ ui.icon('mail-check') }}</span>
+  <h2 class="ml-h5 mb-2 font-medium">{{ __('¡Email actualizado!', 'motorlan-portal')|e }}</h2>
+  <p class="mb-6 text-medium-emphasis">{{ __('A partir de ahora usa tu nuevo email para iniciar sesión y recibir los avisos de Motorlan.', 'motorlan-portal')|e }}</p>
+  <a href="{{ logged_in ? links.profile|e('html_attr') : links.login|e('html_attr') }}" class="ml-btn ml-btn--filled ml-c-primary">{{ logged_in ? __('Ir a mi perfil', 'motorlan-portal')|e : __('Ir al login ahora', 'motorlan-portal')|e }}</a>
+
+  {%- elseif status == 'resent' %}
+  <span class="ml-auth-card__icon">{{ ui.icon('mail-forward') }}</span>
+  <h2 class="ml-h5 mb-2 font-medium">{{ __('Te hemos enviado un nuevo enlace', 'motorlan-portal')|e }}</h2>
+  <p class="mb-6 text-medium-emphasis">{{ __('Revisa tu correo (también la carpeta de spam) y pulsa el enlace para activar tu cuenta. El enlace caduca en 24 horas.', 'motorlan-portal')|e }}</p>
+  <a href="{{ links.login|e('html_attr') }}" class="ml-btn ml-btn--outlined ml-c-primary">{{ __('Volver al login', 'motorlan-portal')|e }}</a>
+
+  {%- else %}
+  {%- set can_resend = mode == 'verify' and state.token|default('') != '' and state.code|default('') != 'invalid_token' -%}
+  <span class="ml-auth-card__icon ml-c-error">{{ ui.icon('alert-triangle') }}</span>
+  <h2 class="ml-h5 mb-2 font-medium">{{ __('Error de verificación', 'motorlan-portal')|e }}</h2>
+  <p class="mb-6 text-error">{{ state.error|default('')|e }}</p>
+  {%- if mode == 'verify' %}
+  <p class="mb-6 text-sm text-medium-emphasis">{{ can_resend
+    ? __('Puedes solicitar un nuevo enlace de verificación. Si el problema persiste, contacta con soporte.', 'motorlan-portal')|e
+    : __('Inicia sesión con tu email y contraseña: si la cuenta no está activada, te enviaremos un nuevo enlace automáticamente.', 'motorlan-portal')|e }}</p>
+  {%- else %}
+  <p class="mb-6 text-sm text-medium-emphasis">{{ __('Puedes volver a cambiar el email desde tu perfil para recibir un enlace nuevo.', 'motorlan-portal')|e }}</p>
+  {%- endif %}
+  <div class="flex flex-wrap justify-center gap-2">
+    {%- if can_resend %}
+    <form {{ auth.form_attrs(action) }}>
+      {{ auth.hidden(nonce) }}
+      <input type="hidden" name="token" value="{{ state.token|e('html_attr') }}">
+      <input type="hidden" name="mode" value="verify">
+      <input type="hidden" name="do" value="resend">
+      <button type="submit" class="ml-btn ml-btn--filled ml-c-primary ml-auth-submit">{{ __('Solicitar nuevo enlace', 'motorlan-portal')|e }}</button>
+    </form>
+    {%- endif %}
+    {%- if mode == 'email_change' and logged_in %}
+    <a href="{{ links.profile|e('html_attr') }}" class="ml-btn ml-btn--filled ml-c-primary">{{ __('Ir a mi perfil', 'motorlan-portal')|e }}</a>
+    {%- endif %}
+    <a href="{{ links.login|e('html_attr') }}" class="ml-btn ml-btn--outlined ml-c-primary">{{ __('Volver al login', 'motorlan-portal')|e }}</a>
+  </div>
+  {%- endif %}
+</div>

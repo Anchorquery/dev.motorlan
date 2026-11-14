@@ -1,0 +1,21 @@
+{#
+  Compartir publicación (ProductDetails.vue): WhatsApp, Telegram, email y copiar enlace.
+  Enlaces normales (funcionan sin JS); copiar usa el portapapeles y avisa con el toast.
+  Variables: title · url
+#}
+{%- set text = __('Echa un vistazo a %s en Motorlan', 'motorlan-portal')|format(title) -%}
+{% embed 'components/dialog.twig' with { id: 'ml-share', title: __('Compartir publicación', 'motorlan-portal'), max_width: '400px', text: text, url: url, share_title: title } %}
+  {% block content %}
+  {%- import 'components/icon.twig' as ui -%}
+  <div class="flex flex-col gap-3">
+    <a class="ml-btn ml-btn--outlined ml-btn--block !h-12 !justify-start" style="--c:#25D366;--c-dark:#1da851" target="_blank" rel="noopener"
+       href="https://wa.me/?text={{ (text ~ ' ' ~ url)|url_encode|e('html_attr') }}">{{ ui.icon('brand-whatsapp') }}<span>{{ __('WhatsApp', 'motorlan-portal')|e }}</span></a>
+    <a class="ml-btn ml-btn--outlined ml-btn--block !h-12 !justify-start" style="--c:#0088cc;--c-dark:#0077b3" target="_blank" rel="noopener"
+       href="https://t.me/share/url?url={{ url|url_encode|e('html_attr') }}&amp;text={{ text|url_encode|e('html_attr') }}">{{ ui.icon('brand-telegram') }}<span>{{ __('Telegram', 'motorlan-portal')|e }}</span></a>
+    <a class="ml-btn ml-btn--outlined ml-c-primary ml-btn--block !h-12 !justify-start"
+       href="mailto:?subject={{ share_title|url_encode|e('html_attr') }}&amp;body={{ (text ~ ' ' ~ url)|url_encode|e('html_attr') }}">{{ ui.icon('mail') }}<span>{{ __('Email', 'motorlan-portal')|e }}</span></a>
+    <button type="button" class="ml-btn ml-btn--outlined ml-c-secondary ml-btn--block !h-12 !justify-start"
+            @click="navigator.clipboard && navigator.clipboard.writeText({{ ml_json(url)|e('html_attr') }}).then(() => $store.toast.show({{ ml_json(__('Enlace copiado', 'motorlan-portal'))|e('html_attr') }}, 'success')); close()">{{ ui.icon('copy') }}<span>{{ __('Copiar enlace', 'motorlan-portal')|e }}</span></button>
+  </div>
+  {% endblock %}
+{% endembed %}

@@ -7,10 +7,10 @@
     {% endembed %}
   Se monta en #ml-overlays (lo ponen los layouts). Esc o clic en el fondo cierran; el foco entra en el diálogo al abrirlo.
   Variables: title · subtitle · max_width (def. 600px) · open (abierto al cargar) · persistent (sin cierre por fondo/Esc)
-  Para abrirlo desde fuera: id="…" y window.dispatchEvent(new CustomEvent('ml-dialog', { detail: 'id' })).
+  Para abrirlo desde fuera: id="…" y window.dispatchEvent(new CustomEvent('ml-dialog', { detail: 'id' })); para cerrarlo, 'ml-dialog-close'.
 #}
 {%- import 'components/icon.twig' as ui -%}
-<div x-data="mlDialog({{ open|default(false) ? 'true' : 'false' }})"{% if id|default(false) %} id="{{ id|e('html_attr') }}" @ml-dialog.window="$event.detail === $el.id && show()"{% endif %} class="contents">
+<div x-data="mlDialog({{ open|default(false) ? 'true' : 'false' }})"{% if id|default(false) %} id="{{ id|e('html_attr') }}" @ml-dialog.window="$event.detail === $el.id && show()" @ml-dialog-close.window="$event.detail === $el.id && close()"{% endif %} class="contents">
   {% block activator %}{% endblock %}
   <template x-teleport="#ml-overlays">
     {# Un único x-show (los x-show anidados con transición se bloquean al cerrar y reabrir);
