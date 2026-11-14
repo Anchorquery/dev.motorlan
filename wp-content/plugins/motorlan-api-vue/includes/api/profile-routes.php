@@ -354,29 +354,18 @@ function motorlan_send_email_change_confirmation(WP_User $user, $new_email, $url
     try {
         $subject = __('Confirma tu nuevo email', 'motorlan-api-vue');
 
-        $content  = '<h1>' . esc_html__('Confirma tu nuevo email', 'motorlan-api-vue') . '</h1>';
-        $content .= '<p>' . sprintf(esc_html__('Hola %s,', 'motorlan-api-vue'), esc_html($user->display_name)) . '</p>';
-        $content .= '<p>' . sprintf(
-            esc_html__('Has solicitado usar %s como email de tu cuenta de Motorlan. Para confirmarlo, haz clic en el siguiente botón:', 'motorlan-api-vue'),
+        $content  = Motorlan_Email::h1($subject);
+        $content .= Motorlan_Email::greeting($user);
+        $content .= Motorlan_Email::p(sprintf(
+            wp_kses(__('Has solicitado usar %s como email de tu cuenta de Motorlan. Para confirmarlo, haz clic en el siguiente botón:', 'motorlan-api-vue'), array()),
             '<strong>' . esc_html($new_email) . '</strong>'
-        ) . '</p>';
-        $content .= '<div style="text-align: center;"><a href="' . esc_url($url) . '" class="button">' . esc_html__('Confirmar mi nuevo email', 'motorlan-api-vue') . '</a></div>';
-        $content .= '<p>' . esc_html__('Este enlace expirará en 24 horas. Hasta que lo confirmes, tu cuenta seguirá usando el email anterior.', 'motorlan-api-vue') . '</p>';
-        $content .= '<p>' . esc_html__('Si el botón no funciona, copia y pega el siguiente enlace en tu navegador:', 'motorlan-api-vue') . '</p>';
-        $content .= '<p style="word-break: break-all;"><a href="' . esc_url($url) . '">' . esc_html($url) . '</a></p>';
-        $content .= '<div class="info-box">' . esc_html__('Si no has solicitado este cambio, ignora este mensaje: tu cuenta no se modificará.', 'motorlan-api-vue') . '</div>';
+        ));
+        $content .= Motorlan_Email::button(__('Confirmar mi nuevo email', 'motorlan-api-vue'), $url);
+        $content .= Motorlan_Email::p(esc_html__('Este enlace expirará en 24 horas. Hasta que lo confirmes, tu cuenta seguirá usando el email anterior.', 'motorlan-api-vue'));
+        $content .= Motorlan_Email::link_fallback($url, __('Si el botón no funciona, copia y pega el siguiente enlace en tu navegador:', 'motorlan-api-vue'));
+        $content .= Motorlan_Email::notice(esc_html__('Si no has solicitado este cambio, ignora este mensaje: tu cuenta no se modificará.', 'motorlan-api-vue'), 'info');
 
-        $body = $content;
-        $base_template = defined('MOTORLAN_API_VUE_PATH') ? MOTORLAN_API_VUE_PATH . 'includes/email-templates/base.php' : '';
-        if ($base_template && file_exists($base_template)) {
-            $args = ['user' => $user, 'title' => $subject];
-            ob_start();
-            include $base_template;
-            $base_html = ob_get_clean();
-            $body = str_replace(['{{subject}}', '{{content}}'], [esc_html($subject), $content], $base_html);
-        }
-
-        return wp_mail($new_email, '[Motorlan] ' . $subject, $body, ['Content-Type: text/html; charset=UTF-8']);
+        return Motorlan_Notification_Manager::send_custom_email($new_email, $subject, $content, array('user' => $user));
     } finally {
         if ($switched) {
             restore_previous_locale();

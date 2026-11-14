@@ -1,29 +1,23 @@
 <?php
 /**
- * Email template for password reset verification code.
+ * Email — código de verificación para cambiar la contraseña.
  *
- * @var array $args
+ * @var array $args title, message, data (code, expires_in_minutes), user.
  */
 
 if ( ! defined( 'WPINC' ) ) {
     die;
 }
 
-$code       = $args['data']['code'] ?? '';
-$user       = $args['user'] ?? null;
-$first_name = $user && ! empty( $user->first_name ) ? $user->first_name : ( $user->display_name ?? '' );
-?>
-<h2 class="h1" style="margin:0 0 16px;font-size:24px;line-height:30px;font-weight:700;color:#111827;">Código de verificación</h2>
-<p style="margin:0 0 16px;">Hola <?php echo esc_html( $first_name ); ?>,</p>
-<p style="margin:0 0 16px;">Tu código para confirmar el cambio de contraseña es:</p>
-<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 24px;">
-    <tr>
-        <td align="center" style="background:#f3f6f9;border:1px solid #e5e7eb;padding:24px;border-radius:10px;">
-            <div style="font-size:32px;font-weight:700;letter-spacing:8px;color:#005b96;font-family:'Courier New',Courier,monospace;">
-                <?php echo esc_html( $code ); ?>
-            </div>
-        </td>
-    </tr>
-</table>
-<p style="margin:0 0 8px;font-size:13px;color:#6b7280;">Este código expirará en <strong>15 minutos</strong>.</p>
-<p style="margin:16px 0 0;font-size:13px;color:#6b7280;">Si no solicitaste este cambio, ignora este mensaje.</p>
+$data    = Motorlan_Email::data( $args );
+$code    = Motorlan_Email::text( $data, 'code' );
+$minutes = isset( $data['expires_in_minutes'] ) ? max( 1, (int) $data['expires_in_minutes'] ) : 15;
+
+echo Motorlan_Email::h1( __( 'Código de verificación', 'motorlan-api-vue' ) );
+echo Motorlan_Email::greeting( isset( $args['user'] ) ? $args['user'] : null );
+echo Motorlan_Email::p( esc_html__( 'Tu código para confirmar el cambio de contraseña es:', 'motorlan-api-vue' ) );
+if ( '' !== $code ) {
+    echo Motorlan_Email::code_box( $code );
+}
+echo Motorlan_Email::p( esc_html( sprintf( __( 'Este código expirará en %d minutos.', 'motorlan-api-vue' ), $minutes ) ), true );
+echo Motorlan_Email::p( esc_html__( 'Si no solicitaste este cambio, ignora este mensaje.', 'motorlan-api-vue' ), true );

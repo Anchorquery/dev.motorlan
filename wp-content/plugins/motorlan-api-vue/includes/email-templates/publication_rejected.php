@@ -1,36 +1,44 @@
 <?php
-// Arguments available: $args['title'], $args['message'], $args['data'], $args['user']
-$data = $args['data'] ?? [];
-$product_id = $data['post_id'] ?? 0;
-$product_image = get_the_post_thumbnail_url( $product_id, 'medium' );
-$product_title = motorlan_format_motor_name( $product_id );
-$reason = $data['reason'] ?? '';
-$url = get_site_url() . $data['url'];
-?>
+/**
+ * Email — publicación rechazada (para su autor).
+ *
+ * @var array $args title, message, data (post_id, product_title, reason, url), user.
+ */
 
-<h1><?php esc_html_e( 'Publicación Rechazada', 'motorlan-api-vue' ); ?></h1>
+if ( ! defined( 'WPINC' ) ) {
+    die;
+}
 
-<p><?php printf( esc_html__( 'Hola %s,', 'motorlan-api-vue' ), esc_html( $args['user']->display_name ) ); ?></p>
+$data          = Motorlan_Email::data( $args );
+$product_id    = isset( $data['post_id'] ) ? (int) $data['post_id'] : 0;
+$product_title = Motorlan_Email::text( $data, 'product_title' );
+if ( '' === $product_title && $product_id && function_exists( 'motorlan_format_motor_name' ) ) {
+    $product_title = (string) motorlan_format_motor_name( $product_id );
+}
+$product_image = Motorlan_Email::text( $data, 'product_image' );
+if ( '' === $product_image && $product_id && function_exists( 'get_the_post_thumbnail_url' ) ) {
+    $product_image = (string) get_the_post_thumbnail_url( $product_id, 'medium' );
+}
+$reason  = Motorlan_Email::text( $data, 'reason' );
+$message = trim( (string) ( isset( $args['message'] ) ? $args['message'] : '' ) );
+// El listener añade «Motivo: …» al mensaje: se muestra una sola vez, en su propio aviso.
+if ( '' !== $reason && '' !== $message ) {
+    $message = trim( str_replace( sprintf( __( 'Motivo: %s', 'motorlan-api-vue' ), $reason ), '', $message ) );
+}
+$url = Motorlan_Email::link( $data, $args, 'dashboard/publications/publication/list' );
 
-<p><?php echo wp_kses_post( $args['message'] ); ?></p>
-
-<?php if ( ! empty( $reason ) ) : ?>
-<div style="background-color: #FFF0F1; border-left: 4px solid #FF4C51; padding: 15px; margin: 15px 0;">
-    <strong><?php esc_html_e( 'Motivo:', 'motorlan-api-vue' ); ?></strong> <?php echo esc_html($reason); ?>
-</div>
-<?php endif; ?>
-
-<div class="product-card">
-    <?php if ( ! empty( $product_image ) ) : ?>
-        <img src="<?php echo esc_url($product_image); ?>" alt="<?php esc_attr_e( 'Producto', 'motorlan-api-vue' ); ?>" class="product-img">
-    <?php endif; ?>
-    <div class="product-info">
-        <div class="product-title"><?php echo esc_html($product_title); ?></div>
-        <div style="font-size: 14px; color: #FF4C51; font-weight: bold;"><?php esc_html_e( 'Estado: Rechazada', 'motorlan-api-vue' ); ?></div>
-        <div style="font-size: 13px; color: #888; margin-top: 5px;"><?php esc_html_e( 'Puedes editarla y volver a enviarla.', 'motorlan-api-vue' ); ?></div>
-    </div>
-</div>
-
-<div style="text-align: center;">
-    <a href="<?php echo esc_url($url); ?>" class="button"><?php esc_html_e( 'Editar Publicación', 'motorlan-api-vue' ); ?></a>
-</div>
+echo Motorlan_Email::h1( __( 'Publicación Rechazada', 'motorlan-api-vue' ) );
+echo Motorlan_Email::greeting( isset( $args['user'] ) ? $args['user'] : null );
+if ( '' !== $message ) {
+    echo Motorlan_Email::p( esc_html( $message ) );
+}
+if ( '' !== $reason ) {
+    echo Motorlan_Email::notice( '<strong>' . esc_html__( 'Motivo:', 'motorlan-api-vue' ) . '</strong> ' . nl2br( esc_html( $reason ) ), 'error' );
+}
+echo Motorlan_Email::product_card(
+    $product_title,
+    $product_image,
+    array( esc_html__( 'Puedes editarla y volver a enviarla.', 'motorlan-api-vue' ) ),
+    Motorlan_Email::chip( __( 'Estado: Rechazada', 'motorlan-api-vue' ), 'error' )
+);
+echo Motorlan_Email::button( __( 'Editar Publicación', 'motorlan-api-vue' ), $url );

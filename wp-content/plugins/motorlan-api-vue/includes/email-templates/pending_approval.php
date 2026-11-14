@@ -1,59 +1,45 @@
 <?php
-// Arguments available: $args['title'], $args['message'], $args['data'], $args['user']
-$data = $args['data'] ?? [];
-$product_id = $data['post_id'] ?? 0;
-$product_image = get_the_post_thumbnail_url( $product_id, 'medium' );
-$product_title = motorlan_format_motor_name( $product_id );
-$url = get_site_url() . $data['url'];
-?>
+/**
+ * Email — publicación pendiente de aprobación (para los administradores).
+ *
+ * @var array $args title, message, data (post_id, product_title, brand, reference, power, speed, url), user.
+ */
 
-<h1><?php esc_html_e( 'Solicitud de Publicación', 'motorlan-api-vue' ); ?></h1>
+if ( ! defined( 'WPINC' ) ) {
+    die;
+}
 
-<p><?php esc_html_e( 'Hola Administrador,', 'motorlan-api-vue' ); ?></p>
+$data          = Motorlan_Email::data( $args );
+$product_id    = isset( $data['post_id'] ) ? (int) $data['post_id'] : 0;
+$product_title = Motorlan_Email::text( $data, 'product_title' );
+if ( '' === $product_title && $product_id && function_exists( 'motorlan_format_motor_name' ) ) {
+    $product_title = (string) motorlan_format_motor_name( $product_id );
+}
+$product_image = Motorlan_Email::text( $data, 'product_image' );
+if ( '' === $product_image && $product_id && function_exists( 'get_the_post_thumbnail_url' ) ) {
+    $product_image = (string) get_the_post_thumbnail_url( $product_id, 'medium' );
+}
+$message = trim( (string) ( isset( $args['message'] ) ? $args['message'] : '' ) );
+$url     = Motorlan_Email::link( $data, $args, 'dashboard/admin/approvals' );
 
-<p><?php echo wp_kses_post( $args['message'] ); ?></p>
+echo Motorlan_Email::h1( __( 'Solicitud de Publicación', 'motorlan-api-vue' ) );
+echo Motorlan_Email::p( esc_html__( 'Hola Administrador,', 'motorlan-api-vue' ) );
+if ( '' !== $message ) {
+    echo Motorlan_Email::p( esc_html( $message ) );
+}
 
-<div class="product-card">
-    <?php if ( ! empty( $product_image ) ) : ?>
-        <img src="<?php echo esc_url($product_image); ?>" alt="<?php esc_attr_e( 'Producto', 'motorlan-api-vue' ); ?>" class="product-img">
-    <?php endif; ?>
-    <div class="product-info">
-        <div class="product-title"><?php echo esc_html($product_title); ?></div>
-        
-        <div style="margin-top: 10px; padding: 10px; background-color: #1A1A1A; border-radius: 4px;">
-            <p style="margin: 0; font-size: 13px; color: #BBB;"><?php esc_html_e( 'Detalles Técnicos:', 'motorlan-api-vue' ); ?></p>
-            <table width="100%" style="margin-top: 5px; border-collapse: collapse;">
-                <?php if (!empty($data['brand'])): ?>
-                <tr>
-                    <td style="padding: 2px 0; font-size: 13px; color: #888;"><?php esc_html_e( 'Marca:', 'motorlan-api-vue' ); ?></td>
-                    <td style="padding: 2px 0; font-size: 13px; color: #FFF; text-align: right;"><?php echo esc_html($data['brand']); ?></td>
-                </tr>
-                <?php endif; ?>
-                <?php if (!empty($data['reference'])): ?>
-                <tr>
-                    <td style="padding: 2px 0; font-size: 13px; color: #888;"><?php esc_html_e( 'Referencia:', 'motorlan-api-vue' ); ?></td>
-                    <td style="padding: 2px 0; font-size: 13px; color: #FFF; text-align: right;"><?php echo esc_html($data['reference']); ?></td>
-                </tr>
-                <?php endif; ?>
-                <?php if (!empty($data['power'])): ?>
-                <tr>
-                    <td style="padding: 2px 0; font-size: 13px; color: #888;"><?php esc_html_e( 'Potencia:', 'motorlan-api-vue' ); ?></td>
-                    <td style="padding: 2px 0; font-size: 13px; color: #FFF; text-align: right;"><?php echo esc_html($data['power']); ?></td>
-                </tr>
-                <?php endif; ?>
-                <?php if (!empty($data['speed'])): ?>
-                <tr>
-                    <td style="padding: 2px 0; font-size: 13px; color: #888;"><?php esc_html_e( 'Velocidad:', 'motorlan-api-vue' ); ?></td>
-                    <td style="padding: 2px 0; font-size: 13px; color: #FFF; text-align: right;"><?php echo esc_html($data['speed']); ?></td>
-                </tr>
-                <?php endif; ?>
-            </table>
-        </div>
+echo Motorlan_Email::product_card(
+    $product_title,
+    $product_image,
+    array(),
+    Motorlan_Email::chip( __( 'Estado: Pendiente de Aprobación', 'motorlan-api-vue' ), 'warning' )
+);
 
-        <div style="margin-top: 15px; font-size: 14px; color: #E68F3C; font-weight: bold;"><?php esc_html_e( 'Estado: Pendiente de Aprobación', 'motorlan-api-vue' ); ?></div>
-    </div>
-</div>
+echo Motorlan_Email::key_values( array(
+    __( 'Marca:', 'motorlan-api-vue' )      => Motorlan_Email::text( $data, 'brand' ),
+    __( 'Referencia:', 'motorlan-api-vue' ) => Motorlan_Email::text( $data, 'reference' ),
+    __( 'Potencia:', 'motorlan-api-vue' )   => Motorlan_Email::text( $data, 'power' ),
+    __( 'Velocidad:', 'motorlan-api-vue' )  => Motorlan_Email::text( $data, 'speed' ),
+) );
 
-<div style="text-align: center; margin-top: 30px;">
-    <a href="<?php echo esc_url($url); ?>" class="button"><?php esc_html_e( 'Acceder al Panel de Aprobación', 'motorlan-api-vue' ); ?></a>
-</div>
+echo Motorlan_Email::button( __( 'Acceder al Panel de Aprobación', 'motorlan-api-vue' ), $url );

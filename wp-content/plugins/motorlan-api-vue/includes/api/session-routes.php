@@ -822,36 +822,32 @@ function motorlan_forgot_password_callback(WP_REST_Request $request)
     // Asunto y plantilla en el idioma del usuario (antes siempre en español)
     $switched = switch_to_locale(get_user_locale($user->ID));
     try {
-        if (class_exists('Motorlan_Notification_Manager')) {
-            $notification_manager = new Motorlan_Notification_Manager();
+        // Motorlan_Notification_Manager se carga siempre con el plugin: el antiguo «fallback»
+        // con wp_mail() en texto plano era código inalcanzable y se ha quitado.
+        $notification_manager = new Motorlan_Notification_Manager();
 
-            // Use direct email sending
-            $notification_manager->send_email_notification_direct(
-                $user->ID,
-                'password_reset',
-                __('Restablecer contraseña - Motorlan', 'motorlan-api-vue'),
-                __('Has solicitado restablecer tu contraseña.', 'motorlan-api-vue'),
-                [
-                    'url' => $reset_url,
-                    'key' => $reset_key,
-                    'login' => $user->user_login
-                ]
-            );
+        // Envío directo con la plantilla password_reset
+        $notification_manager->send_email_notification_direct(
+            $user->ID,
+            'password_reset',
+            __('Restablecer contraseña', 'motorlan-api-vue'),
+            __('Has solicitado restablecer tu contraseña.', 'motorlan-api-vue'),
+            [
+                'url' => $reset_url,
+                'key' => $reset_key,
+                'login' => $user->user_login
+            ]
+        );
 
-            // Also create notification in DB for history
-            $notification_manager->create_notification(
-                $user->ID,
-                'password_reset',
-                __('Solicitud de restablecimiento de contraseña', 'motorlan-api-vue'),
-                __('Has solicitado un cambio de contraseña. Revisa tu email.', 'motorlan-api-vue'),
-                [],
-                ['web']
-            );
-        } else {
-            // Fallback
-            $message = sprintf(__("Hola %s,\n\nVisita: %s", 'motorlan-api-vue'), $user->display_name, $reset_url);
-            wp_mail($user->user_email, __('Restablecer contraseña - Motorlan', 'motorlan-api-vue'), $message);
-        }
+        // Also create notification in DB for history
+        $notification_manager->create_notification(
+            $user->ID,
+            'password_reset',
+            __('Solicitud de restablecimiento de contraseña', 'motorlan-api-vue'),
+            __('Has solicitado un cambio de contraseña. Revisa tu email.', 'motorlan-api-vue'),
+            [],
+            ['web']
+        );
     } finally {
         if ($switched) {
             restore_previous_locale();

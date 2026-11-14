@@ -46,6 +46,7 @@ require_once MOTORLAN_API_VUE_PATH . 'includes/api/reviews-routes.php';
 require_once MOTORLAN_API_VUE_PATH . 'includes/classes/class-motorlan-rate-limiter.php'; // Security Rate Limiter
 require_once MOTORLAN_API_VUE_PATH . 'includes/classes/class-motorlan-security-logger.php'; // Security Logger
 
+require_once MOTORLAN_API_VUE_PATH . 'includes/classes/class-motorlan-email.php'; // Componentes y utilidades de los emails
 require_once MOTORLAN_API_VUE_PATH . 'includes/classes/class-motorlan-notification-manager.php';
 require_once MOTORLAN_API_VUE_PATH . 'includes/classes/class-motorlan-notification-listener.php';
 require_once MOTORLAN_API_VUE_PATH . 'includes/i18n/motorlan-i18n.php';

@@ -1,77 +1,60 @@
 <?php
-// Arguments available: $args['title'], $args['message'], $args['data'], $args['user']
-$data = $args['data'] ?? [];
-$product_image = $data['product_image'] ?? '';
-$product_title = $data['product_title'] ?? '';
-$sender_name = $data['sender_name'] ?? 'Un usuario';
-$message_full = $data['message_full'] ?? '...';
-$url = get_site_url() . $data['url'];
-?>
+/**
+ * Email — mensaje de chat (consulta de producto o mensaje de compra) para el destinatario,
+ * usuario registrado o invitado (data.direct_email, sin $args['user']).
+ *
+ * @var array $args title, message, data (sender_name, message_full, product_*, url), user.
+ */
 
-<h1><?php esc_html_e( 'Nuevo Mensaje', 'motorlan-api-vue' ); ?></h1>
+if ( ! defined( 'WPINC' ) ) {
+    die;
+}
 
-<?php 
-$is_guest = empty($args['user']) || (isset($args['user']->ID) && $args['user']->ID === 0);
-$display_name = !empty($args['user']) ? $args['user']->display_name : __('Invitado', 'motorlan-api-vue');
-?>
+$data          = Motorlan_Email::data( $args );
+$user          = isset( $args['user'] ) ? $args['user'] : null;
+$is_guest      = ! is_object( $user ) || empty( $user->ID );
+$product_title = Motorlan_Email::text( $data, 'product_title' );
+$sender_name   = Motorlan_Email::sender_label( Motorlan_Email::text( $data, 'sender_name' ) );
+$message_full  = Motorlan_Email::text( $data, 'message_full' );
+$url           = Motorlan_Email::link( $data, $args, 'dashboard/inquiries' );
 
-<p><?php printf( esc_html__( 'Hola %s,', 'motorlan-api-vue' ), esc_html( $display_name ) ); ?></p>
+echo Motorlan_Email::h1( __( 'Nuevo Mensaje', 'motorlan-api-vue' ) );
+echo Motorlan_Email::greeting( $is_guest ? null : $user );
 
-<?php if ( $is_guest ) : ?>
-    <p><?php esc_html_e( 'Has recibido una respuesta a tu consulta en Motorlan.', 'motorlan-api-vue' ); ?></p>
-<?php endif; ?>
+if ( $is_guest ) {
+    echo Motorlan_Email::p( esc_html__( 'Has recibido una respuesta a tu consulta en Motorlan.', 'motorlan-api-vue' ) );
+}
 
-<p><?php printf( __( '<strong>%s</strong> te ha enviado un mensaje:', 'motorlan-api-vue' ), esc_html( $sender_name ) ); ?></p>
+echo Motorlan_Email::p( sprintf(
+    wp_kses( __( '<strong>%s</strong> te ha enviado un mensaje:', 'motorlan-api-vue' ), array( 'strong' => array() ) ),
+    esc_html( $sender_name )
+) );
 
-<div style="background-color: #f0f0f5; border-left: 4px solid #DA291C; padding: 15px; margin: 15px 0; font-style: italic;">
-    "<?php echo nl2br(esc_html($message_full)); ?>"
-</div>
+if ( '' !== $message_full ) {
+    echo Motorlan_Email::quote( $message_full );
+}
 
-<?php if ( ! empty( $product_image ) || ! empty( $product_title ) ) : ?>
-<div class="product-card">
-    <?php if ( ! empty( $product_image ) ) : ?>
-        <img src="<?php echo esc_url($product_image); ?>" alt="<?php esc_attr_e( 'Producto', 'motorlan-api-vue' ); ?>" class="product-img">
-    <?php endif; ?>
-    <div class="product-info">
-        <?php if ( ! empty( $product_title ) ) : ?>
-            <div class="product-title"><?php echo esc_html($product_title); ?></div>
-        <?php endif; ?>
-        <div style="font-size: 14px; color: #888;"><?php esc_html_e( 'Sobre la publicación', 'motorlan-api-vue' ); ?></div>
-    </div>
-</div>
-<?php endif; ?>
+if ( '' !== $product_title || '' !== Motorlan_Email::text( $data, 'product_image' ) ) {
+    echo Motorlan_Email::product_card(
+        $product_title,
+        Motorlan_Email::text( $data, 'product_image' ),
+        array( esc_html__( 'Sobre la publicación', 'motorlan-api-vue' ) )
+    );
+}
 
-<div style="text-align: center; margin-bottom: 25px;">
-    <a href="<?php echo esc_url($url); ?>" class="button"><?php esc_html_e( 'Ver y Responder', 'motorlan-api-vue' ); ?></a>
-</div>
+echo Motorlan_Email::button( __( 'Ver y Responder', 'motorlan-api-vue' ), $url );
 
-<?php
-$expires_at = isset($data['chat_link_expires_at']) ? (int) $data['chat_link_expires_at'] : 0;
-if ( $is_guest && $expires_at > 0 ) :
-    $expires_display = wp_date( get_option('date_format') . ' ' . get_option('time_format'), $expires_at );
-?>
-<p style="text-align:center; font-size:12px; color:#888; margin: 0 0 25px;">
-    <?php printf( esc_html__( 'Este enlace caduca el %s.', 'motorlan-api-vue' ), esc_html( $expires_display ) ); ?>
-</p>
-<?php endif; ?>
+$expires_at = isset( $data['chat_link_expires_at'] ) ? (int) $data['chat_link_expires_at'] : 0;
+if ( $is_guest && $expires_at > 0 ) {
+    $expires_display = wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $expires_at );
+    echo Motorlan_Email::p( esc_html( sprintf( __( 'Este enlace caduca el %s.', 'motorlan-api-vue' ), $expires_display ) ), true );
+}
 
-<?php if ( $is_guest ) : ?>
-<div style="background-color: #F9FAFB; border: 1px solid #EAECF0; padding: 30px; border-radius: 12px; margin-top: 40px; text-align: center;">
-    <h2 style="margin-top: 0; margin-bottom: 12px; color: #101828; font-size: 20px; font-weight: 700; letter-spacing: -0.02em;">
-        <?php esc_html_e( '¡Saca el máximo provecho a Motorlan!', 'motorlan-api-vue' ); ?>
-    </h2>
-    <p style="font-size: 15px; color: #475467; line-height: 1.6; margin-bottom: 24px; max-width: 480px; margin-left: auto; margin-right: auto;">
-        <?php esc_html_e( 'Crea una cuenta gratuita para guardar tus conversaciones, marcar favoritos y recibir avisos cuando alguien te responda.', 'motorlan-api-vue' ); ?>
-    </p>
-    <?php
-        $recipient_user_id = isset($args['user']) && is_object($args['user']) ? (int) $args['user']->ID : null;
-        $register_url = function_exists('motorlan_localized_page_url_absolute')
-            ? motorlan_localized_page_url_absolute('register', '', $recipient_user_id)
-            : trailingslashit(get_site_url()) . 'register';
-    ?>
-    <a href="<?php echo esc_url($register_url); ?>"
-       style="background-color: #DA291C; color: #ffffff !important; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block; font-size: 15px; box-shadow: 0px 1px 2px rgba(16, 24, 40, 0.05);">
-        <?php esc_html_e( 'Crear mi cuenta gratis', 'motorlan-api-vue' ); ?>
-    </a>
-</div>
-<?php endif; ?>
+if ( $is_guest ) {
+    $register_path = function_exists( 'motorlan_localized_page_url' ) ? motorlan_localized_page_url( 'register' ) : '/register/';
+    echo Motorlan_Email::panel(
+        Motorlan_Email::h2( __( '¡Saca el máximo provecho a Motorlan!', 'motorlan-api-vue' ) )
+        . Motorlan_Email::p( esc_html__( 'Crea una cuenta gratuita para guardar tus conversaciones, marcar favoritos y recibir avisos cuando alguien te responda.', 'motorlan-api-vue' ) )
+        . Motorlan_Email::button( __( 'Crear mi cuenta gratis', 'motorlan-api-vue' ), Motorlan_Email::abs_url( $register_path, 'register' ) )
+    );
+}

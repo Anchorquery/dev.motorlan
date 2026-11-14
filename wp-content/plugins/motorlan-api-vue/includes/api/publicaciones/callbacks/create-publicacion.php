@@ -452,12 +452,20 @@ function motorlan_create_publicacion_callback(WP_REST_Request $request) {
             }
             $notification_manager = new Motorlan_Notification_Manager();
             $admins = get_users(['role' => 'administrator']);
+            $author_name = Motorlan_Email::party_name(wp_get_current_user(), __('Un usuario', 'motorlan-api-vue'));
             foreach ($admins as $admin) {
+                // No avisar al propio autor si es administrador
+                if ((int) $admin->ID === (int) $user_id) {
+                    continue;
+                }
+                // Cada administrador en su idioma
+                $switched = switch_to_locale(get_user_locale($admin->ID));
+                try {
                 $notification_manager->create_notification(
                     $admin->ID,
                     'pending_approval',
-                    'Nueva publicación pendiente',
-                    'El usuario ' . wp_get_current_user()->display_name . ' ha creado una nueva publicación que requiere tu aprobación.',
+                    __('Nueva publicación pendiente', 'motorlan-api-vue'),
+                    sprintf(__('El usuario %s ha creado una nueva publicación que requiere tu aprobación.', 'motorlan-api-vue'), $author_name),
                     [
                         'post_id'       => $post_id,
                         'author_id'     => $user_id,
@@ -471,6 +479,11 @@ function motorlan_create_publicacion_callback(WP_REST_Request $request) {
                     ],
                     ['web', 'email']
                 );
+                } finally {
+                    if ($switched) {
+                        restore_previous_locale();
+                    }
+                }
             }
         }
     }
