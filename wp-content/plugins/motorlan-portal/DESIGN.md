@@ -97,6 +97,10 @@ de Mi perfil. Sin selector de tema: solo claro.
   contraseña antes de enviar.
 - Favoritos: el filtro de estado incluye «En revisión» (`pending`), que la SPA mostraba como
   «Desconocido».
+- Administración: «Cambiar estado» y «Eliminar» son botones de la fila (en la SPA, un menú
+  «⋮»): `.ml-table-shell` tiene `overflow-x` y recortaría el desplegable. El orden de la tabla
+  es un desplegable en vez de cabeceras ordenables. En móvil las filas son las tarjetas de
+  `components/table.twig` (la SPA tenía unas propias con el mismo contenido).
 
 ## Convenciones de Twig
 

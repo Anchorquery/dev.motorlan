@@ -1,0 +1,29 @@
+{#
+  Galería de la ficha (ProductImage.vue): destacada + galería, flechas y miniaturas.
+  Variables: p (Support\Store::product). La usan pages/ficha.twig y pages/admin-vista-previa.twig.
+#}
+{%- import 'components/icon.twig' as ui -%}
+<div class="ml-gallery" x-data="{ i: 0, n: {{ p.images|length }} }" @keydown.left="i = (i + n - 1) % n" @keydown.right="i = (i + 1) % n">
+  <div class="ml-gallery__main">
+    {%- if p.images %}
+      {%- for img in p.images %}
+      <img src="{{ img.src|e('html_attr') }}" alt="{{ img.alt|e('html_attr') }}"{% if loop.first %} fetchpriority="high"{% else %} loading="lazy" x-cloak{% endif %} x-show="i === {{ loop.index0 }}">
+      {%- endfor %}
+      {%- if p.images|length > 1 %}
+      <button type="button" class="ml-icon-btn ml-gallery__nav start-2 !bg-white/85 shadow-sm" @click="i = (i + n - 1) % n" aria-label="{{ __('Imagen anterior', 'motorlan-portal')|e('html_attr') }}">{{ ui.icon('chevron-left') }}</button>
+      <button type="button" class="ml-icon-btn ml-gallery__nav end-2 !bg-white/85 shadow-sm" @click="i = (i + 1) % n" aria-label="{{ __('Imagen siguiente', 'motorlan-portal')|e('html_attr') }}">{{ ui.icon('chevron-right') }}</button>
+      {%- endif %}
+    {%- else %}
+      {{ ui.icon('photo', 'size-16') }}
+    {%- endif %}
+  </div>
+  {%- if p.images|length > 1 %}
+  <div class="ml-gallery__thumbs">
+    {%- for img in p.images %}
+    <button type="button" class="ml-gallery__thumb" @click="i = {{ loop.index0 }}" :aria-current="i === {{ loop.index0 }} ? 'true' : 'false'" aria-label="{{ __('Ver imagen %d', 'motorlan-portal')|format(loop.index)|e('html_attr') }}">
+      <img src="{{ img.thumb|e('html_attr') }}" alt="" loading="lazy">
+    </button>
+    {%- endfor %}
+  </div>
+  {%- endif %}
+</div>

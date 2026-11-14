@@ -1,0 +1,30 @@
+{#
+  Documentación adicional (ProductDocs.vue). Variables: p (Support\Store::product).
+  La usan pages/ficha.twig y pages/admin-vista-previa.twig.
+#}
+{%- import 'components/icon.twig' as ui -%}
+<section class="ml-card">
+  <div class="ml-card__header"><h2 class="ml-card__title flex items-center gap-2 uppercase">{{ ui.icon('files', 'size-5 text-error') }}{{ __('Documentación adicional', 'motorlan-portal')|e }}</h2></div>
+  <div class="ml-card__body">
+    {%- if p.docs %}
+    <ul class="overflow-hidden rounded-lg border border-border">
+      {%- for doc in p.docs %}
+      <li class="{{ not loop.last ? 'border-b border-border' : '' }}">
+        <a href="{{ doc.url|e('html_attr') }}" target="_blank" rel="noopener noreferrer" class="flex items-center gap-3 px-4 py-3 text-high-emphasis no-underline hover:bg-[var(--ml-hover)]">
+          {%- set ext = doc.url|split('.')|last|lower %}
+          {%- if ext == 'pdf' %}{{ ui.icon('file-type-pdf', 'size-6 text-error') }}
+          {%- elseif ext in ['doc', 'docx'] %}{{ ui.icon('file-type-doc', 'size-6 text-info') }}
+          {%- elseif ext in ['xls', 'xlsx'] %}{{ ui.icon('file-type-xls', 'size-6 text-success') }}
+          {%- elseif ext in ['jpg', 'jpeg', 'png', 'gif', 'webp'] %}{{ ui.icon('file-type-jpg', 'size-6 text-primary') }}
+          {%- else %}{{ ui.icon('file-text', 'size-6 text-primary') }}{% endif %}
+          <span class="min-w-0 flex-1 truncate">{{ doc.name|e }}</span>
+          {{ ui.icon('external-link', 'size-4 text-disabled') }}
+        </a>
+      </li>
+      {%- endfor %}
+    </ul>
+    {%- else %}
+    <p class="text-medium-emphasis">{{ __('No hay documentación adjunta.', 'motorlan-portal')|e }}</p>
+    {%- endif %}
+  </div>
+</section>

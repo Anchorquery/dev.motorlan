@@ -116,6 +116,7 @@ Llama a los endpoints de `motorlan-api-vue` dentro del mismo proceso
 | `panel` | `/mi-cuenta/` y `/mi-cuenta/dashboard` → Mis compras; URLs antiguas del panel (`purchases/favorites`, `user/company`, `chat`, `questions/list`…) → su pantalla actual | `PanelController` |
 | `cuenta` | `/mi-cuenta/dashboard/user/account` (y `user/profile`, que redirige aquí) | `CuentaController` |
 | `favoritos` | `/mi-cuenta/dashboard/favorites/list` | `FavoritosController` |
+| `admin` | `/mi-cuenta/dashboard/admin/publications`, `…/admin/approvals` y `…/admin/approvals/preview/{uuid}` (solo `manage_options`) | `AdminController` |
 | `comprador` | `/mi-cuenta/dashboard/purchases/{purchases,inquiries,offers-sent,opinions}` y `purchases/{uuid}` (detalle de compra, también para el vendedor); URLs antiguas del comprador (`purchases`, `purchases/list`, `purchases/chat/{uuid}`, `purchases/questions`) | `CompradorController` |
 
 Las URLs son las de la SPA (`Support\SpaPages`: slugs por idioma y rutas que siguen siendo de
@@ -164,6 +165,28 @@ pantalla aún sin migrar sigue en la SPA sin tocar el menú.
   por email; después se renueva el nonce (la API emite cookie nueva).
 - *Favoritos*: tabla con búsqueda, estado, elementos por página y paginación por HTMX;
   quitar pide confirmación y hace POST a la propia URL (`action=remove`) con los filtros.
+
+**Administración** (sección `admin`, `auth: admin`: sin sesión al login, con sesión y sin
+`manage_options` 403; la API exige además el rol `administrator`). El menú lateral
+(«Administración») y los accesos admin de la barra móvil ya apuntaban a estas URLs de la SPA:
+al encender la sección pasan al portal sin tocar `Support\Nav`.
+
+- *Publicaciones* (`GET /admin/publications`, sin las del propio admin, como la SPA):
+  búsqueda, estado (incluida la papelera), orden (las cabeceras ordenables de la SPA, aquí un
+  desplegable) y paginación por HTMX. Ver (solo publicadas), contactar, editar (pantalla de
+  edición de la SPA/fase 4), cambiar estado (`PUT`; «Papelera» se puede deshacer) y eliminar
+  (`DELETE`, con confirmación: **definitivo**, ver bugs). Cada acción es un diálogo con
+  POST a la propia URL (`action` + `id` + filtros por `hx-include`, nonce `_mlnonce`): el
+  servidor devuelve la tabla y un aviso; el diálogo se cierra solo con `X-Ml-Done: 1`, así
+  que si falla (p. ej. `wp_mail`) se queda abierto con lo escrito.
+- *Aprobaciones* (`GET /admin/pending-publications`, sin paginar en la API: 10 por página en
+  el controlador): marca propuesta como chip, «Consultar precio» con el precio de referencia,
+  aprobar (POST directo) y rechazar (diálogo, motivo obligatorio).
+- *Vista previa* (`GET /publicaciones/uuid/{uuid}`): la ficha con los **mismos parciales** que
+  la tienda (`partials/ficha/{galeria,detalle,info,docs}.twig`), el precio visible como
+  referencia aunque sea «Consultar precio», sin barra inferior en móvil. Aprobar / rechazar
+  vuelven al listado con `?ok=approved|rejected` (aviso con `partials/admin-flash.twig`);
+  corregir la marca propuesta (`POST /admin/update-pending-brand/{id}`) recarga la página.
 
 **Comprador** (`CompradorController`, vistas en `views/{pages,partials}/comprador/`, JS en
 `assets/js/comprador.js`). Todo con `Support\Api` sobre `motorlan/v1`; formularios con POST a
@@ -366,6 +389,16 @@ favoritos (HTMX, quitar con confirmación y volver a añadirlo), Mi perfil (redi
 `user/profile`, guardar, validación, diálogo de contraseña para el email, primer paso del
 cambio de contraseña) y el chat de la ficha con sesión. Con `ML_PANEL_SPA=1` y las
 secciones apagadas captura las referencias de la SPA (`cuenta.png`, `favoritos.png`).
+
+`tests/visual/portal-admin.spec.js` (con `ML_ADMIN_USER`/`ML_ADMIN_PASS` de un administrador
+de la BD local y `ML_NOADMIN_USER`/`ML_NOADMIN_PASS` de un usuario normal): menú, filtros por
+HTMX, cambiar estado (también a la papelera y de vuelta), eliminar, contactar, rechazar con motivo, vista previa con
+corrección de marca, uuid inexistente (404) y 403 sin permiso (también en un POST directo).
+Necesita publicaciones pendientes de prueba de otro usuario con «prueba fase 5» en el título,
+una con `_pending_brand_name`, y otra con «prueba fase 5 borrar» que el test de eliminar borra
+de verdad (hay que volver a crearla); el resto de cambios se deshacen (no aprueban: crearía
+la marca). Con `ML_ADMIN_SPA=1` y la sección apagada captura las
+referencias de la SPA (`admin-*.png`).
 
 `tests/visual/portal-comprador.spec.js` (sección `comprador`): Mis compras (búsqueda HTMX,
 diálogo de valorar sin enviar), detalle (resumen, chat, `?openChat=true`, 404), consultas

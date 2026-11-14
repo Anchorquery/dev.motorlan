@@ -1,0 +1,81 @@
+{#
+  Tabla de aprobaciones pendientes. La pinta pages/admin-aprobaciones.twig y la devuelve
+  AdminController en las peticiones HTMX (paginar, aprobar, rechazar).
+  Variables: table (AdminController::approvals_context) · nonce
+  La API no pagina: el controlador corta de 10 en 10, como la VDataTable de la SPA.
+#}
+{% embed 'components/table.twig' with {
+  id: 'ml-admin-pending',
+  url: table.url,
+  columns: [
+    { label: __('Publicación', 'motorlan-portal') },
+    { label: __('Autor', 'motorlan-portal') },
+    { label: __('Referencia', 'motorlan-portal') },
+    { label: __('Precio', 'motorlan-portal') },
+    { label: __('Acciones', 'motorlan-portal') },
+  ],
+  page: table.page, pages: table.pages, total: table.total,
+} %}
+  {% block rows %}
+    {%- import 'components/chip.twig' as c -%}
+    {%- import 'components/avatar.twig' as a -%}
+    {%- import 'components/icon.twig' as ui -%}
+    {%- for r in table.rows %}
+    <tr data-id="{{ r.id }}">
+      <td data-label="{{ __('Publicación', 'motorlan-portal')|e('html_attr') }}">
+        <div class="flex max-w-[300px] items-center gap-3 py-2">
+          {%- if r.image %}{{ a.avatar({ image: r.image, rounded: true, class: '!size-12 shrink-0 border border-border' }) }}
+          {%- else %}<span class="ml-avatar ml-avatar--rounded ml-c-secondary !size-12 shrink-0">{{ ui.icon('photo', 'size-5') }}</span>{% endif %}
+          <div class="min-w-0">
+            <p class="truncate font-bold text-high-emphasis" title="{{ r.name|e('html_attr') }}">{{ r.name|e }}</p>
+            {%- if r.pending_brand %}
+            <span class="ml-chip ml-chip--sm ml-chip--filled ml-c-warning mt-1" title="{{ __('Nueva marca propuesta por el usuario', 'motorlan-portal')|e('html_attr') }}">{{ ui.icon('tag-starred', 'size-4') }}<span>{{ r.pending_brand|e }}</span></span>
+            {%- elseif r.brand %}
+            <p class="text-xs text-medium-emphasis">{{ r.brand|e }}</p>
+            {%- endif %}
+          </div>
+        </div>
+      </td>
+      <td data-label="{{ __('Autor', 'motorlan-portal')|e('html_attr') }}">
+        <p class="text-sm font-medium text-high-emphasis">{{ r.author.name|e }}</p>
+        {%- if r.author.email %}<p class="text-xs text-medium-emphasis">{{ r.author.email|e }}</p>{% endif %}
+      </td>
+      <td data-label="{{ __('Referencia', 'motorlan-portal')|e('html_attr') }}" class="text-sm text-medium-emphasis">{{ r.reference ? r.reference|e : '—' }}</td>
+      <td data-label="{{ __('Precio', 'motorlan-portal')|e('html_attr') }}">
+        {%- if r.consult %}
+          <span class="font-bold text-warning">{{ __('Consultar precio', 'motorlan-portal')|e }}</span>
+          {%- if r.price %}<span class="block text-xs text-medium-emphasis">{{ __('Referencia: %s', 'motorlan-portal')|format(r.price)|e }}</span>{% endif %}
+        {%- elseif r.price %}<span class="font-bold text-primary">{{ r.price|e }}</span>
+        {%- else %}<span class="text-sm text-medium-emphasis">—</span>{% endif %}
+      </td>
+      <td data-label="{{ __('Acciones', 'motorlan-portal')|e('html_attr') }}">
+        <div class="flex flex-wrap items-center gap-2">
+          <form method="post" action="{{ table.url|e('html_attr') }}" hx-post="{{ table.url|e('html_attr') }}" hx-target="#ml-admin-pending" hx-swap="outerHTML" hx-disabled-elt="find button" class="max-md:w-full">
+            <input type="hidden" name="_mlnonce" value="{{ nonce|e('html_attr') }}">
+            <input type="hidden" name="action" value="approve">
+            <input type="hidden" name="id" value="{{ r.id }}">
+            <input type="hidden" name="page" value="{{ table.page }}">
+            <button type="submit" class="ml-btn ml-btn--tonal ml-btn--sm ml-c-success max-md:w-full">{{ ui.icon('check', 'size-[18px]') }}<span>{{ __('Aprobar', 'motorlan-portal')|e }}</span></button>
+          </form>
+          <button type="button" class="ml-btn ml-btn--tonal ml-btn--sm ml-c-error max-md:w-full"
+                  @click="$dispatch('ml-admin-reject', {{ ml_json({ id: r.id, name: r.name, page: table.page })|e('html_attr') }})">{{ ui.icon('x', 'size-[18px]') }}<span>{{ __('Rechazar', 'motorlan-portal')|e }}</span></button>
+          {%- if r.edit %}
+          <a class="ml-btn ml-btn--text ml-btn--icon ml-btn--sm ml-c-primary" href="{{ r.edit|e('html_attr') }}" title="{{ __('Editar', 'motorlan-portal')|e('html_attr') }}" aria-label="{{ __('Editar', 'motorlan-portal')|e('html_attr') }}">{{ ui.icon('pencil', 'size-[18px]') }}</a>
+          {%- endif %}
+          {%- if r.preview %}
+          <a class="ml-btn ml-btn--text ml-btn--icon ml-btn--sm ml-c-secondary" href="{{ r.preview|e('html_attr') }}" title="{{ __('Previsualizar', 'motorlan-portal')|e('html_attr') }}" aria-label="{{ __('Previsualizar', 'motorlan-portal')|e('html_attr') }}">{{ ui.icon('eye', 'size-[18px]') }}</a>
+          {%- endif %}
+        </div>
+      </td>
+    </tr>
+    {%- endfor %}
+  {% endblock %}
+  {% block empty %}
+    {%- import 'components/empty.twig' as em -%}
+    {%- if table.error %}
+      {{ em.empty({ icon: 'alert-circle', title: __('No se pudieron cargar las aprobaciones.', 'motorlan-portal'), text: __('Inténtalo de nuevo en unos segundos.', 'motorlan-portal') }) }}
+    {%- else %}
+      {{ em.empty({ icon: 'clipboard-check', title: __('No hay publicaciones pendientes', 'motorlan-portal'), text: __('Todo está al día por ahora.', 'motorlan-portal') }) }}
+    {%- endif %}
+  {% endblock %}
+{% endembed %}

@@ -23,30 +23,7 @@
 
   <div class="ml-ficha__top">
     {# ── Galería (ProductImage.vue) ── #}
-    <div class="ml-gallery" x-data="{ i: 0, n: {{ p.images|length }} }" @keydown.left="i = (i + n - 1) % n" @keydown.right="i = (i + 1) % n">
-      <div class="ml-gallery__main">
-        {%- if p.images %}
-          {%- for img in p.images %}
-          <img src="{{ img.src|e('html_attr') }}" alt="{{ img.alt|e('html_attr') }}"{% if loop.first %} fetchpriority="high"{% else %} loading="lazy" x-cloak{% endif %} x-show="i === {{ loop.index0 }}">
-          {%- endfor %}
-          {%- if p.images|length > 1 %}
-          <button type="button" class="ml-icon-btn ml-gallery__nav start-2 !bg-white/85 shadow-sm" @click="i = (i + n - 1) % n" aria-label="{{ __('Imagen anterior', 'motorlan-portal')|e('html_attr') }}">{{ ui.icon('chevron-left') }}</button>
-          <button type="button" class="ml-icon-btn ml-gallery__nav end-2 !bg-white/85 shadow-sm" @click="i = (i + 1) % n" aria-label="{{ __('Imagen siguiente', 'motorlan-portal')|e('html_attr') }}">{{ ui.icon('chevron-right') }}</button>
-          {%- endif %}
-        {%- else %}
-          {{ ui.icon('photo', 'size-16') }}
-        {%- endif %}
-      </div>
-      {%- if p.images|length > 1 %}
-      <div class="ml-gallery__thumbs">
-        {%- for img in p.images %}
-        <button type="button" class="ml-gallery__thumb" @click="i = {{ loop.index0 }}" :aria-current="i === {{ loop.index0 }} ? 'true' : 'false'" aria-label="{{ __('Ver imagen %d', 'motorlan-portal')|format(loop.index)|e('html_attr') }}">
-          <img src="{{ img.thumb|e('html_attr') }}" alt="" loading="lazy">
-        </button>
-        {%- endfor %}
-      </div>
-      {%- endif %}
-    </div>
+    {% include 'partials/ficha/galeria.twig' %}
 
     {# ── Detalle (ProductDetails.vue) ── #}
     <div class="min-w-0">
@@ -57,33 +34,7 @@
         <button type="button" class="ml-ficha__link" @click="$dispatch('ml-dialog', 'ml-share')">{{ ui.icon('share') }}<span>{{ __('Compartir', 'motorlan-portal')|e }}</span></button>
       </div>
 
-      <div class="ml-card ml-card--lg ml-detail">
-        <h2 class="ml-detail__title">{{ p.title|upper|e }}</h2>
-        <div class="ml-detail__grid">
-          <div class="ml-detail__price">
-            {%- if p.show_price %}
-              <span class="text-premium-price text-xl font-bold">{{ p.price_label|e }}</span>
-              {%- if p.consult and p.owner %}<span class="ml-chip ml-chip--sm ml-c-info">{{ __('Referencia', 'motorlan-portal')|e }}</span>{% endif %}
-            {%- else %}
-              {{ ui.icon('currency-euro') }}
-              <span class="{{ p.consult ? 'text-base font-bold text-warning' : 'font-medium' }}">{{ __('Consultar precio', 'motorlan-portal')|e }}</span>
-            {%- endif %}
-          </div>
-          {%- if p.tipo_label %}<div class="ml-detail__item">{{ ui.icon('category') }}<span>{{ p.tipo_label|e }}</span></div>{% endif %}
-          <div class="ml-detail__item">{{ ui.icon('tag') }}<span>{{ p.brand|e }}</span></div>
-          <div class="ml-detail__item">{{ ui.icon('map-pin') }}<span>{{ p.location|e }}</span></div>
-          <div class="ml-detail__item">{{ ui.icon('user') }}<span title="{{ p.seller.name|e('html_attr') }}">{{ p.seller.name|e }}</span>
-            {%- if p.seller.rating is not null %}
-            <span class="ml-rating ms-1" role="img" aria-label="{{ __('Valoración: %s de 5', 'motorlan-portal')|format(p.seller.rating|number_format(1, ',', '.'))|e('html_attr') }}">
-              {%- for s in 1..5 %}{{ ui.icon('star', s <= p.seller.rating|round ? 'fill-current' : '') }}{% endfor -%}
-            </span>
-            {%- endif %}
-          </div>
-          <div class="ml-detail__item">{{ ui.icon('box') }}<span>{{ __('Stock', 'motorlan-portal')|e }}: {{ p.stock is null ? __('N/A', 'motorlan-portal')|e : p.stock }}</span></div>
-          {%- if p.seller.sales is not null %}<div class="ml-detail__item">{{ ui.icon('chart-bar') }}<span>{{ __('Ventas', 'motorlan-portal')|e }}: {{ p.seller.sales }}</span></div>{% endif %}
-          {%- if p.warranty %}<div class="ml-detail__item !text-success">{{ ui.icon('shield-check') }}<span>{{ __('Garantía Motorlan', 'motorlan-portal')|e }}</span></div>{% endif %}
-        </div>
-      </div>
+      {% include 'partials/ficha/detalle.twig' %}
 
       {%- if p.description %}
       {# Ya saneada con wp_kses_post (Store::product). #}
@@ -112,47 +63,10 @@
 
   <div class="ml-ficha__bottom">
     {# ── Información (PublicacionInfo.vue) ── #}
-    <section class="ml-card">
-      <div class="ml-card__header"><h2 class="ml-card__title flex items-center gap-2 uppercase">{{ ui.icon('info-circle', 'size-5 text-error') }}{{ __('Información de la publicación', 'motorlan-portal')|e }}</h2></div>
-      <div class="ml-card__body">
-        <table class="ml-info-table">
-          <tbody>
-          {%- for label, value in p.specs %}
-            <tr><th scope="row">{{ label|e }}</th><td>{{ value|e }}</td></tr>
-          {%- else %}
-            <tr><td class="text-medium-emphasis">-</td></tr>
-          {%- endfor %}
-          </tbody>
-        </table>
-      </div>
-    </section>
+    {% include 'partials/ficha/info.twig' %}
 
     {# ── Documentación (ProductDocs.vue) ── #}
-    <section class="ml-card">
-      <div class="ml-card__header"><h2 class="ml-card__title flex items-center gap-2 uppercase">{{ ui.icon('files', 'size-5 text-error') }}{{ __('Documentación adicional', 'motorlan-portal')|e }}</h2></div>
-      <div class="ml-card__body">
-        {%- if p.docs %}
-        <ul class="overflow-hidden rounded-lg border border-border">
-          {%- for doc in p.docs %}
-          <li class="{{ not loop.last ? 'border-b border-border' : '' }}">
-            <a href="{{ doc.url|e('html_attr') }}" target="_blank" rel="noopener noreferrer" class="flex items-center gap-3 px-4 py-3 text-high-emphasis no-underline hover:bg-[var(--ml-hover)]">
-              {%- set ext = doc.url|split('.')|last|lower %}
-              {%- if ext == 'pdf' %}{{ ui.icon('file-type-pdf', 'size-6 text-error') }}
-              {%- elseif ext in ['doc', 'docx'] %}{{ ui.icon('file-type-doc', 'size-6 text-info') }}
-              {%- elseif ext in ['xls', 'xlsx'] %}{{ ui.icon('file-type-xls', 'size-6 text-success') }}
-              {%- elseif ext in ['jpg', 'jpeg', 'png', 'gif', 'webp'] %}{{ ui.icon('file-type-jpg', 'size-6 text-primary') }}
-              {%- else %}{{ ui.icon('file-text', 'size-6 text-primary') }}{% endif %}
-              <span class="min-w-0 flex-1 truncate">{{ doc.name|e }}</span>
-              {{ ui.icon('external-link', 'size-4 text-disabled') }}
-            </a>
-          </li>
-          {%- endfor %}
-        </ul>
-        {%- else %}
-        <p class="text-medium-emphasis">{{ __('No hay documentación adjunta.', 'motorlan-portal')|e }}</p>
-        {%- endif %}
-      </div>
-    </section>
+    {% include 'partials/ficha/docs.twig' %}
   </div>
 
   {# ── Relacionados (RelatedProducts.vue) ── #}
