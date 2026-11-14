@@ -424,14 +424,15 @@ class Motorlan_Notification_Manager {
      * Envía una notificación por correo electrónico (Método directo para uso por Cron/Async).
      *
      * @param int    $user_id
-     * @param string $type
+     * @param string $type    Tipo de notificación; también la plantilla, salvo que $data['email_template'] la cambie.
      * @param string $title
      * @param string $message
      * @param array  $data
      */
     public function send_email_notification_direct( $user_id, $type, $title, $message, $data ) {
-        $to = '';
+        $to   = '';
         $user = null;
+        $data = is_array( $data ) ? $data : [];
 
         if ( $user_id ) {
             $user = get_userdata( $user_id );
@@ -439,16 +440,19 @@ class Motorlan_Notification_Manager {
                 $to = $user->user_email;
             }
         } elseif ( ! empty( $data['direct_email'] ) ) {
-            $to = $data['direct_email'];
+            $to = sanitize_email( (string) $data['direct_email'] );
         }
 
-        if ( empty( $to ) ) {
+        // Sin destinatario válido no se envía (direct_email llega de fuera del sistema de usuarios)
+        if ( empty( $to ) || ! is_email( $to ) ) {
             return;
         }
 
-        $subject = "[Motorlan] " . $title;
+        // Una notificación puede reutilizar el tipo de la web y tener otra plantilla de email
+        // (p. ej. la venta manual se guarda como 'offer_accepted' pero se envía como 'manual_sale').
+        $template = ( ! empty( $data['email_template'] ) && is_string( $data['email_template'] ) ) ? $data['email_template'] : $type;
 
-        $body = $this->get_email_template( $type, [
+        $body = $this->get_email_template( $template, [
             'title'   => $title,
             'message' => $message,
             'data'    => $data,
@@ -459,14 +463,60 @@ class Motorlan_Notification_Manager {
             return;
         }
 
-        $headers = ['Content-Type: text/html; charset=UTF-8'];
-
-        $sent = wp_mail( $to, $subject, $body, $headers );
+        $subject = Motorlan_Email::subject( $title );
+        $sent    = self::deliver( $to, $subject, $body );
 
         if ( ! $sent ) {
             // Sin la URL de verificación: lleva el token y quien lea el log podía verificar
             // (y tomar) la cuenta.
             error_log( sprintf( '[Motorlan] wp_mail FAILED type=%s to=%s subject=%s', $type, $to, $subject ) );
+        }
+    }
+
+    /**
+     * Envía un email con la plantilla base de Motorlan a partir de un cuerpo propio. Es lo
+     * que usan los envíos que no pasan por el listener (contacto del admin, cambio de
+     * email…): mismas cabeceras, mismo layout y mismo asunto con prefijo.
+     *
+     * @param string $to           Destinatario.
+     * @param string $title        Asunto (sin el prefijo «[Motorlan]»).
+     * @param string $content_html Cuerpo ya seguro (componentes de Motorlan_Email).
+     * @param array  $args         user, preheader, automatic (bool, por defecto true).
+     * @return bool
+     */
+    public static function send_custom_email( $to, $title, $content_html, $args = [] ) {
+        $to = sanitize_email( (string) $to );
+        if ( '' === $to || ! is_email( $to ) ) {
+            return false;
+        }
+        $args['title'] = (string) $title;
+        $body          = Motorlan_Email::render_layout( $content_html, $args );
+        $automatic     = ! isset( $args['automatic'] ) || (bool) $args['automatic'];
+
+        return self::deliver( $to, Motorlan_Email::subject( $title ), $body, $automatic );
+    }
+
+    /**
+     * Único punto que llama a wp_mail(): cabeceras HTML coherentes y versión en texto plano.
+     *
+     * @param string $to
+     * @param string $subject   Ya saneado (Motorlan_Email::subject()).
+     * @param string $body      HTML completo.
+     * @param bool   $automatic ¿Mensaje automático? (cabeceras Auto-Submitted).
+     * @return bool
+     */
+    private static function deliver( $to, $subject, $body, $automatic = true ) {
+        $alt = Motorlan_Email::html_to_text( $body );
+        $set_alt = function ( $phpmailer ) use ( $alt ) {
+            if ( is_object( $phpmailer ) && '' !== $alt ) {
+                $phpmailer->AltBody = $alt;
+            }
+        };
+        add_action( 'phpmailer_init', $set_alt );
+        try {
+            return (bool) wp_mail( $to, $subject, $body, Motorlan_Email::headers( $automatic ) );
+        } finally {
+            remove_action( 'phpmailer_init', $set_alt );
         }
     }
 
@@ -480,36 +530,21 @@ class Motorlan_Notification_Manager {
     public function get_email_template( $template_name, $args = [] ) {
         $template_path = MOTORLAN_API_VUE_PATH . 'includes/email-templates/' . sanitize_file_name( $template_name ) . '.php';
 
-        if ( ! file_exists( $template_path ) ) {
+        if ( 'base' === sanitize_file_name( $template_name ) || ! file_exists( $template_path ) ) {
             // Antes fallaba en silencio: el canal 'email' sin plantilla no enviaba nada.
             error_log( sprintf( '[Motorlan] Falta la plantilla de email "%s"', sanitize_file_name( $template_name ) ) );
             return '';
         }
+
+        // Las plantillas leen $args (title, message, data, user): siempre con las cuatro claves.
+        $args = array_merge( [ 'title' => '', 'message' => '', 'data' => [], 'user' => null ], is_array( $args ) ? $args : [] );
 
         ob_start();
         // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
         include $template_path;
         $content = ob_get_clean();
 
-        $base_template_path = MOTORLAN_API_VUE_PATH . 'includes/email-templates/base.php';
-        if ( ! file_exists( $base_template_path ) ) {
-            return $content; // Fallback to content only if base is missing
-        }
-
-        ob_start();
-        include $base_template_path;
-        $base_html = ob_get_clean();
-
-        // Replace placeholders
-        // El asunto se escapa (va en <title>) y se sustituye en una sola pasada: con dos
-        // str_replace, un asunto que contuviera "{{content}}" recibía el cuerpo entero.
-        $subject = (string) ( $args['title'] ?? 'Notificación de Motorlan' );
-        $full_html = strtr( $base_html, array(
-            '{{subject}}' => esc_html( $subject ),
-            '{{content}}' => $content,
-        ) );
-
-        return $full_html;
+        return Motorlan_Email::render_layout( $content, $args );
     }
 }
 

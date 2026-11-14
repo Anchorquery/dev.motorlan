@@ -1,34 +1,33 @@
 <?php
-// Arguments available: $args['title'], $args['message'], $args['data'], $args['user']
-$data = $args['data'] ?? [];
-$product_image = $data['product_image'] ?? '';
-$product_title = $data['product_title'] ?? '';
-$buyer_name = $data['buyer_name'] ?? 'Un usuario';
-$product_price = $data['product_price'] ?? '';
-$url = get_site_url() . $data['url'];
-?>
+/**
+ * Email — el vendedor recibe una compra de su artículo.
+ *
+ * @var array $args title, message, data, user.
+ */
 
-<h1><?php esc_html_e( '¡Felicidades, has realizado una venta!', 'motorlan-api-vue' ); ?></h1>
+if ( ! defined( 'WPINC' ) ) {
+    die;
+}
 
-<p><?php printf( esc_html__( 'Hola %s,', 'motorlan-api-vue' ), esc_html( $args['user']->display_name ) ); ?></p>
+$data          = Motorlan_Email::data( $args );
+$product_title = Motorlan_Email::text( $data, 'product_title' );
+$buyer_name    = Motorlan_Email::text( $data, 'buyer_name', __( 'Un usuario', 'motorlan-api-vue' ) );
+$price         = Motorlan_Email::price( isset( $data['product_price'] ) ? $data['product_price'] : '' );
+$url           = Motorlan_Email::link( $data, $args, 'dashboard/purchases/purchases' );
 
-<p><?php printf( __( 'El usuario <strong>%s</strong> ha completado el proceso de compra para tu artículo.', 'motorlan-api-vue' ), esc_html( $buyer_name ) ); ?></p>
+echo Motorlan_Email::h1( __( '¡Felicidades, has realizado una venta!', 'motorlan-api-vue' ) );
+echo Motorlan_Email::greeting( isset( $args['user'] ) ? $args['user'] : null );
+echo Motorlan_Email::p( sprintf(
+    wp_kses( __( 'El usuario <strong>%s</strong> ha completado el proceso de compra para tu artículo.', 'motorlan-api-vue' ), array( 'strong' => array() ) ),
+    esc_html( $buyer_name )
+) );
 
-<div class="product-card">
-    <?php if ( ! empty( $product_image ) ) : ?>
-        <img src="<?php echo esc_url($product_image); ?>" alt="<?php esc_attr_e( 'Producto', 'motorlan-api-vue' ); ?>" class="product-img">
-    <?php endif; ?>
-    <div class="product-info">
-        <div class="product-title"><?php echo esc_html($product_title); ?></div>
-        <?php if ( ! empty( $product_price ) ) : ?>
-            <div class="product-price"><?php echo esc_html($product_price); ?>€</div>
-        <?php endif; ?>
-        <div style="font-size: 14px; color: #DA291C; margin-top: 5px;"><?php esc_html_e( 'Estado: Vendido', 'motorlan-api-vue' ); ?></div>
-    </div>
-</div>
+echo Motorlan_Email::product_card(
+    $product_title,
+    Motorlan_Email::text( $data, 'product_image' ),
+    array( '' !== $price ? Motorlan_Email::amount( $price ) : '' ),
+    Motorlan_Email::chip( __( 'Estado: Vendido', 'motorlan-api-vue' ), 'success' )
+);
 
-<p><?php esc_html_e( 'Por favor, ponte en contacto con el comprador para gestionar el envío o la entrega.', 'motorlan-api-vue' ); ?></p>
-
-<div style="text-align: center;">
-    <a href="<?php echo esc_url($url); ?>" class="button"><?php esc_html_e( 'Ver Detalles de la Venta', 'motorlan-api-vue' ); ?></a>
-</div>
+echo Motorlan_Email::p( esc_html__( 'Por favor, ponte en contacto con el comprador para gestionar el envío o la entrega.', 'motorlan-api-vue' ) );
+echo Motorlan_Email::button( __( 'Ver Detalles de la Venta', 'motorlan-api-vue' ), $url );
