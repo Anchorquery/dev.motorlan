@@ -159,7 +159,9 @@ class OfertasController extends Controller
         $status = (string) ($o['status'] ?? 'pending');
         $pid = (int) ($o['publication_id'] ?? 0);
         $slug = $pid ? (string) get_post_field('post_name', $pid) : '';
-        $ts = !empty($o['offer_date']) ? strtotime((string) $o['offer_date']) : false;
+        // Antes 'Y-m-d H:i:s' en hora local; desde el PR #158, ISO 8601 con zona. Se aceptan ambos.
+        $raw = (string) ($o['offer_date'] ?? '');
+        $ts = $raw === '' ? false : strtotime(preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/', $raw) ? get_gmt_from_date($raw) . ' UTC' : $raw);
         $secs = isset($o['time_to_expire']) && is_numeric($o['time_to_expire']) ? (int) $o['time_to_expire'] : null;
         $can_accept = !empty($o['can_accept']) && in_array($status, ['pending', 'expired'], true);
         return [
@@ -168,8 +170,8 @@ class OfertasController extends Controller
             'reference'   => $pid && function_exists('get_field') ? (string) (get_field('tipo_o_referencia', $pid) ?: '') : '',
             'user'        => (string) ($o['user_name'] ?? ''),
             'amount'      => is_numeric($o['offer_amount'] ?? null) ? number_format_i18n((float) $o['offer_amount'], 2) . ' €' : '—',
-            'date'        => $ts ? date_i18n('j M Y', $ts) : '—',
-            'datetime'    => $ts ? date_i18n('j M Y, H:i', $ts) : '—',
+            'date'        => $ts ? wp_date('j M Y', $ts) : '—',
+            'datetime'    => $ts ? wp_date('j M Y, H:i', $ts) : '—',
             'status'      => $status,
             'chip'        => self::status($status),
             'message'     => trim((string) ($o['justification'] ?? '')),

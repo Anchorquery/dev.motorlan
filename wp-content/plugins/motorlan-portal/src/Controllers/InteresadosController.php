@@ -157,8 +157,9 @@ class InteresadosController extends Controller
     public static function row(array $it): array
     {
         $name = trim((string) ($it['user_name'] ?? ''));
-        // La API manda 'Y-m-d H:i:s' en UTC sin zona.
-        $ts = !empty($it['last_at']) ? strtotime((string) $it['last_at'] . ' UTC') : false;
+        // 'Y-m-d H:i:s' en UTC sin zona; si llega ISO 8601 con zona, tal cual.
+        $raw = (string) ($it['last_at'] ?? '');
+        $ts = $raw === '' ? false : strtotime(preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/', $raw) ? $raw . ' UTC' : $raw);
         $today = $ts && wp_date('Y-m-d', $ts) === wp_date('Y-m-d');
         $slug = (string) ($it['product_slug'] ?? '');
         $initials = '';
