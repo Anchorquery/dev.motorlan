@@ -103,10 +103,13 @@ class Sections
                 'spa_paths'  => [],
             ],
             'admin' => [
-                'label'      => 'Administración',
+                'label'      => 'Panel: administración (publicaciones, aprobaciones y vista previa)',
+                // manage_options; sin sesión al login, con sesión y sin permiso 403 (Router).
                 'auth'       => 'admin',
-                'controller' => null,
-                'spa_paths'  => [],
+                'controller' => Controllers\AdminController::class,
+                'spa_paths'  => function () {
+                    return Support\SpaPages::panel_patterns(['admin/publications', 'admin/approvals', 'admin/approvals/preview/[A-Za-z0-9-]+']);
+                },
             ],
             'ia' => [
                 'label'      => 'Asistente IA',

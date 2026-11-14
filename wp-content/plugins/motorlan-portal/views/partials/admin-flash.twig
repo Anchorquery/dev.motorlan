@@ -1,0 +1,10 @@
+{#
+  Aviso tras una acción del admin en una carga completa (sin HTMX o al volver de la vista
+  previa con ?ok=…): toast si hay JS, alerta si no. Quita ?ok= de la URL para que no se
+  repita al recargar. Variables: flash ({ ok, text, color }) o null.
+#}
+{%- if flash|default(null) %}
+{%- import 'components/alert.twig' as al -%}
+<div x-data x-init="$store.toast.show({{ ml_json(flash.text)|e('html_attr') }}, {{ ml_json(flash.color)|e('html_attr') }}); if (location.search.indexOf('ok=') !== -1) { const u = new URL(location.href); u.searchParams.delete('ok'); history.replaceState(history.state, '', u) }"></div>
+<noscript><div class="mb-4">{{ al.alert({ color: flash.color, text: flash.text }) }}</div></noscript>
+{%- endif %}

@@ -1,0 +1,23 @@
+{#
+  Contenido del diálogo «Rechazar publicación» (listado de aprobaciones y vista previa).
+  Dentro de un components/dialog.twig con x-data { sel: { id, name, page }, reason }.
+  Variables: url (destino del POST) · nonce · hx (atributos HTMX YA escapados, opcional;
+  sin ellos, POST normal y el servidor redirige).
+#}
+{%- import 'components/icon.twig' as ui -%}
+{%- import 'components/field.twig' as f -%}
+<h3 class="ml-h6 mb-4 flex items-center gap-2 font-semibold">{{ ui.icon('circle-x', 'size-5 text-error') }}<span>{{ __('Rechazar publicación', 'motorlan-portal')|e }}</span></h3>
+<p class="text-sm font-medium text-high-emphasis" x-show="sel.name">«<span x-text="sel.name"></span>»</p>
+<p class="mb-4 mt-2">{{ __('Indica el motivo por el cual no se aprueba esta publicación. El usuario recibirá esta información.', 'motorlan-portal')|e }}</p>
+<form method="post" action="{{ url|e('html_attr') }}" {{ hx|default('')|raw }}>
+  <input type="hidden" name="_mlnonce" value="{{ nonce|e('html_attr') }}">
+  <input type="hidden" name="action" value="reject">
+  <input type="hidden" name="id" :value="sel.id">
+  <input type="hidden" name="page" :value="sel.page">
+  {{ f.textarea({ name: 'reason', id: 'ml-admin-reason', label: __('Motivo del rechazo', 'motorlan-portal'), rows: 3, required: true, placeholder: __('Ej: Faltan especificaciones técnicas en la descripción.', 'motorlan-portal'), attrs: 'x-model="reason" maxlength="500"' }) }}
+  <p class="mt-2 text-xs text-medium-emphasis">{{ __('La publicación vuelve a borrador para que el usuario la corrija.', 'motorlan-portal')|e }}</p>
+  <div class="mt-6 flex justify-end gap-2 max-sm:flex-col-reverse">
+    <button type="button" class="ml-btn ml-btn--text ml-c-secondary" @click="close()">{{ __('Cancelar', 'motorlan-portal')|e }}</button>
+    <button type="submit" class="ml-btn ml-btn--filled ml-c-error" :disabled="!reason.trim()">{{ ui.icon('x', 'size-[18px]') }}<span>{{ __('Confirmar rechazo', 'motorlan-portal')|e }}</span></button>
+  </div>
+</form>

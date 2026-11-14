@@ -1,0 +1,36 @@
+{% extends 'layout/app-shell.twig' %}
+{#
+  Aprobaciones pendientes: /mi-cuenta/dashboard/admin/approvals (admin/approvals/index.vue).
+  AdminController. Aprobar: POST a esta URL (action=approve) y la tabla de nuevo. Rechazar:
+  diálogo con el motivo (obligatorio) y POST (action=reject). La vista previa de cada una
+  está en …/approvals/preview/{uuid}.
+#}
+{% block main %}
+{%- import 'components/icon.twig' as ui -%}
+{% include 'partials/admin-flash.twig' %}
+<div x-data="{ sel: { id: 0, name: '', page: 1 }, reason: '' }"
+     @ml-admin-reject.window="sel = $event.detail; reason = ''; window.dispatchEvent(new CustomEvent('ml-dialog', { detail: 'ml-admin-reject' }))">
+  <div class="ml-card overflow-visible">
+    <div class="px-6 pt-6">
+      <div class="flex items-center gap-3">
+        <span class="ml-avatar ml-c-primary">{{ ui.icon('shield-check', 'size-5') }}</span>
+        <h1 class="ml-h5 font-semibold">{{ page_title|e }}</h1>
+      </div>
+      <p class="mt-1 text-sm text-medium-emphasis md:ms-[52px]">{{ __('Revisa y gestiona las solicitudes de publicación de los usuarios.', 'motorlan-portal')|e }}</p>
+    </div>
+    <hr class="mt-4 border-border">
+    {% include 'partials/admin-aprobaciones-tabla.twig' %}
+  </div>
+
+  {# ── Rechazar (con motivo) ── #}
+  {% embed 'components/dialog.twig' with { id: 'ml-admin-reject', max_width: '500px', persistent: true } %}
+    {% block content %}
+    {%- import 'components/icon.twig' as ui -%}
+    {% include 'partials/admin-rechazo-form.twig' with {
+      url: table.url, nonce: nonce,
+      hx: 'hx-post="' ~ table.url|e('html_attr') ~ '" hx-target="#ml-admin-pending" hx-swap="outerHTML" hx-disabled-elt="find button" x-init="window.htmx && window.htmx.process($el)" @htmx:after-request="$event.detail.xhr && $event.detail.xhr.getResponseHeader(\'X-Ml-Done\') && close()"',
+    } %}
+    {% endblock %}
+  {% endembed %}
+</div>
+{% endblock %}

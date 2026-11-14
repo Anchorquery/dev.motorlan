@@ -1,0 +1,113 @@
+{% extends 'layout/app-shell.twig' %}
+{#
+  Vista previa de una publicación pendiente: /mi-cuenta/dashboard/admin/approvals/preview/{uuid}
+  (admin/approvals/preview/[uuid].vue). AdminController::preview.
+  La ficha usa los mismos parciales que la tienda (partials/ficha/*). Aprobar, rechazar y
+  corregir la marca son formularios POST a esta URL (sin HTMX): al aprobar o rechazar, el
+  servidor vuelve al listado con ?ok=…; al guardar la marca, a esta misma página.
+  Sin barra inferior en móvil (hide_mobile_nav), como la SPA.
+  Variables: product (Store::product, o null si no existe) · pending_brand · status
+             · list_url · self_url · edit_url · nonce · flash
+#}
+{% block main %}
+{%- import 'components/icon.twig' as ui -%}
+{%- import 'components/avatar.twig' as av -%}
+{%- import 'components/chip.twig' as c -%}
+{% include 'partials/admin-flash.twig' %}
+<div class="mx-auto max-w-[1400px]">
+  {%- if product %}
+  {%- set p = product -%}
+  <div x-data="{ sel: {{ ml_json({ id: p.id, name: '', page: 1 })|e('html_attr') }}, reason: '', editing: false, brand: {{ ml_json(pending_brand|upper)|e('html_attr') }} }">
+    {# ── Banner del modo vista previa ── #}
+    <div class="ml-alert ml-c-info mb-6 border border-dashed !border-[color-mix(in_srgb,var(--c)_40%,transparent)]" role="status">
+      <span class="ml-alert__icon">{{ ui.icon('eye', 'size-6') }}</span>
+      <div class="ml-alert__body flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <div class="ml-alert__title flex flex-wrap items-center gap-2">{{ __('Modo previsualización de administrador', 'motorlan-portal')|e }} {{ c.chip({ label: status.chip.label, color: status.chip.color, size: 'sm' }) }}</div>
+          <p class="text-sm">{{ __('Esta publicación aún no es pública. Así es como se verá una vez aprobada.', 'motorlan-portal')|e }}</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2 max-md:w-full max-md:flex-col max-md:items-stretch">
+          <form method="post" action="{{ self_url|e('html_attr') }}" class="contents" @submit="$el.querySelector('button').disabled = true">
+            <input type="hidden" name="_mlnonce" value="{{ nonce|e('html_attr') }}">
+            <input type="hidden" name="action" value="approve">
+            <input type="hidden" name="id" value="{{ p.id }}">
+            <button type="submit" class="ml-btn ml-btn--filled ml-c-success">{{ ui.icon('check', 'size-[18px]') }}<span>{{ __('Aprobar', 'motorlan-portal')|e }}</span></button>
+          </form>
+          <button type="button" class="ml-btn ml-btn--tonal ml-c-error" @click="reason = ''; $dispatch('ml-dialog', 'ml-admin-reject')">{{ ui.icon('x', 'size-[18px]') }}<span>{{ __('Rechazar', 'motorlan-portal')|e }}</span></button>
+          <a class="ml-btn ml-btn--tonal ml-c-primary" href="{{ edit_url|e('html_attr') }}">{{ ui.icon('pencil', 'size-[18px]') }}<span>{{ __('Editar', 'motorlan-portal')|e }}</span></a>
+          <a class="ml-btn ml-btn--text ml-c-secondary" href="{{ list_url|e('html_attr') }}">{{ ui.icon('arrow-left', 'size-[18px]') }}<span>{{ __('Volver', 'motorlan-portal')|e }}</span></a>
+        </div>
+      </div>
+    </div>
+
+    {# ── Marca nueva pendiente (corregir el nombre antes de aprobar) ── #}
+    {%- if pending_brand %}
+    <div class="ml-alert ml-c-warning mb-6" role="status" id="ml-admin-brand">
+      <span class="ml-alert__icon">{{ ui.icon('tag-starred', 'size-7') }}</span>
+      <div class="ml-alert__body">
+        <div class="ml-alert__title">{{ __('Nueva marca pendiente de aprobación', 'motorlan-portal')|e }}</div>
+        <div class="mt-2 flex flex-wrap items-center gap-2" x-show="!editing">
+          <p>{{ __('El usuario ha solicitado crear la marca', 'motorlan-portal')|e }}
+            <span class="ml-chip ml-chip--filled ml-c-warning mx-1 font-bold">{{ pending_brand|upper|e }}</span>.</p>
+          <button type="button" class="ml-btn ml-btn--text ml-btn--sm ml-c-warning" @click="editing = true; $nextTick(() => $refs.brand.focus())">{{ ui.icon('pencil', 'size-4') }}<span>{{ __('Editar nombre', 'motorlan-portal')|e }}</span></button>
+        </div>
+        <form method="post" action="{{ self_url|e('html_attr') }}" class="mt-3 flex flex-wrap items-end gap-3 max-md:flex-col max-md:items-stretch" x-show="editing" x-cloak>
+          <input type="hidden" name="_mlnonce" value="{{ nonce|e('html_attr') }}">
+          <input type="hidden" name="action" value="brand">
+          <input type="hidden" name="id" value="{{ p.id }}">
+          <div class="ml-field w-full md:w-72">
+            <label class="ml-label" for="ml-admin-brand-name">{{ __('Nombre de la marca', 'motorlan-portal')|e }}</label>
+            <input class="ml-input uppercase" id="ml-admin-brand-name" name="brand_name" required maxlength="100" x-ref="brand" x-model="brand" @input="brand = brand.toUpperCase()">
+          </div>
+          <button type="submit" class="ml-btn ml-btn--filled ml-btn--sm ml-c-success" :disabled="!brand.trim()">{{ ui.icon('check', 'size-4') }}<span>{{ __('Guardar', 'motorlan-portal')|e }}</span></button>
+          <button type="button" class="ml-btn ml-btn--text ml-btn--sm ml-c-secondary" @click="editing = false; brand = {{ ml_json(pending_brand|upper)|e('html_attr') }}">{{ __('Cancelar', 'motorlan-portal')|e }}</button>
+        </form>
+        <p class="mt-2 text-xs text-medium-emphasis">{{ __('Al aprobar esta publicación, la marca se creará y estará disponible para todos los usuarios.', 'motorlan-portal')|e }}</p>
+      </div>
+    </div>
+    {%- endif %}
+
+    {# ── Ficha (mismos parciales que la tienda) ── #}
+    <article class="ml-ficha">
+      <h1 class="ml-ficha__title">{{ p.title|e }}</h1>
+      <div class="ml-ficha__top">
+        {% include 'partials/ficha/galeria.twig' %}
+        <div class="min-w-0">
+          {% include 'partials/ficha/detalle.twig' %}
+          {%- if p.description %}
+          {# Ya saneada con wp_kses_post (Store::product). #}
+          <div class="ml-richtext">{{ p.description|raw }}</div>
+          {%- endif %}
+          <div class="mb-4 mt-6 flex items-center gap-4">
+            {%- if p.seller.avatar %}
+              {{ av.avatar({ image: p.seller.avatar, alt: p.seller.name, size: 'lg' }) }}
+            {%- else %}
+              {{ av.avatar({ text: p.seller.initials, size: 'lg', filled: true }) }}
+            {%- endif %}
+            <div>
+              <p class="font-bold">{{ p.seller.name|e }}</p>
+              <p class="text-sm text-medium-emphasis">{{ __('Solicitante de la publicación', 'motorlan-portal')|e }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="ml-ficha__bottom">
+        {% include 'partials/ficha/info.twig' %}
+        {% include 'partials/ficha/docs.twig' %}
+      </div>
+    </article>
+
+    {% embed 'components/dialog.twig' with { id: 'ml-admin-reject', max_width: '500px', persistent: true } %}
+      {% block content %}
+      {% include 'partials/admin-rechazo-form.twig' with { url: self_url, nonce: nonce } %}
+      {% endblock %}
+    {% endembed %}
+  </div>
+  {%- else %}
+  <div class="ml-card p-12 text-center">
+    {%- import 'components/empty.twig' as em -%}
+    {{ em.empty({ icon: 'alert-circle', title: __('Publicación no encontrada', 'motorlan-portal'), text: __('Es posible que el enlace no sea válido o que la publicación se haya eliminado.', 'motorlan-portal'), action: { label: __('Volver al listado', 'motorlan-portal'), href: list_url, icon: 'arrow-left' } }) }}
+  </div>
+  {%- endif %}
+</div>
+{% endblock %}
